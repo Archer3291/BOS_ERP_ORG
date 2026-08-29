@@ -25,7 +25,7 @@
 --  póliza del documento", porque GenerarDatosPoliza resuelve la plantilla por el
 --  par (idtpdoc, tipo_proceso) y no encontraría ninguna para factura_credito.
 --
---  TODO VA CALIFICADO CON srs. La aplicación conecta con `Search Path=public,srs`,
+--  TODO VA CALIFICADO CON  La aplicación conecta con `Search Path=public,srs`,
 --  así que ejecutar fragmentos sueltos con el esquema escrito en cada sentencia
 --  deja de ser peligroso.
 --
@@ -42,8 +42,8 @@ DO $$
 DECLARE
     v_faltan text := '';
 BEGIN
-    IF to_regclass('srs.poliza_documento')         IS NULL THEN v_faltan := v_faltan || ' poliza_documento';         END IF;
-    IF to_regclass('srs.poliza_cat_tipo_proceso')  IS NULL THEN v_faltan := v_faltan || ' poliza_cat_tipo_proceso';  END IF;
+    IF to_regclass('poliza_documento')         IS NULL THEN v_faltan := v_faltan || ' poliza_documento';         END IF;
+    IF to_regclass('poliza_cat_tipo_proceso')  IS NULL THEN v_faltan := v_faltan || ' poliza_cat_tipo_proceso';  END IF;
 
     IF v_faltan <> '' THEN
         RAISE EXCEPTION 'ABORTADO: faltan tablas en srs:%. ¿Es el esquema correcto?', v_faltan;
@@ -56,11 +56,11 @@ END $$;
 DO $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM srs.poliza_documento
+        SELECT 1 FROM poliza_documento
         WHERE idtpdoc = 52 AND tipo_proceso = 'factura_contado'
     ) THEN
         RAISE EXCEPTION
-            'ABORTADO: no existe la plantilla de póliza (idtpdoc 52, factura_contado) en srs. '
+            'ABORTADO: no existe la plantilla de póliza (idtpdoc 52, factura_contado) en  '
             'Es la que se clona para el crédito; configúrala primero en Contabilidad.';
     END IF;
 END $$;
@@ -69,7 +69,7 @@ END $$;
 -- ── 1. tipo_proceso nuevos del punto de venta ───────────────────────────────
 -- Sólo alimentan el selector de la pantalla de configuración de pólizas; el
 -- encabezado no tiene llave foránea contra este catálogo.
-INSERT INTO srs.poliza_cat_tipo_proceso (clave, descripcion, modulo, orden)
+INSERT INTO poliza_cat_tipo_proceso (clave, descripcion, modulo, orden)
 VALUES
     ('venta_sucursal_credito',         'Venta de Sucursal a Crédito',                  'Punto de venta', 241),
     ('venta_sucursal_credito_parcial', 'Venta de Sucursal a Crédito Parcial',          'Punto de venta', 242),
@@ -81,19 +81,19 @@ ON CONFLICT (clave) DO NOTHING;
 -- Se clonan las del contado, renglón por renglón y evento por evento. El pedido y
 -- la remisión del punto de venta no generan asiento hoy, pero se mapean igual para
 -- que el par (idtpdoc, tipo_proceso) nunca quede huérfano si mañana lo generan.
-INSERT INTO srs.poliza_documento (idtpdoc, id_tipo_poliza, evento, orden, activo, tipo_proceso)
+INSERT INTO poliza_documento (idtpdoc, id_tipo_poliza, evento, orden, activo, tipo_proceso)
 SELECT pd.idtpdoc,
        pd.id_tipo_poliza,
        pd.evento,
        pd.orden,
        pd.activo,
        replace(pd.tipo_proceso, '_contado', '_credito')
-FROM   srs.poliza_documento pd
+FROM   poliza_documento pd
 WHERE  pd.idtpdoc IN (50, 51, 52)
   AND  pd.tipo_proceso IN ('pedido_contado', 'remision_contado', 'factura_contado')
   AND  NOT EXISTS (
            SELECT 1
-           FROM   srs.poliza_documento x
+           FROM   poliza_documento x
            WHERE  x.idtpdoc      = pd.idtpdoc
              AND  x.tipo_proceso = replace(pd.tipo_proceso, '_contado', '_credito')
              AND  x.evento       = pd.evento
@@ -110,13 +110,13 @@ SELECT 'plantillas del punto de venta' AS chequeo,
        pt.nombre AS plantilla,
        pd.evento,
        pd.activo
-FROM   srs.poliza_documento pd
-LEFT   JOIN srs.poliza_tipo pt ON pt.id_tipo_poliza = pd.id_tipo_poliza
+FROM   poliza_documento pd
+LEFT   JOIN poliza_tipo pt ON pt.id_tipo_poliza = pd.id_tipo_poliza
 WHERE  pd.idtpdoc IN (50, 51, 52)
 ORDER  BY pd.idtpdoc, pd.tipo_proceso, pd.evento;
 
 SELECT 'tipo_proceso a crédito' AS chequeo, clave, descripcion, modulo
-FROM   srs.poliza_cat_tipo_proceso
+FROM   poliza_cat_tipo_proceso
 WHERE  clave LIKE 'venta_sucursal_credito%'
 ORDER  BY orden;
 

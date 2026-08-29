@@ -97,7 +97,7 @@ SELECT setval(pg_get_serial_sequence('srs_prod.tpdoc','idtpdoc'),
 -- ── 5. Verificación ─────────────────────────────────────────────────────────
 -- Debe devolver 0. Si no, NO hagas COMMIT.
 SELECT COUNT(*) AS diferencias_restantes
-FROM srs.tpdoc d
+FROM tpdoc d
 FULL OUTER JOIN srs_prod.tpdoc p ON p.idtpdoc = d.idtpdoc
 WHERE d.abreviaturatpdoc IS DISTINCT FROM p.abreviaturatpdoc
   AND COALESCE(d.abreviaturatpdoc, p.abreviaturatpdoc) <> 'PENDIENTE'
@@ -106,7 +106,7 @@ WHERE d.abreviaturatpdoc IS DISTINCT FROM p.abreviaturatpdoc
 -- Detalle de lo que quede distinto, para revisarlo a ojo.
 SELECT COALESCE(d.idtpdoc, p.idtpdoc) AS id,
        d.abreviaturatpdoc AS dev, p.abreviaturatpdoc AS prod
-FROM srs.tpdoc d
+FROM tpdoc d
 FULL OUTER JOIN srs_prod.tpdoc p ON p.idtpdoc = d.idtpdoc
 WHERE d.abreviaturatpdoc IS DISTINCT FROM p.abreviaturatpdoc
 ORDER BY 1;

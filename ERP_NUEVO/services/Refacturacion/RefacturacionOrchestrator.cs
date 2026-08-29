@@ -446,7 +446,7 @@ VALUES
         // Flujo (todo en la MISMA transacción; se ejecuta ANTES de timbrar, así que cualquier fallo
         // deja todo en rollback):
         //   1. Revertir el inventario de TODAS las remisiones de origen (restaura stock a sus tarimas).
-        //   2. Crear SIEMPRE una remisión nueva como VARIACIÓN (`srs.clone_documento`, variacion+1 y
+        //   2. Crear SIEMPRE una remisión nueva como VARIACIÓN (`clone_documento`, variacion+1 y
         //      variacion_padre = remisión principal) con TODAS las partidas de la refacturación.
         //   3. Re-descontar esas partidas contra la remisión-variación (valida stock disponible).
         //   4. Cancelar las remisiones anteriores y dejar la variación como respaldo de la factura
@@ -659,13 +659,13 @@ VALUES
         }
 
         // Crea una remisión nueva como VARIACIÓN de `remOrigen` con las partidas dadas, usando la
-        // función de BD srs.clone_documento (variacion+1, variacion_padre = remOrigen). Se llama con
+        // función de BD clone_documento (variacion+1, variacion_padre = remOrigen). Se llama con
         // 5 argumentos para que p_estatus tome su default NULL → hereda el estatus del original, por
         // eso hay que clonar ANTES de cancelar la remisión de origen. Devuelve el encabezado nuevo.
         private int ClonarRemision(int remOrigen, List<PartidaAjuste> lineas, int fPago, int usuarioId,
             string observaciones, NpgsqlConnection conn, NpgsqlTransaction tx)
         {
-            // Claves EXACTAS que lee srs.clone_documento del jsonb (las ausentes van null: `->>`
+            // Claves EXACTAS que lee clone_documento del jsonb (las ausentes van null: `->>`
             // sobre JSON null devuelve SQL NULL, seguro para sus casts ::NUMERIC).
             string partidasJson = Newtonsoft.Json.JsonConvert.SerializeObject(
                 lineas.Select(l => new Dictionary<string, object>
@@ -687,7 +687,7 @@ VALUES
 
             var clon = RunQuery(
                 @"SELECT idencabezado, foliodoc
-                  FROM srs.clone_documento(@id_original, @total, @obs, @usuario, @partidas::jsonb)",
+                  FROM clone_documento(@id_original, @total, @obs, @usuario, @partidas::jsonb)",
                 new Dictionary<string, object>
                 {
                     { "id_original", remOrigen },

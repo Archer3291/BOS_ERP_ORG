@@ -92,7 +92,7 @@ namespace BOS_ERP.Controllers.Ventas
                                      " LEFT JOIN catproductos p ON d.idproducto = p.id_catproductos AND p.empresa_id = @empresa_id " +
                                      " INNER JOIN catclientes cc ON cc.id_cliente  = f.idcliente AND cc.empresa_id = @empresa_id" +
                                      " INNER JOIN encabezadomov e  on e.id_encabezado  = f.encabezado_id   " +
-                                     " left join frac_arancelarias fc on fc.prod_id = p.id_catproductos " +
+                                     " left join frac_arancelarias fc on fc.cve_prod = p.cve_prod " +
                                      " left join direcciones_facturacion df on df.entidad_clave = cc.cve_cli AND df.empresa_id = @empresa_id  " +
                                      " WHERE e.id_encabezado = @id;";
 

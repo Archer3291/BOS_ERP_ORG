@@ -1,5 +1,5 @@
 -- ============================================================================
---  Identidad por barra física  —  srs.corte_piezas
+--  Identidad por barra física  —  corte_piezas
 --
 --  Hasta ahora una fila de `tarima_productos_cortes` representaba N barras
 --  idénticas (folio + longitud + cantidad). Eso basta para contar metros, pero
@@ -18,7 +18,7 @@
 --  vive cada una).
 --
 --  La aplicación conecta con `Search Path=public,srs`, así que encontrará
---  srs.corte_piezas sin cambiar una línea de C#. Ojo con el orden: como
+--  corte_piezas sin cambiar una línea de C#. Ojo con el orden: como
 --  `public` va PRIMERO, cualquier objeto homónimo en `public` tapa al de `srs`.
 --  El script avisa si detecta ese caso.
 --
@@ -66,14 +66,14 @@ BEGIN
 END $$;
 
 -- ── Secuencia y generador de código ─────────────────────────────────────────
-CREATE SEQUENCE IF NOT EXISTS srs.seq_codigo_barra_pieza START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE IF NOT EXISTS seq_codigo_barra_pieza START WITH 1 INCREMENT BY 1;
 
-CREATE OR REPLACE FUNCTION srs.fn_generar_codigo_pieza()
+CREATE OR REPLACE FUNCTION fn_generar_codigo_pieza()
 RETURNS text AS $$
 BEGIN
     -- Prefijo + 9 dígitos. Sin letras ambiguas ni separadores: entra tal cual
     -- en un Code128 y el lector lo teclea como una sola ráfaga.
-    RETURN 'BRR' || LPAD(nextval('srs.seq_codigo_barra_pieza')::text, 9, '0');
+    RETURN 'BRR' || LPAD(nextval('seq_codigo_barra_pieza')::text, 9, '0');
 END;
 $$ LANGUAGE plpgsql
 -- El search_path de una función es el del LLAMADOR salvo que se fije aquí.
@@ -81,9 +81,9 @@ $$ LANGUAGE plpgsql
 SET search_path = public, srs;
 
 -- ── Tabla ───────────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS srs.corte_piezas (
+CREATE TABLE IF NOT EXISTS corte_piezas (
     id_pieza          BIGSERIAL PRIMARY KEY,
-    codigo            TEXT NOT NULL UNIQUE DEFAULT srs.fn_generar_codigo_pieza(),
+    codigo            TEXT NOT NULL UNIQUE DEFAULT fn_generar_codigo_pieza(),
     corte_id          INTEGER NOT NULL
                       REFERENCES tarima_productos_cortes (id_corte) ON DELETE CASCADE,
 
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS srs.corte_piezas (
 
     -- Trazabilidad: de qué barra salió esta (al subdividir) y en qué
     -- asignación de pedido se consumió.
-    pieza_madre_id    BIGINT REFERENCES srs.corte_piezas (id_pieza) ON DELETE SET NULL,
+    pieza_madre_id    BIGINT REFERENCES corte_piezas (id_pieza) ON DELETE SET NULL,
     asignacion_id     INTEGER,
 
     fecha_creacion    TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -105,9 +105,9 @@ CREATE TABLE IF NOT EXISTS srs.corte_piezas (
     comentario        TEXT
 );
 
-CREATE INDEX IF NOT EXISTS ix_corte_piezas_corte  ON srs.corte_piezas (corte_id);
-CREATE INDEX IF NOT EXISTS ix_corte_piezas_estado ON srs.corte_piezas (estado);
-CREATE INDEX IF NOT EXISTS ix_corte_piezas_madre  ON srs.corte_piezas (pieza_madre_id);
+CREATE INDEX IF NOT EXISTS ix_corte_piezas_corte  ON corte_piezas (corte_id);
+CREATE INDEX IF NOT EXISTS ix_corte_piezas_estado ON corte_piezas (estado);
+CREATE INDEX IF NOT EXISTS ix_corte_piezas_madre  ON corte_piezas (pieza_madre_id);
 
 -- El escaneo busca por código exacto: el UNIQUE ya deja el índice hecho.
 
@@ -119,7 +119,7 @@ CREATE INDEX IF NOT EXISTS ix_corte_piezas_madre  ON srs.corte_piezas (pieza_mad
 --  varios módulos (AdminCortes, la asignación de cortes del pedido, la
 --  operación de corte, la remisión…). Replicar el mantenimiento en cada uno
 --  sería garantizar que algún día se desincronizan.
-CREATE OR REPLACE FUNCTION srs.fn_sincronizar_corte_piezas()
+CREATE OR REPLACE FUNCTION fn_sincronizar_corte_piezas()
 RETURNS TRIGGER AS $$
 DECLARE
     v_disponibles INTEGER;
@@ -136,12 +136,12 @@ BEGIN
     END IF;
 
     SELECT COUNT(*) INTO v_disponibles
-    FROM srs.corte_piezas
+    FROM corte_piezas
     WHERE corte_id = NEW.id_corte AND estado = 'disponible';
 
     IF v_objetivo > v_disponibles THEN
         v_faltan := v_objetivo - v_disponibles;
-        INSERT INTO srs.corte_piezas (corte_id, longitud, usuario_creacion)
+        INSERT INTO corte_piezas (corte_id, longitud, usuario_creacion)
         SELECT NEW.id_corte, NEW.longitud, NEW.usuario_creacion
         FROM generate_series(1, v_faltan);
 
@@ -149,11 +149,11 @@ BEGIN
         v_sobran := v_disponibles - v_objetivo;
         -- Se consumen las más antiguas primero (FIFO), que es como se gasta
         -- el material en el piso.
-        UPDATE srs.corte_piezas
+        UPDATE corte_piezas
         SET estado     = CASE WHEN COALESCE(NEW.activo, true) THEN 'usada' ELSE 'baja' END,
             fecha_baja = NOW()
         WHERE id_pieza IN (
-            SELECT id_pieza FROM srs.corte_piezas
+            SELECT id_pieza FROM corte_piezas
             WHERE corte_id = NEW.id_corte AND estado = 'disponible'
             ORDER BY id_pieza
             LIMIT v_sobran
@@ -170,18 +170,18 @@ DROP TRIGGER IF EXISTS trg_corte_piezas_sync ON tarima_productos_cortes;
 CREATE TRIGGER trg_corte_piezas_sync
 AFTER INSERT OR UPDATE OF cantidad, activo ON tarima_productos_cortes
 FOR EACH ROW
-EXECUTE FUNCTION srs.fn_sincronizar_corte_piezas();
+EXECUTE FUNCTION fn_sincronizar_corte_piezas();
 
 -- ── Relleno de lo que ya existe ─────────────────────────────────────────────
 -- Crea las piezas que faltan para los cortes activos actuales. Es idempotente:
 -- si se vuelve a ejecutar no duplica nada, solo completa lo que falte.
-INSERT INTO srs.corte_piezas (corte_id, longitud, usuario_creacion, comentario)
+INSERT INTO corte_piezas (corte_id, longitud, usuario_creacion, comentario)
 SELECT c.id_corte, c.longitud, c.usuario_creacion, 'Alta inicial por migración'
 FROM tarima_productos_cortes c
 CROSS JOIN LATERAL generate_series(
     1,
     GREATEST(0, CEIL(COALESCE(c.cantidad, 0))::int -
-        (SELECT COUNT(*) FROM srs.corte_piezas p
+        (SELECT COUNT(*) FROM corte_piezas p
           WHERE p.corte_id = c.id_corte AND p.estado = 'disponible'))
 ) AS g
 WHERE COALESCE(c.activo, true) = true;
@@ -195,12 +195,12 @@ COMMIT;
 -- SET search_path = public, srs;
 --
 -- SELECT c.id_corte, c.folio, c.cantidad,
---        (SELECT COUNT(*) FROM srs.corte_piezas p
+--        (SELECT COUNT(*) FROM corte_piezas p
 --          WHERE p.corte_id = c.id_corte AND p.estado = 'disponible') AS piezas
 --   FROM tarima_productos_cortes c
 --  WHERE COALESCE(c.activo, true)
 --    AND CEIL(COALESCE(c.cantidad,0))::int <>
---        (SELECT COUNT(*) FROM srs.corte_piezas p
+--        (SELECT COUNT(*) FROM corte_piezas p
 --          WHERE p.corte_id = c.id_corte AND p.estado = 'disponible');
 
 -- Y para confirmar que quedó donde debe:

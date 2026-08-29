@@ -1102,7 +1102,7 @@ namespace BOS_ERP.Controllers
             {
                 // Ahora es una FUNCTION: se invoca con SELECT, no con CALL.
                 using (var cmd = new NpgsqlCommand(
-                    "SELECT srs.registrar_movimiento(@usuario, @tipoMov, @productos, @origen, @destino, @motivo, @encabezado, @comentario)",
+                    "SELECT registrar_movimiento(@usuario, @tipoMov, @productos, @origen, @destino, @motivo, @encabezado, @comentario)",
                     conn))
                 {
                     if (tx != null)

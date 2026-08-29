@@ -837,7 +837,7 @@ namespace BOS_ERP.Controllers.Ventas.Ventas_Industriales
             }
         }
 
-        // Ata una asignación de pedido a la barra física (srs.corte_piezas) que el trigger de
+        // Ata una asignación de pedido a la barra física (corte_piezas) que el trigger de
         // sincronía acaba de marcar 'usada' para ese id_corte. Si el módulo de piezas no está
         // instalado (sql/cortes_piezas.sql sin correr), la tabla no existe y esto se ignora: la
         // operación de corte sigue funcionando igual que antes, solo sin el código de barras.

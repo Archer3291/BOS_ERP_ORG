@@ -21,7 +21,7 @@
 -- de pago entra, el anticipo otorga al recibirse y la factura que lo aplica
 -- descuenta esa parte, la nota de crédito resta y la cancelación reversa.
 --
--- TODO VA CALIFICADO CON srs.
+-- TODO VA CALIFICADO CON 
 -- A propósito, y no por estilo: este script NO usa `SET search_path`. En el
 -- despliegue a `srs` un ALTER TABLE quedó fuera porque se ejecutaron fragmentos
 -- sueltos sin arrastrar el SET de la primera línea, y la tabla terminó a medio
@@ -45,10 +45,10 @@ DO $$
 DECLARE
     v_faltan text := '';
 BEGIN
-    IF to_regclass('srs.catclientes')   IS NULL THEN v_faltan := v_faltan || ' catclientes';   END IF;
-    IF to_regclass('srs.encabezadomov') IS NULL THEN v_faltan := v_faltan || ' encabezadomov'; END IF;
-    IF to_regclass('srs.factura')       IS NULL THEN v_faltan := v_faltan || ' factura';       END IF;
-    IF to_regclass('srs.permisos')      IS NULL THEN v_faltan := v_faltan || ' permisos';      END IF;
+    IF to_regclass('catclientes')   IS NULL THEN v_faltan := v_faltan || ' catclientes';   END IF;
+    IF to_regclass('encabezadomov') IS NULL THEN v_faltan := v_faltan || ' encabezadomov'; END IF;
+    IF to_regclass('factura')       IS NULL THEN v_faltan := v_faltan || ' factura';       END IF;
+    IF to_regclass('permisos')      IS NULL THEN v_faltan := v_faltan || ' permisos';      END IF;
 
     IF v_faltan <> '' THEN
         RAISE EXCEPTION
@@ -69,8 +69,8 @@ DO $$
 DECLARE
     v_viejos integer := 0;
 BEGIN
-    IF to_regclass('srs.puntos_movimientos') IS NOT NULL THEN
-        EXECUTE 'SELECT COUNT(*) FROM srs.puntos_movimientos WHERE tipo = ''saldo_inicial'''
+    IF to_regclass('puntos_movimientos') IS NOT NULL THEN
+        EXECUTE 'SELECT COUNT(*) FROM puntos_movimientos WHERE tipo = ''saldo_inicial'''
            INTO v_viejos;
     END IF;
 
@@ -90,7 +90,7 @@ END $$;
 --
 -- `vigente_desde` permite cambiarlas sin perder la que se usó para los puntos ya
 -- otorgados: el movimiento guarda la tasa que se le aplicó.
-CREATE TABLE IF NOT EXISTS srs.puntos_tarifas (
+CREATE TABLE IF NOT EXISTS puntos_tarifas (
     id_tarifa      integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     clasificacion  varchar(20)   NOT NULL,
     importe_min    numeric(15,2) NOT NULL,
@@ -103,16 +103,16 @@ CREATE TABLE IF NOT EXISTS srs.puntos_tarifas (
 );
 
 CREATE INDEX IF NOT EXISTS puntos_tarifas_busqueda_idx
-    ON srs.puntos_tarifas (clasificacion, activo, importe_min);
+    ON puntos_tarifas (clasificacion, activo, importe_min);
 
 -- ── 2. Movimientos ──────────────────────────────────────────────────────────
 -- El saldo del cliente es SUM(puntos) de esta tabla. Nunca se guarda un total:
 -- eso es lo que arregla el problema de origen, donde el saldo vivía en cuatro
 -- lugares que no coincidían y cada recálculo lo sobrescribía.
-CREATE TABLE IF NOT EXISTS srs.puntos_movimientos (
+CREATE TABLE IF NOT EXISTS puntos_movimientos (
     id_movimiento  integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-    cliente_id     integer      NOT NULL REFERENCES srs.catclientes (id_cliente),
+    cliente_id     integer      NOT NULL REFERENCES catclientes (id_cliente),
     -- La clave también, porque es la que liga con Socio Tiburón (usuarios.idkep)
     -- y con Kepler (kdm1.c10).
     cve_cli        varchar(20)  NOT NULL,
@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS srs.puntos_movimientos (
 
 -- Por si el esquema ya traía una versión anterior de la tabla: agrega lo que le
 -- falte sin tocar lo que ya tenga.
-ALTER TABLE srs.puntos_movimientos
+ALTER TABLE puntos_movimientos
     ADD COLUMN IF NOT EXISTS evento      varchar(30),
     ADD COLUMN IF NOT EXISTS doc_clave   varchar(200),
     ADD COLUMN IF NOT EXISTS doc_ref     integer,
@@ -184,13 +184,13 @@ ALTER TABLE srs.puntos_movimientos
 -- ── 3. Restricciones ────────────────────────────────────────────────────────
 -- DROP + ADD porque ADD CONSTRAINT no admite IF NOT EXISTS. Es el único modo de
 -- que el script se pueda volver a correr sin fallar.
-ALTER TABLE srs.puntos_movimientos
+ALTER TABLE puntos_movimientos
     DROP CONSTRAINT IF EXISTS puntos_movimientos_tipo_ck,
     DROP CONSTRAINT IF EXISTS puntos_movimientos_signo_ck,
     DROP CONSTRAINT IF EXISTS puntos_movimientos_origen_ck,
     DROP CONSTRAINT IF EXISTS puntos_movimientos_evento_ck;
 
-ALTER TABLE srs.puntos_movimientos
+ALTER TABLE puntos_movimientos
     ADD CONSTRAINT puntos_movimientos_tipo_ck
         CHECK (tipo IN ('acumulacion', 'devolucion', 'reverso',
                         'canje', 'ajuste', 'expiracion')),
@@ -219,13 +219,13 @@ ALTER TABLE srs.puntos_movimientos
 -- documentos y el cliente cobraría los puntos DOS VECES.
 --
 -- Va ANTES del índice único, que es lo que después impide el doble abono.
-UPDATE srs.puntos_movimientos
+UPDATE puntos_movimientos
    SET evento = 'factura_contado'
  WHERE evento IS NULL
    AND tipo   = 'acumulacion';
 
 -- Kepler: la llave natural es la misma que el código sigue construyendo.
-UPDATE srs.puntos_movimientos m
+UPDATE puntos_movimientos m
    SET doc_clave = 'kepler|' || COALESCE(m.doc_sucursal, '')
                  || '|'      || COALESCE(m.doc_genero, '')
                  || '|'      || COALESCE(m.doc_naturaleza, '')
@@ -246,10 +246,10 @@ UPDATE srs.puntos_movimientos m
 -- integer = character varying". nro_gpo_doc y nro_tp_doc sí son numéricos de los
 -- dos lados. El folio se compara contra las dos columnas porque la versión
 -- anterior del cálculo leía `fol_doc` y la actual lee `folio`.
-UPDATE srs.puntos_movimientos m
+UPDATE puntos_movimientos m
    SET doc_ref   = em.id_encabezado,
        doc_clave = 'erp|factura_contado|' || em.id_encabezado
-  FROM srs.encabezadomov em
+  FROM encabezadomov em
  WHERE m.doc_clave IS NULL
    AND m.origen    = 'erp'
    AND m.tipo      = 'acumulacion'
@@ -273,31 +273,31 @@ UPDATE srs.puntos_movimientos m
 -- columnas es el que rompe los complementos de pago; el de saldo_inicial pertenece
 -- a un tipo de movimiento que ya no existe. Dejarlos puestos no es inocuo: el
 -- primero rechazaría como duplicado el segundo cobro de un mismo complemento.
-DROP INDEX IF EXISTS srs.puntos_movimientos_documento_unq;
-DROP INDEX IF EXISTS srs.puntos_movimientos_saldo_inicial_unq;
+DROP INDEX IF EXISTS puntos_movimientos_documento_unq;
+DROP INDEX IF EXISTS puntos_movimientos_saldo_inicial_unq;
 
 -- Si esta creación falla por clave duplicada, NO la fuerces: significa que el
 -- relleno del paso 4 encontró dos movimientos para el mismo documento, o sea que
 -- ya existe un doble abono. Resuélvelo a mano; el ROLLBACK del final deja la base
 -- como estaba mientras tanto.
 CREATE UNIQUE INDEX IF NOT EXISTS puntos_movimientos_clave_unq
-    ON srs.puntos_movimientos (doc_clave)
+    ON puntos_movimientos (doc_clave)
     WHERE doc_clave IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS puntos_movimientos_cliente_idx
-    ON srs.puntos_movimientos (cliente_id, fecha_registro DESC);
+    ON puntos_movimientos (cliente_id, fecha_registro DESC);
 
 CREATE INDEX IF NOT EXISTS puntos_movimientos_cve_idx
-    ON srs.puntos_movimientos (cve_cli);
+    ON puntos_movimientos (cve_cli);
 
 -- Para localizar rápido los movimientos de un documento al reversarlo, o al
 -- calcular cuánto puede restar una nota de crédito.
 CREATE INDEX IF NOT EXISTS puntos_movimientos_ref_idx
-    ON srs.puntos_movimientos (doc_ref)
+    ON puntos_movimientos (doc_ref)
     WHERE doc_ref IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS puntos_movimientos_ref_rel_idx
-    ON srs.puntos_movimientos (doc_ref_rel)
+    ON puntos_movimientos (doc_ref_rel)
     WHERE doc_ref_rel IS NOT NULL;
 
 -- ── 6. Saldo ────────────────────────────────────────────────────────────────
@@ -309,9 +309,9 @@ CREATE INDEX IF NOT EXISTS puntos_movimientos_ref_rel_idx
 -- DROP y no CREATE OR REPLACE: si ya existiera una versión con otras columnas,
 -- reemplazarla falla con "no se pueden eliminar columnas de una vista". Como no
 -- guarda datos, tirarla y rehacerla es inocuo.
-DROP VIEW IF EXISTS srs.v_puntos_saldo;
+DROP VIEW IF EXISTS v_puntos_saldo;
 
-CREATE VIEW srs.v_puntos_saldo AS
+CREATE VIEW v_puntos_saldo AS
 SELECT m.cliente_id,
        m.cve_cli,
        SUM(m.puntos)                                                     AS saldo,
@@ -327,7 +327,7 @@ SELECT m.cliente_id,
        SUM(m.puntos) FILTER (WHERE m.evento = 'complemento_pago')        AS por_pagos,
        SUM(m.puntos) FILTER (WHERE m.evento = 'anticipo')                AS por_anticipos,
        MAX(m.doc_fecha)                                                  AS ultimo_documento
-FROM srs.puntos_movimientos m
+FROM puntos_movimientos m
 GROUP BY m.cliente_id, m.cve_cli;
 
 -- ── 7. Tarifas iniciales ────────────────────────────────────────────────────
@@ -336,7 +336,7 @@ GROUP BY m.cliente_id, m.cve_cli;
 --
 -- CLIENTEVN no es una tasa sino (total/1000)*5, que equivale a 0.005 y por eso se
 -- representa así.
-INSERT INTO srs.puntos_tarifas (clasificacion, importe_min, importe_max, tasa)
+INSERT INTO puntos_tarifas (clasificacion, importe_min, importe_max, tasa)
 SELECT * FROM (VALUES
     ('CLIENTEVN',   200.00,  NULL::numeric, 0.005000),
 
@@ -364,15 +364,15 @@ SELECT * FROM (VALUES
     ('PREMIUM',   10001.00,  30000.00,      0.047500),
     ('PREMIUM',   30001.00,  NULL,          0.048750)
 ) AS t(clasificacion, importe_min, importe_max, tasa)
-WHERE NOT EXISTS (SELECT 1 FROM srs.puntos_tarifas);
+WHERE NOT EXISTS (SELECT 1 FROM puntos_tarifas);
 
 -- ── 8. Permiso ──────────────────────────────────────────────────────────────
 -- El padre puede no existir en producción; en ese caso el permiso se crea suelto
 -- en vez de fallar, y la verificación del final lo delata.
-INSERT INTO srs.permisos (nombre, descripcion, es_modulo, modulo_padre)
+INSERT INTO permisos (nombre, descripcion, es_modulo, modulo_padre)
 SELECT 'puntos_socio_tiburon', 'Puntos Socio Tiburón: calcular y otorgar', false,
-       (SELECT id_permiso FROM srs.permisos WHERE nombre = 'credito_cobranza')
-WHERE NOT EXISTS (SELECT 1 FROM srs.permisos WHERE nombre = 'puntos_socio_tiburon');
+       (SELECT id_permiso FROM permisos WHERE nombre = 'credito_cobranza')
+WHERE NOT EXISTS (SELECT 1 FROM permisos WHERE nombre = 'puntos_socio_tiburon');
 
 -- ── 9. Verificación ─────────────────────────────────────────────────────────
 -- Revisa estos cuatro resultados ANTES de cambiar el ROLLBACK por COMMIT.
@@ -389,29 +389,29 @@ SELECT 'indices', string_agg(indexname, ', ' ORDER BY indexname)
 UNION ALL
 SELECT 'restricciones', string_agg(conname, ', ' ORDER BY conname)
   FROM pg_constraint
- WHERE conrelid = 'srs.puntos_movimientos'::regclass AND contype = 'c'
+ WHERE conrelid = 'puntos_movimientos'::regclass AND contype = 'c'
 UNION ALL
 SELECT 'permiso', COALESCE((SELECT CASE WHEN modulo_padre IS NULL
                                         THEN 'creado SIN padre credito_cobranza'
                                         ELSE 'creado bajo credito_cobranza' END
-                              FROM srs.permisos
+                              FROM permisos
                              WHERE nombre = 'puntos_socio_tiburon'), 'NO CREADO');
 
 -- (b) Las 22 tarifas, repartidas 1/7/7/7.
 SELECT clasificacion, COUNT(*) AS escalones
-  FROM srs.puntos_tarifas
+  FROM puntos_tarifas
  GROUP BY clasificacion ORDER BY clasificacion;
 
 -- (c) Movimientos preexistentes que el relleno NO pudo emparejar. Si sale algo,
 --     esos documentos se volverían a ofrecer y otorgarían puntos por segunda vez:
 --     hay que resolverlos antes de confirmar.
 SELECT origen, COUNT(*) AS sin_clave
-  FROM srs.puntos_movimientos
+  FROM puntos_movimientos
  WHERE doc_clave IS NULL AND tipo = 'acumulacion'
  GROUP BY origen;
 
 -- (d) El saldo queda legible desde la vista.
-SELECT * FROM srs.v_puntos_saldo ORDER BY saldo DESC LIMIT 10;
+SELECT * FROM v_puntos_saldo ORDER BY saldo DESC LIMIT 10;
 
 -- ── Cambia esto por COMMIT cuando la verificación cuadre ────────────────────
 ROLLBACK;

@@ -5,7 +5,7 @@
 -- timbra. No toca inventario (para eso está la remisión), pero sí genera
 -- documento, póliza, cartera y —si es de contado— su cobro con documento CXC.
 --
--- Correr una sola vez, contra el esquema srs.
+-- Correr una sola vez, contra el esquema 
 -- ============================================================================
 
 SET search_path TO srs;
@@ -24,7 +24,7 @@ OVERRIDING SYSTEM VALUE
 VALUES (92, 24, 'Factura Libre', 'FACLIB', '1', NOW())
 ON CONFLICT (idtpdoc) DO NOTHING;
 
-SELECT setval('srs.tpdoc_idtpdoc_seq', GREATEST((SELECT MAX(idtpdoc) FROM tpdoc), 92));
+SELECT setval('tpdoc_idtpdoc_seq', GREATEST((SELECT MAX(idtpdoc) FROM tpdoc), 92));
 
 
 -- ── 2. Permitir cartera para FACLIB ─────────────────────────────────────────
@@ -33,7 +33,7 @@ SELECT setval('srs.tpdoc_idtpdoc_seq', GREATEST((SELECT MAX(idtpdoc) FROM tpdoc)
 -- reventaría al intentar generar su cartera.
 --
 -- Se reemplaza únicamente esa condición; el resto del cuerpo queda igual.
-CREATE OR REPLACE FUNCTION srs.registrar_cartera(
+CREATE OR REPLACE FUNCTION registrar_cartera(
     p_id_poliza integer, p_creado_por integer, p_id_empresa integer)
 RETURNS TABLE(cartera_id integer, monto_total numeric, saldo_pendiente numeric, tipo text)
 LANGUAGE plpgsql
@@ -57,11 +57,11 @@ BEGIN
     -- 1. Validar póliza
     ------------------------------------------------------------------
     IF EXISTS (
-        SELECT 1 FROM srs.cartera_clientes
+        SELECT 1 FROM cartera_clientes
         WHERE poliza_id = p_id_poliza AND empresa_id = p_id_empresa
     )
     OR EXISTS (
-        SELECT 1 FROM srs.cartera_proveedores
+        SELECT 1 FROM cartera_proveedores
         WHERE poliza_id = p_id_poliza AND empresa_id = p_id_empresa
     )
     THEN
@@ -73,8 +73,8 @@ BEGIN
 
     SELECT cp.nombre, p.estado, p.referencia::int, p.fecha
     INTO v_tipo_poliza, v_estado_poliza, v_referencia, v_fecha
-    FROM srs.polizas p
-    INNER JOIN srs.clasificacion_poliza cp ON cp.id_clasificacion_poliza = p.tipo
+    FROM polizas p
+    INNER JOIN clasificacion_poliza cp ON cp.id_clasificacion_poliza = p.tipo
     WHERE p.id_poliza = p_id_poliza AND p.empresa_id = p_id_empresa;
 
     IF NOT FOUND THEN
@@ -89,7 +89,7 @@ BEGIN
     ------------------------------------------------------------------
     SELECT refe, tipo_proceso, imp, coment1, coment2, ccy, nat
     INTO v_usuario, v_tipo_proceso, v_monto, v_comentarios, v_referencia_b, v_moneda, v_nat
-    FROM srs.encabezadomov
+    FROM encabezadomov
     WHERE id_encabezado = v_referencia;
 
     IF NOT FOUND THEN
@@ -118,7 +118,7 @@ BEGIN
         SELECT pl_crd INTO v_plazo_dias
         FROM catproveedores WHERE id_prov = v_usuario;
 
-        INSERT INTO srs.cartera_proveedores (
+        INSERT INTO cartera_proveedores (
             proveedor_id, encabezado_id, monto_total, saldo_pendiente, estado,
             creado_por, poliza_id, fecha_emision, fecha_vencimiento, moneda, empresa_id
         )
@@ -147,7 +147,7 @@ BEGIN
         SELECT pl_crd INTO v_plazo_dias
         FROM catclientes WHERE id_cliente = v_usuario;
 
-        INSERT INTO srs.cartera_clientes (
+        INSERT INTO cartera_clientes (
             cliente_id, encabezado_id, monto_total, saldo_pendiente, estado,
             creado_por, poliza_id, fecha_emision, fecha_vencimiento, moneda, empresa_id
         )
@@ -239,12 +239,12 @@ WHERE NOT EXISTS (
 COMMIT;
 
 -- ── Verificación ────────────────────────────────────────────────────────────
--- SELECT idtpdoc, idarea, tpdoc, abreviaturatpdoc FROM srs.tpdoc WHERE idtpdoc = 92;
+-- SELECT idtpdoc, idarea, tpdoc, abreviaturatpdoc FROM tpdoc WHERE idtpdoc = 92;
 --
 -- SELECT pd.idtpdoc, pd.tipo_proceso, pt.nombre, pp.orden, pp.tipo_cuenta, pp.lado,
 --        pp.origen_monto, cf.codigo
--- FROM srs.poliza_documento pd
--- JOIN srs.poliza_tipo    pt ON pt.id_tipo_poliza = pd.id_tipo_poliza
--- JOIN srs.poliza_partida pp ON pp.id_tipo_poliza = pt.id_tipo_poliza
--- LEFT JOIN srs.cuentas_finanzas cf ON cf.id_cuenta_contable = pp.id_cuenta_contable
+-- FROM poliza_documento pd
+-- JOIN poliza_tipo    pt ON pt.id_tipo_poliza = pd.id_tipo_poliza
+-- JOIN poliza_partida pp ON pp.id_tipo_poliza = pt.id_tipo_poliza
+-- LEFT JOIN cuentas_finanzas cf ON cf.id_cuenta_contable = pp.id_cuenta_contable
 -- WHERE pd.idtpdoc = 92 ORDER BY pd.tipo_proceso, pp.orden;

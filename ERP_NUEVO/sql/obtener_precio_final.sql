@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
---  srs.obtener_precio_final — motor de precios de ventas
+--  obtener_precio_final — motor de precios de ventas
 -- ═══════════════════════════════════════════════════════════════════════════
 --  Cambios respecto a la versión en producción:
 --
@@ -32,7 +32,7 @@
 --       cve_grupo / cve_tipo, así que esas reglas nunca hacen match.
 -- ═══════════════════════════════════════════════════════════════════════════
 
-CREATE OR REPLACE FUNCTION srs.obtener_precio_final(p_empresa_id integer, p_cliente_id integer, p_cve_prod character varying)
+CREATE OR REPLACE FUNCTION obtener_precio_final(p_empresa_id integer, p_cliente_id integer, p_cve_prod character varying)
  RETURNS TABLE(precio_final numeric, precio_minimo numeric, descuento_sugerido numeric, descuento_maximo numeric, aplicar_automatico boolean, tipo_regla character varying)
  LANGUAGE plpgsql
 AS $function$
@@ -47,7 +47,7 @@ DECLARE
     v_descuento    numeric := 0;
 BEGIN
     SELECT cod_ant INTO v_cod_ant
-    FROM srs.catclientes
+    FROM catclientes
     WHERE id_cliente = p_cliente_id AND empresa_id = p_empresa_id;
 
     SELECT id_catproductos,
@@ -58,7 +58,7 @@ BEGIN
            END,
            lin_prod, gpo, tp
     INTO v_producto_id, v_precio_base, v_lin_prod, v_gpo, v_tp
-    FROM srs.catproductos
+    FROM catproductos
     WHERE cve_prod = p_cve_prod AND empresa_id = p_empresa_id;
 
     IF v_producto_id IS NULL THEN
@@ -67,7 +67,7 @@ BEGIN
     END IF;
 
     SELECT * INTO r
-    FROM srs.reglas_precio rp
+    FROM reglas_precio rp
     WHERE rp.empresa_id  = p_empresa_id
       AND rp.activo      = true
       AND (rp.fecha_inicio IS NULL OR rp.fecha_inicio <= NOW())

@@ -2,7 +2,7 @@
  * Reglas de precio compartidas por los documentos de venta
  * (cotización → pedido → remisión → factura).
  *
- * CONTRATO de srs.obtener_precio_final (ver sql/obtener_precio_final.sql). Los tres
+ * CONTRATO de obtener_precio_final (ver sql/obtener_precio_final.sql). Los tres
  * campos son distintos y confundirlos es justo lo que hacía que las reglas no se
  * aplicaran igual en cada documento:
  *

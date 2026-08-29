@@ -44,6 +44,6 @@ WHERE NOT EXISTS (SELECT 1 FROM permisos WHERE nombre = 'portal_clientes_admin')
 COMMIT;
 
 -- ── Verificación ────────────────────────────────────────────────────────────
--- SELECT nombre, descripcion, modulo_padre FROM srs.permisos WHERE nombre = 'portal_clientes_admin';
+-- SELECT nombre, descripcion, modulo_padre FROM permisos WHERE nombre = 'portal_clientes_admin';
 -- SELECT column_name FROM information_schema.columns
 --  WHERE table_schema='srs' AND table_name='portal_clientes_acceso' ORDER BY ordinal_position;

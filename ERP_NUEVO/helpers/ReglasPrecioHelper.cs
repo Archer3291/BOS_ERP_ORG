@@ -24,7 +24,7 @@ namespace BOS_ERP.Helpers
     /// pedido, remisión y factura no validaban nada: bastaba capturar el pedido directo para
     /// saltarse la regla entera.
     ///
-    /// Contrato de srs.obtener_precio_final (ver sql/obtener_precio_final.sql):
+    /// Contrato de obtener_precio_final (ver sql/obtener_precio_final.sql):
     ///   precio_final     → valor con el que arranca el input de precio
     ///   precio_minimo    → piso permitido; 0 = sin piso (producto sin regla → precio libre)
     ///   descuento_maximo → tope; 0 = no se permite descuento; solo NULL = sin configurar

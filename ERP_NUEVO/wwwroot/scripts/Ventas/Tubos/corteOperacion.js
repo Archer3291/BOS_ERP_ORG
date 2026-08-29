@@ -267,7 +267,7 @@ const CorteOperacionApp = {
         resultados.classList.remove('d-none');
     },
 
-    // Código de barras de la barra física asignada a este corte (srs.corte_piezas.codigo),
+    // Código de barras de la barra física asignada a este corte (corte_piezas.codigo),
     // el mismo Code128 dibujado a mano que usa el Taller 3D de AdminCortes — así el operador
     // ve exactamente la etiqueta que debe buscar en el rack, no solo el folio del lote.
     // c.codigo_pieza viene null en asignaciones anteriores a este enlace o si el módulo de

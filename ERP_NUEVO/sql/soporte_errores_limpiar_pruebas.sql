@@ -31,13 +31,13 @@ SET search_path TO public, srs;
 -- Correr el script completo muestra esto antes de tocar nada. Si el número no
 -- se parece a lo esperado, cancelar la transacción (ROLLBACK) en vez de seguir.
 -- ----------------------------------------------------------------------------
-SELECT 'huellas'          AS que, COUNT(*) AS cuantas FROM srs.tkt_error_huella
+SELECT 'huellas'          AS que, COUNT(*) AS cuantas FROM tkt_error_huella
 UNION ALL
-SELECT 'ocurrencias',     COUNT(*) FROM srs.tkt_error_detalle
+SELECT 'ocurrencias',     COUNT(*) FROM tkt_error_detalle
 UNION ALL
 SELECT 'tickets automáticos', COUNT(*)
-  FROM srs.tkts t
-  JOIN srs.tkts_categorias c ON c.id_cat = t.id_cat
+  FROM tkts t
+  JOIN tkts_categorias c ON c.id_cat = t.id_cat
  WHERE c.n_cat = 'Errores del sistema';
 
 
@@ -55,8 +55,8 @@ DECLARE
     v_tope    integer := 50;   -- súbelo A MANO si de verdad quieres borrar más
 BEGIN
     SELECT COUNT(*) INTO v_tickets
-    FROM srs.tkts t
-    JOIN srs.tkts_categorias c ON c.id_cat = t.id_cat
+    FROM tkts t
+    JOIN tkts_categorias c ON c.id_cat = t.id_cat
     WHERE c.n_cat = 'Errores del sistema';
 
     IF v_tickets > v_tope THEN
@@ -77,8 +77,8 @@ END $$;
 -- borra explícito para que el orden quede a la vista y no dependa de recordar
 -- cómo está declarada la FK.
 -- ----------------------------------------------------------------------------
-DELETE FROM srs.tkt_error_detalle;
-DELETE FROM srs.tkt_error_huella;
+DELETE FROM tkt_error_detalle;
+DELETE FROM tkt_error_huella;
 
 
 -- ----------------------------------------------------------------------------
@@ -93,15 +93,15 @@ DELETE FROM srs.tkt_error_huella;
 -- ----------------------------------------------------------------------------
 CREATE TEMP TABLE tmp_tkts_auto ON COMMIT DROP AS
 SELECT t.id_tkts
-FROM srs.tkts t
-JOIN srs.tkts_categorias c ON c.id_cat = t.id_cat
+FROM tkts t
+JOIN tkts_categorias c ON c.id_cat = t.id_cat
 WHERE c.n_cat = 'Errores del sistema';
 
-DELETE FROM srs.tkts_adj  WHERE id_tkts IN (SELECT id_tkts FROM tmp_tkts_auto);
-DELETE FROM srs.seg_tkts  WHERE id_tkt  IN (SELECT id_tkts FROM tmp_tkts_auto);
-DELETE FROM srs.hst_est   WHERE id_tkts IN (SELECT id_tkts FROM tmp_tkts_auto);
-DELETE FROM srs.tkt_asig  WHERE id_tkt  IN (SELECT id_tkts FROM tmp_tkts_auto);
-DELETE FROM srs.tkts      WHERE id_tkts IN (SELECT id_tkts FROM tmp_tkts_auto);
+DELETE FROM tkts_adj  WHERE id_tkts IN (SELECT id_tkts FROM tmp_tkts_auto);
+DELETE FROM seg_tkts  WHERE id_tkt  IN (SELECT id_tkts FROM tmp_tkts_auto);
+DELETE FROM hst_est   WHERE id_tkts IN (SELECT id_tkts FROM tmp_tkts_auto);
+DELETE FROM tkt_asig  WHERE id_tkt  IN (SELECT id_tkts FROM tmp_tkts_auto);
+DELETE FROM tkts      WHERE id_tkts IN (SELECT id_tkts FROM tmp_tkts_auto);
 
 
 -- ----------------------------------------------------------------------------
@@ -110,18 +110,18 @@ DELETE FROM srs.tkts      WHERE id_tkts IN (SELECT id_tkts FROM tmp_tkts_auto);
 -- La CATEGORÍA no se borra: la necesita ErrorTicketService para el próximo
 -- error, y volver a crearla obligaría a correr otra vez el script de instalación.
 -- ----------------------------------------------------------------------------
-SELECT 'huellas'          AS que, COUNT(*) AS quedan FROM srs.tkt_error_huella
+SELECT 'huellas'          AS que, COUNT(*) AS quedan FROM tkt_error_huella
 UNION ALL
-SELECT 'ocurrencias',     COUNT(*) FROM srs.tkt_error_detalle
+SELECT 'ocurrencias',     COUNT(*) FROM tkt_error_detalle
 UNION ALL
 SELECT 'tickets automáticos', COUNT(*)
-  FROM srs.tkts t
-  JOIN srs.tkts_categorias c ON c.id_cat = t.id_cat
+  FROM tkts t
+  JOIN tkts_categorias c ON c.id_cat = t.id_cat
  WHERE c.n_cat = 'Errores del sistema';
 
 -- La categoría sigue ahí, que es lo correcto.
 SELECT id_cat, n_cat, responsable, id_prio, activo
-FROM srs.tkts_categorias
+FROM tkts_categorias
 WHERE n_cat = 'Errores del sistema';
 
 COMMIT;

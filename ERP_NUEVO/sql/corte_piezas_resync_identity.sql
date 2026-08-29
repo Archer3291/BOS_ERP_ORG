@@ -1,5 +1,5 @@
 -- ============================================================================
---  Resincroniza srs.corte_piezas.id_pieza tras convertirla a INT4 IDENTITY
+--  Resincroniza corte_piezas.id_pieza tras convertirla a INT4 IDENTITY
 --
 --  CAUSA RAÍZ (confirmada 2026-08-17): al convertir id_pieza de BIGSERIAL a
 --  INT4 GENERATED ALWAYS AS IDENTITY, la secuencia VIEJA del serial original
@@ -8,7 +8,7 @@
 --  secuencia NUEVA (p. ej. corte_piezas_id_pieza_seq1) con deptype='i', que es
 --  la que la columna usa REALMENTE.
 --
---  pg_get_serial_sequence('srs.corte_piezas','id_pieza') devuelve la vieja
+--  pg_get_serial_sequence('corte_piezas','id_pieza') devuelve la vieja
 --  (deptype 'a'), no la que de verdad usa la identity — así que resincronizar
 --  "la secuencia que Postgres dice que es" NO resuelve nada: los inserts
 --  reales siguen usando la otra, que sigue entregando valores bajos (1, 2, 3…)
@@ -24,7 +24,7 @@
 --  Idempotente: se puede correr varias veces sin efecto secundario más allá
 --  de reajustar el contador. Ejecutar en cada esquema que tenga esta misma
 --  columna convertida a IDENTITY (por ejemplo, si srs_prod tiene el mismo
---  historial de conversión, cambia el 'srs.corte_piezas'::regclass de abajo).
+--  historial de conversión, cambia el 'corte_piezas'::regclass de abajo).
 -- ============================================================================
 
 DO $$
@@ -36,21 +36,21 @@ BEGIN
     FROM pg_depend d
     JOIN pg_class s ON s.oid = d.objid AND s.relkind = 'S'
     JOIN pg_attribute a ON a.attrelid = d.refobjid AND a.attnum = d.refobjsubid
-    WHERE d.refobjid = 'srs.corte_piezas'::regclass
+    WHERE d.refobjid = 'corte_piezas'::regclass
       AND a.attname = 'id_pieza'
       AND d.deptype = 'i';
 
     IF v_seq IS NULL THEN
         RAISE EXCEPTION
-            'No se encontró una secuencia IDENTITY (deptype=i) para srs.corte_piezas.id_pieza. '
+            'No se encontró una secuencia IDENTITY (deptype=i) para corte_piezas.id_pieza. '
             '¿La columna sigue siendo IDENTITY? Revisa information_schema.columns.';
     END IF;
 
-    SELECT COALESCE(MAX(id_pieza), 0) + 1 INTO v_next FROM srs.corte_piezas;
+    SELECT COALESCE(MAX(id_pieza), 0) + 1 INTO v_next FROM corte_piezas;
 
     PERFORM setval(v_seq, v_next, false);
 
-    RAISE NOTICE 'srs.corte_piezas.id_pieza: secuencia real = %, resincronizada a %', v_seq, v_next;
+    RAISE NOTICE 'corte_piezas.id_pieza: secuencia real = %, resincronizada a %', v_seq, v_next;
 END $$;
 
 -- ── Comprobación ────────────────────────────────────────────────────────────
@@ -61,6 +61,6 @@ END $$;
 -- FROM pg_depend d
 -- JOIN pg_class s ON s.oid = d.objid AND s.relkind = 'S'
 -- JOIN pg_attribute a ON a.attrelid = d.refobjid AND a.attnum = d.refobjsubid
--- WHERE d.refobjid = 'srs.corte_piezas'::regclass AND a.attname = 'id_pieza' AND d.deptype = 'i';
+-- WHERE d.refobjid = 'corte_piezas'::regclass AND a.attname = 'id_pieza' AND d.deptype = 'i';
 --
 -- Con ese nombre: SELECT last_value, is_called FROM <secuencia_real>;

@@ -1,7 +1,7 @@
 -- ============================================================================
 --  Enlace pieza física ↔ asignación de pedido
 --
---  srs.corte_piezas.asignacion_id ya existía (ver sql/cortes_piezas.sql) pero
+--  corte_piezas.asignacion_id ya existía (ver sql/cortes_piezas.sql) pero
 --  ningún flujo lo llenaba: la Operación de Cortes solo sabía el FOLIO del
 --  lote, no qué barra concreta se tomó. Ahora VTPedidoController (al reservar)
 --  y CorteOperacionController (al reasignar) etiquetan la pieza que el
@@ -19,5 +19,5 @@
 SET LOCAL search_path = public, srs;
 
 CREATE INDEX IF NOT EXISTS ix_corte_piezas_asignacion
-    ON srs.corte_piezas (asignacion_id)
+    ON corte_piezas (asignacion_id)
     WHERE asignacion_id IS NOT NULL;

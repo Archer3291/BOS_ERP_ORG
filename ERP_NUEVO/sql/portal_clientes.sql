@@ -10,7 +10,7 @@
 -- clave de cliente no alcanza para ver facturas ajenas; hay que controlar además
 -- un buzón que el ERP ya tenía dado de alta.
 --
--- Correr una sola vez, contra el esquema srs.
+-- Correr una sola vez, contra el esquema 
 -- ============================================================================
 
 SET search_path TO srs;

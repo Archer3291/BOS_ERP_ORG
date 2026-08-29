@@ -56,7 +56,7 @@ BEGIN
         WHERE schemaname = 'public' AND tablename = 'tkt_categoria_resolvedor'
     ) THEN
         RAISE EXCEPTION
-            'Existe public.tkt_categoria_resolvedor y eclipsaría a la de srs. Bórrala antes de continuar.';
+            'Existe public.tkt_categoria_resolvedor y eclipsaría a la de  Bórrala antes de continuar.';
     END IF;
 END $$;
 
@@ -69,11 +69,11 @@ END $$;
 -- aparte. ON DELETE CASCADE en las dos FK porque una pareja huérfana -categoría
 -- borrada o usuario dado de baja- no significa nada.
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS srs.tkt_categoria_resolvedor (
-    id_cat      integer     NOT NULL REFERENCES srs.tkts_categorias (id_cat) ON DELETE CASCADE,
-    id_usr      integer     NOT NULL REFERENCES srs.usuarios (usuarioid)     ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS tkt_categoria_resolvedor (
+    id_cat      integer     NOT NULL REFERENCES tkts_categorias (id_cat) ON DELETE CASCADE,
+    id_usr      integer     NOT NULL REFERENCES usuarios (usuarioid)     ON DELETE CASCADE,
     fch_alta    timestamptz NOT NULL DEFAULT now(),
-    alta_por    integer     NULL REFERENCES srs.usuarios (usuarioid),
+    alta_por    integer     NULL REFERENCES usuarios (usuarioid),
     PRIMARY KEY (id_cat, id_usr)
 );
 
@@ -81,9 +81,9 @@ CREATE TABLE IF NOT EXISTS srs.tkt_categoria_resolvedor (
 -- Este índice cubre la pregunta inversa -"¿qué categorías atiende esta persona?"-
 -- que es la que hace SoporteAlcance en CADA petición de Administración.
 CREATE INDEX IF NOT EXISTS ix_tkt_cat_resolvedor_usr
-    ON srs.tkt_categoria_resolvedor (id_usr);
+    ON tkt_categoria_resolvedor (id_usr);
 
-COMMENT ON TABLE srs.tkt_categoria_resolvedor IS
+COMMENT ON TABLE tkt_categoria_resolvedor IS
     'Qué resolvedores atienden qué categorías. Acota el combo de asignación y el alcance de Administración.';
 
 
@@ -99,14 +99,14 @@ COMMENT ON TABLE srs.tkt_categoria_resolvedor IS
 -- Se toman los dos porque en srs nadie tiene rol del ERP y en srs_prod casi nadie
 -- tiene rol del módulo: quedarse con uno solo dejaría media plantilla fuera.
 -- ----------------------------------------------------------------------------
-INSERT INTO srs.tkt_categoria_resolvedor (id_cat, id_usr)
+INSERT INTO tkt_categoria_resolvedor (id_cat, id_usr)
 SELECT c.id_cat, s.usuarioid
-FROM srs.tkts_categorias c
+FROM tkts_categorias c
 CROSS JOIN (
     SELECT DISTINCT u.usuarioid
-    FROM srs.usuarios u
-    LEFT JOIN srs.tkt_usuario_rol tur ON tur.id_usr = u.usuarioid
-    LEFT JOIN srs.roles r             ON r.rolid    = u.rolid
+    FROM usuarios u
+    LEFT JOIN tkt_usuario_rol tur ON tur.id_usr = u.usuarioid
+    LEFT JOIN roles r             ON r.rolid    = u.rolid
     WHERE tur.id_rol_tkt IN (1, 2)
        OR r.nombre IN ('Sistemas', 'Super Administrador',
                        'Resolvedor Tickets', 'Asignador Tickets')
@@ -123,12 +123,12 @@ ON CONFLICT (id_cat, id_usr) DO NOTHING;
 -- de Equipo lo muestre donde corresponde en vez de parecer que no pertenece a la
 -- categoría que dirige.
 -- ----------------------------------------------------------------------------
-INSERT INTO srs.tkt_categoria_resolvedor (id_cat, id_usr)
+INSERT INTO tkt_categoria_resolvedor (id_cat, id_usr)
 SELECT c.id_cat, c.responsable
-FROM srs.tkts_categorias c
+FROM tkts_categorias c
 WHERE c.activo = true
   AND c.responsable IS NOT NULL
-  AND EXISTS (SELECT 1 FROM srs.usuarios u WHERE u.usuarioid = c.responsable)
+  AND EXISTS (SELECT 1 FROM usuarios u WHERE u.usuarioid = c.responsable)
 ON CONFLICT (id_cat, id_usr) DO NOTHING;
 
 
@@ -142,19 +142,19 @@ SELECT c.id_cat,
        c.n_cat,
        u.nombreusuario                    AS asignador,
        COUNT(cr.id_usr)                   AS resolvedores
-FROM srs.tkts_categorias c
-LEFT JOIN srs.usuarios u                  ON u.usuarioid = c.responsable
-LEFT JOIN srs.tkt_categoria_resolvedor cr ON cr.id_cat   = c.id_cat
+FROM tkts_categorias c
+LEFT JOIN usuarios u                  ON u.usuarioid = c.responsable
+LEFT JOIN tkt_categoria_resolvedor cr ON cr.id_cat   = c.id_cat
 WHERE c.activo = true
 GROUP BY c.id_cat, c.n_cat, u.nombreusuario
 ORDER BY resolvedores ASC, c.n_cat;
 
 -- Quién ve todo pase lo que pase (no se le aplica el filtro por categoría).
 SELECT DISTINCT u.usuarioid, u.nombreusuario, r.nombre AS rol_erp, u.areaid
-FROM srs.usuarios u
-LEFT JOIN srs.roles r            ON r.rolid       = u.rolid
-LEFT JOIN srs.permisos_usuario pu ON pu.usuario_id = u.usuarioid
-LEFT JOIN srs.permisos p          ON p.id_permiso  = pu.permiso_id
+FROM usuarios u
+LEFT JOIN roles r            ON r.rolid       = u.rolid
+LEFT JOIN permisos_usuario pu ON pu.usuario_id = u.usuarioid
+LEFT JOIN permisos p          ON p.id_permiso  = pu.permiso_id
 WHERE r.nombre = 'Sistemas'
    OR u.areaid = 1
    OR p.nombre IN ('sistemas', 'super_admin')

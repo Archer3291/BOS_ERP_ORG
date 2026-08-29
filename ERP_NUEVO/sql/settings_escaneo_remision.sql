@@ -11,11 +11,11 @@
 -- Idempotente: se puede correr varias veces sin duplicar el renglón.
 -- ============================================================================
 
-INSERT INTO srs.settings (display_name, setting_name, setting_value, setting_type)
+INSERT INTO settings (display_name, setting_name, setting_value, setting_type)
 SELECT 'Escaneo obligatorio en Remisiones', 'escaneo_remision_obligatorio', 'false', 'checkbox'
 WHERE NOT EXISTS (
-    SELECT 1 FROM srs.settings WHERE setting_name = 'escaneo_remision_obligatorio'
+    SELECT 1 FROM settings WHERE setting_name = 'escaneo_remision_obligatorio'
 );
 
 -- Para activarlo por SQL (o desde la pantalla de Settings):
--- UPDATE srs.settings SET setting_value = 'true' WHERE setting_name = 'escaneo_remision_obligatorio';
+-- UPDATE settings SET setting_value = 'true' WHERE setting_name = 'escaneo_remision_obligatorio';

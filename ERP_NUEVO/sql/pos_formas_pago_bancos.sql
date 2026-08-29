@@ -30,7 +30,7 @@
 --    3. Si tampoco hay, el POS cae al catálogo completo de bancos para no frenar
 --       la caja mientras se termina de configurar.
 --
---  TODO VA CALIFICADO CON srs.
+--  TODO VA CALIFICADO CON 
 --  A propósito, y no por estilo: la aplicación conecta con `Search Path=public,srs`,
 --  así que un CREATE TABLE sin calificar aterriza en `public` y TAPA al de `srs`.
 --  Además, ejecutar fragmentos sueltos con el esquema escrito en cada sentencia
@@ -53,11 +53,11 @@ DO $$
 DECLARE
     v_faltan text := '';
 BEGIN
-    IF to_regclass('srs.catsucursales')       IS NULL THEN v_faltan := v_faltan || ' catsucursales';       END IF;
-    IF to_regclass('srs.cat_f_pago')          IS NULL THEN v_faltan := v_faltan || ' cat_f_pago';          END IF;
-    IF to_regclass('srs.catbancos')           IS NULL THEN v_faltan := v_faltan || ' catbancos';           END IF;
-    IF to_regclass('srs.cuentas_finanzas')    IS NULL THEN v_faltan := v_faltan || ' cuentas_finanzas';    END IF;
-    IF to_regclass('srs.factura_formas_pagos') IS NULL THEN v_faltan := v_faltan || ' factura_formas_pagos'; END IF;
+    IF to_regclass('catsucursales')       IS NULL THEN v_faltan := v_faltan || ' catsucursales';       END IF;
+    IF to_regclass('cat_f_pago')          IS NULL THEN v_faltan := v_faltan || ' cat_f_pago';          END IF;
+    IF to_regclass('catbancos')           IS NULL THEN v_faltan := v_faltan || ' catbancos';           END IF;
+    IF to_regclass('cuentas_finanzas')    IS NULL THEN v_faltan := v_faltan || ' cuentas_finanzas';    END IF;
+    IF to_regclass('factura_formas_pagos') IS NULL THEN v_faltan := v_faltan || ' factura_formas_pagos'; END IF;
 
     IF v_faltan <> '' THEN
         RAISE EXCEPTION
@@ -72,7 +72,7 @@ DO $$
 BEGIN
     IF to_regclass('public.pos_formas_pago_bancos') IS NOT NULL THEN
         RAISE EXCEPTION
-            'ABORTADO: existe public.pos_formas_pago_bancos y taparía a la de srs. '
+            'ABORTADO: existe public.pos_formas_pago_bancos y taparía a la de  '
             'Muévela con: ALTER TABLE public.pos_formas_pago_bancos SET SCHEMA srs; '
             'y vuelve a correr este script.';
     END IF;
@@ -80,13 +80,13 @@ END $$;
 
 
 -- ── 1. La tabla ─────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS srs.pos_formas_pago_bancos (
+CREATE TABLE IF NOT EXISTS pos_formas_pago_bancos (
     id_pos_forma_pago_banco integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     empresa_id              integer     NOT NULL,
     -- NULL = la configuración aplica a todas las sucursales de la empresa.
-    sucursal_id             integer     NULL REFERENCES srs.catsucursales (id_sucursal) ON DELETE CASCADE,
-    f_pago_id               integer     NOT NULL REFERENCES srs.cat_f_pago (id_f_pago),
-    banco_id                integer     NOT NULL REFERENCES srs.catbancos (id_catbanco) ON DELETE CASCADE,
+    sucursal_id             integer     NULL REFERENCES catsucursales (id_sucursal) ON DELETE CASCADE,
+    f_pago_id               integer     NOT NULL REFERENCES cat_f_pago (id_f_pago),
+    banco_id                integer     NOT NULL REFERENCES catbancos (id_catbanco) ON DELETE CASCADE,
     -- La que el POS preselecciona cuando hay varias cuentas para la misma forma de pago.
     predeterminada          boolean     NOT NULL DEFAULT false,
     creada_por              integer     NULL,
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS srs.pos_formas_pago_bancos (
 -- queda huérfana con dependencia 'a' sobre la columna, y a partir de ahí
 -- pg_get_serial_sequence devuelve ESA y no la que la identity usa de verdad
 -- (dependencia 'i'). Ya nos costó una tanda de llaves duplicadas en
--- srs.corte_piezas — ver sql/corte_piezas_resync_identity.sql. Por eso se borra.
+-- corte_piezas — ver sql/corte_piezas_resync_identity.sql. Por eso se borra.
 DO $$
 DECLARE
     v_seq  regclass;
@@ -116,19 +116,19 @@ BEGIN
           AND  column_name  = 'id_pos_forma_pago_banco'
           AND  is_identity  = 'NO'
     ) THEN
-        RAISE NOTICE 'srs.pos_formas_pago_bancos.id_pos_forma_pago_banco ya es IDENTITY: nada que convertir.';
+        RAISE NOTICE 'pos_formas_pago_bancos.id_pos_forma_pago_banco ya es IDENTITY: nada que convertir.';
         RETURN;
     END IF;
 
     -- Se captura ANTES de quitar el default, mientras la dependencia del serial
     -- sigue siendo la única.
-    v_seq := pg_get_serial_sequence('srs.pos_formas_pago_bancos', 'id_pos_forma_pago_banco');
+    v_seq := pg_get_serial_sequence('pos_formas_pago_bancos', 'id_pos_forma_pago_banco');
 
     SELECT COALESCE(MAX(id_pos_forma_pago_banco), 0) + 1
       INTO v_next
-      FROM srs.pos_formas_pago_bancos;
+      FROM pos_formas_pago_bancos;
 
-    ALTER TABLE srs.pos_formas_pago_bancos
+    ALTER TABLE pos_formas_pago_bancos
         ALTER COLUMN id_pos_forma_pago_banco DROP DEFAULT;
 
     IF v_seq IS NOT NULL THEN
@@ -136,13 +136,13 @@ BEGIN
         EXECUTE format('DROP SEQUENCE %s', v_seq);
     END IF;
 
-    ALTER TABLE srs.pos_formas_pago_bancos
+    ALTER TABLE pos_formas_pago_bancos
         ALTER COLUMN id_pos_forma_pago_banco ADD GENERATED ALWAYS AS IDENTITY;
 
     -- Los registros que ya existían conservan su id; la identity arranca después
     -- del mayor, no en 1.
     EXECUTE format(
-        'ALTER TABLE srs.pos_formas_pago_bancos ALTER COLUMN id_pos_forma_pago_banco RESTART WITH %s',
+        'ALTER TABLE pos_formas_pago_bancos ALTER COLUMN id_pos_forma_pago_banco RESTART WITH %s',
         v_next);
 
     RAISE NOTICE 'Convertida a IDENTITY (secuencia vieja % eliminada); siguiente id = %', v_seq, v_next;
@@ -154,22 +154,22 @@ END $$;
 -- alcance. Se indexa sobre COALESCE porque en Postgres dos NULL no chocan en un
 -- UNIQUE normal y se podrían duplicar las filas de "todas las sucursales".
 CREATE UNIQUE INDEX IF NOT EXISTS ux_pos_fpb_asignacion
-    ON srs.pos_formas_pago_bancos (empresa_id, COALESCE(sucursal_id, 0), f_pago_id, banco_id);
+    ON pos_formas_pago_bancos (empresa_id, COALESCE(sucursal_id, 0), f_pago_id, banco_id);
 
 -- A lo mucho una predeterminada por forma de pago y alcance.
 CREATE UNIQUE INDEX IF NOT EXISTS ux_pos_fpb_predeterminada
-    ON srs.pos_formas_pago_bancos (empresa_id, COALESCE(sucursal_id, 0), f_pago_id)
+    ON pos_formas_pago_bancos (empresa_id, COALESCE(sucursal_id, 0), f_pago_id)
     WHERE predeterminada;
 
 -- Lectura del POS: siempre por empresa + sucursal.
 CREATE INDEX IF NOT EXISTS ix_pos_fpb_lectura
-    ON srs.pos_formas_pago_bancos (empresa_id, sucursal_id, f_pago_id);
+    ON pos_formas_pago_bancos (empresa_id, sucursal_id, f_pago_id);
 
-COMMENT ON TABLE srs.pos_formas_pago_bancos IS
+COMMENT ON TABLE pos_formas_pago_bancos IS
     'Cuentas de banco (catbancos) que puede usar cada forma de pago del punto de venta. '
     'Se administra en Ventas/FormasPagoBancos y la consume el POS al cobrar y al facturar.';
 
-COMMENT ON COLUMN srs.pos_formas_pago_bancos.sucursal_id IS
+COMMENT ON COLUMN pos_formas_pago_bancos.sucursal_id IS
     'NULL = aplica a todas las sucursales. Una fila con sucursal concreta gana sobre la de NULL.';
 
 
@@ -180,10 +180,10 @@ COMMENT ON COLUMN srs.pos_formas_pago_bancos.sucursal_id IS
 --
 -- La columna es opcional: mientras no se corra este script, el POS sigue cobrando
 -- y facturando igual que antes (el código la detecta con Utilities.ExisteColumna).
-ALTER TABLE srs.factura_formas_pagos
-    ADD COLUMN IF NOT EXISTS banco_id integer NULL REFERENCES srs.catbancos (id_catbanco);
+ALTER TABLE factura_formas_pagos
+    ADD COLUMN IF NOT EXISTS banco_id integer NULL REFERENCES catbancos (id_catbanco);
 
-COMMENT ON COLUMN srs.factura_formas_pagos.banco_id IS
+COMMENT ON COLUMN factura_formas_pagos.banco_id IS
     'Cuenta de banco (catbancos) elegida en el POS para este cobro, según la '
     'configuración de pos_formas_pago_bancos.';
 
@@ -211,7 +211,7 @@ SELECT 'secuencias ligadas' AS chequeo,
 FROM   pg_depend d
 JOIN   pg_class s     ON s.oid = d.objid AND s.relkind = 'S'
 JOIN   pg_attribute a ON a.attrelid = d.refobjid AND a.attnum = d.refobjsubid
-WHERE  d.refobjid = 'srs.pos_formas_pago_bancos'::regclass
+WHERE  d.refobjid = 'pos_formas_pago_bancos'::regclass
   AND  a.attname  = 'id_pos_forma_pago_banco';
 
 SELECT 'columna del cobro' AS chequeo,
@@ -228,10 +228,10 @@ SELECT 'configuración actual' AS chequeo,
        b.nombre               AS cuenta,
        b.cuenta_contable,
        p.predeterminada
-FROM   srs.pos_formas_pago_bancos p
-JOIN   srs.cat_f_pago f     ON f.id_f_pago   = p.f_pago_id
-JOIN   srs.catbancos  b     ON b.id_catbanco = p.banco_id
-LEFT   JOIN srs.catsucursales s ON s.id_sucursal = p.sucursal_id
+FROM   pos_formas_pago_bancos p
+JOIN   cat_f_pago f     ON f.id_f_pago   = p.f_pago_id
+JOIN   catbancos  b     ON b.id_catbanco = p.banco_id
+LEFT   JOIN catsucursales s ON s.id_sucursal = p.sucursal_id
 ORDER  BY f.cve_sat, sucursal, b.nombre;
 
 -- Cambia por COMMIT cuando la verificación cuadre.
