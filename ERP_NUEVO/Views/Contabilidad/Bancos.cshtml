@@ -1,0 +1,784 @@
+﻿@{
+    ViewBag.Title = "Bancos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Catálogo de Bancos";
+}
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<style>
+    /* ── Toolbar ── */
+    .bancos-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+        gap: .75rem;
+    }
+
+        .bancos-toolbar h5 {
+            margin: 0;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+    /* ── Badge moneda ── */
+    .badge-moneda {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: var(--badge-radius);
+        font-size: .72rem;
+        font-weight: 600;
+        letter-spacing: .04em;
+        background: var(--accent-purple-light);
+        color: var(--accent-purple);
+    }
+
+    [data-theme="dark"] .badge-moneda {
+        background: #312e81;
+        color: #a5b4fc;
+    }
+
+    /* ── Badge internacional ── */
+    .badge-intl {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 2px 10px;
+        border-radius: var(--badge-radius);
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+        .badge-intl.internacional {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .badge-intl.nacional {
+            background: var(--bg-gray);
+            color: var(--text-light);
+            border: 1px solid var(--border-light);
+        }
+
+        .badge-intl.inversion {
+            background: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #fde68a;
+        }
+
+    [data-theme="dark"] .badge-intl.internacional {
+        background: #064e3b;
+        color: #34d399;
+    }
+
+    [data-theme="dark"] .badge-intl.nacional {
+        background: #1e293b;
+        color: #94a3b8;
+    }
+
+    [data-theme="dark"] .badge-intl.inversion {
+        background: #422006;
+        color: #fcd34d;
+        border-color: #78350f;
+    }
+
+    /* ── Acciones en tabla ── */
+    .btn-action {
+        border: none;
+        background: transparent;
+        padding: 5px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-light);
+        transition: background var(--transition-fast), color var(--transition-fast);
+        line-height: 1;
+    }
+
+        .btn-action:hover {
+            background: var(--border-light);
+            color: var(--text-dark);
+        }
+
+        .btn-action.edit:hover {
+            background: #dbeafe;
+            color: var(--accent-blue);
+        }
+
+        .btn-action.view:hover {
+            background: #ede9fe;
+            color: var(--accent-purple);
+        }
+
+    /* ── Vista detalle ── */
+    .detalle-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .detalle-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: white;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .detalle-nombre {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--text-dark);
+    }
+
+    .detalle-sub {
+        font-size: .82rem;
+        color: var(--text-light);
+        margin-top: 2px;
+    }
+
+    .saldo-card {
+        background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+        border-radius: 12px;
+        padding: 1rem 1.2rem;
+        color: white;
+        margin-bottom: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .saldo-card .label {
+            font-size: .78rem;
+            opacity: .8;
+            font-weight: 500;
+        }
+
+        .saldo-card .amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .saldo-card .icon {
+            font-size: 1.8rem;
+            opacity: .35;
+        }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .7rem;
+    }
+
+    .info-item {
+        background: var(--bg-gray);
+        border-radius: 10px;
+        padding: .75rem 1rem;
+    }
+
+        .info-item .key {
+            font-size: .72rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            margin-bottom: .25rem;
+        }
+
+        .info-item .val {
+            font-size: .9rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .info-item.full {
+            grid-column: 1 / -1;
+        }
+
+    /* ── Formulario ── */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .9rem;
+    }
+
+        .form-grid .full {
+            grid-column: 1 / -1;
+        }
+
+    .form-group .label {
+        display: block;
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--text-light);
+        margin-bottom: .35rem;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+    }
+
+    .form-group .input,
+    .form-group select {
+        width: 100%;
+        padding: .52rem .75rem;
+        border: 1.5px solid var(--border-light);
+        border-radius: 8px;
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-size: .88rem;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        outline: none;
+    }
+
+        .form-group .input:focus,
+        .form-group select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            background: var(--bg-light);
+        }
+
+    /* ── Botones ── */
+    .btn-primary-custom {
+        background: var(--accent-blue);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: .5rem 1.1rem;
+        font-size: .875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background var(--transition-fast), box-shadow var(--transition-fast);
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+        .btn-primary-custom:hover {
+            background: #2563eb;
+            box-shadow: 0 4px 12px rgba(59,130,246,.3);
+        }
+
+    .btn-secondary-custom {
+        background: transparent;
+        color: var(--text-light);
+        border: 1.5px solid var(--border-light);
+        border-radius: 8px;
+        padding: .5rem 1.1rem;
+        font-size: .875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+        .btn-secondary-custom:hover {
+            background: var(--bg-gray);
+            color: var(--text-dark);
+        }
+
+    .spinner-mini {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin .6s linear infinite;
+        display: none;
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .alert-error {
+        background: #fef2f2;
+        color: var(--danger-color);
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: .6rem .9rem;
+        font-size: .82rem;
+        margin-bottom: .9rem;
+        display: none;
+    }
+
+    [data-theme="dark"] .alert-error {
+        background: #450a0a;
+        border-color: #7f1d1d;
+    }
+
+    /* ── Íconos de cabecera de modal ── */
+    .modal-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .85rem;
+    }
+
+        .modal-icon.blue {
+            background: #dbeafe;
+            color: var(--accent-blue);
+        }
+
+        .modal-icon.purple {
+            background: #ede9fe;
+            color: var(--accent-purple);
+        }
+
+    [data-theme="dark"] .modal-icon.blue {
+        background: #1e3a5f;
+        color: #93c5fd;
+    }
+
+    [data-theme="dark"] .modal-icon.purple {
+        background: #312e81;
+        color: #a5b4fc;
+    }
+</style>
+
+<!-- ── Toolbar ── -->
+<div class="bancos-toolbar">
+    <h5><i class="fas fa-university me-2" style="color:var(--accent-blue)"></i>Catálogo de Bancos</h5>
+    <button class="btn-primary-custom" onclick="abrirModalCrear()">
+        <i class="fas fa-plus"></i> Nuevo Banco
+    </button>
+</div>
+
+<!-- ── Tabla ── -->
+<div id="tablaBancos"></div>
+
+
+<!-- ════════════════════════════════════════
+    MODAL CREAR / EDITAR (Bootstrap)
+════════════════════════════════════════ -->
+<div class="modal fade" id="modalForm" tabindex="-1" aria-labelledby="modalFormLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h6 class="modal-title d-flex align-items-center gap-2" id="modalFormLabel">
+                    <span class="modal-icon blue" id="modalFormIcon"><i class="fas fa-plus"></i></span>
+                    <span id="modalFormTitle">Nuevo Banco</span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert-error" id="formError"></div>
+
+                <div class="form-grid">
+                    <!-- Nombre -->
+                    <div class="form-group full">
+                        <label class="label">Nombre del Banco</label>
+                        <input type="text" id="f_nombre" placeholder="Ej. BBVA Bancomer" class="input">
+                    </div>
+
+                    <!-- Razón social -->
+                    <div class="form-group full">
+                        <label class="label">Razón Social</label>
+                        <input type="text" id="f_razon_social" placeholder="Ej. BBVA México, S.A." class="input">
+                    </div>
+
+                    <!-- RFC -->
+                    <div class="form-group">
+                        <label class="label">RFC</label>
+                        <input type="text" id="f_rfc" placeholder="Ej. BBVA820827A61" maxlength="13" class="input">
+                    </div>
+
+                    <!-- Moneda -->
+                    <div class="form-group">
+                        <label class="label">Moneda</label>
+                        <select id="f_moneda_id">
+                            <option value="">Cargando…</option>
+                        </select>
+                    </div>
+
+                    <!-- Cuenta Banco -->
+                    <div class="form-group">
+                        <label class="label">Cuenta Banco</label>
+                        <input type="text" id="f_cuenta_banco" placeholder="Ej. 1234567890" class="input">
+                    </div>
+
+                    <!-- Cuenta Contable -->
+                    <div class="form-group">
+                        <label class="label">Cuenta Contable</label>
+                        <input type="text" id="f_cuenta_contable" placeholder="Ej. 102.01" class="input">
+                    </div>
+
+                    <!-- Cuenta Clave -->
+                    <div class="form-group">
+                        <label class="label">Cuenta Clave</label>
+                        <input type="text" id="f_cuenta_clave" placeholder="Ej. BBVA001" class="input">
+                    </div>
+
+                    <!-- Saldo Inicial -->
+                    <div class="form-group">
+                        <label class="label">Saldo Inicial</label>
+                        <input type="number" id="f_saldo_inicial" placeholder="0.00" step="0.01" class="input">
+                    </div>
+
+                    <!-- Internacional -->
+                    <div class="form-group full">
+                        <label class="label">Tipo de banco</label>
+                        <div class="bootstrap-toggle-triple toggle-success">
+                            <input type="hidden" id="f_tipo" value="1">
+                            <label for="f_tipo" class="toggle-group-triple">
+                                <span class="toggle-state active" data-value="nacional">Nacional</span>
+                                <span class="toggle-state" data-value="internacional">Internacional</span>
+                                <span class="toggle-state" data-value="inversion">Inversiones</span>
+                                <span class="toggle-handle-triple"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-primary-custom" id="btnGuardar" onclick="guardarBanco()">
+                    <span class="spinner-mini" id="spinnerGuardar"></span>
+                    <i class="fas fa-save" id="iconGuardar"></i>
+                    <span id="textoGuardar">Guardar</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+    MODAL DETALLE (Bootstrap)
+════════════════════════════════════════ -->
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h6 class="modal-title d-flex align-items-center gap-2" id="modalDetalleLabel">
+                    <span class="modal-icon purple"><i class="fas fa-info-circle"></i></span>
+                    Detalle del Banco
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body" id="detalleBody">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn-primary-custom" id="btnEditarDesdeDetalle" onclick="editarDesdeDetalle()">
+                    <i class="fas fa-pen"></i> Editar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+    SCRIPTS
+════════════════════════════════════════ -->
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/Scripts/Switch.js"></script>
+
+<script>
+    /* ─── Estado ─── */
+    let modoEdicion = false;
+    let idEdicion = null;
+    let bancoDetalle = null;
+    let monedas = [];
+
+    /* ─── Referencias a instancias Bootstrap Modal ─── */
+    const bsModalForm = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modalForm'));
+    const bsModalDetalle = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetalle'));
+
+    /* ─── Formatear moneda ─── */
+    const fmt = (n) => isNaN(n) ? '$0.00' : new Intl.NumberFormat('es-MX', {
+        style: 'currency', currency: 'MXN'
+    }).format(parseFloat(n) || 0);
+
+    /* ─── Inicializar tabla ─── */
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarMonedas();
+        crearTabla();
+    });
+
+    /* ─── Cargar monedas ─── */
+    async function cargarMonedas() {
+        try {
+            monedas = await GetData({ path: '/Contabilidad/GetMonedas' });
+            const sel = document.getElementById('f_moneda_id');
+            sel.innerHTML = monedas.map(m => `<option value="${m.id}">${m.clave}</option>`).join('');
+        } catch (e) {
+            console.error('No se pudieron cargar monedas', e);
+        }
+    }
+
+    /* ─── Abrir modal CREAR ─── */
+    async function abrirModalCrear() {
+        modoEdicion = false;
+        idEdicion = null;
+        limpiarForm();
+        document.getElementById('modalFormTitle').textContent = 'Nuevo Banco';
+        document.getElementById('modalFormIcon').innerHTML = '<i class="fas fa-plus"></i>';
+        document.getElementById('textoGuardar').textContent = 'Guardar';
+        document.getElementById('iconGuardar').className = 'fas fa-save';
+        abrirModalForm();
+
+        const inputTipo = document.getElementById('f_tipo');
+
+        // Cargar la cuenta inicial
+        const cuenta = await GetData({
+            path: '/Contabilidad/GetCuentaSiguiente',
+            data: { tipo: inputTipo.value }
+        });
+        document.getElementById('f_cuenta_contable').value = cuenta.cuenta;
+
+        // ✅ Limpiar observer previo si existe
+        if (window._bancosObserver) {
+            window._bancosObserver.disconnect();
+            window._bancosObserver = null;
+        }
+
+        // ✅ Usar MutationObserver en lugar de onchange
+        // Así evitas que el navegador dispare múltiples veces
+        // y no acumulas listeners entre llamadas al modal
+        let ultimoValor = inputTipo.value;
+
+        window._bancosObserver = new MutationObserver(async () => {
+            const nuevoValor = inputTipo.value;
+            if (nuevoValor === ultimoValor) return; // ✅ Ignorar si el valor no cambió realmente
+            ultimoValor = nuevoValor;
+
+            const res = await GetData({
+                path: '/Contabilidad/GetCuentaSiguiente',
+                data: { tipo: nuevoValor }
+            });
+            document.getElementById('f_cuenta_contable').value = res.cuenta;
+        });
+
+        window._bancosObserver.observe(inputTipo, {
+            attributes: true,
+            attributeFilter: ['value']
+        });
+    }
+
+    document.getElementById('modalForm').addEventListener('hidden.bs.modal', () => {
+        if (window._bancosObserver) {
+            window._bancosObserver.disconnect();
+            window._bancosObserver = null;
+        }
+    });
+
+    /* ─── Abrir modal EDITAR ─── */
+    function abrirModalEditar(row) {
+        modoEdicion = true;
+        idEdicion = row.id_catbanco;
+        limpiarForm();
+
+        document.getElementById('f_nombre').value = row.nombre ?? '';
+        document.getElementById('f_razon_social').value = row.razon_social ?? '';
+        document.getElementById('f_rfc').value = row.rfc ?? '';
+        document.getElementById('f_cuenta_banco').value = row.cuenta_banco ?? '';
+        document.getElementById('f_cuenta_contable').value = row.cuenta_contable ?? '';
+        document.getElementById('f_cuenta_clave').value = row.cuenta_clave ?? '';
+        document.getElementById('f_saldo_inicial').value = row.saldo_inicial ?? 0;
+        document.getElementById('f_tipo').value = row.tipo;
+
+        const monedaMatch = monedas.find(m => m.clave === row.clave);
+        if (monedaMatch) document.getElementById('f_moneda_id').value = monedaMatch.id;
+
+        document.getElementById('modalFormTitle').textContent = 'Editar Banco';
+        document.getElementById('modalFormIcon').innerHTML = '<i class="fas fa-pen"></i>';
+        document.getElementById('textoGuardar').textContent = 'Actualizar';
+        document.getElementById('iconGuardar').className = 'fas fa-save';
+        abrirModalForm();
+    }
+
+    /* ─── Ver detalle ─── */
+    function verDetalle(row) {
+        bancoDetalle = row;
+        const monedaNombre = row.clave ?? '—';
+        const esIntl = !!row.tipo;
+
+        document.getElementById('detalleBody').innerHTML = `
+            <div class="detalle-header">
+                <div class="detalle-avatar">${(row.nombre ?? 'B').charAt(0).toUpperCase()}</div>
+                <div>
+                    <div class="detalle-nombre">${row.nombre ?? '—'}</div>
+                    <div class="detalle-sub">${row.razon_social ?? '—'}</div>
+                </div>
+                ${esIntl ? `<span class="badge-intl yes ms-auto"><i class="fas fa-globe-americas"></i>Internacional</span>` : ''}
+            </div>
+
+            <div class="saldo-card">
+                <div>
+                    <div class="label">Saldo Inicial</div>
+                    <div class="amount">${fmt(row.saldo_inicial)}</div>
+                </div>
+                <div class="icon"><i class="fas fa-piggy-bank"></i></div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="key">RFC</div>
+                    <div class="val">${row.rfc ?? '—'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="key">Moneda</div>
+                    <div class="val"><span class="badge-moneda">${monedaNombre}</span></div>
+                </div>
+                <div class="info-item">
+                    <div class="key">Cuenta Banco</div>
+                    <div class="val">${row.cuenta_banco ?? '—'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="key">Cuenta Contable</div>
+                    <div class="val">${row.cuenta_contable ?? '—'}</div>
+                </div>
+                <div class="info-item full">
+                    <div class="key">Cuenta Clave</div>
+                    <div class="val">${row.cuenta_clave ?? '—'}</div>
+                </div>
+            </div>
+        `;
+        bsModalDetalle().show();
+    }
+
+    /* ─── Editar desde detalle ─── */
+    function editarDesdeDetalle() {
+        bsModalDetalle().hide();
+        // Esperar a que cierre la animación antes de abrir el siguiente
+        document.getElementById('modalDetalle').addEventListener('hidden.bs.modal', () => {
+            abrirModalEditar(bancoDetalle);
+        }, { once: true });
+    }
+
+    /* ─── Abrir modal formulario con lógica de cuenta contable ─── */
+    async function abrirModalForm() {
+        bsModalForm().show();
+
+        // Esperar a que el modal esté completamente visible antes de medir el DOM
+        document.getElementById('modalForm').addEventListener('shown.bs.modal', () => {
+            initTriStateToggles();
+        }, { once: true }); // { once: true } para no acumular listeners
+    }
+
+    /* ─── Guardar (crear o editar) ─── */
+    async function guardarBanco() {
+        ocultarError();
+        const payload = {
+            nombre: document.getElementById('f_nombre').value.trim(),
+            razon_social: document.getElementById('f_razon_social').value.trim(),
+            rfc: document.getElementById('f_rfc').value.trim(),
+            moneda_id: document.getElementById('f_moneda_id').value,
+            cuenta_banco: document.getElementById('f_cuenta_banco').value.trim(),
+            cuenta_contable: document.getElementById('f_cuenta_contable').value.trim(),
+            cuenta_clave: document.getElementById('f_cuenta_clave').value.trim(),
+            saldo_inicial: parseFloat(document.getElementById('f_saldo_inicial').value) || 0,
+            tipo: document.getElementById('f_tipo').value,
+        };
+
+        if (!payload.nombre) { mostrarError('El nombre del banco es requerido.'); return; }
+        if (!payload.moneda_id) { mostrarError('Selecciona una moneda.'); return; }
+
+        const url = modoEdicion ? `/Contabilidad/ActualizarBanco` : `/Contabilidad/CrearBanco`;
+        if (modoEdicion) payload.id_catbanco = idEdicion;
+
+        setCargando(true);
+        GetData({
+            path: url,
+            data: payload,
+            //swalResponse: true,
+            //swalType: 'mixin',
+        }).then(x => {
+            toastMixin.fire(x)
+            recargarTabla();
+            setCargando(false);
+        });
+
+        bsModalForm().hide();
+    }
+
+    /* ─── Utilidades ─── */
+    function limpiarForm() {
+        ['f_nombre', 'f_razon_social', 'f_rfc', 'f_cuenta_banco', 'f_cuenta_contable', 'f_cuenta_clave', 'f_saldo_inicial']
+            .forEach(id => document.getElementById(id).value = '');
+        document.getElementById('f_tipo').value = 'nacional';
+        ocultarError();
+    }
+
+    function mostrarError(msg) {
+        const el = document.getElementById('formError');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    function ocultarError() {
+        document.getElementById('formError').style.display = 'none';
+    }
+
+    function setCargando(on) {
+        document.getElementById('spinnerGuardar').style.display = on ? 'block' : 'none';
+        document.getElementById('iconGuardar').style.display = on ? 'none' : 'inline';
+        document.getElementById('btnGuardar').disabled = on;
+    }
+
+    /* ─── Crear / recargar tabla ─── */
+    function crearTabla() {
+        const columnas = [
+            { title: 'Nombre', data: 'nombre' },
+            { title: 'Cuenta Banco', data: 'cuenta_banco' },
+            { title: 'Cuenta Contable', data: 'cuenta_contable' },
+            { title: 'RFC', data: 'rfc' },
+            {
+                title: 'Moneda',
+                data: 'clave',
+                formatter: (v) => `<span class="badge-moneda">${v ?? '—'}</span>`
+            },
+            {
+                title: 'Internacional',
+                data: 'tipo',
+                formatter: (v) => v == 'internacional'
+                    ? `<span class="badge-intl internacional"><i class="fas fa-globe-americas"></i>Internacional</span>`
+                    : v == 'nacional' ? `<span class="badge-intl nacional">` +
+                        `   <svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 512 512"><path fill="#999999" d="M17.91 93.761c19.4 67.244 47.029 124.21 79.363 187.172l27.561-8.368c-34.337-52.44-62.494-96.45-72.16-152.817l24.231 6.32c12.377 75.413 79.95 133.444 109.213 168.56c4.905 16.388.589 32.776-4.916 46.354c51.616 25.103 104.672 57.56 163.292 69.531c22.014-17.212 44.264-27.73 68.126 7.726l9.833-28.094l23.177-.702L432.636 361c22.372 8.044 50.335-16.05 50.92-22.826c1.675-19.426.496-31.362 10.535-47.056l-55.836 7.725c-1.367 16.264 1.583 34.771-15.1 44.247c-88.44 50.234-115.313-62.388-107.457-109.564c-36.356-16.025-40.996-34.962-62.507-68.126l-22.475-2.81l-15.451 13.345l-40.033-51.27z"/></svg>` +
+                        `   Nacional</span>`
+                        : `<span class="badge-intl inversion"><i class="fa-solid fa-coins"></i> Inversión</span>`
+            },
+        ];
+
+        const tablaBanco = createTable({
+            path: '/Contabilidad/GetBancos',
+            selector: '#tablaBancos',
+            columns: columnas,
+            actions: [
+                { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalle', onClick: row => verDetalle(row) },
+                { icon: 'fa-pen-to-square', color: 'green-500', title: 'Editar', onClick: row => abrirModalEditar(row) }
+            ],
+        });
+    }
+
+    function recargarTabla() {
+        initTriStateToggles();
+        document.getElementById('tablaBancos').innerHTML = '';
+        crearTabla();
+    }
+</script>

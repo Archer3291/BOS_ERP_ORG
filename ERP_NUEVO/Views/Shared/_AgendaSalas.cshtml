@@ -1,0 +1,334 @@
+﻿@using BOS_ERP.Controllers
+@{
+    var hayUsuario = !string.IsNullOrWhiteSpace(Context.Session.GetString("Correo"));
+}
+
+@if (hayUsuario)
+{
+    <style>
+        .ags-burbuja {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 1.25rem;
+            z-index: 1035;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: .6rem;
+        }
+
+        .ags-btn {
+            position: relative;
+            width: 52px;
+            height: 52px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 1px solid color-mix(in srgb, var(--accent-blue) 35%, transparent);
+            background: var(--accent-blue);
+            color: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: transform .18s ease;
+        }
+
+            .ags-btn:hover {
+                transform: translateY(-2px);
+            }
+
+        .ags-count {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            min-width: 21px;
+            height: 21px;
+            padding: 0 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 2px solid var(--bg-light);
+            background: var(--danger-color);
+            color: #fff;
+            font-size: .68rem;
+            font-weight: 700;
+        }
+
+        .ags-burbuja.has-pendientes .ags-btn::after {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-blue);
+            animation: agsPulso 1.8s ease-out infinite;
+        }
+
+        @@keyframes agsPulso {
+            0% {
+                opacity: .7;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.35);
+            }
+        }
+
+        .ags-panel {
+            width: min(330px, calc(100vw - 2.5rem));
+            max-height: min(420px, calc(100vh - 8rem));
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            background: var(--bg-light);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .ags-head {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .75rem .9rem;
+            border-bottom: 1px solid var(--border-light);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--accent-blue) 9%, transparent), transparent 65%);
+            font-size: .8rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+            .ags-head i {
+                color: var(--accent-blue);
+            }
+
+            .ags-head button {
+                margin-left: auto;
+                border: none;
+                background: none;
+                color: var(--text-light);
+                cursor: pointer;
+                font-size: .85rem;
+            }
+
+        .ags-list {
+            overflow-y: auto;
+            padding: .5rem;
+            display: flex;
+            flex-direction: column;
+            gap: .4rem;
+        }
+
+        .ags-item {
+            display: flex;
+            align-items: flex-start;
+            gap: .6rem;
+            width: 100%;
+            padding: .6rem .7rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-gray);
+            text-align: left;
+            cursor: pointer;
+            transition: border-color .18s ease, background .18s ease;
+        }
+
+            .ags-item:hover {
+                border-color: var(--accent-blue);
+                background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+            }
+
+            .ags-item.is-ahora {
+                border-color: var(--success-color);
+            }
+
+        .ags-tono {
+            width: 4px;
+            align-self: stretch;
+            flex: 0 0 auto;
+            border-radius: 999px;
+        }
+
+        .ags-hora {
+            display: block;
+            font-size: .7rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .ags-asunto {
+            display: block;
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ags-meta {
+            display: block;
+            margin-top: .1rem;
+            font-size: .71rem;
+            color: var(--text-light);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ags-flag {
+            margin-left: auto;
+            flex: 0 0 auto;
+            font-size: .72rem;
+        }
+
+        @@media (max-width: 575.98px) {
+            .ags-burbuja {
+                right: .8rem;
+                bottom: .8rem;
+            }
+        }
+    </style>
+
+    <div class="ags-burbuja" id="ags-burbuja" hidden>
+        <div class="ags-panel" id="ags-panel" hidden>
+            <div class="ags-head">
+                <i class="fa-solid fa-calendar-day"></i>
+                <span id="ags-titulo">Tus próximas juntas</span>
+                <button type="button" title="Cerrar" onclick="AgendaSalas.cerrar()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="ags-list" id="ags-list"></div>
+        </div>
+
+        <button type="button" class="ags-btn" id="ags-btn" onclick="AgendaSalas.alternar()" title="Tus próximas juntas">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span class="ags-count" id="ags-count">0</span>
+        </button>
+    </div>
+
+    <script>
+        const AgendaSalas = (function () {
+            'use strict';
+
+            const URL_AGENDA = '@Url.Action("GetAgendaDia", "RecursosHumanos")';
+            const URL_PAGINA = '@Url.Action("SolicitudSalas", "RecursosHumanos")';
+
+            const ESTADOS = {
+                asistira: { texto: 'Asistirás', icono: 'fa-circle-check', color: 'var(--success-color)' },
+                no_asistira: { texto: 'No asistirás', icono: 'fa-circle-xmark', color: 'var(--danger-color)' },
+                pendiente: { texto: 'Sin confirmar', icono: 'fa-clock', color: 'var(--warning-color)' }
+            };
+
+            let juntas = [];
+
+            const dd = n => String(n).padStart(2, '0');
+            const hora = d => `${dd(d.getHours())}:${dd(d.getMinutes())}`;
+            const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${dd(d.getMonth() + 1)}-${dd(d.getDate())}`; };
+
+            const escapar = v => String(v ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+
+            async function cargar() {
+                if (typeof GetData !== 'function') return;
+
+                const data = await GetData({ path: URL_AGENDA, data: { dia: hoy() } });
+                juntas = Array.isArray(data) ? data : [];
+                pintar();
+            }
+
+            function pintar() {
+                const burbuja = document.getElementById('ags-burbuja');
+                if (!burbuja) return;
+
+                if (!juntas.length) {
+                    burbuja.hidden = true;
+                    cerrar();
+                    return;
+                }
+
+                const pendientes = juntas.filter(j => j.puedeConfirmar && j.miEstado === 'pendiente').length;
+
+                burbuja.hidden = false;
+                burbuja.classList.toggle('has-pendientes', pendientes > 0);
+
+                document.getElementById('ags-count').textContent = juntas.length;
+                document.getElementById('ags-btn').title = pendientes
+                    ? `${juntas.length} junta(s) por venir · ${pendientes} sin confirmar`
+                    : `Tienes ${juntas.length} junta(s) por venir hoy`;
+                document.getElementById('ags-titulo').textContent =
+                    juntas.length === 1 ? 'Tienes 1 junta por venir' : `Tienes ${juntas.length} juntas por venir`;
+
+                const ahora = new Date();
+
+                document.getElementById('ags-list').innerHTML = juntas.map(j => {
+                    const inicio = new Date(j.inicio);
+                    const fin = new Date(j.fin);
+                    const enCurso = inicio <= ahora && ahora < fin;
+                    const faltan = Math.round((inicio - ahora) / 60000);
+                    const estado = ESTADOS[j.miEstado] ?? ESTADOS.pendiente;
+
+                    const cuando = enCurso ? 'en curso'
+                        : faltan < 60 ? `en ${faltan} min`
+                        : `en ${Math.round(faltan / 60)} h`;
+
+                    const bandera = j.esOrganizador
+                        ? '<i class="fa-solid fa-user-tie ags-flag" style="color:var(--accent-blue)" title="Organizas esta reunión"></i>'
+                        : `<i class="fa-solid ${estado.icono} ags-flag" title="${estado.texto}" style="color:${estado.color}"></i>`;
+
+                    return `<button type="button" class="ags-item${enCurso ? ' is-ahora' : ''}" onclick="AgendaSalas.abrir(${j.id})">
+                                <span class="ags-tono" style="background:${enCurso ? 'var(--success-color)' : 'var(--accent-blue)'}"></span>
+                                <span style="min-width:0;flex:1">
+                                    <span class="ags-hora" style="color:${enCurso ? 'var(--success-color)' : 'var(--accent-blue)'}">${hora(inicio)} – ${hora(fin)} · ${cuando}</span>
+                                    <span class="ags-asunto">${escapar(j.asunto ?? 'Reunión')}</span>
+                                    <span class="ags-meta">${escapar(j.sala)} · ${escapar(j.anfitrion)}</span>
+                                </span>
+                                ${bandera}
+                            </button>`;
+                }).join('');
+            }
+
+            function abrir(id) {
+                cerrar();
+
+                if (typeof window.abrirDesdeAgenda === 'function') {
+                    window.abrirDesdeAgenda(id, juntas.find(j => j.id === id));
+                    return;
+                }
+
+                window.location.href = `${URL_PAGINA}?reservacion=${id}`;
+            }
+
+            function alternar() {
+                const panel = document.getElementById('ags-panel');
+                panel.hidden = !panel.hidden;
+            }
+
+            function cerrar() {
+                const panel = document.getElementById('ags-panel');
+                if (panel) panel.hidden = true;
+            }
+
+            document.addEventListener('click', e => {
+                const burbuja = document.getElementById('ags-burbuja');
+                if (burbuja && !burbuja.contains(e.target)) cerrar();
+            });
+
+            // Un aviso del hub casi siempre significa que algo cambió de estado:
+            // se recarga en cuanto llega en vez de esperar al siguiente sondeo.
+            document.addEventListener('erp:notificacion', cargar);
+
+            // El paso reservada → en_curso → finalizada lo hace el servidor sin avisar
+            // a nadie, así que el sondeo cubre lo que el hub no alcanza a empujar.
+            setInterval(cargar, 60000);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) cargar(); });
+
+            document.addEventListener('DOMContentLoaded', cargar);
+
+            return { cargar, pintar, abrir, alternar, cerrar };
+        })();
+    </script>
+}

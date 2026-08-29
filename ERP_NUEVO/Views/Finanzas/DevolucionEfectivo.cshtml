@@ -1,0 +1,986 @@
+﻿@{
+    ViewBag.Title = "Devolución de Efectivo";
+    ViewBag.PageTitle = "Devolución de Efectivo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <style>
+        /* ── Cabecera de página ── */
+        .page-header {
+            padding: 1.5rem 0 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 1.75rem;
+        }
+
+        .page-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -.02em;
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            margin: 0;
+        }
+
+        .page-title-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: color-mix(in srgb, var(--accent-purple) 14%, var(--bg-light));
+            color: var(--accent-purple);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+
+        .page-subtitle {
+            font-size: .8rem;
+            color: var(--text-light);
+            margin: .2rem 0 0 3rem;
+        }
+
+        /* ── Panel de búsqueda ── */
+        .search-panel {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--table-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 1.25rem;
+        }
+
+        .search-panel-body {
+            padding: 1.1rem 1.25rem;
+        }
+
+        .form-label-sm {
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: .045em;
+            margin-bottom: .3rem;
+            display: block;
+        }
+
+        .form-control,
+        .form-select {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            color: var(--text-dark);
+            border-radius: 8px;
+            font-size: .88rem;
+            transition: var(--transition-fast);
+        }
+
+            .form-control:focus,
+            .form-select:focus {
+                border-color: var(--accent-purple);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-purple) 20%, transparent);
+                outline: none;
+            }
+
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select {
+            background: var(--bg-gray);
+        }
+
+        /* ── Divisor con etiqueta ── */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            margin: 1.5rem 0 .9rem;
+            font-size: .7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-light);
+        }
+
+            .section-label::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: var(--border-light);
+            }
+
+        /* ── Tabla ERP ── */
+        .erp-table-wrap {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--table-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 1.25rem;
+        }
+
+        .erp-table-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .85rem 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+            gap: .5rem;
+        }
+
+        .erp-table-title {
+            font-size: .85rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            margin: 0;
+        }
+
+            .erp-table-title i {
+                color: var(--accent-purple);
+                font-size: .9rem;
+            }
+
+        .erp-count {
+            font-size: .72rem;
+            font-weight: 700;
+            background: color-mix(in srgb, var(--accent-purple) 12%, var(--bg-light));
+            color: var(--accent-purple);
+            border-radius: 20px;
+            padding: .15em .65em;
+        }
+
+        .table-erp {
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+            .table-erp thead th {
+                background: var(--bg-gray);
+                color: var(--text-light);
+                font-size: .68rem;
+                text-transform: uppercase;
+                letter-spacing: .06em;
+                font-weight: 700;
+                border: none;
+                border-bottom: 1px solid var(--border-light);
+                padding: .65rem 1rem;
+                white-space: nowrap;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
+
+            .table-erp tbody tr {
+                border-bottom: 1px solid var(--border-light);
+                transition: background var(--transition-fast);
+            }
+
+                .table-erp tbody tr:last-child {
+                    border-bottom: none;
+                }
+
+                .table-erp tbody tr:hover {
+                    background: var(--very-light-blue);
+                }
+
+                .table-erp tbody tr.row-disabled {
+                    opacity: .45;
+                }
+
+            .table-erp tbody td {
+                border: none;
+                padding: .78rem 1rem;
+                vertical-align: middle;
+                font-size: .865rem;
+                color: var(--text-dark);
+            }
+
+        .cell-folio {
+            font-weight: 700;
+            color: var(--primary-blue);
+            font-variant-numeric: tabular-nums;
+        }
+
+        [data-theme="dark"] .cell-folio {
+            color: var(--accent-blue);
+        }
+
+        .cell-sub {
+            font-size: .73rem;
+            color: var(--text-light);
+            margin-top: .1rem;
+        }
+
+        .cell-mono {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Badges ── */
+        .badge-status {
+            border-radius: var(--badge-radius);
+            padding: .3em .75em;
+            font-weight: 700;
+            font-size: .67rem;
+            letter-spacing: .025em;
+            display: inline-flex;
+            align-items: center;
+            gap: .3em;
+            white-space: nowrap;
+        }
+
+        .badge-soft-success {
+            background: color-mix(in srgb, var(--success-color) 14%, var(--bg-light));
+            color: var(--success-color);
+        }
+
+        .badge-soft-warning {
+            background: color-mix(in srgb, var(--warning-color) 14%, var(--bg-light));
+            color: var(--warning-color);
+        }
+
+        .badge-soft-danger {
+            background: color-mix(in srgb, var(--danger-color) 14%, var(--bg-light));
+            color: var(--danger-color);
+        }
+
+        .badge-soft-info {
+            background: color-mix(in srgb, var(--accent-blue) 14%, var(--bg-light));
+            color: var(--accent-blue);
+        }
+
+        .badge-soft-purple {
+            background: color-mix(in srgb, var(--accent-purple) 14%, var(--bg-light));
+            color: var(--accent-purple);
+        }
+
+        .badge-soft-secondary {
+            background: color-mix(in srgb, var(--secondary-blue) 14%, var(--bg-light));
+            color: var(--secondary-blue);
+        }
+
+        /* ── Botones ── */
+        .btn-purple {
+            background: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+
+            font-weight: 600;
+            font-size: .84rem;
+            transition: var(--transition-fast);
+        }
+
+            .btn-purple:hover {
+                background: var(--primary-blue);
+                border-color: #5457dd;
+                color: #fff;
+            }
+
+            .btn-purple:disabled {
+                background: var(--disabled-color);
+                border-color: var(--disabled-color);
+                color: var(--text-light);
+                cursor: not-allowed;
+            }
+
+        .btn-outline-erp {
+            border: 1px solid var(--border-light);
+            color: var(--text-dark);
+            background: transparent;
+            font-size: .84rem;
+            transition: var(--transition-fast);
+        }
+
+            .btn-outline-erp:hover {
+                background: var(--very-light-blue);
+                color: var(--text-dark);
+            }
+
+        .btn-reembolsar {
+            border-radius: var(--badge-radius);
+            font-size: .78rem;
+            padding: .32rem .85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* ── Estado vacío ── */
+        .empty-state {
+            text-align: center;
+            padding: 3.5rem 1.5rem;
+            color: var(--text-light);
+        }
+
+            .empty-state .empty-icon {
+                width: 56px;
+                height: 56px;
+                border-radius: 16px;
+                background: var(--bg-gray);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+                opacity: .6;
+            }
+
+            .empty-state .empty-title {
+                font-size: .92rem;
+                font-weight: 700;
+                color: var(--text-dark);
+                margin-bottom: .3rem;
+            }
+
+            .empty-state .empty-hint {
+                font-size: .8rem;
+            }
+
+        /* ── Modal ── */
+        .modal-content {
+            background: var(--bg-light);
+            border: none;
+            border-radius: var(--table-radius);
+            overflow: hidden;
+            box-shadow: 0 24px 48px rgba(0,0,0,.18);
+        }
+
+        .modal-header-purple {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, #4f46e5 100%);
+            color: #fff;
+            border-bottom: none;
+            padding: 1.1rem 1.4rem;
+        }
+
+            .modal-header-purple .btn-close {
+                filter: invert(1) brightness(2);
+            }
+
+        .doc-recap {
+            background: var(--bg-gray);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1.15rem;
+        }
+
+            .doc-recap dt {
+                font-size: .66rem;
+                text-transform: uppercase;
+                letter-spacing: .05em;
+                color: var(--text-light);
+                font-weight: 700;
+                margin-bottom: .1rem;
+            }
+
+            .doc-recap dd {
+                font-size: .9rem;
+                font-weight: 600;
+                color: var(--text-dark);
+                margin-bottom: .6rem;
+            }
+
+        .saldo-disponible-tag {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--success-color);
+        }
+
+        .invalid-feedback {
+            font-size: .75rem;
+        }
+
+        /* ── Skeleton ── */
+        .skeleton-block {
+            height: 13px;
+            border-radius: 5px;
+            background: linear-gradient( 90deg, var(--bg-gray) 25%, var(--border-light) 50%, var(--bg-gray) 75% );
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+        }
+
+        @@keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+    </style>
+}
+
+<div class="container-fluid py-3 py-md-4" style="max-width:1320px;">
+
+    <!-- ═══ Cabecera de página ═══ -->
+    @*<div class="page-header">
+        <h1 class="page-title">
+            <span class="page-title-icon"><i class="fa-solid fa-rotate-left"></i></span>
+            Devolución de efectivo
+        </h1>
+        <p class="page-subtitle">Busca un documento con saldo disponible y registra la devolución al cliente.</p>
+    </div>*@
+
+    <!-- ═══ Búsqueda ═══ -->
+    <div class="search-panel">
+        <div class="search-panel-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label-sm" for="filtroTipo">Tipo de documento</label>
+                    <select class="form-select" id="filtroTipo">
+                        <option value="">Todos</option>
+                        <option value="Pedido">Pedido</option>
+                        <option value="Remisión">Remisión</option>
+                        <option value="Factura">Factura</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label-sm" for="filtroFolio">Folio</label>
+                    <input type="text" class="form-control" id="filtroFolio" placeholder="Ej. REM-2024-00891" autocomplete="off">
+                </div>
+                <div class="col-12 col-lg-4">
+                    <label class="form-label-sm" for="filtroCliente">Cliente</label>
+                    <input type="text" class="form-control" id="filtroCliente" placeholder="Nombre o razón social" autocomplete="off">
+                </div>
+                <div class="col-12 col-lg-2 d-flex gap-2">
+                    <button class="btn btn-purple flex-fill" id="btnBuscar">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar
+                    </button>
+                    <button class="btn btn-outline-erp px-3" id="btnLimpiar" title="Limpiar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Resultados ═══ -->
+    <div id="cardResultados" style="display:none;">
+        <div class="section-label"><i class="fa-solid fa-list-ul"></i>Resultados</div>
+        <div class="erp-table-wrap">
+            <div class="erp-table-head">
+                <span class="erp-table-title"><i class="fa-solid fa-table-list"></i>Documentos encontrados</span>
+                <span class="erp-count" id="cntResultados">0</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-erp align-middle">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Tipo</th>
+                            <th>Cliente</th>
+                            <th>Fecha</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Saldo disponible</th>
+                            <th>Forma de pago</th>
+                            <th>Estatus</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyResultados"></tbody>
+                </table>
+            </div>
+            <div class="empty-state" id="emptyResultados" style="display:none;">
+                <div class="empty-icon"><i class="fa-solid fa-box-open"></i></div>
+                <div class="empty-title">Sin resultados</div>
+                <div class="empty-hint">Verifica el folio o ajusta los filtros de búsqueda.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Historial ═══ -->
+    <div class="section-label"><i class="fa-solid fa-clock-rotate-left"></i>Historial reciente</div>
+    <div class="erp-table-wrap">
+        <div class="erp-table-head">
+            <span class="erp-table-title"><i class="fa-solid fa-clock-rotate-left"></i>Últimas devoluciones</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-erp align-middle">
+                <thead>
+                    <tr>
+                        <th>Folio devolución</th>
+                        <th>Documento</th>
+                        <th>Cliente</th>
+                        <th class="text-end">Monto</th>
+                        <th>Fecha</th>
+                        <th>Autorizó</th>
+                        <th>Estatus</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyHistorial"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div><!-- /container -->
+<!-- ═══ Modal: Registrar devolución ═══ -->
+<div class="modal fade" id="modalReembolso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header modal-header-purple">
+                <h5 class="modal-title"><i class="fa-solid fa-money-bill-wave me-2"></i>Registrar devolución de efectivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="docId">
+                <input type="hidden" id="docSaldoMax">
+
+                <div class="doc-recap">
+                    <div class="row">
+                        <div class="col-6">
+                            <dl class="mb-0">
+                                <dt>Folio</dt>
+                                <dd id="recapFolio">—</dd>
+                                <dt>Cliente</dt>
+                                <dd id="recapCliente" class="mb-0">—</dd>
+                            </dl>
+                        </div>
+                        <div class="col-6">
+                            <dl class="mb-0">
+                                <dt>Total documento</dt>
+                                <dd id="recapTotal">—</dd>
+                                <dt>Saldo disponible</dt>
+                                <dd class="saldo-disponible-tag mb-0" id="recapSaldo">—</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="montoReembolso" class="form-label-sm">Monto a reembolsar</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="montoReembolso"
+                               step="0.01" min="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-text mt-1" id="helpMonto">Máximo disponible: —</div>
+                    <div class="invalid-feedback" id="errMonto"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="motivoReembolso" class="form-label-sm">Motivo de la devolución</label>
+                    <textarea class="form-control" id="motivoReembolso" rows="2"
+                              placeholder="Ej. Sobrepago detectado en cierre de caja…"></textarea>
+                    <div class="invalid-feedback" id="errMotivo"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="autorizoReembolso" class="form-label-sm">Autorizó</label>
+                    <input type="text" class="form-control" id="autorizoReembolso"
+                           placeholder="Nombre del responsable que autoriza">
+                    <div class="invalid-feedback" id="errAutorizo"></div>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="confirmaEntrega">
+                    <label class="form-check-label" for="confirmaEntrega" style="font-size:.85rem;">
+                        Confirmo que el efectivo fue entregado al cliente
+                    </label>
+                    <div class="invalid-feedback" id="errConfirma"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="border-color: var(--border-light) !important;">
+                <button type="button" class="btn btn-outline-erp" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-purple" id="btnConfirmarReembolso">
+                    <i class="fa-solid fa-circle-check me-1" id="icoConfirmar"></i>
+                    <span id="txtConfirmar">Confirmar devolución</span>
+                    <span class="spinner-border spinner-border-sm ms-1 d-none" id="spinConfirmar"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <style>
+        /* ── SweetAlert2: popup toast adaptado al tema ERP ── */
+        .swal-erp-popup {
+            font-family: inherit !important;
+            background: var(--bg-light) !important;
+            color: var(--text-dark) !important;
+            border: 1px solid var(--border-light) !important;
+            border-radius: 12px !important;
+            box-shadow: var(--shadow-lg) !important;
+            padding: .75rem 1.1rem !important;
+        }
+
+            .swal-erp-popup .swal2-title {
+                font-size: .9rem !important;
+                font-weight: 700 !important;
+                color: var(--text-dark) !important;
+                padding: 0 !important;
+                margin: 0 0 .1rem !important;
+            }
+
+            .swal-erp-popup .swal2-html-container,
+            .swal-erp-popup .swal2-content {
+                font-size: .82rem !important;
+                color: var(--text-light) !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .swal-erp-popup .swal2-icon {
+                width: 2rem !important;
+                height: 2rem !important;
+                min-width: 2rem !important;
+                margin: 0 .65rem 0 0 !important;
+                border-width: 2px !important;
+            }
+
+                .swal-erp-popup .swal2-icon .swal2-icon-content {
+                    font-size: 1rem !important;
+                }
+
+            .swal-erp-popup .swal2-timer-progress-bar {
+                background: var(--accent-purple) !important;
+                height: 3px !important;
+            }
+
+        [data-theme="dark"] .swal-erp-popup {
+            background: var(--bg-gray) !important;
+            border-color: var(--border-light) !important;
+        }
+    </style>
+    <script>
+        /* =========================================================================
+           DevolucionEfectivo — JavaScript
+           Endpoints:
+             GET  /DevolucionEfectivo/BuscarDocumentos?folio=&cliente=&tipo=
+             GET  /DevolucionEfectivo/HistorialDevoluciones
+             POST /DevolucionEfectivo/ProcesarDevolucion
+           ========================================================================= */
+
+        const DEV = (() => {
+
+            const TOKEN = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+            let modalReembolso;
+
+            // ── Utilidades ──────────────────────────────────────────────────────────
+            const fmt = n => Number(n).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+
+            function badgeTipo(gen) {
+                const map = {
+                    'PED': ['badge-soft-info', 'Pedido'],
+                    'REM': ['badge-soft-purple', 'Remisión'],
+                    'FAC': ['badge-soft-secondary', 'Factura'],
+                };
+                const [cls, label] = map[gen?.toUpperCase()] ?? ['badge-soft-secondary', gen ?? '—'];
+                return `<span class="badge-status ${cls}">${label}</span>`;
+            }
+
+            function badgeEstatus(estatus) {
+                return estatus === 'Sin saldo'
+                    ? `<span class="badge-status badge-soft-secondary"><i class="fa-solid fa-circle-minus"></i>Sin saldo</span>`
+                    : `<span class="badge-status badge-soft-success"><i class="fa-solid fa-circle-check"></i>Con saldo</span>`;
+            }
+
+            function mostrarToast(msg, tipo = 'success') {
+                const iconMap = { success: 'success', warning: 'warning', error: 'error' };
+                const titleMap = { success: '¡Listo!', warning: 'Atención', error: 'Error' };
+                Swal.fire({
+                    icon: iconMap[tipo] ?? 'info',
+                    title: titleMap[tipo] ?? 'Aviso',
+                    text: msg,
+                    toast: true,
+                    position: 'bottom-end',
+                    showConfirmButton: false,
+                    timer: 4500,
+                    timerProgressBar: true,
+                    customClass: {
+                        popup: 'swal-erp-popup'
+                    }
+                });
+            }
+
+            function skeletonRows(tbodyId, cols, n = 5) {
+                const cells = Array.from({ length: cols },
+                    (_, i) => `<td><div class="skeleton-block" style="width:${55 + (i % 4) * 12}%"></div></td>`
+                ).join('');
+                document.getElementById(tbodyId).innerHTML =
+                    Array.from({ length: n }, () => `<tr>${cells}</tr>`).join('');
+            }
+
+            // ── Historial ────────────────────────────────────────────────────────────
+            async function cargarHistorial() {
+                skeletonRows('tbodyHistorial', 7);
+                try {
+                    const r = await fetch('/DevolucionEfectivo/HistorialDevoluciones?pageSize=8');
+                    const d = await r.json();
+                    renderHistorial(d.items ?? []);
+                } catch {
+                    document.getElementById('tbodyHistorial').innerHTML =
+                        `<tr><td colspan="7" class="text-center text-muted py-4">
+                        <i class="fa-solid fa-wifi me-1"></i>Error al cargar el historial.
+                     </td></tr>`;
+                }
+            }
+
+            function renderHistorial(rows) {
+                const tbody = document.getElementById('tbodyHistorial');
+                if (!rows.length) {
+                    tbody.innerHTML = `<tr><td colspan="7">
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                        <div class="empty-title">Sin devoluciones registradas</div>
+                    </div>
+                </td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = rows.map(h => `
+                <tr>
+                    <td class="cell-folio">${h.folio_devolucion ?? '—'}</td>
+                    <td>${h.folio_documento ?? '—'}</td>
+                    <td>${h.nombre_cliente ?? '—'}</td>
+                    <td class="text-end fw-semibold cell-mono">${fmt(h.monto)}</td>
+                    <td>${dateFormatter(h.fecha)}</td>
+                    <td>${h.autorizado_por ?? '—'}</td>
+                    <td><span class="badge-status badge-soft-success">
+                        <i class="fa-solid fa-circle-check"></i>${h.estatus ?? 'Completada'}
+                    </span></td>
+                </tr>`).join('');
+            }
+
+            // ── Búsqueda ─────────────────────────────────────────────────────────────
+            async function buscarDocumentos() {
+                const folio = document.getElementById('filtroFolio').value.trim();
+                const cliente = document.getElementById('filtroCliente').value.trim();
+                const tipo = document.getElementById('filtroTipo').value;
+
+                document.getElementById('cardResultados').style.display = 'block';
+                document.getElementById('emptyResultados').style.display = 'none';
+                document.getElementById('cntResultados').textContent = '…';
+                skeletonRows('tbodyResultados', 9);
+
+                const params = new URLSearchParams({ folio, cliente, tipo });
+                try {
+                    const r = await fetch(`/DevolucionEfectivo/BuscarDocumentos?${params}`);
+                    const d = await r.json();
+                    renderResultados(d.items ?? []);
+                } catch {
+                    document.getElementById('tbodyResultados').innerHTML =
+                        `<tr><td colspan="9" class="text-center text-danger py-4">
+                        <i class="fa-solid fa-wifi me-1"></i>Error al conectar con el servidor.
+                     </td></tr>`;
+                }
+            }
+
+            function renderResultados(docs) {
+                const tbody = document.getElementById('tbodyResultados');
+                const empty = document.getElementById('emptyResultados');
+                const cnt = document.getElementById('cntResultados');
+
+                if (!docs.length) {
+                    tbody.innerHTML = '';
+                    cnt.textContent = '0';
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                empty.style.display = 'none';
+                cnt.textContent = docs.length;
+
+                tbody.innerHTML = docs.map(doc => {
+                    const saldo = parseFloat(doc.saldo_disponible ?? 0);
+                    const habilitado = saldo > 0;
+                    const total = parseFloat(doc.total ?? 0);
+                    const estatus = doc.estatus ?? (habilitado ? 'Con saldo' : 'Sin saldo');
+
+                    return `
+                <tr class="${habilitado ? '' : 'row-disabled'}"
+                    data-id="${doc.id_encabezado}"
+                    data-folio="${doc.folio}"
+                    data-cliente="${doc.nombre_cliente ?? doc.cli_prov ?? ''}"
+                    data-total="${total}"
+                    data-saldo="${saldo}"
+                    data-forma-pago="${doc.forma_pago ?? ''}">
+                    <td class="cell-folio">${doc.folio ?? '—'}</td>
+                    <td>${badgeTipo(doc.gen)}</td>
+                    <td>
+                        <div>${doc.nombre_cliente ?? doc.cli_prov ?? '—'}</div>
+                        ${doc.rfc ? `<div class="cell-sub">${doc.rfc}</div>` : ''}
+                    </td>
+                    <td>${dateFormatter(doc.fecha)}</td>
+                    <td class="text-end cell-mono">${fmt(total)}</td>
+                    <td class="text-end cell-mono fw-semibold">${fmt(saldo)}</td>
+                    <td>${doc.forma_pago ?? '—'}</td>
+                    <td>${badgeEstatus(estatus)}</td>
+                    <td class="text-end">
+                        ${habilitado
+                            ? `<button class="btn btn-purple btn-reembolsar btn-abrir-modal"
+                                       data-id="${doc.id_encabezado}">
+                                   <i class="fa-solid fa-money-bill-wave me-1"></i>Reembolsar
+                               </button>`
+                            : `<button class="btn btn-outline-erp btn-reembolsar" disabled>
+                                   <i class="fa-solid fa-minus me-1"></i>Sin saldo
+                               </button>`
+                        }
+                    </td>
+                </tr>`;
+                }).join('');
+
+                tbody.querySelectorAll('.btn-abrir-modal').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const tr = btn.closest('tr');
+                        abrirModal({
+                            id: tr.dataset.id,
+                            folio: tr.dataset.folio,
+                            cliente: tr.dataset.cliente,
+                            total: parseFloat(tr.dataset.total),
+                            saldo: parseFloat(tr.dataset.saldo),
+                            formaPago: tr.dataset.formaPago
+                        });
+                    });
+                });
+            }
+
+            function limpiarBusqueda() {
+                document.getElementById('filtroFolio').value = '';
+                document.getElementById('filtroCliente').value = '';
+                document.getElementById('filtroTipo').value = '';
+                document.getElementById('cardResultados').style.display = 'none';
+            }
+
+            // ── Modal ────────────────────────────────────────────────────────────────
+            function abrirModal(doc) {
+                document.getElementById('docId').value = doc.id;
+                document.getElementById('docSaldoMax').value = doc.saldo;
+                document.getElementById('recapFolio').textContent = doc.folio;
+                document.getElementById('recapCliente').textContent = doc.cliente;
+                document.getElementById('recapTotal').textContent = fmt(doc.total);
+                document.getElementById('recapSaldo').textContent = fmt(doc.saldo);
+                document.getElementById('helpMonto').textContent = `Máximo disponible: ${fmt(doc.saldo)}`;
+
+                const inp = document.getElementById('montoReembolso');
+                inp.value = doc.saldo.toFixed(2);
+                inp.max = doc.saldo;
+
+                document.getElementById('motivoReembolso').value = '';
+                document.getElementById('autorizoReembolso').value = '';
+                document.getElementById('confirmaEntrega').checked = false;
+                limpiarValidacion();
+                modalReembolso.show();
+            }
+
+            function limpiarValidacion() {
+                ['montoReembolso', 'motivoReembolso', 'autorizoReembolso', 'confirmaEntrega']
+                    .forEach(id => document.getElementById(id).classList.remove('is-invalid'));
+            }
+
+            function validar() {
+                limpiarValidacion();
+                let ok = true;
+                const saldo = parseFloat(document.getElementById('docSaldoMax').value);
+                const monto = parseFloat(document.getElementById('montoReembolso').value);
+
+                if (isNaN(monto) || monto <= 0) {
+                    document.getElementById('montoReembolso').classList.add('is-invalid');
+                    document.getElementById('errMonto').textContent = 'Ingresa un monto válido.';
+                    ok = false;
+                } else if (monto > saldo + 0.01) {
+                    document.getElementById('montoReembolso').classList.add('is-invalid');
+                    document.getElementById('errMonto').textContent =
+                        `El monto no puede superar el saldo disponible (${fmt(saldo)}).`;
+                    ok = false;
+                }
+
+                if (document.getElementById('motivoReembolso').value.trim().length < 5) {
+                    document.getElementById('motivoReembolso').classList.add('is-invalid');
+                    document.getElementById('errMotivo').textContent = 'Describe el motivo (mínimo 5 caracteres).';
+                    ok = false;
+                }
+
+                if (document.getElementById('autorizoReembolso').value.trim().length < 2) {
+                    document.getElementById('autorizoReembolso').classList.add('is-invalid');
+                    document.getElementById('errAutorizo').textContent = 'Indica quién autoriza la devolución.';
+                    ok = false;
+                }
+
+                if (!document.getElementById('confirmaEntrega').checked) {
+                    document.getElementById('confirmaEntrega').classList.add('is-invalid');
+                    document.getElementById('errConfirma').textContent = 'Debes confirmar la entrega del efectivo.';
+                    ok = false;
+                }
+
+                return ok;
+            }
+
+            async function confirmarReembolso() {
+                if (!validar()) return;
+
+                const btn = document.getElementById('btnConfirmarReembolso');
+                const ico = document.getElementById('icoConfirmar');
+                const spin = document.getElementById('spinConfirmar');
+
+                btn.disabled = true;
+                ico.classList.add('d-none');
+                spin.classList.remove('d-none');
+
+                const body = new URLSearchParams({
+                    __RequestVerificationToken: TOKEN,
+                    documentoId: document.getElementById('docId').value,
+                    monto: document.getElementById('montoReembolso').value,
+                    motivo: document.getElementById('motivoReembolso').value.trim(),
+                    autorizadoPor: document.getElementById('autorizoReembolso').value.trim()
+                });
+
+                try {
+                    const r = await fetch('/DevolucionEfectivo/ProcesarDevolucion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body
+                    });
+                    const d = await r.json();
+
+                    if (d.success) {
+                        modalReembolso.hide();
+                        mostrarToast(`${d.folioDevolucion} registrada correctamente.`, 'success');
+                        await Promise.all([cargarHistorial(), buscarDocumentos()]);
+                    } else {
+                        mostrarToast(d.message ?? 'Ocurrió un error.', 'warning');
+                    }
+                } catch {
+                    mostrarToast('No se pudo conectar con el servidor.', 'warning');
+                } finally {
+                    btn.disabled = false;
+                    ico.classList.remove('d-none');
+                    spin.classList.add('d-none');
+                }
+            }
+
+            // ── Init ─────────────────────────────────────────────────────────────────
+            function init() {
+                modalReembolso = new bootstrap.Modal(document.getElementById('modalReembolso'));
+
+                document.getElementById('btnBuscar').addEventListener('click', buscarDocumentos);
+                document.getElementById('btnLimpiar').addEventListener('click', limpiarBusqueda);
+                document.getElementById('btnConfirmarReembolso').addEventListener('click', confirmarReembolso);
+
+                ['filtroFolio', 'filtroCliente'].forEach(id =>
+                    document.getElementById(id).addEventListener('keyup',
+                        e => { if (e.key === 'Enter') buscarDocumentos(); })
+                );
+
+                cargarHistorial();
+            }
+
+            return { init };
+        })();
+
+        document.addEventListener('DOMContentLoaded', DEV.init);
+    </script>
+
+    @* Token antiforgery oculto que el JS lee para el POST *@
+    @Html.AntiForgeryToken()
+}

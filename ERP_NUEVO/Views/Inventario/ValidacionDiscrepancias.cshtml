@@ -1,0 +1,1674 @@
+﻿@{
+    ViewData["Title"] = "Validación de Discrepancias";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Validación de Discrepancias";
+}
+
+<style>
+    /* ── Layout ── */
+    .vd-page {
+        background: var(--bg-gray);
+        min-height: 100vh;
+        padding: 1.75rem 0 5rem;
+    }
+
+    /* ── KPIs ── */
+    .vd-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+        gap: 12px;
+        margin-bottom: 1.4rem;
+    }
+
+    .vd-kpi {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 14px;
+        padding: .9rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+        .vd-kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .vd-kpi::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 14px 14px 0 0;
+        }
+
+        .vd-kpi.c-blue::before {
+            background: var(--accent-blue);
+        }
+
+        .vd-kpi.c-amber::before {
+            background: var(--warning-color);
+        }
+
+        .vd-kpi.c-red::before {
+            background: var(--danger-color);
+        }
+
+        .vd-kpi.c-green::before {
+            background: var(--success-color);
+        }
+
+        .vd-kpi.c-slate::before {
+            background: var(--secondary-blue);
+        }
+
+        .vd-kpi.c-violet::before {
+            background: var(--adjust-pos);
+        }
+
+    .vd-kpi-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .9rem;
+    }
+
+        .vd-kpi-icon.c-blue {
+            background: #eff6ff;
+            color: var(--accent-blue);
+        }
+
+        .vd-kpi-icon.c-amber {
+            background: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .vd-kpi-icon.c-red {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .vd-kpi-icon.c-green {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .vd-kpi-icon.c-slate {
+            background: var(--light-blue);
+            color: var(--secondary-blue);
+        }
+
+        .vd-kpi-icon.c-violet {
+            background: #ede9fe;
+            color: var(--adjust-pos);
+        }
+
+    .vd-kpi-label {
+        font-size: .68rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vd-kpi-val {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+    }
+
+    .vd-kpi-sub {
+        font-size: .7rem;
+        color: var(--text-light);
+    }
+
+    /* ── Toolbar ── */
+    .vd-toolbar {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: .8rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow);
+    }
+
+    .vd-input {
+        border: 1.5px solid var(--border-light);
+        border-radius: 8px;
+        padding: .42rem .8rem;
+        font-size: .83rem;
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        outline: none;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+        .vd-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.13);
+            background: var(--bg-light);
+        }
+
+    /* ── Tabs ── */
+    .vd-tabs {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .vd-tab {
+        padding: .32rem .8rem;
+        border-radius: 99px;
+        font-size: .76rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid transparent;
+        background: var(--bg-gray);
+        color: var(--text-light);
+        transition: all var(--transition-fast);
+    }
+
+        .vd-tab:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .vd-tab.active {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+        }
+
+            .vd-tab.active.amber {
+                background: var(--warning-color);
+                border-color: var(--warning-color);
+            }
+
+            .vd-tab.active.green {
+                background: var(--success-color);
+                border-color: var(--success-color);
+            }
+
+            .vd-tab.active.red {
+                background: var(--danger-color);
+                border-color: var(--danger-color);
+            }
+
+    /* ── Table card ── */
+    .vd-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+    }
+
+    .vd-table-wrap {
+        overflow-x: auto;
+        max-height: 560px;
+        overflow-y: auto;
+    }
+
+    .vd-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 860px;
+        font-size: .81rem;
+    }
+
+        .vd-table thead {
+            background: var(--primary-blue);
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        .vd-table th {
+            padding: .65rem .7rem;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .vd-table td {
+            padding: .6rem .7rem;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+            color: var(--text-dark);
+        }
+
+        .vd-table tbody tr {
+            transition: background var(--transition-fast);
+            cursor: pointer;
+        }
+
+            .vd-table tbody tr:hover td {
+                background: var(--light-blue);
+            }
+
+            .vd-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+    .vd-table-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-light);
+    }
+
+        .vd-table-empty i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: .5rem;
+            opacity: .3;
+        }
+
+    /* ── Badges ── */
+    .vd-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: .67rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        padding: .18rem .55rem;
+        border-radius: var(--badge-radius);
+    }
+
+        .vd-badge.pendiente {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .vd-badge.parcial {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .vd-badge.validado {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .vd-badge.rechazado {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+    /* ── Progress ── */
+    .vd-prog {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .vd-prog-track {
+        width: 60px;
+        height: 6px;
+        border-radius: 99px;
+        background: var(--border-light);
+        overflow: hidden;
+    }
+
+    .vd-prog-fill {
+        height: 100%;
+        border-radius: 99px;
+        transition: width .4s;
+    }
+
+    /* ── Buttons ── */
+    .vd-btn {
+        border: none;
+        border-radius: 8px;
+        padding: .48rem 1rem;
+        font-weight: 600;
+        font-size: .81rem;
+        cursor: pointer;
+        transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+    }
+
+        .vd-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .vd-btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+    .vd-btn-primary {
+        background: var(--primary-blue);
+        color: #fff;
+    }
+
+        .vd-btn-primary:hover {
+            background: var(--primary-blue-dark);
+            box-shadow: 0 4px 12px rgba(30,58,95,.3);
+        }
+
+    .vd-btn-success {
+        background: var(--success-color);
+        color: #fff;
+    }
+
+        .vd-btn-success:hover {
+            background: #047857;
+        }
+
+    .vd-btn-danger {
+        background: var(--danger-color);
+        color: #fff;
+    }
+
+        .vd-btn-danger:hover {
+            background: #b91c1c;
+        }
+
+    .vd-btn-outline {
+        background: transparent;
+        color: var(--accent-blue);
+        border: 1.5px solid var(--accent-blue);
+    }
+
+        .vd-btn-outline:hover {
+            background: var(--accent-blue);
+            color: #fff;
+        }
+
+    .vd-btn-ghost {
+        background: transparent;
+        color: var(--danger-color);
+        border: 1.5px solid var(--danger-color);
+    }
+
+        .vd-btn-ghost:hover {
+            background: var(--danger-color);
+            color: #fff;
+        }
+
+    .vd-btn-sm {
+        padding: .28rem .7rem;
+        font-size: .74rem;
+    }
+
+    /* ── Panel lateral ── */
+    .vd-panel-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.45);
+        z-index: 1050;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-med);
+    }
+
+        .vd-panel-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+    .vd-panel {
+        position: fixed;
+        top: 0;
+        right: -720px;
+        width: min(720px, 100vw);
+        height: 100vh;
+        background: var(--bg-light);
+        border-left: 1px solid var(--border-light);
+        box-shadow: -8px 0 32px rgba(0,0,0,.12);
+        z-index: 1060;
+        overflow-y: auto;
+        transition: right var(--transition-med);
+        display: flex;
+        flex-direction: column;
+    }
+
+        .vd-panel.open {
+            right: 0;
+        }
+
+    .vd-panel-header {
+        background: var(--primary-blue);
+        color: #fff;
+        padding: .9rem 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        flex-shrink: 0;
+    }
+
+    .vd-panel-body {
+        padding: 1.2rem;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .vd-panel-footer {
+        padding: .9rem 1.2rem;
+        border-top: 1px solid var(--border-light);
+        background: var(--bg-light);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        flex-shrink: 0;
+    }
+
+    /* ── Info grid ── */
+    .vd-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 16px;
+        margin-bottom: 1.1rem;
+    }
+
+    .vd-info-label {
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .45px;
+        color: var(--text-light);
+        margin-bottom: 2px;
+    }
+
+    .vd-info-val {
+        font-size: .84rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    /* ── Partida card (flujo de reconteo) ── */
+    .vd-part-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .vd-part-card {
+        border: 1.5px solid var(--border-light);
+        border-radius: 12px;
+        background: var(--bg-light);
+        overflow: hidden;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+        .vd-part-card:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .vd-part-card.ajustado {
+            border-color: var(--success-color);
+        }
+
+            .vd-part-card.ajustado .vd-part-card-head {
+                background: rgba(5,150,105,.06);
+            }
+
+    .vd-part-card-head {
+        padding: .75rem .9rem;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+    }
+
+    .vd-part-cve {
+        font-family: monospace;
+        font-size: .82rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+    }
+
+    .vd-part-desc {
+        font-size: .82rem;
+        color: var(--text-dark);
+        font-weight: 500;
+        margin-top: 2px;
+    }
+
+    .vd-part-sub {
+        font-size: .7rem;
+        color: var(--text-light);
+        margin-top: 3px;
+    }
+
+    /* ── Cantidades comparison ── */
+    .vd-cant-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .vd-cant-cell {
+        background: var(--bg-light);
+        padding: .6rem .75rem;
+        text-align: center;
+    }
+
+    .vd-cant-cell-label {
+        font-size: .62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--text-light);
+        margin-bottom: 4px;
+    }
+
+    .vd-cant-cell-val {
+        font-size: 1.05rem;
+        font-weight: 700;
+        font-family: monospace;
+        color: var(--text-dark);
+    }
+
+        .vd-cant-cell-val.neg {
+            color: var(--adjust-neg);
+        }
+
+        .vd-cant-cell-val.pos {
+            color: var(--adjust-pos);
+        }
+
+        .vd-cant-cell-val.neutral {
+            color: var(--text-light);
+        }
+
+    .vd-cant-cell.highlight {
+        background: rgba(59,130,246,.06);
+    }
+
+    /* ── Zona de reconteo ── */
+    .vd-reconteo-zone {
+        padding: .85rem .9rem;
+    }
+
+    .vd-reconteo-label {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--text-light);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .vd-reconteo-label::before {
+            content: '';
+            width: 3px;
+            height: 14px;
+            background: var(--accent-blue);
+            border-radius: 2px;
+        }
+
+    .vd-reconteo-row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+    }
+
+    .vd-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+        .vd-field label {
+            font-size: .7rem;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+    .vd-field-input {
+        border: 1.5px solid var(--border-light);
+        border-radius: 8px;
+        padding: .42rem .75rem;
+        font-size: .88rem;
+        font-weight: 600;
+        font-family: monospace;
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        outline: none;
+        width: 130px;
+        transition: border-color var(--transition-fast);
+    }
+
+        .vd-field-input:focus {
+            border-color: var(--accent-blue);
+            background: var(--bg-light);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.13);
+        }
+
+        .vd-field-input.cantidad {
+            width: 115px;
+        }
+
+    .vd-field-motivo {
+        flex: 1;
+        min-width: 180px;
+    }
+
+        .vd-field-motivo input {
+            border: 1.5px solid var(--border-light);
+            border-radius: 8px;
+            padding: .42rem .75rem;
+            font-size: .82rem;
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            outline: none;
+            width: 100%;
+            transition: border-color var(--transition-fast);
+        }
+
+            .vd-field-motivo input:focus {
+                border-color: var(--accent-blue);
+                background: var(--bg-light);
+                box-shadow: 0 0 0 3px rgba(59,130,246,.13);
+            }
+
+    /* Preview del ajuste */
+    .vd-ajuste-preview {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: .25rem .65rem;
+        border-radius: 8px;
+        font-size: .76rem;
+        font-weight: 700;
+        font-family: monospace;
+        border: 1.5px dashed transparent;
+        transition: all var(--transition-fast);
+    }
+
+        .vd-ajuste-preview.sin-cambio {
+            background: #f1f5f9;
+            color: var(--text-light);
+            border-color: var(--border-light);
+        }
+
+        .vd-ajuste-preview.negativo {
+            background: #fee2e2;
+            color: var(--adjust-neg);
+            border-color: #fca5a5;
+        }
+
+        .vd-ajuste-preview.positivo {
+            background: #ede9fe;
+            color: var(--adjust-pos);
+            border-color: #c4b5fd;
+        }
+
+    /* Ajuste confirmado info */
+    .vd-ajuste-info {
+        background: #d1fae5;
+        border: 1px solid #6ee7b7;
+        border-radius: 8px;
+        padding: .6rem .85rem;
+        font-size: .79rem;
+        color: #065f46;
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+    }
+
+        .vd-ajuste-info i {
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+    /* ── Divider ── */
+    .vd-divider {
+        font-size: .69rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: var(--text-light);
+        border-bottom: 1px solid var(--border-light);
+        padding-bottom: 5px;
+        margin-bottom: .75rem;
+        margin-top: 1rem;
+    }
+
+    /* ── Paginación ── */
+    .vd-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .6rem 1rem;
+        border-top: 1px solid var(--border-light);
+        background: var(--bg-light);
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .vd-pag-info {
+        font-size: .75rem;
+        color: var(--text-light);
+    }
+
+    .vd-pag-btns {
+        display: flex;
+        gap: 4px;
+    }
+
+    .vd-pag-btn {
+        min-width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-light);
+        font-size: .76rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-fast);
+    }
+
+        .vd-pag-btn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .vd-pag-btn.active {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+        }
+
+        .vd-pag-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+    /* ── Modales ── */
+    .vd-rechazar-modal .modal-header {
+        background: var(--danger-color);
+        color: #fff;
+        border-radius: .45rem .45rem 0 0;
+    }
+
+        .vd-rechazar-modal .modal-header .btn-close {
+            filter: invert(1);
+        }
+
+    @@media (max-width:576px) {
+        .vd-kpi-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .vd-info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .vd-panel {
+            width: 100vw;
+        }
+
+        .vd-cant-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+
+<div class="vd-page">
+    <div class="container-xl">
+
+        <!-- ── Encabezado de página ── -->
+        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <div style="width:2.6rem;height:2.6rem;border-radius:12px;background:var(--primary-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+                <i class="fas fa-balance-scale"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h1 class="h4 mb-0 fw-bold" style="color:var(--text-dark)">Validación de Discrepancias</h1>
+                <p class="mb-0 small" style="color:var(--text-light)">Recontar e ajustar el inventario en sistema para los documentos DISM</p>
+            </div>
+            <button class="vd-btn vd-btn-outline vd-btn-sm" onclick="VDApp.cargarKpis(); VDApp.buscar()">
+                <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+        </div>
+
+        <!-- ── KPIs ── -->
+        <div class="vd-kpi-grid">
+            <div class="vd-kpi c-blue">
+                <div class="vd-kpi-icon c-blue"><i class="fas fa-file-alt"></i></div>
+                <div><div class="vd-kpi-label">Total DISM</div><div class="vd-kpi-val" id="kpi-total">—</div></div>
+                <div class="vd-kpi-sub">Últimos 30 días</div>
+            </div>
+            <div class="vd-kpi c-red">
+                <div class="vd-kpi-icon c-red"><i class="fas fa-clock"></i></div>
+                <div><div class="vd-kpi-label">Pendientes</div><div class="vd-kpi-val" id="kpi-pendientes" style="color:var(--danger-color)">—</div></div>
+                <div class="vd-kpi-sub">Sin ajustar</div>
+            </div>
+            <div class="vd-kpi c-amber">
+                <div class="vd-kpi-icon c-amber"><i class="fas fa-exclamation-circle"></i></div>
+                <div><div class="vd-kpi-label">Parciales</div><div class="vd-kpi-val" id="kpi-parciales" style="color:var(--warning-color)">—</div></div>
+                <div class="vd-kpi-sub">Con avance</div>
+            </div>
+            <div class="vd-kpi c-green">
+                <div class="vd-kpi-icon c-green"><i class="fas fa-check-circle"></i></div>
+                <div><div class="vd-kpi-label">Ajustados</div><div class="vd-kpi-val" id="kpi-validados" style="color:var(--success-color)">—</div></div>
+                <div class="vd-kpi-sub">Completados</div>
+            </div>
+            <div class="vd-kpi c-violet">
+                <div class="vd-kpi-icon c-violet"><i class="fas fa-boxes"></i></div>
+                <div><div class="vd-kpi-label">Disc. pendientes</div><div class="vd-kpi-val" id="kpi-disc-pend" style="color:var(--adjust-pos)">—</div></div>
+                <div class="vd-kpi-sub">Por recontar</div>
+            </div>
+        </div>
+
+        <!-- ── Toolbar ── -->
+        <div class="vd-toolbar">
+            <div class="vd-tabs">
+                <button class="vd-tab active" data-est="" onclick="VDApp.setTab(this,'')">Todos</button>
+                <button class="vd-tab" data-est="pendiente" onclick="VDApp.setTab(this,'pendiente')">
+                    <i class="fas fa-clock me-1"></i>Pendiente
+                </button>
+                <button class="vd-tab" data-est="parcial" onclick="VDApp.setTab(this,'parcial')">
+                    <i class="fas fa-exclamation-circle me-1"></i>Parcial
+                </button>
+                <button class="vd-tab" data-est="validado" onclick="VDApp.setTab(this,'validado')">
+                    <i class="fas fa-check-circle me-1"></i>Ajustado
+                </button>
+            </div>
+
+            <div style="flex:1;min-width:160px;">
+                <input type="text" id="vd-search" class="vd-input w-100"
+                       placeholder="Folio, cliente, proveedor…"
+                       oninput="VDApp.onSearch(this.value)">
+            </div>
+
+            <input type="date" id="vd-fdesde" class="vd-input" title="Desde" onchange="VDApp.buscar()">
+            <input type="date" id="vd-fhasta" class="vd-input" title="Hasta" onchange="VDApp.buscar()">
+
+            <select id="vd-page-size" class="vd-input" style="min-width:120px" onchange="VDApp.buscar()">
+                <option value="25" selected>25 / pág</option>
+                <option value="50">50 / pág</option>
+                <option value="100">100 / pág</option>
+            </select>
+
+            <button class="vd-btn vd-btn-outline vd-btn-sm" onclick="VDApp.limpiarFiltros()">
+                <i class="fas fa-eraser"></i> Limpiar
+            </button>
+        </div>
+
+        <!-- ── Tabla ── -->
+        <div class="vd-card">
+            <div class="vd-table-wrap">
+                <table class="vd-table">
+                    <thead>
+                        <tr>
+                            <th style="width:36px">#</th>
+                            <th>Folio DISM</th>
+                            <th>Pedido Padre</th>
+                            <th>Cliente / Proveedor</th>
+                            <th style="width:90px">Fecha</th>
+                            <th style="width:115px;text-align:center">Avance</th>
+                            <th style="width:110px;text-align:center">Estatus</th>
+                            <th style="width:130px">Último ajuste</th>
+                            <th style="width:80px;text-align:center">Ver</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vd-tbody">
+                        <tr><td colspan="10" class="vd-table-empty"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="vd-pagination">
+                <span class="vd-pag-info">
+                    Mostrando <strong id="vd-from">0</strong>–<strong id="vd-to">0</strong>
+                    de <strong id="vd-total-rec">0</strong> registros
+                </span>
+                <div class="vd-pag-btns" id="vd-pag-btns"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════ PANEL LATERAL ═══════════════ -->
+<div class="vd-panel-overlay" id="vd-overlay" onclick="VDApp.cerrarPanel()"></div>
+<div class="vd-panel" id="vd-panel">
+
+    <div class="vd-panel-header">
+        <div>
+            <div style="font-size:.68rem;opacity:.7;text-transform:uppercase;letter-spacing:.6px;">Ajuste de Inventario · DISM</div>
+            <div style="font-size:1.05rem;font-weight:700;" id="vdp-folio">—</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span id="vdp-badge-estatus"></span>
+            <button style="background:none;border:none;color:#fff;font-size:1.25rem;cursor:pointer;line-height:1;"
+                    onclick="VDApp.cerrarPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="vd-panel-body" id="vdp-body">
+        <div style="text-align:center;padding:3rem 1rem;color:var(--text-light)">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <div style="margin-top:.5rem">Cargando…</div>
+        </div>
+    </div>
+
+    <div class="vd-panel-footer" id="vdp-footer">
+        <button class="vd-btn vd-btn-success" id="vdp-btn-ajustar-todo" onclick="VDApp.ajustarTodo()" style="display:none">
+            <i class="fas fa-check-double"></i> Confirmar todo con cantidad física
+        </button>
+        <button class="vd-btn vd-btn-danger" id="vdp-btn-rechazar" onclick="VDApp.abrirModalRechazar()" style="display:none">
+            <i class="fas fa-ban"></i> Rechazar DISM
+        </button>
+        <button class="vd-btn vd-btn-ghost vd-btn-sm ms-auto" onclick="VDApp.cerrarPanel()">
+            <i class="fas fa-times"></i> Cerrar
+        </button>
+    </div>
+</div>
+
+<!-- ═══════════════ MODAL: RECHAZAR ═══════════════ -->
+<div class="modal fade vd-rechazar-modal" id="vdModalRechazar" tabindex="-1">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-ban me-2"></i>Rechazar DISM</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3 p-3 rounded-3" style="background:#fee2e2;border:1.5px solid var(--danger-color);">
+                    <div style="font-weight:700;color:#991b1b;font-size:.86rem;">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Esta acción cancela el DISM. El inventario <strong>no será modificado</strong>.
+                    </div>
+                </div>
+                <label class="vd-val-label" style="font-size:.81rem;font-weight:600;">Motivo del rechazo <span style="color:var(--danger-color)">*</span></label>
+                <textarea id="vd-motivo-rechazo" rows="4" style="width:100%;border:1.5px solid var(--border-light);border-radius:8px;padding:.45rem .75rem;font-size:.83rem;resize:vertical;outline:none;background:var(--bg-gray);color:var(--text-dark);"
+                          placeholder="Describa el motivo del rechazo…"></textarea>
+            </div>
+            <div class="modal-footer gap-2">
+                <button type="button" class="vd-btn vd-btn-ghost vd-btn-sm" data-bs-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
+                <button type="button" class="vd-btn vd-btn-danger" id="vdp-btn-confirmar-rechazo" onclick="VDApp.confirmarRechazo()">
+                    <i class="fas fa-ban"></i> Confirmar Rechazo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════ MODAL: HISTORIAL ═══════════════ -->
+<div class="modal fade" id="vdModalHistorial" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header" style="background:var(--primary-blue);color:#fff;border-radius:.45rem .45rem 0 0;">
+                <h5 class="modal-title"><i class="fas fa-history me-2"></i>Historial de Ajustes</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle" style="font-size:.79rem;">
+                        <thead style="background:var(--bg-gray);">
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Sistema</th>
+                                <th class="text-center">Físico</th>
+                                <th class="text-center">Diferencia</th>
+                                <th class="text-center">Real confirmado</th>
+                                <th class="text-center">Ajuste aplicado</th>
+                                <th>Motivo discrepancia</th>
+                                <th>Motivo ajuste</th>
+                                <th>Estado</th>
+                                <th>Ajustó</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vd-historial-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<script>
+    const VDApp = (() => {
+
+        /* ── Estado ── */
+        let _page = 1, _pageSize = 25, _total = 0;
+        let _estatus = '', _nombre = '', _fdesde = '', _fhasta = '';
+        let _searchTimer = null;
+        let _dismActual = null;
+        let _partidasPanel = [];
+
+        /* ── Helpers ── */
+        const esc = (t) => {
+            const d = document.createElement('div');
+            d.textContent = t == null ? '-' : String(t);
+            return d.innerHTML;
+        };
+        const fmtDate = v => { if (!v) return '—'; try { return new Date(v).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return v; } };
+        const fmtCur = v => parseFloat(v || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+        const fmtNum = v => parseFloat(v || 0).toFixed(4).replace(/\.?0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+        const token = () => document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const toast = (icon, title) => typeof toastMixin !== 'undefined' && toastMixin?.fire({ icon, title });
+
+        /* ── KPIs ── */
+        async function cargarKpis() {
+            try {
+                const d = await fetch('/VIValidacionDiscrepancias/ObtenerKpis').then(r => r.json());
+                if (!d.success) return;
+                document.getElementById('kpi-total').textContent = d.total_dism ?? '—';
+                document.getElementById('kpi-pendientes').textContent = d.pendientes ?? '—';
+                document.getElementById('kpi-parciales').textContent = d.parciales ?? '—';
+                document.getElementById('kpi-validados').textContent = d.validados ?? '—';
+                document.getElementById('kpi-disc-pend').textContent = d.discrepancias_pendientes ?? '—';
+
+            } catch (e) { console.error('KPIs', e); }
+        }
+
+        /* ── Tabs ── */
+        function setTab(el, est) {
+            document.querySelectorAll('.vd-tab').forEach(t => t.classList.remove('active', 'amber', 'green', 'red'));
+            el.classList.add('active');
+            const map = { pendiente: 'red', parcial: 'amber', validado: 'green' };
+            if (map[est]) el.classList.add(map[est]);
+            _estatus = est; _page = 1; buscar();
+        }
+
+        /* ── Search ── */
+        function onSearch(val) {
+            clearTimeout(_searchTimer); _nombre = val;
+            _searchTimer = setTimeout(() => { _page = 1; buscar(); }, 320);
+        }
+
+        /* ── Limpiar filtros ── */
+        function limpiarFiltros() {
+            document.getElementById('vd-search').value = '';
+            document.getElementById('vd-fdesde').value = '';
+            document.getElementById('vd-fhasta').value = '';
+            document.querySelectorAll('.vd-tab').forEach(t => t.classList.remove('active', 'amber', 'green', 'red'));
+            document.querySelector('.vd-tab[data-est=""]').classList.add('active');
+            _nombre = ''; _estatus = ''; _fdesde = ''; _fhasta = ''; _page = 1;
+            buscar();
+        }
+
+        /* ── Buscar ── */
+        async function buscar() {
+            _pageSize = parseInt(document.getElementById('vd-page-size').value);
+            _fdesde = document.getElementById('vd-fdesde').value;
+            _fhasta = document.getElementById('vd-fhasta').value;
+
+            const tbody = document.getElementById('vd-tbody');
+            tbody.innerHTML = `<tr><td colspan="10" class="vd-table-empty"><i class="fas fa-spinner fa-spin fa-2x"></i></td></tr>`;
+
+            try {
+                const params = new URLSearchParams({ nombre: _nombre, estatus: _estatus, fechaDesde: _fdesde, fechaHasta: _fhasta, page: _page, pageSize: _pageSize });
+                const d = await fetch('/VIValidacionDiscrepancias/BuscarDism?' + params).then(r => r.json());
+                if (!d.success) throw new Error(d.message);
+                _total = d.total || 0;
+                renderTabla(d.items || []);
+                renderPaginacion();
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="10" class="vd-table-empty" style="color:var(--danger-color)"><i class="fas fa-exclamation-triangle fa-2x"></i><div class="mt-2">${esc(e.message)}</div></td></tr>`;
+            }
+        }
+
+        /* ── Render tabla ── */
+        function renderTabla(items) {
+            const tbody = document.getElementById('vd-tbody');
+            if (!items.length) {
+                tbody.innerHTML = `<tr><td colspan="10" class="vd-table-empty"><i class="fas fa-search"></i><div class="fw-semibold mb-1">Sin resultados</div><small>Ajusta los filtros</small></td></tr>`;
+                return;
+            }
+
+            const offset = (_page - 1) * _pageSize;
+            tbody.innerHTML = items.map((item, i) => {
+                const total = parseInt(item.total_partidas || 0);
+                const verif = parseInt(item.partidas_validadas || 0);
+                const pct = total > 0 ? Math.round((verif / total) * 100) : 0;
+                const barColor = pct === 100 ? 'var(--success-color)' : pct > 0 ? 'var(--warning-color)' : 'var(--danger-color)';
+                const est = (item.validacion_dism || 'pendiente').toLowerCase();
+                const estBadge = {
+                    pendiente: `<span class="vd-badge pendiente"><i class="fas fa-clock"></i> Pendiente</span>`,
+                    parcial: `<span class="vd-badge parcial"><i class="fas fa-exclamation-circle"></i> Parcial</span>`,
+                    validado: `<span class="vd-badge validado"><i class="fas fa-check-circle"></i> Ajustado</span>`,
+                    rechazado: `<span class="vd-badge rechazado"><i class="fas fa-ban"></i> Rechazado</span>`
+                }[est] || `<span class="vd-badge pendiente"><i class="fas fa-clock"></i> Pendiente</span>`;
+
+                const ajustador = item.usuario_validacion
+                    ? `<div style="font-size:.74rem;color:var(--text-dark)">${esc(item.usuario_validacion)}</div>
+                   <div style="font-size:.66rem;color:var(--text-light)">${dateFormatter(item.fecha_validacion)}</div>`
+                    : `<span style="color:var(--text-light);font-size:.74rem">—</span>`;
+
+                return `<tr onclick="VDApp.abrirDetalle(${item.id_encabezado})">
+                <td style="color:var(--text-light);font-size:.77rem">${offset + i + 1}</td>
+                <td><span style="font-weight:700;color:var(--primary-blue)">${esc(item.folio || '')}</span></td>
+                <td><span style="font-size:.77rem;color:var(--text-light)">${esc(item.folio_padre || '—')}</span></td>
+                <td>
+                    <div style="font-weight:600;font-size:.82rem">${esc(item.n_cli || item.cli_prov || '')}</div>
+                    <div style="font-size:.69rem;color:var(--text-light)">${esc(item.cli_prov || '')}</div>
+                </td>
+                <td style="white-space:nowrap;font-size:.77rem">${dateFormatter(item.fch)}</td>
+                <td style="text-align:center">
+                    <div class="vd-prog">
+                        <span style="font-size:.69rem;font-weight:700;color:var(--text-light);white-space:nowrap">${verif}/${total}</span>
+                        <div class="vd-prog-track">
+                            <div class="vd-prog-fill" style="width:${pct}%;background:${barColor}"></div>
+                        </div>
+                        <span style="font-size:.69rem;font-weight:700;color:${barColor}">${pct}%</span>
+                    </div>
+                </td>
+                <td style="text-align:center">${estBadge}</td>
+                <td>${ajustador}</td>
+                <td style="text-align:center">
+                    <button class="vd-btn vd-btn-primary vd-btn-sm" title="Abrir"
+                            onclick="event.stopPropagation();VDApp.abrirDetalle(${item.id_encabezado})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>`;
+            }).join('');
+        }
+
+        /* ── Paginación ── */
+        function renderPaginacion() {
+            const from = _total > 0 ? (_page - 1) * _pageSize + 1 : 0;
+            const to = Math.min(_page * _pageSize, _total);
+            document.getElementById('vd-from').textContent = from;
+            document.getElementById('vd-to').textContent = to;
+            document.getElementById('vd-total-rec').textContent = _total;
+
+            const container = document.getElementById('vd-pag-btns');
+            const totalPages = Math.ceil(_total / _pageSize);
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+            let html = `<button class="vd-pag-btn" ${_page <= 1 ? 'disabled' : ''} onclick="VDApp.goPage(${_page - 1})"><i class="fas fa-chevron-left" style="font-size:.6rem"></i></button>`;
+            const start = Math.max(1, _page - 2), end = Math.min(totalPages, _page + 2);
+            if (start > 1) html += `<button class="vd-pag-btn" onclick="VDApp.goPage(1)">1</button>${start > 2 ? '<span style="padding:0 3px;color:var(--text-light)">…</span>' : ''}`;
+            for (let i = start; i <= end; i++) html += `<button class="vd-pag-btn ${i === _page ? 'active' : ''}" onclick="VDApp.goPage(${i})">${i}</button>`;
+            if (end < totalPages) html += `${end < totalPages - 1 ? '<span style="padding:0 3px;color:var(--text-light)">…</span>' : ''}<button class="vd-pag-btn" onclick="VDApp.goPage(${totalPages})">${totalPages}</button>`;
+            html += `<button class="vd-pag-btn" ${_page >= totalPages ? 'disabled' : ''} onclick="VDApp.goPage(${_page + 1})"><i class="fas fa-chevron-right" style="font-size:.6rem"></i></button>`;
+
+            container.innerHTML = html;
+        }
+
+        function goPage(p) { _page = p; buscar(); }
+
+        /* ── Abrir detalle ── */
+        async function abrirDetalle(id) {
+            document.getElementById('vd-overlay').classList.add('open');
+            document.getElementById('vd-panel').classList.add('open');
+            document.getElementById('vdp-folio').textContent = 'Cargando…';
+            document.getElementById('vdp-badge-estatus').innerHTML = '';
+            document.getElementById('vdp-body').innerHTML = `<div style="text-align:center;padding:3rem 1rem;color:var(--text-light)"><i class="fas fa-spinner fa-spin fa-2x"></i><div style="margin-top:.5rem">Cargando…</div></div>`;
+            document.getElementById('vdp-btn-ajustar-todo').style.display = 'none';
+            document.getElementById('vdp-btn-rechazar').style.display = 'none';
+
+            try {
+                const d = await fetch(`/VIValidacionDiscrepancias/ObtenerDetalleDism?idDism=${id}`).then(r => r.json());
+                if (!d.success) throw new Error(d.message);
+
+                _dismActual = d.encabezado;
+                _partidasPanel = d.partidas || [];
+
+                document.getElementById('vdp-folio').textContent = _dismActual.folio;
+
+                const est = (_dismActual.validacion_dism || 'pendiente').toLowerCase();
+                document.getElementById('vdp-badge-estatus').innerHTML =
+                    `<span style="background:rgba(255,255,255,.18);color:#fff;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:.16rem .6rem;border-radius:99px;">${est}</span>`;
+
+                if (est !== 'rechazado') {
+                    document.getElementById('vdp-btn-ajustar-todo').style.display = '';
+                    document.getElementById('vdp-btn-rechazar').style.display = '';
+                }
+
+                renderDetalle();
+            } catch (e) {
+                document.getElementById('vdp-body').innerHTML = `<div style="text-align:center;padding:3rem 1rem;color:var(--danger-color)"><i class="fas fa-exclamation-triangle fa-2x"></i><div style="margin-top:.5rem">${esc(e.message)}</div></div>`;
+            }
+        }
+
+        /* ── Render detalle con flujo de reconteo ── */
+        function renderDetalle() {
+            const enc = _dismActual;
+            if (!enc) return;
+
+            let html = '';
+
+            /* Info encabezado */
+            html += `<div class="vd-divider"><i class="fas fa-file-alt me-1"></i>Información del Documento</div>
+        <div class="vd-info-grid" style="margin-bottom:.9rem">
+            <div><div class="vd-info-label">Cliente / Proveedor</div><div class="vd-info-val">${esc(enc.n_cli ?? enc.cli_prov ?? '—')}</div></div>
+            <div><div class="vd-info-label">RFC</div><div class="vd-info-val">${esc(enc.rfc ?? '—')}</div></div>
+            <div><div class="vd-info-label">Fecha</div><div class="vd-info-val">${dateFormatter(enc.fch)}</div></div>
+            <div><div class="vd-info-label">Pedido padre</div><div class="vd-info-val">${esc(enc.folio_padre ?? '—')}</div></div>
+            <div><div class="vd-info-label">Estatus</div><div class="vd-info-val">${esc(enc.validacion_dism ?? 'pendiente')}</div></div>
+        </div>`;
+
+            if (enc.coment_aut) {
+                html += `<div style="background:var(--bg-gray);border:1px solid var(--border-light);border-radius:8px;padding:.6rem .85rem;margin-bottom:.9rem;font-size:.8rem;color:var(--text-dark);">
+                <span style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-light);"><i class="fas fa-comment me-1"></i>Comentario: </span>
+                ${esc(enc.coment_aut)}
+            </div>`;
+            }
+
+            html += `<div class="d-flex justify-content-end mb-3">
+            <button class="vd-btn vd-btn-outline vd-btn-sm" onclick="VDApp.verHistorial(${enc.id_encabezado})">
+                <i class="fas fa-history"></i> Historial de ajustes
+            </button>
+        </div>`;
+
+            /* Leyenda de columnas */
+            html += `
+        <div class="vd-divider"><i class="fas fa-list me-1"></i>Discrepancias registradas — Reconteo de inventario</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border-light);border:1px solid var(--border-light);border-radius:8px;overflow:hidden;margin-bottom:10px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);text-align:center;">
+            <div style="background:var(--bg-gray);padding:.4rem">Sistema (captura)</div>
+            <div style="background:var(--bg-gray);padding:.4rem">Físico registrado</div>
+            <div style="background:var(--bg-gray);padding:.4rem">Diferencia</div>
+            <div style="background:#eff6ff;padding:.4rem;color:var(--accent-blue)">Existencia actual</div>
+        </div>`;
+
+            /* Partidas */
+            html += `<div class="vd-part-list" id="vdp-partidas">`;
+
+            _partidasPanel.forEach((p, idx) => {
+                const estaAjustado = p.validado === true;
+                const cantSist = parseFloat(p.cantidad_sistema_captura || 0);
+                const cantFis = parseFloat(p.cantidad_fisica || 0);
+                const diff = parseFloat(p.diferencia || 0);
+                const cantActual = parseFloat(p.existencia_sistema_actual || 0);
+                const cantReal = estaAjustado ? parseFloat(p.cantidad_real_ajustada || 0) : cantFis;
+
+                const diffClass = diff > 0 ? 'neg' : diff < 0 ? 'pos' : 'neutral';
+
+                html += `
+            <div class="vd-part-card ${estaAjustado ? 'ajustado' : ''}" id="vdp-card-${idx}">
+
+                <!-- Encabezado de la tarjeta -->
+                <div class="vd-part-card-head">
+                    <div style="flex:1">
+                        <div class="vd-part-cve">${esc(p.cve_prod || '')}</div>
+                        <div class="vd-part-desc">${esc(p.descr_prod || '')}</div>
+                        <div class="vd-part-sub">
+                            ${p.unidad ? `Unidad: <strong>${esc(p.unidad)}</strong>` : ''}
+                            ${p.cve_almacen ? ` · Almacén: <strong>${esc(p.cve_almacen)}</strong> ${esc(p.n_almacen || '')}` : ''}
+                            ${p.lote ? ` · Lote: <strong>${esc(p.lote)}</strong>` : ''}
+                        </div>
+                        ${p.motivo ? `<div class="vd-part-sub" style="margin-top:3px"><i class="fas fa-info-circle me-1"></i><em>${esc(p.motivo)}</em></div>` : ''}
+                    </div>
+                    ${estaAjustado
+                        ? `<span class="vd-badge validado"><i class="fas fa-check-circle"></i> Ajustado</span>`
+                        : `<span class="vd-badge pendiente"><i class="fas fa-clock"></i> Pendiente</span>`}
+                </div>
+
+                <!-- Grid de cantidades comparativas -->
+                <div class="vd-cant-grid">
+                    <div class="vd-cant-cell">
+                        <div class="vd-cant-cell-label">Sistema (captura)</div>
+                        <div class="vd-cant-cell-val">${fmtNum(cantSist)}</div>
+                    </div>
+                    <div class="vd-cant-cell">
+                        <div class="vd-cant-cell-label">Físico registrado</div>
+                        <div class="vd-cant-cell-val">${fmtNum(cantFis)}</div>
+                    </div>
+                    <div class="vd-cant-cell">
+                        <div class="vd-cant-cell-label">Diferencia</div>
+                        <div class="vd-cant-cell-val ${diffClass}">${diff >= 0 ? '+' : ''}${fmtNum(diff)}</div>
+                    </div>
+                    <div class="vd-cant-cell highlight">
+                        <div class="vd-cant-cell-label" style="color:var(--accent-blue)">Existencia actual</div>
+                        <div class="vd-cant-cell-val" style="color:var(--info-color)">${fmtNum(cantActual)}</div>
+                    </div>
+                </div>
+
+                <!-- Zona de reconteo / estado ajustado -->
+                <div class="vd-reconteo-zone">`;
+
+                if (estaAjustado) {
+                    const ajusteAplicado = parseFloat(p.cantidad_real_ajustada || 0) - cantSist;
+                    const ajusteStr = ajusteAplicado >= 0 ? `+${fmtNum(ajusteAplicado)}` : fmtNum(ajusteAplicado);
+                    const ajusteColor = ajusteAplicado > 0 ? 'var(--adjust-pos)' : ajusteAplicado < 0 ? 'var(--adjust-neg)' : 'var(--text-light)';
+
+                    html += `
+                <div class="vd-ajuste-info">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>Inventario ajustado.</strong>
+                        Cantidad real confirmada: <strong>${fmtNum(p.cantidad_real_ajustada)}</strong>
+                        · Ajuste aplicado en sistema: <strong style="color:${ajusteColor}">${ajusteStr}</strong>
+                        <br>
+                        <span style="font-size:.73rem;opacity:.8">
+                            ${esc(p.motivo_validacion || '')}
+                            · <em>${esc(p.nombre_validador || '')} ${dateFormatter(p.fecha_validacion)}</em>
+                        </span>
+                    </div>
+                </div>`;
+                } else {
+                    /* Input de reconteo */
+                    html += `
+                <div class="vd-reconteo-label"><i class="fas fa-edit"></i> Ingresa la cantidad real contada</div>
+                <div class="vd-reconteo-row">
+
+                    <div class="vd-field">
+                        <label for="vdp-cant-${idx}">Cantidad real contada <span style="color:var(--danger-color)">*</span></label>
+                        <input type="number" id="vdp-cant-${idx}" class="vd-field-input cantidad"
+                               min="0" step="0.0001"
+                               value="${cantFis.toFixed(4)}"
+                               oninput="VDApp.previsualizarAjuste(${idx}, ${cantSist})"
+                               placeholder="${cantFis.toFixed(4)}">
+                    </div>
+
+                    <!-- Preview del ajuste que se aplicará -->
+                    <div style="display:flex;flex-direction:column;gap:4px;justify-content:flex-end">
+                        <div style="font-size:.68rem;font-weight:600;color:var(--text-light);">Ajuste a aplicar</div>
+                        <div class="vd-ajuste-preview sin-cambio" id="vdp-prev-${idx}">
+                            <i class="fas fa-arrows-alt-h"></i> <span>0</span>
+                        </div>
+                    </div>
+
+                    <div class="vd-field vd-field-motivo">
+                        <label for="vdp-motivo-${idx}">Motivo <span style="color:var(--danger-color)">*</span></label>
+                        <input type="text" id="vdp-motivo-${idx}"
+                               placeholder="Ej: Reconteo físico correcto, diferencia por merma…">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap mt-1">
+                    <button class="vd-btn vd-btn-success vd-btn-sm"
+                            onclick="VDApp.confirmarAjuste(${idx}, ${p.id_discrepancia_fisica}, ${enc.id_encabezado})">
+                        <i class="fas fa-check"></i> Confirmar ajuste
+                    </button>
+                    <button class="vd-btn vd-btn-sm"
+                            style="background:var(--bg-gray);color:var(--text-light);border:1px solid var(--border-light);"
+                            onclick="document.getElementById('vdp-cant-${idx}').value='${cantFis.toFixed(4)}'; VDApp.previsualizarAjuste(${idx}, ${cantSist});"
+                            title="Restaurar cantidad física registrada">
+                        <i class="fas fa-undo"></i> Usar físico
+                    </button>
+                </div>`;
+                }
+
+                html += `</div></div>`; // cierra vd-reconteo-zone y vd-part-card
+            });
+
+            html += '</div>'; // cierra vd-part-list
+            document.getElementById('vdp-body').innerHTML = html;
+
+            /* Inicializar previews */
+            _partidasPanel.forEach((p, idx) => {
+                if (!p.validado) {
+                    const cantSist = parseFloat(p.cantidad_sistema_captura || 0);
+                    previsualizarAjuste(idx, cantSist);
+                }
+            });
+        }
+
+        /* ── Preview ajuste en tiempo real ── */
+        function previsualizarAjuste(idx, cantSistema) {
+            const input = document.getElementById(`vdp-cant-${idx}`);
+            const prev = document.getElementById(`vdp-prev-${idx}`);
+            if (!input || !prev) return;
+
+            const cantReal = parseFloat(input.value) || 0;
+            const diff = cantReal - cantSistema;
+
+            prev.className = 'vd-ajuste-preview';
+            if (diff === 0) {
+                prev.classList.add('sin-cambio');
+                prev.innerHTML = `<i class="fas fa-arrows-alt-h"></i> <span>Sin cambio</span>`;
+            } else if (diff < 0) {
+                prev.classList.add('negativo');
+                prev.innerHTML = `<i class="fas fa-arrow-down"></i> <span>${diff.toFixed(4)}</span>`;
+            } else {
+                prev.classList.add('positivo');
+                prev.innerHTML = `<i class="fas fa-arrow-up"></i> <span>+${diff.toFixed(4)}</span>`;
+            }
+        }
+
+        /* ── Confirmar ajuste individual ── */
+        async function confirmarAjuste(idx, idDiscrepancia, idDism) {
+            const cantEl = document.getElementById(`vdp-cant-${idx}`);
+            const motivoEl = document.getElementById(`vdp-motivo-${idx}`);
+            if (!cantEl || !motivoEl) return;
+
+            const cant = parseFloat(cantEl.value);
+            const motivo = motivoEl.value.trim();
+
+            if (isNaN(cant) || cant < 0) { toast('warning', 'Ingresa una cantidad válida (≥ 0)'); return; }
+            if (!motivo) { toast('warning', 'Debes indicar el motivo del ajuste'); return; }
+
+            const cantSist = parseFloat(_partidasPanel[idx].cantidad_sistema_captura || 0);
+            const diff = cant - cantSist;
+
+            /* Confirmar si hay cambio ── */
+            if (diff !== 0 && typeof Swal !== 'undefined') {
+                const res = await Swal.fire({
+                    icon: diff < 0 ? 'warning' : 'info',
+                    title: 'Confirmar ajuste de inventario',
+                    html: `Se aplicará un ajuste de <strong style="color:${diff < 0 ? 'var(--danger-color)' : 'var(--adjust-pos)'}">${diff >= 0 ? '+' : ''}${diff.toFixed(4)}</strong> unidades al sistema.<br><small>Producto: ${esc(_partidasPanel[idx].cve_prod)}</small>`,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-check me-1"></i>Confirmar ajuste',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#059669'
+                });
+                if (!res.isConfirmed) return;
+            }
+
+            const btn = document.querySelector(`#vdp-card-${idx} .vd-btn-success`);
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ajustando…'; }
+
+            try {
+                const fd = new FormData();
+                fd.append('__RequestVerificationToken', token());
+                fd.append('idDiscrepancia', idDiscrepancia);
+                fd.append('idDism', idDism);
+                fd.append('cantidadReal', cant);
+                fd.append('motivoValidacion', motivo);
+
+                const res = await fetch('/VIValidacionDiscrepancias/ConfirmarAjuste', { method: 'POST', body: fd }).then(r => r.json());
+                if (!res.success) throw new Error(res.message);
+
+                /* Actualizar estado local */
+                _partidasPanel[idx].validado = true;
+                _partidasPanel[idx].cantidad_real_ajustada = cant;
+                _partidasPanel[idx].motivo_validacion = motivo;
+
+                toast('success', res.message || 'Ajuste confirmado');
+                renderDetalle();
+                buscar();
+
+            } catch (e) {
+                toast('error', e.message || 'Error al confirmar ajuste');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar ajuste'; }
+            }
+        }
+
+        /* ── Ajustar todo (usar cantidades físicas tal como están) ── */
+        async function ajustarTodo() {
+            if (!_dismActual) return;
+
+            const pendientes = _partidasPanel.filter(p => p.id_discrepancia_fisica && !p.validado);
+            if (!pendientes.length) { toast('info', 'Todas las partidas ya están ajustadas'); return; }
+
+            const confirm = await Swal?.fire({
+                icon: 'question',
+                title: '¿Confirmar ajuste masivo?',
+                html: `Se confirmarán <strong>${pendientes.length}</strong> partida(s) usando la <strong>cantidad física registrada</strong> como valor real.<br>Ingresa el motivo global:`,
+                input: 'text',
+                inputPlaceholder: 'Motivo global…',
+                inputValidator: v => v.trim() ? null : 'El motivo es requerido',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check-double me-1"></i> Ajustar todo',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#059669'
+            });
+            if (!confirm?.isConfirmed) return;
+
+            const motivoGlobal = confirm.value.trim();
+
+            const btn = document.getElementById('vdp-btn-ajustar-todo');
+            const orig = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando…';
+
+            try {
+                const partidas = pendientes.map(p => ({
+                    id_discrepancia: String(p.id_discrepancia_fisica),
+                    cantidad_real: String(p.cantidad_fisica ?? 0),
+                    motivo_validacion: motivoGlobal
+                }));
+
+                const fd = new FormData();
+                fd.append('__RequestVerificationToken', token());
+                fd.append('idDism', _dismActual.id_encabezado);
+                fd.append('partidasJson', JSON.stringify(partidas));
+                fd.append('motivoGlobal', motivoGlobal);
+
+                const res = await fetch('/VIValidacionDiscrepancias/ConfirmarAjusteMasivo', { method: 'POST', body: fd }).then(r => r.json());
+                if (!res.success) throw new Error(res.message);
+
+                await Swal?.fire({ icon: 'success', title: 'Ajuste masivo completado', text: res.message, confirmButtonText: 'Aceptar' });
+                buscar();
+                abrirDetalle(_dismActual.id_encabezado);
+
+            } catch (e) {
+                toast('error', e.message || 'Error en ajuste masivo');
+                btn.disabled = false; btn.innerHTML = orig;
+            }
+        }
+
+        /* ── Modal rechazar ── */
+        function abrirModalRechazar() {
+            if (!_dismActual) return;
+            document.getElementById('vd-motivo-rechazo').value = '';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('vdModalRechazar')).show();
+        }
+
+        async function confirmarRechazo() {
+            if (!_dismActual) return;
+            const motivo = document.getElementById('vd-motivo-rechazo').value.trim();
+            if (!motivo) { toast('warning', 'Debe indicar el motivo del rechazo'); return; }
+
+            const btn = document.getElementById('vdp-btn-confirmar-rechazo');
+            const orig = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rechazando…';
+
+            try {
+                const fd = new FormData();
+                fd.append('__RequestVerificationToken', token());
+                fd.append('idDism', _dismActual.id_encabezado);
+                fd.append('motivoRechazo', motivo);
+
+                const res = await fetch('/VIValidacionDiscrepancias/RechazarDism', { method: 'POST', body: fd }).then(r => r.json());
+                if (!res.success) throw new Error(res.message);
+
+                bootstrap.Modal.getInstance(document.getElementById('vdModalRechazar'))?.hide();
+                toast('success', res.message);
+                cerrarPanel(); buscar();
+
+            } catch (e) {
+                toast('error', e.message || 'Error al rechazar');
+                btn.disabled = false; btn.innerHTML = orig;
+            }
+        }
+
+        /* ── Historial ── */
+        async function verHistorial(idDism) {
+            const tbody = document.getElementById('vd-historial-tbody');
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--text-light)"><i class="fas fa-spinner fa-spin fa-2x"></i></td></tr>`;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('vdModalHistorial')).show();
+
+            try {
+                const d = await fetch(`/VIValidacionDiscrepancias/ObtenerHistorial?idDism=${idDism}`).then(r => r.json());
+                if (!d.success) throw new Error(d.message);
+                const h = d.historial || [];
+                if (!h.length) { tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:1.5rem;color:var(--text-light)">Sin historial</td></tr>`; return; }
+
+                tbody.innerHTML = h.map(row => {
+                    const diff = parseFloat(row.diferencia || 0);
+                    const ajusteAplicado = row.cantidad_real_ajustada != null
+                        ? parseFloat(row.cantidad_real_ajustada) - parseFloat(row.cantidad_sistema || 0)
+                        : null;
+                    const ajusteStr = ajusteAplicado != null
+                        ? `<span style="font-weight:700;color:${ajusteAplicado > 0 ? 'var(--adjust-pos)' : ajusteAplicado < 0 ? 'var(--adjust-neg)' : 'var(--text-light)'}">${ajusteAplicado >= 0 ? '+' : ''}${ajusteAplicado.toFixed(4)}</span>`
+                        : '—';
+
+                    return `<tr>
+                    <td><div style="font-family:monospace;font-size:.77rem;font-weight:700">${esc(row.cve_prod || '')}</div><div style="font-size:.72rem;color:var(--text-light)">${esc(row.descr_prod || '')}</div></td>
+                    <td style="text-align:center">${fmtNum(row.cantidad_sistema)}</td>
+                    <td style="text-align:center">${fmtNum(row.cantidad_fisica)}</td>
+                    <td style="text-align:center;font-weight:700;color:${diff > 0 ? 'var(--adjust-neg)' : diff < 0 ? 'var(--adjust-pos)' : 'var(--text-light)'}">${diff >= 0 ? '+' : ''}${fmtNum(diff)}</td>
+                    <td style="text-align:center">${row.cantidad_real_ajustada != null ? fmtNum(row.cantidad_real_ajustada) : '—'}</td>
+                    <td style="text-align:center">${ajusteStr}</td>
+                    <td style="font-size:.75rem;max-width:110px">${esc(row.motivo_discrepancia || '—')}</td>
+                    <td style="font-size:.75rem;max-width:110px">${esc(row.motivo_validacion || '—')}</td>
+                    <td style="text-align:center">
+                        ${row.validado === true
+                            ? `<span class="vd-badge validado" style="font-size:.6rem"><i class="fas fa-check"></i> Ajustado</span>`
+                            : `<span class="vd-badge pendiente" style="font-size:.6rem"><i class="fas fa-times"></i> Pendiente</span>`}
+                    </td>
+                    <td style="font-size:.74rem">${esc(row.usuario_validacion || '—')}</td>
+                    <td style="font-size:.71rem;white-space:nowrap">${dateFormatter(row.fecha_registro)}</td>
+                </tr>`;
+                }).join('');
+
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:1.5rem;color:var(--danger-color)">${esc(e.message)}</td></tr>`;
+            }
+        }
+
+        /* ── Cerrar panel ── */
+        function cerrarPanel() {
+            document.getElementById('vd-overlay').classList.remove('open');
+            document.getElementById('vd-panel').classList.remove('open');
+            _dismActual = null; _partidasPanel = [];
+        }
+
+        /* ── Init ── */
+        function init() { cargarKpis(); buscar(); }
+
+        return {
+            init, cargarKpis, buscar, setTab, onSearch, limpiarFiltros,
+            goPage, abrirDetalle, previsualizarAjuste, confirmarAjuste,
+            ajustarTodo, abrirModalRechazar, confirmarRechazo, verHistorial, cerrarPanel
+        };
+    })();
+
+    document.addEventListener('DOMContentLoaded', () => VDApp.init());
+</script>

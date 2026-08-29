@@ -1,0 +1,664 @@
+﻿@model Dictionary<string, object>
+@{
+    ViewBag.Title = "SolicitudInventario";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Solicitud de traslado";
+}
+<style>
+    #tabla-materiales {
+        margin: 0;
+        border: none;
+    }
+
+        #tabla-materiales thead th {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+            color: white;
+            font-weight: 600;
+            border: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+            #tabla-materiales thead th:first-child {
+                border-radius: 0;
+            }
+
+            #tabla-materiales thead th:last-child {
+                border-radius: 0;
+            }
+
+        #tabla-materiales tbody tr {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+            #tabla-materiales tbody tr:hover {
+                background-color: var(--very-light-blue);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            #tabla-materiales tbody tr.selected {
+                background-color: rgba(var(--dt-row-selected), 0.3);
+                border-left: 4px solid var(--danger-color);
+            }
+
+        #tabla-materiales tbody td {
+            padding: 0.875rem 0.75rem;
+            vertical-align: middle;
+            border: none;
+            position: relative;
+        }
+
+    .numero-fila {
+        background: linear-gradient(135deg, var(--light-blue), var(--very-light-blue));
+        color: var(--text-dark);
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        min-width: 30px;
+        text-align: center;
+        display: inline-block;
+        box-shadow: var(--shadow);
+    }
+
+    .checkbox-custom {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent-blue);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .checkbox-custom:hover {
+            transform: scale(1.1);
+        }
+
+    .icono-header {
+        margin-right: 0.5rem;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Efectos de animación para nuevas filas */
+    @@keyframes slideInRow {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .fila-nueva {
+        animation: slideInRow 0.4s ease-out;
+    }
+
+    /* Estilos responsive */
+    @@media (max-width: 768px) {
+        #tabla-materiales thead th,
+        #tabla-materiales tbody td {
+            padding: 0.5rem 0.4rem;
+            font-size: 0.8rem;
+        }
+    }
+
+    .alert-info {
+        position: relative;
+        background: var(--light-blue);
+        padding: 10px 10px 10px 20px;
+        color: var(--text-dark);
+    }
+
+        .alert-info::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background-color: var(--accent-blue);
+        }
+</style>
+
+<link href="~/content/Site.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<div class="contenedor-tabla" id="contenedor-tablaCreadas">
+    <div class="controls-panel mb-4">
+        <!-- Controles de acción -->
+        <div class="panel-body">
+            <div class="row gap-2 justify-content-between">
+                <!-- Botón principal de búsqueda -->
+                <div class="col-md-5 col-sm-12">
+                    <button type="button" class="btn blue-500 btn-search w-auto"
+                            data-mdb-ripple-duration="1000ms"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalBuscarProducto"
+                            id="buscar_producto">
+                        <i class="fas fa-search btn-icon"></i>
+                        <span class="btn-main">Consultar Productos</span>
+                    </button>
+                </div>
+
+                <!-- Acciones de tabla -->
+                <div class="col-md-5 col-sm-12 d-flex gap-2 justify-content-end">
+                    <button class="btn blue-500 w-auto" type="button" onclick="limpiarTabla()">
+                        <i class="fa-solid fa-broom-wide"></i> limpiar todo
+                    </button>
+                    <button id="eliminar-fila" type="button" class="btn red-500 btn-delete w-auto"
+                            onclick="eliminarFilasSeleccionadas()">
+                        <i class="fas fa-trash btn-icon"></i>
+                        <span class="btn-text">Eliminar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mb-4">
+        <div class="alert-info mb-4">
+            <p class="mb-1">
+                <i class="fas fa-info-circle me-2"></i>
+                Los campos con un * son obligatorios
+            </p>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle table-hover mb-0" id="tabla-materiales">
+                <thead>
+                    <tr>
+                        <th class="text-center">
+                            <i class="fas fa-check-square icono-header"></i>
+                        </th>
+                        <th class="text-center">
+                            <i class="fas fa-hashtag icono-header"></i>
+                        </th>
+                        <th>
+                            <i class="fas fa-calculator icono-header"></i>
+                            Cantidad *
+                        </th>
+                        <th>
+                            <i class="fas fa-barcode icono-header"></i>
+                            Código *
+                        </th>
+                        <th>
+                            <i class="fas fa-tag icono-header"></i>
+                            Descripción *
+                        </th>
+                        <th>
+                            <i class="fas fa-ruler icono-header"></i>
+                            Unidad *
+                        </th>
+                        <th class="d-none">
+                            <i class="fas fa-ruler icono-header"></i>
+                            Unidad *
+                        </th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    <button class="btn green-500" onclick="generarSolicitud()">
+        <i class="fa-solid fa-floppy-disks"></i>
+        Generar Solicitud
+    </button>
+</div>
+
+<!-- Modal Buscar Producto -->
+<div class="modal fade" id="modalBuscarProducto" tabindex="-1" aria-labelledby="modalBuscarProductoLabel" aria-hidden="true" style="padding-right: 0px !important;">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalBuscarProductoLabel"> Buscar Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" title="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Campo de búsqueda con ícono -->
+                <div class="col-sm-12 mb-3">
+                    <div class="input-group mb-3">
+                        <input type="text"
+                               class="form-control"
+                               id="inputBuscarNombre"
+                               placeholder="Ej. Tornillo, Motor, etc."
+                               aria-label="Recipient's username"
+                               aria-describedby="button-addon2" />
+                        <button class="btn btn-outline-warning" type="button" id="btnLimpiarResultados">
+                            <i class="fa-duotone fa-solid fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resultados -->
+                <div class="">
+                    <ul class="list-group list-group-flush" id="listaResultados" style="max-height: 350px; overflow-y: auto;">
+                        <!-- Aquí se llenarán los resultados -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <!-- Paginación -->
+                <div class="custom-pagination">
+                    <div class="d-flex justify-content-center gap-3 align-items-center flex-wrap">
+                        <!-- Información de registros y selector de página -->
+                        <div class="pagination-info mb-2 mb-md-0">
+                            <span>Mostrando <strong id="recordsFrom">0</strong> a <strong id="recordsTo">0</strong> de <strong id="totalRecords">0</strong> registros</span>
+                            <select id="pageSizeSelector" class="page-size-selector ms-3">
+                                <option value="25">25 por página</option>
+                                <option value="50" selected>50 por página</option>
+                                <option value="100">100 por página</option>
+                            </select>
+                            <div class="loading-spinner ms-3">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+
+                        <!-- Controles de navegación -->
+                        <div id="paginationControls" class="d-flex align-items-center flex-wrap"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/jquery/jquery.min.js"></script>
+<script>
+    let contadorFilas = 0;
+    function agregarFila(datosProducto = null) {
+        const tbody = document.querySelector("#tabla-materiales tbody");
+        const fila = document.createElement("tr");
+
+        // Incrementar contador para numeración
+        contadorFilas++;
+
+        // Datos del producto
+        const clave = datosProducto?.cve_prod || '';
+        const descripcion = datosProducto?.descr_prod || '';
+        const unidad = datosProducto?.udm || '';
+        const producto = datosProducto?.id_catproductos || '';
+        console.log(producto)
+        let html = `
+                    <td class="text-center">
+                        <input type="checkbox" class="seleccionar-fila checkbox-custom" onchange="toggleFilaSeleccionada(this)" />
+                    </td>
+                    <td class="text-center">
+                        <span class="numero-fila">${contadorFilas}</span>
+                    </td>
+                    <td contenteditable = "true" class="input-cantidad"></td>
+                    <td contenteditable = "true" class="input-codigo"> ${clave}</td>
+                    <td contenteditable = "true" class="input-descripcion"> ${descripcion}</td>
+                    <td contenteditable = "true" class="input-unidad"> ${unidad}</td>
+                    <td class="d-none"> ${producto}</td>
+                `;
+
+        fila.innerHTML = html;
+        fila.classList.add('fila-nueva');
+        tbody.appendChild(fila);
+
+        // Remover la clase de animación después de que termine
+        setTimeout(() => {
+            fila.classList.remove('fila-nueva');
+        }, 400);
+    }
+
+    function resaltarCampo(elemento) {
+        elemento.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+    }
+
+    function desresaltarCampo(elemento) {
+        elemento.style.boxShadow = '';
+    }
+
+    function toggleFilaSeleccionada(checkbox) {
+        const fila = checkbox.closest('tr');
+        if (checkbox.checked) {
+            fila.classList.add('selected');
+        } else {
+            fila.classList.remove('selected');
+        }
+    }
+
+    function eliminarFilasSeleccionadas() {
+        const checkboxes = document.querySelectorAll(".seleccionar-fila:checked");
+
+        // Eliminar las filas seleccionadas
+        checkboxes.forEach(chk => {
+            chk.closest("tr").remove();
+        });
+
+        // Actualizar la numeración de todas las filas restantes
+        actualizarNumeracionFilas();
+    }
+
+    // Función para actualizar la numeración después de eliminar filas
+    function actualizarNumeracionFilas() {
+        const filas = document.querySelectorAll("#tabla-materiales tbody tr");
+        contadorFilas = filas.length; // Actualizar el contador global
+
+        filas.forEach((fila, index) => {
+            const numeroFila = fila.querySelector(".numero-fila");
+            if (numeroFila) {
+                numeroFila.textContent = index + 1;
+            }
+        });
+    }
+
+    function limpiarTabla() {
+        const tbody = document.querySelector("#tabla-materiales tbody");
+        tbody.innerHTML = '';
+        contadorFilas = 0;
+    }
+
+    // Función para buscar productos con paginación
+    let pageSize = 50; // Número de productos por página
+    let totalProducts = 0; // <-- usar let en lugar de const
+    let currentPage = 1
+
+    document.getElementById('pageSizeSelector').addEventListener('change', () => buscarProductos("", currentPage));
+
+    function buscarProductos(nombre, currentPage = 1) {
+        pageSize = parseInt(document.getElementById('pageSizeSelector').value);
+        fetch(`/Almacen/Producto/Buscar?nombre=${encodeURIComponent(nombre)}&page=${currentPage}&pageSize=${pageSize}`)
+            .then(res => res.json())
+            .then(response => {
+                const lista = document.getElementById('listaResultados');
+                lista.innerHTML = ''; // Limpiar resultados anteriores
+                updateRecordInfo(currentPage)
+
+                // ⚠️ Ajusta aquí según cómo devuelva tu backend
+                // Si regresa { data, total }:
+                const data = response.data || response;
+                totalProducts = response.total ?? data.length;
+
+                if (data.length === 0) {
+                    lista.innerHTML = '<div class="p-3">No se encontraron productos.</div>';
+                    return;
+                }
+
+                // Crear tabla
+                const tabla = document.createElement('table');
+                tabla.classList.add('table', 'table-hover', 'table-bordered');
+
+                tabla.innerHTML = `
+                 <thead class="table-secondary">
+                     <tr>
+                         <th style="width: 30%;">Clave</th>
+                         <th>Descripción</th>
+                     </tr>
+                 </thead>
+                 <tbody></tbody>
+             `;
+
+                const tbody = tabla.querySelector('tbody');
+
+                data.forEach(producto => {
+                    const fila = document.createElement('tr');
+                    fila.style.cursor = 'pointer';
+                    fila.innerHTML = `
+                     <td>${producto.id}</td>
+                     <td>${producto.descripcion}</td>
+                 `;
+
+                    fila.addEventListener('click', () => {
+                        fetch(`/Almacen/Producto/BuscarProducto?idproducto=${producto.id}`)
+                            .then(res => res.json())
+                            .then(detalle => {
+                                const productId = detalle[0]?.cve_prod;
+                                const table = document.querySelectorAll("#tabla-materiales tbody tr");
+                                const ifExist = Array.from(table).some(fila => fila.cells[3]?.innerText.trim() === productId);
+
+                                if (ifExist) {
+                                    toastMixin.fire({
+                                        icon: 'warning',
+                                        title: 'Este producto ya ha sido agregado.'
+                                    });
+                                    return;
+                                }
+                                //$('#modalBuscarProducto').modal('hide')
+                                agregarFila(detalle[0]);
+                            });
+                    });
+
+                    tbody.appendChild(fila);
+                });
+
+                lista.appendChild(tabla);
+
+                // Actualizar la paginación con el total real
+                actualizarPaginacion(currentPage, data.length);
+
+                lista.scrollTop = 0;
+            })
+            .catch(err => {
+                console.error('Error al buscar: ', err);
+            });
+    }
+
+    // Función para actualizar los controles de paginación
+    function actualizarPaginacion(currentPage, currentPageResults) {
+        const totalPages = Math.ceil(totalProducts / pageSize); // totalProducts debe estar definido globalmente
+        const pagination = document.getElementById('paginationControls');
+
+        if (totalPages <= 1) {
+            pagination.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+
+        // Botón Primera página
+        html += `<button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}"
+                     onclick="buscarProductos(document.getElementById('inputBuscarNombre').value, 1)"
+                     ${currentPage === 1 ? 'disabled' : ''} title="Primera página">
+                     <i class="fas fa-angle-double-left"></i>
+              </button>`;
+
+        // Botón Anterior
+        html += `<button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}"
+                     onclick="buscarProductos(document.getElementById('inputBuscarNombre').value, ${currentPage - 1})"
+                     ${currentPage === 1 ? 'disabled' : ''} title="Página anterior">
+                     <i class="fas fa-angle-left"></i>
+              </button>`;
+
+        // Calcular rango de páginas visibles
+        let start = Math.max(1, currentPage - 2);
+        let end = Math.min(totalPages, currentPage + 2);
+
+        if (end - start < 4) {
+            if (start === 1) {
+                end = Math.min(totalPages, start + 4);
+            } else {
+                start = Math.max(1, end - 4);
+            }
+        }
+
+        // Primera página y puntos suspensivos si aplica
+        if (start > 1) {
+            html += `<button class="pagination-btn"
+                         onclick="buscarProductos(document.getElementById('inputBuscarNombre').value, 1)">1</button>`;
+            if (start > 2) {
+                html += `<span class="pagination-dots">...</span>`;
+            }
+        }
+
+        // Páginas del rango actual
+        for (let i = start; i <= end; i++) {
+            html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}"
+                         onclick="buscarProductos(document.getElementById('inputBuscarNombre').value, ${i})">${i}</button>`;
+        }
+
+        // Última página y puntos suspensivos si aplica
+        if (end < totalPages) {
+            if (end < totalPages - 1) {
+                html += `<span class="pagination-dots">...</span>`;
+            }
+            html += `<button class="pagination-btn"
+                         onclick="buscarProductos(document.getElementById('inputBuscarNombre').value, ${totalPages})">${totalPages}</button>`;
+        }
+
+        // Botón Siguiente
+        html += `<button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}"
+                     onclick="buscarProductos(document.getElementById('inputBuscarNombre').value, ${currentPage + 1})"
+                     ${currentPage === totalPages ? 'disabled' : ''} title="Página siguiente">
+                     <i class="fas fa-angle-right"></i>
+              </button>`;
+
+        // Botón Última página
+        html += `<button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}"
+                     onclick="buscarProductos(document.getElementById('inputBuscarNombre').value, ${totalPages})"
+                     ${currentPage === totalPages ? 'disabled' : ''} title="Última página">
+                     <i class="fas fa-angle-double-right"></i>
+              </button>`;
+
+        pagination.innerHTML = html;
+        updateRecordInfo(currentPage)
+    }
+
+    function updateRecordInfo(currentPage) {
+        const from = (currentPage - 1) * pageSize + 1;
+        const to = Math.min(currentPage * pageSize, totalProducts);
+
+        document.getElementById('recordsFrom').textContent = from;
+        document.getElementById('recordsTo').textContent = to;
+        document.getElementById('totalRecords').textContent = totalProducts;
+    }
+
+    // Inicializar la búsqueda cuando se abre el modal
+    document.getElementById('modalBuscarProducto').addEventListener('shown.bs.modal', () => {
+        buscarProductos(''); // Realiza una búsqueda sin filtro (muestra todos los productos)
+    });
+
+    // Llamada para buscar productos cuando se escribe en el input
+    document.getElementById('inputBuscarNombre').addEventListener('input', () => {
+        buscarProductos(document.getElementById('inputBuscarNombre').value);
+    });
+
+    // Buscar automáticamente al abrir el modal
+    const modalBuscarProducto = document.getElementById('modalBuscarProducto');
+
+    modalBuscarProducto.addEventListener('shown.bs.modal', () => {
+        const nombre = inputBuscarNombre.value.trim();
+        buscarProductos(nombre);
+    });
+
+
+    document.getElementById('btnLimpiarResultados').addEventListener('click', () => {
+        //document.getElementById('listaResultados').innerHTML = '';
+        buscarProductos('');
+        document.getElementById('inputBuscarNombre').value = '';
+    });
+
+    document.getElementById('btnLimpiarResultados').addEventListener('click', () => {
+        //document.getElementById('listaResultados').innerHTML = '';
+        buscarProductos('');
+        document.getElementById('inputBuscarNombre').value = '';
+        document.getElementById('inputBuscarNombre').focus();
+    });
+
+    const limpiarNumero = (str) => str.replace(/[^\d.]/g, '');
+
+    async function generarSolicitud() {
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+        <style>
+            .flip {
+                animation: spinY 2s linear infinite;
+                transform-origin: center;
+            }
+            @@keyframes spinY {
+                0%   { transform: rotateY(0deg); }
+                100% { transform: rotateY(360deg); }
+            }
+        </style>
+        <g class="flip">
+            <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+            <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="32" cy="48" r="3" fill="#000"/>
+        </g>
+    </svg>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: 'Seguro?',
+            text: '¿Está seguro que desea crear una solicitud?',
+            footer: '<b style="color: red;">ADVERTENCIA - Este cambio no se puede revertir</b>',
+            customClass: {
+                icon: 'p-0 bg-transparent border-0 shadow-none'
+            },
+            input: "textarea",
+            inputLabel: "Comentarios extra",
+            inputPlaceholder: "Comentarios extra...",
+            preConfirm: async (comentario) => {
+                const filasMateriales = [];
+
+                let errorFila = false;
+                let errorMessage;
+
+                document.querySelectorAll("#tabla-materiales tbody tr").forEach((fila) => {
+                    const cantidad = limpiarNumero(fila.cells[2].innerText.trim());
+                    const codigo = fila.cells[3].innerText.trim();
+                    const descripcion = fila.cells[4].innerText.trim();
+                    const unidad = fila.cells[5].innerText.trim();
+                    const id_producto = limpiarNumero(fila.cells[6].innerText.trim());
+
+                    let filaValida = cantidad !== "" && cantidad !== "0" && codigo !== "" && descripcion !== "" && unidad !== "";
+
+                    if (filaValida) {
+                        const fila = {
+                            cantidad,
+                            codigo,
+                            descripcion,
+                            unidad,
+                            id_producto
+                        };
+
+                        filasMateriales.push(fila);
+                    } else {
+                        errorFila = true;
+                        errorMessage = `El producto ${descripcion} tiene campos vacios, favor de revisarlo.`
+                    }
+                });
+
+                if (filasMateriales.length === 0 || errorFila) {
+                    Swal.fire({
+                        icon: 'error',
+                        text: errorMessage,
+                    });
+                    return;
+                }
+
+                try {
+                    await GetData({
+                        path: '/Solicitudes/GenerarSolicitudTraslado',
+                        data: {
+                            comentario: comentario,
+                            productos: JSON.stringify(filasMateriales),
+                            tpnom: 'solicitud_traslado',
+                        }
+                    }).then((res) => {
+                        if (res.icon === 'success') {
+                            _SwalReload({
+                                icon: 'success',
+                                title: 'Solicitud de traslado creada',
+                                html: `<p>${res.text}</p><p><strong>Folio:</strong> ${res.folio_generado}</p>`,
+                                showCancelButton: false,
+                            });
+                        } else {
+                            Swal.fire(res);
+                        }
+                    })
+                } catch (err) {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Ocurrió un error al enviar la solicitud.',
+                    });
+                }
+            }
+        });
+    }
+</script>

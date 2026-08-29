@@ -1,0 +1,2270 @@
+﻿@model BOS_ERP.Models.FolioInfo
+@{
+    ViewBag.Title = "Solicitud de Gastos";
+    ViewBag.PageTitle = "Solicitud de Gastos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section styles {
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+           DESIGN TOKENS
+        ═══════════════════════════════════════════════════════════════ */
+        :root {
+            --ink-900: #0f172a;
+            --ink-700: #334155;
+            --ink-500: #64748b;
+            --ink-300: #94a3b8;
+            --ink-100: #e2e8f0;
+            --ink-50: #f8fafc;
+            --white: #ffffff;
+            --blue-900: #1e3a5f;
+            --blue-700: #1d4ed8;
+            --blue-100: #dbeafe;
+            --blue-50: #eff6ff;
+            --ok: #059669;
+            --ok-bg: #ecfdf5;
+            --warn: #d97706;
+            --warn-bg: #fffbeb;
+            --err: #dc2626;
+            --err-bg: #fef2f2;
+            --r: 6px;
+            --r-lg: 12px;
+            --r-xl: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
+            --shadow-lg: 0 10px 24px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TOPBAR
+        ═══════════════════════════════════════════════════════════════ */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 300;
+            background: var(--ink-900);
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+
+        .tb-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,.85);
+            letter-spacing: .06em;
+        }
+
+        .tb-chip {
+            background: var(--blue-700);
+            color: #fff;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .1em;
+        }
+
+        .tb-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: rgba(255,255,255,.4);
+        }
+
+        .tb-folio {
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 4px;
+            padding: 3px 10px;
+            color: rgba(255,255,255,.7);
+            font-weight: 600;
+        }
+
+        .tb-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ok);
+            box-shadow: 0 0 0 3px rgba(5,150,105,.25);
+            animation: dot-pulse 2s infinite;
+        }
+
+        @@keyframes dot-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(5,150,105,.25)
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(5,150,105,.05)
+            }
+        }
+
+        .tb-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--blue-700);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           WIZARD BAR
+        ═══════════════════════════════════════════════════════════════ */
+        .wizard-shell {
+            background: var(--bg-light);
+            border-bottom: 1px solid var(--ink-100);
+            position: sticky;
+            top: 52px;
+            z-index: 200;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .wizard-track {
+            display: flex;
+            align-items: stretch;
+            padding: 0 20px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+            .wizard-track::-webkit-scrollbar {
+                display: none;
+            }
+
+        .wz-step {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 14px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            user-select: none;
+            transition: all .2s;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+            .wz-step:hover {
+                color: var(--ink-700);
+                background: var(--ink-50);
+            }
+
+            .wz-step.active {
+                color: var(--blue-900);
+                border-bottom-color: var(--blue-900);
+            }
+
+            .wz-step.done {
+                color: var(--ok);
+                border-bottom-color: var(--ok);
+            }
+
+        .wz-num {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--ink-100);
+            color: var(--ink-500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: all .2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wz-step.active .wz-num {
+            background: var(--blue-900);
+            color: #fff;
+        }
+
+        .wz-step.done .wz-num {
+            background: var(--ok);
+            color: #fff;
+        }
+
+            .wz-step.done .wz-num::after {
+                content: '✓';
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                background: var(--ok);
+                border-radius: inherit;
+            }
+
+        .wz-div {
+            width: 1px;
+            background: var(--ink-100);
+            margin: 12px 0;
+        }
+
+        /* Resumen toggle */
+        .rs-toggle {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 18px;
+            cursor: pointer;
+            border-left: 1px solid var(--ink-100);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--ink-500);
+            letter-spacing: .04em;
+            user-select: none;
+            transition: background .2s, color .2s;
+        }
+
+            .rs-toggle:hover {
+                background: var(--ink-50);
+                color: var(--ink-900);
+            }
+
+            .rs-toggle.open {
+                background: var(--ink-900);
+                color: rgba(255,255,255,.5);
+            }
+
+        .rs-amount {
+            font-size: 15px;
+            font-weight: 700;
+            color: #f59e0b;
+        }
+
+            .rs-amount.zero {
+                color: var(--ink-300);
+                font-size: 12px;
+            }
+
+        .rs-label {
+            font-size: 9px;
+            letter-spacing: .1em;
+            opacity: .5;
+            margin-bottom: 2px;
+        }
+
+        .rs-chevron {
+            font-size: 10px;
+            transition: transform .3s;
+            color: var(--ink-300);
+        }
+
+        .rs-toggle.open .rs-chevron {
+            transform: rotate(180deg);
+        }
+
+        .rs-pip {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ink-100);
+            flex-shrink: 0;
+            transition: background .3s;
+        }
+
+            .rs-pip.active {
+                background: #f59e0b;
+                box-shadow: 0 0 0 3px rgba(245,158,11,.2);
+            }
+
+        /* ── Resumen panel ── */
+        .rs-panel {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height .4s cubic-bezier(.4,0,.2,1);
+            background: #0b1628;
+        }
+
+            .rs-panel.open {
+                max-height: 360px;
+            }
+
+        .rs-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            border-top: 1px solid rgba(255,255,255,.05);
+        }
+
+        @@media (max-width:1100px) {
+            .rs-grid {
+                grid-template-columns: repeat(4,1fr);
+            }
+        }
+
+        @@media (max-width:600px) {
+            .rs-grid {
+                grid-template-columns: repeat(2,1fr);
+            }
+        }
+
+        .rs-cell {
+            padding: 12px 16px;
+            border-right: 1px solid rgba(255,255,255,.04);
+            border-bottom: 1px solid rgba(255,255,255,.04);
+            min-width: 0;
+        }
+
+            .rs-cell:last-child {
+                border-right: none;
+            }
+
+        .rs-cell-lbl {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.22);
+            margin-bottom: 4px;
+            font-family: var(--font-mono);
+        }
+
+        .rs-cell-val {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,.75);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+            .rs-cell-val.accent {
+                color: #f59e0b;
+                font-size: 14px;
+            }
+
+            .rs-cell-val.dim {
+                color: rgba(255,255,255,.18);
+                font-style: italic;
+                font-size: 11px;
+                font-family: var(--font-ui);
+                font-weight: 400;
+            }
+
+        .rs-foot {
+            padding: 9px 16px;
+            border-top: 1px solid rgba(255,255,255,.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .rs-hint {
+            font-size: 10px;
+            color: rgba(255,255,255,.2);
+            font-family: var(--font-mono);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .rs-hint-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.12);
+        }
+
+            .rs-hint-dot.ok {
+                background: var(--ok);
+            }
+
+        .rs-close-btn {
+            background: rgba(255,255,255,.05);
+            color: rgba(255,255,255,.45);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 4px;
+            padding: 4px 12px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            letter-spacing: .06em;
+            transition: background .2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .rs-close-btn:hover {
+                background: rgba(255,255,255,.1);
+                color: #fff;
+            }
+
+        /* ═══════════════════════════════════════════════════════════════
+           MAIN LAYOUT
+        ═══════════════════════════════════════════════════════════════ */
+        .main {
+            max-width: 840px;
+            margin: 0 auto;
+            padding: 28px 20px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           PANELS
+        ═══════════════════════════════════════════════════════════════ */
+        .panel {
+            display: none;
+            animation: panel-in .22s ease;
+        }
+
+            .panel.active {
+                display: block;
+            }
+
+        @@keyframes panel-in {
+            from {
+                opacity: 0;
+                transform: translateY(5px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           CARDS
+        ═══════════════════════════════════════════════════════════════ */
+        .card {
+            background: var(--white);
+            border-radius: var(--r-xl);
+            border: 1px solid var(--ink-100);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 18px;
+            overflow: hidden;
+        }
+
+        .card-head {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--ink-100);
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            background: var(--light-blue);
+        }
+
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--r);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0;
+            color: #fff;
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .card-sub {
+            font-size: 11px;
+            color: var(--ink-300);
+            margin-top: 2px;
+        }
+
+        .card-body {
+            padding: 20px;
+            background: var(--very-light-blue);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           CATEGORY GRID
+        ═══════════════════════════════════════════════════════════════ */
+        .cat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(175px,1fr));
+            gap: 11px;
+        }
+
+        .cat-card {
+            border: 1.5px solid var(--ink-100);
+            border-radius: var(--r-xl);
+            padding: 16px;
+            cursor: pointer;
+            transition: all .2s;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-gray);
+        }
+
+            .cat-card:hover {
+                border-color: var(--cc);
+                background: color-mix(in srgb, var(--cc) 4%, transparent);
+            }
+
+            .cat-card.selected {
+                border-color: var(--cc);
+                background: color-mix(in srgb, var(--bg-gray) 7%, transparent);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--cc) 18%, transparent);
+            }
+
+                .cat-card.selected::after {
+                    content: '✓';
+                    position: absolute;
+                    top: 9px;
+                    right: 11px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: var(--cc);
+                }
+
+        .cat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--r);
+            background: color-mix(in srgb, var(--cc) 14%, transparent);
+            color: var(--cc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .cat-label {
+            font-weight: 700;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .cat-desc {
+            font-size: 10px;
+            color: var(--ink-500);
+            line-height: 1.45;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           SUBCAT LIST
+        ═══════════════════════════════════════════════════════════════ */
+        .sub-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sub-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1.5px solid var(--ink-100);
+            border-radius: var(--r-xl);
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+            .sub-item:hover {
+                border-color: #94a3b8;
+                background: var(--ink-50);
+            }
+
+            .sub-item.selected {
+                border-color: var(--blue-700);
+                background: var(--blue-50);
+                box-shadow: 0 0 0 3px rgba(29,78,216,.1);
+            }
+
+        .sub-radio {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--ink-100);
+            flex-shrink: 0;
+            margin-top: 3px;
+            transition: all .2s;
+        }
+
+        .sub-item.selected .sub-radio {
+            background: var(--blue-700);
+            border-color: var(--blue-700);
+            box-shadow: inset 0 0 0 3px #fff;
+        }
+
+        .sub-name {
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--ink-900);
+        }
+
+        .sub-desc {
+            font-size: 11px;
+            color: var(--ink-500);
+            margin-top: 3px;
+            line-height: 1.45;
+        }
+
+        .sub-reqs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 7px;
+        }
+
+        .sub-req-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            background: var(--ink-50);
+            border: 1px solid var(--ink-100);
+            color: var(--ink-500);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           FORM FIELDS (sección base)
+        ═══════════════════════════════════════════════════════════════ */
+        .f-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
+        }
+
+            .f-grid.c2 {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .f-grid.c3 {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+
+        .f-full {
+            grid-column: 1/-1;
+        }
+
+        .f-span2 {
+            grid-column: span 2;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+            .field label {
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--ink-500);
+                letter-spacing: .05em;
+                text-transform: uppercase;
+            }
+
+        .req-star {
+            color: var(--err);
+            margin-left: 2px;
+        }
+
+        .field input, .field select, .field textarea {
+            border: 1.5px solid var(--ink-100);
+            border-radius: var(--r);
+            padding: 8px 12px;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            transition: border-color .2s, box-shadow .2s;
+            width: 100%;
+        }
+
+            .field input:focus, .field select:focus, .field textarea:focus {
+                outline: none;
+                border-color: var(--blue-700);
+                box-shadow: 0 0 0 3px rgba(29,78,216,.12);
+            }
+
+            .field input.err, .field select.err {
+                border-color: var(--err) !important;
+                box-shadow: 0 0 0 2px rgba(220,38,38,.14);
+                animation: shake .32s ease;
+            }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .igroup {
+            display: flex;
+        }
+
+        .ipfx {
+            border: 1.5px solid var(--ink-100);
+            border-right: none;
+            border-radius: var(--r) 0 0 var(--r);
+            padding: 8px 11px;
+            background: var(--ink-50);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink-500);
+            display: flex;
+            align-items: center;
+        }
+
+        .igroup .ipfx + input {
+            border-radius: 0 var(--r) var(--r) 0;
+        }
+
+        /* file drop */
+        .file-drop {
+            border: 2px dashed var(--ink-100);
+            border-radius: var(--r-xl);
+            padding: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+            background: var(--ink-50);
+        }
+
+            .file-drop:hover {
+                border-color: var(--blue-700);
+                background: var(--blue-50);
+            }
+
+            .file-drop i {
+                font-size: 24px;
+                color: var(--ink-300);
+            }
+
+            .file-drop p {
+                font-size: 11px;
+                color: var(--ink-500);
+                margin-top: 6px;
+            }
+
+            .file-drop strong {
+                color: var(--blue-700);
+            }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+            padding: 8px 10px;
+            background: var(--ink-50);
+            border-radius: var(--r);
+            font-size: 11px;
+        }
+
+            .file-item i {
+                color: var(--ok);
+            }
+
+            .file-item .fn {
+                font-weight: 700;
+                flex: 1;
+            }
+
+            .file-item .fs {
+                color: var(--ink-300);
+                font-family: var(--font-mono);
+            }
+
+        /* ═══════════════════════════════════════════════════════════════
+           DYNAMIC FIELDS ENGINE STYLES
+        ═══════════════════════════════════════════════════════════════ */
+        .dyn-section {
+            background: var(--white);
+            border-radius: var(--r-xl);
+            border: 1px solid var(--ink-100);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 18px;
+            overflow: hidden;
+        }
+
+        .dyn-section-head {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--ink-100);
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            background: var(--light-blue);
+        }
+
+        .dyn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--r);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .dyn-title {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--ink-900);
+        }
+
+        .dyn-sub {
+            font-size: 11px;
+            color: var(--ink-300);
+            margin-top: 2px;
+
+        }
+
+        .dyn-body {
+            padding: 20px;
+            background: var(--very-light-blue);
+        }
+
+        .dyn-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+        }
+
+        .dyn-full {
+            grid-column: 1/-1;
+        }
+
+        .dyn-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .dyn-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--ink-500);
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+        .dyn-input {
+            border: 1.5px solid var(--ink-100);
+            border-radius: var(--r);
+            padding: 8px 12px;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            color: var(--ink-900);
+            transition: border-color .2s, box-shadow .2s;
+            width: 100%;
+        }
+
+            .dyn-input:focus {
+                outline: none;
+                border-color: var(--blue-700);
+                box-shadow: 0 0 0 3px rgba(29,78,216,.12);
+            }
+
+        .dyn-input-error {
+            border-color: var(--err) !important;
+            box-shadow: 0 0 0 2px rgba(220,38,38,.14);
+            animation: shake .32s ease;
+        }
+
+        .dyn-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .dyn-select {
+            appearance: none;
+            cursor: pointer;
+        }
+
+        /* radio-grid */
+        .rg-grid {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(130px,1fr));
+        }
+
+        .rg-card {
+            border: 1.5px solid var(--ink-100);
+            border-radius: var(--r-lg);
+            padding: 12px;
+            cursor: pointer;
+            transition: all .2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+            .rg-card:hover {
+                border-color: #94a3b8;
+                background: var(--ink-50);
+            }
+
+        .rg-hidden-input {
+            display: none;
+        }
+
+        .rg-icon {
+            font-size: 16px;
+            color: var(--ink-300);
+            transition: color .2s;
+        }
+
+        .rg-label {
+            font-weight: 700;
+            font-size: 11px;
+            color: var(--ink-700);
+        }
+
+        .rg-hint {
+            font-size: 10px;
+            color: var(--ink-300);
+            line-height: 1.35;
+        }
+
+        .rg-check {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--ink-100);
+            color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            transition: all .2s;
+        }
+
+        .rg-card:has(input:checked) {
+            border-color: var(--blue-700);
+            background: var(--blue-50);
+            box-shadow: 0 0 0 3px rgba(29,78,216,.1);
+        }
+
+            .rg-card:has(input:checked) .rg-icon {
+                color: var(--blue-700);
+            }
+
+            .rg-card:has(input:checked) .rg-check {
+                background: var(--blue-700);
+                color: #fff;
+            }
+
+        /* counter */
+        .counter-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        .counter-btn {
+            width: 34px;
+            height: 36px;
+            border: 1.5px solid var(--ink-100);
+            background: var(--ink-50);
+            cursor: pointer;
+            font-size: 11px;
+            color: var(--ink-500);
+            transition: all .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .counter-btn:hover {
+                background: var(--ink-100);
+                color: var(--ink-900);
+            }
+
+        .counter-minus {
+            border-radius: var(--r) 0 0 var(--r);
+            border-right: none;
+        }
+
+        .counter-plus {
+            border-radius: 0 var(--r) var(--r) 0;
+            border-left: none;
+        }
+
+        .counter-input {
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            width: 56px;
+            text-align: center;
+        }
+
+        /* date-range */
+        .date-range-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-range-sep {
+            color: var(--ink-300);
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .date-range-wrap .dyn-input {
+            flex: 1;
+        }
+
+        /* tag-input */
+        .tag-input-wrap {
+            border: 1.5px solid var(--ink-100);
+            border-radius: var(--r);
+            padding: 6px 8px;
+            background: var(--white);
+            transition: border-color .2s, box-shadow .2s;
+            min-height: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+
+            .tag-input-wrap:focus-within {
+                border-color: var(--blue-700);
+                box-shadow: 0 0 0 3px rgba(29,78,216,.12);
+            }
+
+        .tag-input-field {
+            border: none;
+            outline: none;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            color: var(--ink-900);
+            flex: 1;
+            min-width: 120px;
+            background: transparent;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: var(--blue-50);
+            border: 1px solid var(--blue-100);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--blue-700);
+        }
+
+        .chip-rm {
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: var(--blue-700);
+            padding: 0;
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+        }
+
+            .chip-rm:hover {
+                color: var(--err);
+            }
+
+        /* person-wrap */
+        .person-wrap {
+            position: relative;
+        }
+
+        .person-icon {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: var(--ink-300);
+        }
+
+        .person-input {
+            padding-left: 30px !important;
+        }
+
+        /* field hint */
+        .field-hint {
+            font-size: 10px;
+            color: var(--ink-300);
+            min-height: 14px;
+        }
+
+        .hint-error {
+            color: var(--err);
+        }
+
+        /* input-group dyn */
+        .input-group-dyn {
+            display: flex;
+        }
+
+        .input-prefix-dyn {
+            border: 1.5px solid var(--ink-100);
+            border-right: none;
+            border-radius: var(--r) 0 0 var(--r);
+            padding: 8px 11px;
+            background: var(--ink-50);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink-500);
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group-dyn .dyn-input {
+            border-radius: 0 var(--r) var(--r) 0;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           BUSINESS RULES BANNERS
+        ═══════════════════════════════════════════════════════════════ */
+        .biz-banners {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .biz-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--r-lg);
+            font-size: 12px;
+            line-height: 1.5;
+            animation: panel-in .2s ease;
+        }
+
+            .biz-banner.warn {
+                background: var(--warn-bg);
+                border: 1px solid #fde68a;
+                color: #92400e;
+            }
+
+            .biz-banner.error {
+                background: var(--err-bg);
+                border: 1px solid #fca5a5;
+                color: #7f1d1d;
+            }
+
+            .biz-banner i {
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+
+        /* aprobador-sugerido badge */
+        .aprob-suggest {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: var(--blue-50);
+            border: 1px solid var(--blue-100);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--blue-700);
+            margin-top: 6px;
+            animation: panel-in .2s ease;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           STEP NAV
+        ═══════════════════════════════════════════════════════════════ */
+        .step-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 0 0;
+            border-top: 1px solid var(--ink-100);
+            margin-top: 24px;
+        }
+
+        .btn-nav {
+            padding: 9px 18px;
+            border-radius: var(--r);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all .2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            border: 1.5px solid transparent;
+        }
+
+            .btn-nav.back {
+                background: var(--ink-50);
+                color: var(--ink-700);
+                border-color: var(--ink-100);
+            }
+
+                .btn-nav.back:hover {
+                    border-color: var(--ink-700);
+                }
+
+            .btn-nav.next {
+                background: var(--blue-900);
+                color: #fff;
+            }
+
+                .btn-nav.next:hover {
+                    background: #0f1729;
+                }
+
+            .btn-nav.finish {
+                background: var(--ok);
+                color: #fff;
+            }
+
+                .btn-nav.finish:hover {
+                    background: #047857;
+                }
+
+            .btn-nav:disabled {
+                opacity: .5;
+                cursor: not-allowed;
+            }
+
+        /* ═══════════════════════════════════════════════════════════════
+           REVIEW
+        ═══════════════════════════════════════════════════════════════ */
+        .rev-hero {
+            background: var(--blue-50);
+            border: 1.5px solid var(--blue-100);
+            border-radius: var(--r-lg);
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rev-swatch {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--r);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .sum-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--ink-100);
+            font-size: 12px;
+        }
+
+            .sum-row:last-child {
+                border-bottom: none;
+            }
+
+        .sum-key {
+            color: var(--ink-500);
+        }
+
+        .sum-val {
+            font-weight: 700;
+            font-family: var(--font-mono);
+            font-size: 11px;
+        }
+
+        .sum-total {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px 0 0;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+            .sum-total span:last-child {
+                color: var(--blue-700);
+            }
+
+        .accept-box {
+            background: var(--white);
+            border: 1px solid var(--ink-100);
+            border-radius: var(--r-xl);
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 11px;
+            margin-bottom: 18px;
+        }
+
+            .accept-box input[type=checkbox] {
+                width: 15px;
+                height: 15px;
+                accent-color: var(--blue-700);
+                flex-shrink: 0;
+                margin-top: 2px;
+                cursor: pointer;
+            }
+
+            .accept-box label {
+                font-size: 11px;
+                color: var(--ink-500);
+                cursor: pointer;
+                line-height: 1.55;
+            }
+
+        /* ═══════════════════════════════════════════════════════════════
+           SUCCESS
+        ═══════════════════════════════════════════════════════════════ */
+        .success-card {
+            background: var(--white);
+            border-radius: var(--r-xl);
+            border: 1px solid var(--ink-100);
+            box-shadow: var(--shadow-sm);
+            padding: 52px 32px;
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 68px;
+            height: 68px;
+            background: var(--ok-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: var(--ok);
+            margin: 0 auto 18px;
+        }
+
+        .btn-action {
+            border: 1.5px solid var(--ink-100);
+            background: var(--ink-50);
+            border-radius: var(--r);
+            padding: 8px 16px;
+            cursor: pointer;
+            color: var(--ink-700);
+            font-size: 12px;
+            font-weight: 600;
+            transition: all .2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-ui);
+        }
+
+            .btn-action:hover {
+                border-color: var(--ink-700);
+                background: #fff;
+            }
+
+            .btn-action.primary {
+                background: var(--blue-900);
+                color: #fff;
+                border-color: var(--blue-900);
+            }
+
+                .btn-action.primary:hover {
+                    background: #0f1729;
+                }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TOASTS
+        ═══════════════════════════════════════════════════════════════ */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .toast-msg {
+            background: var(--ink-900);
+            color: #fff;
+            font-size: 12px;
+            padding: 10px 16px;
+            border-radius: var(--r);
+            box-shadow: var(--shadow-lg);
+            border-left: 3px solid #475569;
+            max-width: 310px;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity .2s, transform .2s;
+            font-family: var(--font-ui);
+        }
+
+            .toast-msg.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .toast-msg.err {
+                border-left-color: var(--err);
+            }
+
+            .toast-msg.ok {
+                border-left-color: var(--ok);
+            }
+
+            .toast-msg.warn {
+                border-left-color: var(--warn);
+            }
+
+        @@keyframes shake {
+            0%, 100% {
+                transform: translateX(0)
+            }
+
+            20% {
+                transform: translateX(-5px)
+            }
+
+            40% {
+                transform: translateX(5px)
+            }
+
+            60% {
+                transform: translateX(-4px)
+            }
+
+            80% {
+                transform: translateX(4px)
+            }
+        }
+
+        @@media (max-width:768px) {
+            .wizard-track {
+                padding: 0 10px;
+            }
+
+            .wz-step .wz-label {
+                display: none;
+            }
+
+            .cat-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .f-grid.c3 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+    <link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+}
+
+<!-- WIZARD -->
+<div class="wizard-shell">
+    <div class="wizard-track">
+        <div class="wz-step active" data-step="1" onclick="gotoStep(1)">
+            <div class="wz-num">1</div><span class="wz-label">Categoría</span>
+        </div>
+        <div class="wz-div"></div>
+        <div class="wz-step" data-step="2" onclick="gotoStep(2)">
+            <div class="wz-num">2</div><span class="wz-label">Subcategoría</span>
+        </div>
+        <div class="wz-div"></div>
+        <div class="wz-step" data-step="3" onclick="gotoStep(3)">
+            <div class="wz-num">3</div><span class="wz-label">Detalles</span>
+        </div>
+        <div class="wz-div"></div>
+        <div class="wz-step" data-step="4" onclick="gotoStep(4)">
+            <div class="wz-num">4</div><span class="wz-label">Revisión</span>
+        </div>
+
+        <div class="rs-toggle" id="rs-toggle" onclick="toggleResumen()">
+            <div class="rs-pip" id="rs-pip"></div>
+            <div>
+                <div class="rs-label">RESUMEN</div>
+                <div class="rs-amount zero" id="rs-amount">$0.00</div>
+            </div>
+            <i class="fa-solid fa-chevron-down rs-chevron"></i>
+        </div>
+    </div>
+
+    <div class="rs-panel" id="rs-panel">
+        <div class="rs-grid">
+            <div class="rs-cell"><div class="rs-cell-lbl">Categoría</div>   <div class="rs-cell-val dim" id="rc-cat">—</div></div>
+            <div class="rs-cell"><div class="rs-cell-lbl">Subcategoría</div><div class="rs-cell-val dim" id="rc-subcat">—</div></div>
+            <div class="rs-cell"><div class="rs-cell-lbl">Monto</div>       <div class="rs-cell-val dim" id="rc-monto">$0.00</div></div>
+            <div class="rs-cell"><div class="rs-cell-lbl">Moneda</div>      <div class="rs-cell-val dim" id="rc-moneda">MXN</div></div>
+            <div class="rs-cell"><div class="rs-cell-lbl">Centro costo</div><div class="rs-cell-val dim" id="rc-cc">—</div></div>
+            <div class="rs-cell"><div class="rs-cell-lbl">Proveedor</div>   <div class="rs-cell-val dim" id="rc-proveedor">—</div></div>
+            <div class="rs-cell"><div class="rs-cell-lbl">Aprobador</div>   <div class="rs-cell-val dim" id="rc-aprobador">—</div></div>
+            <div class="rs-cell"><div class="rs-cell-lbl">Urgencia</div>    <div class="rs-cell-val dim" id="rc-urgencia">Normal</div></div>
+        </div>
+        <div class="rs-foot">
+            <div class="rs-hint">
+                <div class="rs-hint-dot" id="rs-hint-dot"></div>
+                <span id="rs-hint-text">Completa los campos para ver el resumen</span>
+            </div>
+            <button class="rs-close-btn" onclick="toggleResumen()"><i class="fa-solid fa-xmark"></i> Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════ MAIN ═══════ -->
+<div class="main">
+
+    <!-- PASO 1 — CATEGORÍA -->
+    <div class="panel active" id="panel-1">
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" style="background:var(--blue-900)"><i class="fa-solid fa-grip"></i></div>
+                <div>
+                    <div class="card-title">Tipo de Gasto</div>
+                    <div class="card-sub">Selecciona la categoría que mejor describe el egreso</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="cat-grid" id="cat-grid"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" style="background:var(--blue-700)"><i class="fa-solid fa-calendar-days"></i></div>
+                <div><div class="card-title">Datos del Documento</div><div class="card-sub">Folio y moneda</div></div>
+            </div>
+            <div class="card-body">
+                <div class="f-grid c3">
+                    <div class="field"><label>Folio SG</label><input type="text" id="sg-folio" value="@Model.Folio" readonly /></div>
+                    <div class="field"><label>Fecha del gasto <span class="req-star">*</span></label><input type="date" id="sg-fecha" onchange="updateResumen()" /></div>
+                    <div class="field">
+                        <label>Moneda <span class="req-star">*</span></label>
+                        <select id="sg-moneda" onchange="updateResumen()">
+                            <option value="MXN">MXN — Peso mexicano</option>
+                            <option value="USD">USD — Dólar americano</option>
+                            <option value="EUR">EUR — Euro</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-nav">
+            <div></div>
+            <button type="button" class="btn-nav next" onclick="gotoStep(2)">Siguiente <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- PASO 2 — SUBCATEGORÍA -->
+    <div class="panel" id="panel-2">
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" id="sub-icon" style="background:var(--blue-900)"><i class="fa-solid fa-list-ul"></i></div>
+                <div>
+                    <div class="card-title" id="sub-title">Subcategoría</div>
+                    <div class="card-sub">Elige el tipo específico dentro de la categoría seleccionada</div>
+                </div>
+            </div>
+            <div class="card-body"><div class="sub-list" id="sub-list"></div></div>
+        </div>
+        <div class="step-nav">
+            <button type="button" class="btn-nav back" onclick="gotoStep(1)"><i class="fa-solid fa-arrow-left"></i> Anterior</button>
+            <button type="button" class="btn-nav next" onclick="gotoStep(3)">Siguiente <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- PASO 3 — DETALLES -->
+    <div class="panel" id="panel-3">
+
+        <!-- Banners de reglas de negocio -->
+        <div class="biz-banners" id="biz-banners"></div>
+
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" style="background:var(--blue-700)"><i class="fa-solid fa-user"></i></div>
+                <div><div class="card-title">Proveedor &amp; Concepto</div></div>
+            </div>
+            <div class="card-body">
+                <div class="f-grid">
+                    <div class="field f-span2">
+                        <label>Proveedor / Beneficiario <span class="req-star">*</span></label>
+                        <input type="text" id="sg-proveedor" placeholder="Nombre de la empresa o persona" oninput="updateResumen(); refreshBizRules()" />
+                    </div>
+                    <div class="field f-full">
+                        <label>Concepto del gasto <span class="req-star">*</span></label>
+                        <input type="text" id="sg-concepto" placeholder="Descripción breve del gasto" />
+                    </div>
+                    <div class="field f-full">
+                        <label>Justificación</label>
+                        <textarea id="sg-justif" placeholder="Explica brevemente por qué es necesario este gasto…"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" style="background:var(--warn)"><i class="fa-solid fa-dollar-sign"></i></div>
+                <div><div class="card-title">Importe &amp; Centro de Costo</div></div>
+            </div>
+            <div class="card-body">
+                <div class="f-grid c3">
+                    <div class="field">
+                        <label>Monto total <span class="req-star">*</span></label>
+                        <div class="igroup">
+                            <div class="ipfx">$</div>
+                            <input type="number" id="sg-monto" placeholder="0.00" min="0" step="0.01" oninput="updateResumen(); refreshBizRules()" />
+                        </div>
+                    </div>
+                    <div class="field f-span2">
+                        <label>Centro de costo <span class="req-star">*</span></label>
+                        <select id="sg-cc" onchange="updateResumen()">
+                            <option value="">— Selecciona —</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAMPOS DINÁMICOS (motor) -->
+        <div id="dynamic-fields"></div>
+
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" style="background:#7c3aed"><i class="fa-solid fa-paperclip"></i></div>
+                <div>
+                    <div class="card-title">Documentos Comprobatorios</div>
+                    <div class="card-sub" id="doc-sub">Adjunta facturas, notas o tickets del gasto</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="file-drop" onclick="document.getElementById('sg-files').click()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Arrastra archivos aquí o <strong>haz clic para seleccionar</strong></p>
+                    <p>Formatos: PDF, JPG, PNG · Máx. 10 MB por archivo</p>
+                </div>
+                <input type="file" id="sg-files" style="display:none" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="showFiles(this)" />
+                <div id="file-list"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" style="background:var(--blue-900)"><i class="fa-solid fa-shield-halved"></i></div>
+                <div>
+                    <div class="card-title">Flujo de Autorización</div>
+                    <div class="card-sub">Aprobador y nivel de urgencia</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="f-grid c3">
+                    <div class="field">
+                        <label>Aprobador directo <span class="req-star">*</span></label>
+                        <select id="sg-aprobador" onchange="updateResumen()">
+                            <option value="">— Selecciona aprobador —</option>
+                        </select>
+                        <div id="aprob-suggest-wrap"></div>
+                    </div>
+                    <div class="field">
+                        <label>Urgencia</label>
+                        <select id="sg-urgencia" onchange="updateResumen()">
+                            <option value="normal">Normal (3–5 días hábiles)</option>
+                            <option value="urgente">Urgente (24–48 hrs)</option>
+                            <option value="inmediato">Inmediato (mismo día)</option>
+                        </select>
+                    </div>
+                    <div class="field f-full">
+                        <label>Notas adicionales</label>
+                        <textarea id="sg-notas" placeholder="Información extra que el aprobador deba conocer…" style="min-height:60px;"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-nav">
+            <button type="button" class="btn-nav back" onclick="gotoStep(2)"><i class="fa-solid fa-arrow-left"></i> Anterior</button>
+            <button type="button" class="btn-nav next" onclick="gotoStep(4)">Revisar solicitud <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- PASO 4 — REVISIÓN -->
+    <div class="panel" id="panel-4">
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" style="background:var(--ok)"><i class="fa-solid fa-clipboard-check"></i></div>
+                <div><div class="card-title">Revisión Final</div><div class="card-sub">Verifica todos los datos antes de enviar</div></div>
+            </div>
+            <div class="card-body" id="review-body"></div>
+        </div>
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon" style="background:var(--blue-700)"><i class="fa-solid fa-paper-plane"></i></div>
+                <div><div class="card-title">Opciones de Envío</div></div>
+            </div>
+            <div class="card-body">
+                <div class="f-grid c2">
+                    <div class="field">
+                        <label>Notificar aprobador por email</label>
+                        <select id="sg-env-email"><option>Sí — enviar automáticamente</option><option>No por ahora</option></select>
+                    </div>
+                    <div class="field">
+                        <label>Generar comprobante PDF</label>
+                        <select id="sg-gen-pdf"><option>Sí — descargar al enviar</option><option>No</option></select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="accept-box">
+            <input type="checkbox" id="chk-acepto" />
+            <label for="chk-acepto">Confirmo que la información proporcionada es verídica y que los gastos cumplen con las políticas de la empresa. Entiendo que la aprobación está sujeta a revisión.</label>
+        </div>
+        <div class="step-nav">
+            <button type="button" class="btn-nav back" onclick="gotoStep(3)"><i class="fa-solid fa-arrow-left"></i> Anterior</button>
+            <button type="button" class="btn-nav finish" onclick="submitForm()"><i class="fa-solid fa-paper-plane"></i> Enviar Solicitud</button>
+        </div>
+    </div>
+
+    <!-- PASO 5 — ÉXITO -->
+    <div class="panel" id="panel-5">
+        <div class="success-card">
+            <div class="success-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">¡Solicitud enviada!</h2>
+            <p style="color:var(--ink-500);font-size:13px;margin-bottom:4px;">Tu solicitud ha sido registrada exitosamente.</p>
+            <p style="font-size:13px;margin-bottom:24px;">Folio: <strong style="color:var(--blue-700);font-family:var(--font-mono);" id="success-folio"></strong></p>
+            <p style="color:var(--ink-500);font-size:11px;max-width:360px;margin:0 auto 28px;line-height:1.65;">
+                Recibirás una notificación cuando el aprobador procese tu solicitud. Tiempo estimado:
+                <strong>3–5 días hábiles</strong>.
+            </p>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                <button class="btn-action" onclick="location.reload()"><i class="fa-solid fa-circle-plus"></i> Nueva solicitud</button>
+                <button class="btn-action primary"><i class="fa-solid fa-download"></i> Descargar comprobante</button>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /main -->
+<div id="toast-container"></div>
+
+@section scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/Gastos/gastos-engine.js"></script>
+    <script src="~/Scripts/Gastos/gastos-schema.js"></script>
+    <script>
+        /* ═══════════════════════════════════════════════════════════════════════
+           gastos-form.js  (orquestador / wizard)
+        ═══════════════════════════════════════════════════════════════════════ */
+
+        /* ── Estado ── */
+        const state = { step: 1, category: null, subcat: null };
+
+        /* ── Bootstrap ── */
+        (function init() {
+            // Poblar cat-grid desde schema
+            const grid = document.getElementById('cat-grid');
+            grid.innerHTML = Object.entries(SCHEMA).map(([key, cat]) => `
+                        <div class="cat-card" data-cat="${key}" style="--cc:${cat.color}" onclick="selectCategory(this)">
+                          <div class="cat-icon"><i class="${cat.icon}"></i></div>
+                          <div class="cat-label">${cat.label}</div>
+                          <div class="cat-desc">${cat.desc}</div>
+                        </div>`).join('');
+
+
+            GetData({
+                path: '/Gastos/DatosSelect',
+            }).then((_res) => {
+                const proveedores = _res.proveedores;
+                const monedas = _res.monedas;
+                const centros = _res.centros;
+
+                tomManager.create('sg-cc', {
+                    selector: '#sg-cc',
+                    dropdownParent: 'body', 
+                    options: centros,
+                    valueField: 'id',
+                    displayField: 'nombre',
+                    searchField: ['id', 'nombre'],
+                    placeholder: 'Seleccione el centro de costo...',
+                    maxItems: 1,
+                    create: false,
+                    render: {
+                        option: (data, escape) =>
+                            `<div class="vn-fac-custom-option" style="color: var(--text-dark);">
+                        ${escape(data.nombre)} (ID: ${escape(data.id)})
+                    </div>`,
+                        item: (data, escape) =>
+                            `<div class="vn-fac-custom-item" style="color: var(--text-dark);">
+                        ${escape(data.nombre)}
+                    </div>`
+                    },
+                    onChange: (value) => {
+                        console.log("Centro de costo seleccionado:", value);
+                    }
+                });
+
+                tomManager.create('sg-proveedor', {
+                    selector: '#sg-proveedor',
+                    dropdownParent: 'body',
+                    options: proveedores,
+                    valueField: 'id',
+                    displayField: 'nombre',
+                    searchField: ['id', 'nombre'],
+                    placeholder: 'Seleccione el PROVEEDOR...',
+                    maxItems: 1,
+                    create: false,
+                    render: {
+                        option: (data, escape) =>
+                            `<div class="vn-fac-custom-option" style="color: var(--text-dark);">
+                        ${escape(data.nombre)} (ID: ${escape(data.id)})
+                    </div>`,
+                        item: (data, escape) =>
+                            `<div class="vn-fac-custom-item" style="color: var(--text-dark);">
+                        ${escape(data.nombre)}
+                    </div>`
+                    },
+                    onChange: (value) => {
+                        console.log("Centro de costo seleccionado:", value);
+                    }
+                });
+
+                tomManager.create('sg-moneda', {
+                    selector: '#sg-moneda',
+                    dropdownParent: 'body',
+                    options: monedas,
+                    valueField: 'id',
+                    displayField: 'nombre',
+                    searchField: ['id', 'nombre'],
+                    placeholder: 'Seleccione la moneda...',
+                    maxItems: 1,
+                    create: false,
+                    render: {
+                        option: (data, escape) =>
+                            `<div class="vn-fac-custom-option" style="color: var(--text-dark);">
+                ${escape(data.nombre)} (ID: ${escape(data.id)})
+            </div>`,
+                        item: (data, escape) =>
+                            `<div class="vn-fac-custom-item" style="color: var(--text-dark);">
+                ${escape(data.nombre)}
+            </div>`
+                    },
+                    onChange: (value) => {
+                        updateResumen();
+                    }
+                });
+                const monedaTs = tomManager.getInstance('sg-moneda');
+                if (monedaTs) monedaTs.setValue('PESOS', false);
+            });
+
+            // Poblar aprobadores
+            const aprSel = document.getElementById('sg-aprobador');
+            APROBADORES.forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; aprSel.appendChild(o); });
+
+            // Fecha por defecto
+            document.getElementById('sg-fecha').valueAsDate = new Date();
+
+            updateResumen();
+        })();
+
+        /* ── Toggle resumen ── */
+        function toggleResumen() {
+            const panel = document.getElementById('rs-panel');
+            const toggle = document.getElementById('rs-toggle');
+            const open = panel.classList.toggle('open');
+            toggle.classList.toggle('open', open);
+        }
+
+        /* ── Update resumen HUD ── */
+        function updateResumen() {
+            const cat = state.category ? SCHEMA[state.category] : null;
+            const sub = cat && state.subcat ? cat.subs.find(s => s.id === state.subcat) : null;
+            const monto = parseFloat(document.getElementById('sg-monto')?.value) || 0;
+            const moneda = document.getElementById('sg-moneda')?.value || 'MXN';
+            const cc = document.getElementById('sg-cc')?.value || '';
+            const prov = document.getElementById('sg-proveedor')?.value || '';
+            const aprob = document.getElementById('sg-aprobador')?.value || '';
+            const urgEl = document.getElementById('sg-urgencia');
+            const urg = urgEl ? urgEl.options[urgEl.selectedIndex]?.text.split(' (')[0] : 'Normal';
+
+            // Toggle button amount
+            const amtEl = document.getElementById('rs-amount');
+            amtEl.textContent = '$' + monto.toLocaleString('es-MX', { minimumFractionDigits: 2 });
+            amtEl.className = 'rs-amount' + (monto > 0 ? '' : ' zero');
+            const pip = document.getElementById('rs-pip');
+            pip.classList.toggle('active', !!(cat || monto > 0));
+            if (cat) pip.style.background = cat.color;
+
+            // Cells
+            setRC('rc-cat', cat ? cat.label : null);
+            setRC('rc-subcat', sub ? sub.name : null);
+            setRC('rc-monto', monto > 0 ? '$' + monto.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : null, monto > 0);
+            setRC('rc-moneda', moneda, false, true);
+            setRC('rc-cc', cc || null);
+            setRC('rc-proveedor', prov || null);
+            setRC('rc-aprobador', aprob || null);
+            setRC('rc-urgencia', urg || null, false, true);
+
+            // Hint
+            const filled = [cat, sub, monto > 0, cc, prov, aprob].filter(Boolean).length;
+            const dot = document.getElementById('rs-hint-dot');
+            dot.classList.toggle('ok', filled >= 5);
+            document.getElementById('rs-hint-text').textContent =
+                filled >= 6 ? '✓ Resumen completo — listo para enviar' :
+                    filled > 0 ? `${filled} de 6 campos completados` :
+                        'Completa los campos para ver el resumen';
+        }
+
+        function setRC(id, val, accent = false, always = false) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (val) {
+                el.className = 'rs-cell-val' + (accent ? ' accent' : '');
+                el.textContent = val;
+            } else if (always) {
+                el.className = 'rs-cell-val';
+                el.textContent = el.id === 'rc-moneda' ? (document.getElementById('sg-moneda')?.value || 'MXN') : '—';
+            } else {
+                el.className = 'rs-cell-val dim';
+                el.textContent = '—';
+            }
+        }
+
+        /* ── Reglas de negocio (banners + aprobador sugerido) ── */
+        function refreshBizRules() {
+            const cat = state.category ? SCHEMA[state.category] : null;
+            const sub = cat && state.subcat ? cat.subs.find(s => s.id === state.subcat) : null;
+            const monto = parseFloat(document.getElementById('sg-monto')?.value) || 0;
+            const bannersEl = document.getElementById('biz-banners');
+            const aprobSugEl = document.getElementById('aprob-suggest-wrap');
+
+            bannersEl.innerHTML = '';
+            aprobSugEl.innerHTML = '';
+            if (!sub) return;
+
+            // Alertas
+            const alerts = Engine.evalBusinessRules(sub, monto);
+            alerts.forEach(a => {
+                const icon = a.level === 'error' ? 'fa-circle-xmark' : 'fa-triangle-exclamation';
+                const div = document.createElement('div');
+                div.className = `biz-banner ${a.level}`;
+                div.innerHTML = `<i class="fa-solid ${icon}"></i><span>${a.message}</span>`;
+                bannersEl.appendChild(div);
+            });
+
+            // Aprobador sugerido
+            if (monto > 0) {
+                const suggested = Engine.suggestAprobador(sub, monto);
+                if (suggested) {
+                    aprobSugEl.innerHTML = `
+                            <div class="aprob-suggest">
+                              <i class="fa-solid fa-sparkles"></i>
+                              Sugerido para este monto: <strong>${suggested}</strong>
+                            </div>`;
+                    // Auto-seleccionar solo si no hay selección manual
+                    const aprSel = document.getElementById('sg-aprobador');
+                    if (!aprSel.value && [...aprSel.options].some(o => o.value === suggested)) {
+                        aprSel.value = suggested;
+                        updateResumen();
+                    }
+                }
+            }
+
+            // Actualizar sub-título de documentos con los reqs de la subcategoría
+            const docSub = document.getElementById('doc-sub');
+            if (sub.reqs?.length) {
+                docSub.innerHTML = sub.reqs.map(r => `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><i class="fa-solid fa-circle-check" style="color:var(--ok)"></i>${r}</span>`).join('');
+            }
+        }
+
+        /* ── Navegación ── */
+        function gotoStep(n) {
+            if (n > 1 && !state.category) { toast('Selecciona una categoría para continuar', 'err'); return; }
+            if (n > 2 && !state.subcat) { toast('Selecciona una subcategoría para continuar', 'err'); return; }
+            if (n === 4) {
+                // Validar campos base
+                const required = ['sg-fecha', 'sg-monto', 'sg-cc', 'sg-proveedor', 'sg-concepto', 'sg-aprobador'];
+                let ok = true;
+                required.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el || !el.value.trim()) { el?.classList.add('err'); ok = false; }
+                    else el.classList.remove('err');
+                });
+
+                // Validar campos dinámicos
+                const dynContainer = document.getElementById('dynamic-fields');
+                const cat = SCHEMA[state.category];
+                const sub = cat?.subs.find(s => s.id === state.subcat);
+                const dynErrors = Engine.validateDynamic(dynContainer, sub);
+                if (dynErrors.length > 0) ok = false;
+
+                if (!ok) { toast('Completa los campos requeridos', 'err'); return; }
+
+                // Verificar alertas de error bloqueantes
+                const monto = parseFloat(document.getElementById('sg-monto').value) || 0;
+                const alerts = Engine.evalBusinessRules(sub, monto);
+                const blocking = alerts.filter(a => a.level === 'error');
+                if (blocking.length) {
+                    toast(blocking[0].message, 'err');
+                    return;
+                }
+
+                buildReview();
+            }
+
+            state.step = n;
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('panel-' + n).classList.add('active');
+
+            document.querySelectorAll('.wz-step').forEach(ws => {
+                const s = +ws.dataset.step;
+                ws.classList.remove('active', 'done');
+                if (s < n) ws.classList.add('done');
+                if (s === n) ws.classList.add('active');
+                ws.querySelector('.wz-num').textContent = s;
+            });
+
+            // Cerrar resumen al cambiar paso
+            document.getElementById('rs-panel').classList.remove('open');
+            document.getElementById('rs-toggle').classList.remove('open');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ── Selección de categoría ── */
+        function selectCategory(card) {
+            document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            state.category = card.dataset.cat;
+            state.subcat = null;
+            buildSubcats();
+            updateResumen();
+        }
+
+        function buildSubcats() {
+            const cat = SCHEMA[state.category];
+            document.getElementById('sub-title').textContent = cat.label + ' — Subcategorías';
+            document.getElementById('sub-icon').style.background = cat.color;
+            document.getElementById('sub-list').innerHTML = cat.subs.map(s => `
+                        <div class="sub-item" data-sub="${s.id}" onclick="selectSubcat(this,'${s.id}')">
+                          <div class="sub-radio"></div>
+                          <div style="flex:1">
+                            <div class="sub-name">${s.name}</div>
+                            <div class="sub-desc">${s.desc}</div>
+                            <div class="sub-reqs">${s.reqs.map(r => `<span class="sub-req-chip"><i class="fa-solid fa-paperclip"></i> ${r}</span>`).join('')}</div>
+                          </div>
+                        </div>`).join('');
+        }
+
+        /* ── Selección de subcategoría ── */
+        function selectSubcat(item, id) {
+            document.querySelectorAll('.sub-item').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+            state.subcat = id;
+
+            const cat = SCHEMA[state.category];
+            const sub = cat.subs.find(s => s.id === id);
+            const dynContainer = document.getElementById('dynamic-fields');
+            Engine.renderFields(dynContainer, sub, cat.color);
+
+            refreshBizRules();
+            updateResumen();
+        }
+
+        /* ── Archivos ── */
+        function showFiles(input) {
+            document.getElementById('file-list').innerHTML = Array.from(input.files).map(f => `
+                        <div class="file-item">
+                          <i class="fa-solid fa-file-circle-check"></i>
+                          <span class="fn">${f.name}</span>
+                          <span class="fs">${(f.size / 1024).toFixed(0)} KB</span>
+                        </div>`).join('');
+        }
+
+        /* ── Revisión ── */
+        function buildReview() {
+            const cat = SCHEMA[state.category];
+            const sub = cat.subs.find(s => s.id === state.subcat);
+            const monto = parseFloat(document.getElementById('sg-monto').value) || 0;
+            const moneda = document.getElementById('sg-moneda').value;
+            const urgEl = document.getElementById('sg-urgencia');
+
+            const rows = [
+                ['Categoría', cat.label],
+                ['Subcategoría', sub?.name || '—'],
+                ['Fecha del gasto', document.getElementById('sg-fecha').value],
+                ['Centro de costo', document.getElementById('sg-cc').value],
+                ['Proveedor', document.getElementById('sg-proveedor').value],
+                ['Concepto', document.getElementById('sg-concepto').value],
+                ['Justificación', document.getElementById('sg-justif').value || '—'],
+                ['Aprobador', document.getElementById('sg-aprobador').value],
+                ['Urgencia', urgEl.options[urgEl.selectedIndex].text],
+            ];
+
+            document.getElementById('review-body').innerHTML = `
+                        <div class="rev-hero">
+                          <div class="rev-swatch" style="background:color-mix(in srgb,${cat.color} 15%,transparent);color:${cat.color}">
+                            <i class="${cat.icon}"></i>
+                          </div>
+                          <div style="flex:1">
+                            <div style="font-weight:800;font-size:13px;">${cat.label}</div>
+                            <div style="font-size:11px;color:var(--ink-500)">${sub?.name || ''}</div>
+                          </div>
+                          <div style="text-align:right">
+                            <div style="font-weight:800;font-size:17px;color:var(--blue-700)">$${monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                            <div style="font-size:10px;color:var(--ink-300);font-family:var(--font-mono)">${moneda}</div>
+                          </div>
+                        </div>
+                        ${rows.map(([k, v]) => `<div class="sum-row"><span class="sum-key">${k}</span><span class="sum-val">${v}</span></div>`).join('')}
+                        <div class="sum-total"><span>Total solicitado</span><span>$${monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ${moneda}</span></div>`;
+        }
+
+        /* ── Submit ── */
+        async function submitForm() {
+            if (!document.getElementById('chk-acepto').checked) {
+                toast('Acepta los términos antes de enviar', 'err'); return;
+            }
+
+            const cat = SCHEMA[state.category];
+            const sub = cat.subs.find(s => s.id === state.subcat);
+            const urgEl = document.getElementById('sg-urgencia');
+            const dynData = collectDynFieldsForSubmit(sub);
+            const formData = new FormData();
+
+            formData.append('Categoria', cat.label);
+            formData.append('Subcategoria', sub?.name ?? '');
+            formData.append('Fecha', document.getElementById('sg-fecha').value);
+            formData.append('Moneda', document.getElementById('sg-moneda').value);
+            formData.append('Proveedor', document.getElementById('sg-proveedor').value);
+            formData.append('Concepto', document.getElementById('sg-concepto').value);
+            formData.append('Justificacion', document.getElementById('sg-justif').value);
+            formData.append('Monto', document.getElementById('sg-monto').value);
+            formData.append('CentroCosto', document.getElementById('sg-cc').value);
+            formData.append('Aprobador', document.getElementById('sg-aprobador').value);
+            formData.append('Urgencia', urgEl.options[urgEl.selectedIndex].text);
+            formData.append('NotasAdicionales', document.getElementById('sg-notas').value);
+            formData.append('CamposDinamicos', JSON.stringify(dynData));
+
+            // Campos dinámicos
+            if (sub?.fields?.length) {
+                sub.fields.forEach(f => {
+                    const el = document.getElementById(f.id);
+                    if (el) formData.append(f.id, el.value);
+                });
+            }
+
+            // Archivos
+            Array.from(document.getElementById('sg-files').files).forEach(file => {
+                formData.append('Archivos', file, file.name);
+            });
+
+            formData.append('NotificarEmail', document.getElementById('sg-env-email').value);
+            formData.append('GenerarPDF', document.getElementById('sg-gen-pdf').value);
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) formData.append('__RequestVerificationToken', token.value);
+
+            const btn = document.querySelector('.btn-nav.finish');
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando…';
+
+                const resp = await fetch('/Gastos/Crear', { method: 'POST', body: formData });
+                if (!resp.ok) throw new Error((await resp.text()) || `Error ${resp.status}`);
+                const result = await resp.json();
+
+                const folio = result.folio ?? ('SG-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000));
+                /*document.getElementById('tb-folio').textContent = folio;*/
+                document.getElementById('success-folio').textContent = folio;
+
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.getElementById('panel-5').classList.add('active');
+                document.getElementById('rs-panel').classList.remove('open');
+                document.getElementById('rs-toggle').classList.remove('open');
+                toast('¡Solicitud enviada con éxito!', 'ok');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) {
+                toast('Error al enviar: ' + err.message, 'err');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Solicitud';
+            }
+        }
+
+        function collectDynFieldsForSubmit(sub) {
+            if (!sub?.fields?.length) return [];
+            const container = document.getElementById('dynamic-fields');
+            const result = [];
+
+            sub.fields.forEach(f => {
+                const wrap = container.querySelector(`[data-field-id="${f.id}"]`);
+                // Omitir campos ocultos por condicional
+                if (!wrap || wrap.style.display === 'none') return;
+
+                let valor = '';
+                if (f.type === 'radio-grid') {
+                    const checked = container.querySelector(`input[name="${f.id}"]:checked`);
+                    valor = checked?.value ?? '';
+                } else if (f.type === 'date-range') {
+                    const from = document.getElementById(`${f.id}-from`)?.value ?? '';
+                    const to = document.getElementById(`${f.id}-to`)?.value ?? '';
+                    valor = from && to ? `${from} / ${to}` : (from || to);
+                } else if (f.type === 'tag-input') {
+                    valor = document.getElementById(f.id)?.value ?? '[]'; // ya es JSON string
+                } else {
+                    valor = document.getElementById(f.id)?.value ?? '';
+                }
+
+                if (!valor) return; // no guardar vacíos
+
+                result.push({
+                    CampoId: f.id,
+                    CampoLabel: f.label,
+                    Valor: valor
+                });
+            });
+
+            return result;
+        }
+
+        /* ── Toast ── */
+        function toast(msg, type = '') {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = 'toast-msg ' + type;
+            t.textContent = msg;
+            c.appendChild(t);
+            requestAnimationFrame(() => t.classList.add('show'));
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+        }
+    </script>
+}

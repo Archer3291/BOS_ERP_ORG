@@ -1,0 +1,800 @@
+﻿@model BOS_ERP.Models.VistaExcelViewModel
+@using System.Text.Json
+<style>
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .section-card {
+        background: var(--bg-light);
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+        margin-bottom: 2rem;
+        overflow: hidden;
+        border: 1px solid var(--border-light);
+        transition: all 0.3s ease;
+    }
+
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+    .section-header {
+        padding: 1.5rem 2rem;
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .section-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+    @@keyframes shimmer {
+        0% {
+            left: -100%;
+        }
+
+        100% {
+            left: 100%;
+        }
+    }
+
+    .section-header.success {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .section-header.warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+
+    .section-header.danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .section-title {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .section-icon {
+        font-size: 1.25rem;
+        opacity: 0.9;
+    }
+
+    .table-container {
+        padding: 0;
+        overflow-x: auto;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        background: var(--bg-light);
+        margin: 0;
+    }
+
+        .modern-table thead th {
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--border-light);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modern-table tbody td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            vertical-align: middle;
+        }
+
+        .modern-table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+            .modern-table tbody tr:hover {
+                background: var(--very-light-blue);
+                transform: scale(1.01);
+            }
+
+    .editable-cell {
+        background-color: transparent;
+        transition: all 0.3s ease;
+        border-radius: 6px;
+        padding: 0.5rem;
+        margin: -0.5rem;
+        outline: none;
+        position: relative;
+        min-height: 1.5rem;
+    }
+
+        .editable-cell:hover {
+            background-color: var(--very-light-blue);
+            cursor: text;
+        }
+
+        .editable-cell:focus {
+            background-color: var(--light-blue);
+            box-shadow: 0 0 0 2px var(--primary-blue);
+            outline: none;
+        }
+
+        .editable-cell.editado {
+            background-color: #fbbf24 !important;
+            color: #92400e;
+            box-shadow: 0 0 0 2px #f59e0b;
+            position: relative;
+        }
+
+            .editable-cell.editado::after {
+                content: '✏️';
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                font-size: 0.75rem;
+                background: #f59e0b;
+                border-radius: 50%;
+                padding: 2px 4px;
+                color: white;
+                z-index: 99;
+            }
+
+    .action-button {
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 2rem 0;
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+        .action-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .action-button:active {
+            transform: translateY(-1px);
+        }
+
+    .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-light);
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-light);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary-blue);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--text-light);
+    }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid transparent;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 0.5rem;
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .success-message {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .error-message {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    @@media (max-width: 768px) {
+        .container {
+            padding: 0 10px;
+        }
+
+        .section-header {
+            padding: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+        }
+
+        .modern-table thead th,
+        .modern-table tbody td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .stats-bar {
+            grid-template-columns: 1fr;
+        }
+    }
+
+
+    .detalle-modal {
+        border: 1px solid #ccc;
+        padding: 1rem;
+        margin: 1rem 0;
+        background-color: #f9f9f9;
+    }
+</style>
+@*<h3>General</h3>
+    <table class="table table-bordered table-sm">
+        @foreach (var fila in ViewBag.General)
+        {
+            <tr>
+                @foreach (var val in fila)
+                {
+                    <td>@val</td>
+                }
+            </tr>
+        }
+    </table>
+
+    <h3>Proveedor</h3>
+    <table class="table table-bordered table-sm">
+        @foreach (var fila in ViewBag.Proveedor)
+        {
+            <tr>
+                @foreach (var val in fila)
+                {
+                    <td>@val</td>
+                }
+            </tr>
+        }
+    </table>
+
+    <h3>Producto SAT CFDI</h3>
+    <table class="table table-bordered table-sm">
+        @foreach (var fila in ViewBag.ProductoSAT)
+        {
+            <tr>
+                @foreach (var val in fila)
+                {
+                    <td>@val</td>
+                }
+            </tr>
+        }
+    </table>
+    @if (ViewBag.NuevosProductos != null && ((List<string>)ViewBag.NuevosProductos).Any())
+    {
+        <div class="alert alert-warning">
+            <strong>Productos nuevos encontrados:</strong>
+            <ul>
+                @foreach (var prod in ViewBag.NuevosProductos as List<string>)
+                {
+                    <li>@prod</li>
+                }
+            </ul>
+        </div>
+    }*@
+
+
+<div class="container">
+    <!-- Estadísticas rápidas -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-number" id="existentesCount">@Model.ProductosYProveedoresExistentes?.Count ?? 0</div>
+            <div class="stat-label">Productos Existentes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="sinProveedorCount">@Model.ProductosConProveedorInexistente?.Count ?? 0</div>
+            <div class="stat-label">Sin Proveedor</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="nuevosCount">@Model.ProductosNuevos?.Count ?? 0</div>
+            <div class="stat-label">Productos Nuevos</div>
+        </div>
+    </div>
+
+    <!-- Productos y proveedores existentes -->
+    <div class="section-card">
+        <div class="section-header success">
+            <h3 class="section-title">
+                <i class="fas fa-check-circle section-icon"></i>
+                Productos y proveedores existentes
+            </h3>
+        </div>
+        <div class="table-container p-3">
+            <table class="modern-table" id="existentesTable">
+                <thead>
+                    <tr>
+                        @foreach (var enc in Model.EncabezadosGeneral as List<string>)
+                        {
+                            <th>@enc</th>
+                        }
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody >
+                    @if (Model.ProductosYProveedoresExistentes != null)
+                    {
+                        foreach (var fila in Model.ProductosYProveedoresExistentes)
+                        {
+                            <tr>
+                                @foreach (var val in fila.General)
+                                {
+                                    <td>@val</td>
+                                }
+                                <td>
+                                    <button type="button" class="btn btn-outline-info btn-sm"
+                                            onclick='mostrarDetalleDesdeFila(@Html.Raw(JsonSerializer.Serialize(fila.Proveedor)), "proveedor")'>
+                                        Proveedor
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            onclick='mostrarDetalleDesdeFila(@Html.Raw(JsonSerializer.Serialize(fila.ProductoSAT)), "productoSAT")'>
+                                        Producto SAT
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Productos con proveedor no registrado -->
+    <div class="section-card">
+        <div class="section-header warning">
+            <h3 class="section-title">
+                <i class="fas fa-exclamation-triangle section-icon"></i>
+                Productos con proveedor no registrado
+            </h3>
+        </div>
+        <div class="table-container p-3">
+            <table class="modern-table" id="sinProveedorTable">
+                <thead>
+                    <tr>
+                        @foreach (var enc in Model.EncabezadosGeneral as List<string>)
+                        {
+                            <th>@enc</th>
+                        }
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.ProductosConProveedorInexistente != null)
+                    {
+                        foreach (var fila in Model.ProductosConProveedorInexistente)
+                        {
+                            <tr>
+                                @foreach (var val in fila.General)
+                                {
+                                    <td>@val</td>
+                                }
+                                <td>
+                                    <button type="button" class="btn btn-outline-info btn-sm"
+                                            onclick='mostrarDetalleDesdeFila(@Html.Raw(JsonSerializer.Serialize(fila.Proveedor)), "proveedor")'>
+                                        Proveedor
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            onclick='mostrarDetalleDesdeFila(@Html.Raw(JsonSerializer.Serialize(fila.ProductoSAT)), "productoSAT")'>
+                                        Producto SAT
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Productos NUEVOS -->
+    <div class="section-card">
+        <div class="section-header primary">
+            <h3 class="section-title">
+                <i class="fas fa-plus-circle section-icon"></i>
+                Productos nuevos a insertar
+            </h3>
+        </div>
+        <div class="table-container p-3">
+            <table class="modern-table" id="nuevosTable">
+                <thead>
+                    <tr>
+                        @foreach (var enc in Model.EncabezadosGeneral as List<string>)
+                        {
+                            <th>@enc</th>
+                        }
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.ProductosNuevos != null)
+                    {
+                        for (int i = 0; i < Model.ProductosNuevos.Count; i++)
+                        {
+                            var fila = Model.ProductosNuevos[i];
+                            <tr data-index="@i">
+                                @foreach (var val in fila.General)
+                                {
+                                    <td contenteditable="true" class="editable-cell">@val</td>
+                                }
+                                <td>
+                                    <button type="button" class="btn btn-outline-info btn-sm"
+                                            onclick='mostrarDetalleDesdeFila(@Html.Raw(JsonSerializer.Serialize(fila.Proveedor)), "proveedor")'>
+                                        Proveedor
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            onclick='mostrarDetalleDesdeFila(@Html.Raw(JsonSerializer.Serialize(fila.ProductoSAT)), "productoSAT")'>
+                                        Producto SAT
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="padding: 2rem;">
+            <div class="success-message" id="successMessage" style="display:none;">
+                <i class="fas fa-check-circle"></i>
+                <span>Productos guardados exitosamente</span>
+            </div>
+            <div class="error-message" id="errorMessage" style="display:none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Error al guardar productos</span>
+            </div>
+
+            <button class="action-button" onclick="enviarProductos()">
+                <i class="fas fa-save"></i>
+                Enviar Productos
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Bootstrap -->
+<div class="modal fade" id="detalleModal" tabindex="-1" aria-labelledby="detalleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detalleModalLabel">Detalle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="detalleModalBody">
+                <!-- Contenido dinámico aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Bootstrap -->
+<div class="modal fade" id="detalleModal" tabindex="-1" aria-labelledby="detalleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detalleModalLabel">Detalle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="detalleModalBody">
+                <!-- Contenido dinámico aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/lib/jquery/jquery.min.js"></script>
+<script>
+
+        const proveedores = @Html.Raw(JsonSerializer.Serialize(Model.Proveedor ?? new List<List<string>>()));
+        const productosSAT = @Html.Raw(JsonSerializer.Serialize(Model.ProductoSAT ?? new List<List<string>>()));
+        const encabezadoProveedores = @Html.Raw(JsonSerializer.Serialize(Model.EncabezadosProveedor ?? new List<string>()));
+        const encabezadoProductosSAT = @Html.Raw(JsonSerializer.Serialize(Model.EncabezadosProductoSat ?? new List<string>()));
+        const productosSATNuevos = @Html.Raw(JsonSerializer.Serialize(Model.ProductosNuevos.Select(p => p.ProductoSAT).ToList()));
+    const proveedoresNuevos = @Html.Raw(JsonSerializer.Serialize(Model.ProductosNuevos.Select(p => p.Proveedor).ToList()));
+    function mostrarDetalleDesdeFila(fila, tipo) {
+        let data, encabezado, titulo;
+
+        if (tipo === 'proveedor') {
+            data = fila; // fila ya es solo proveedor
+            encabezado = encabezadoProveedores;
+            titulo = 'Detalle del Proveedor';
+        } else if (tipo === 'productoSAT') {
+            data = fila; // fila solo productoSAT también
+            encabezado = encabezadoProductosSAT;
+            titulo = 'Detalle del Producto SAT';
+        } else {
+            console.warn('Tipo desconocido:', tipo);
+            return;
+        }
+
+        const cuerpo = data.map((val, idx) => `
+            <tr>
+                <th scope="row">${encabezado[idx]}</th>
+                <td>${val}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('detalleModalLabel').innerText = titulo;
+        document.getElementById('detalleModalBody').innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-striped table-sm">
+                    <tbody>${cuerpo}</tbody>
+                </table>
+            </div>
+        `;
+
+        const modal = new bootstrap.Modal(document.getElementById('detalleModal'));
+        modal.show();
+    }
+
+    // Función para mostrar detalle por índice si la necesitas
+    function mostrarDetalle(index, tipo) {
+        let data, encabezado, titulo;
+        if (tipo === 'proveedor') {
+            data = proveedores[index];
+            encabezado = encabezadoProveedores;
+            titulo = 'Detalle del Proveedor';
+        } else if (tipo === 'productoSAT') {
+            data = productosSAT[index];
+            encabezado = encabezadoProductosSAT;
+            titulo = 'Detalle del Producto SAT';
+        } else {
+            console.warn('Tipo desconocido:', tipo);
+            return;
+        }
+
+        const cuerpo = data.map((val, idx) => `
+            <tr>
+                <th scope="row">${encabezado[idx]}</th>
+                <td>${val}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('detalleModalLabel').innerText = titulo;
+        document.getElementById('detalleModalBody').innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-striped table-sm">
+                    <tbody>${cuerpo}</tbody>
+                </table>
+            </div>
+        `;
+
+        const modal = new bootstrap.Modal(document.getElementById('detalleModal'));
+        modal.show();
+    }
+
+    // Actualiza los contadores que se muestran en pantalla
+    function updateCounters() {
+        const existentesRows = document.querySelectorAll('#existentesTable tbody tr');
+        const sinProveedorRows = document.querySelectorAll('#sinProveedorTable tbody tr');
+        const nuevosRows = document.querySelectorAll('#nuevosTable tbody tr'); // corregido id
+
+        document.getElementById('existentesCount').textContent = existentesRows.length;
+        document.getElementById('sinProveedorCount').textContent = sinProveedorRows.length;
+        document.getElementById('nuevosCount').textContent = nuevosRows.length;
+    }
+
+    // Detectar cambios en las celdas editables
+    function inicializarEditableCells() {
+        document.querySelectorAll('.editable-cell').forEach(cell => {
+            cell.dataset.original = cell.innerText;
+
+            cell.addEventListener('input', () => {
+                if (cell.innerText.trim() !== cell.dataset.original.trim()) {
+                    cell.classList.add('editado');
+                } else {
+                    cell.classList.remove('editado');
+                }
+            });
+
+            // Mejorar UX en focus/blur
+            cell.addEventListener('focus', () => {
+                cell.style.outline = 'none';
+            });
+        });
+    }
+
+    // Enviar productos nuevos al servidor vía fetch
+    function enviarProductos() {
+        const button = document.querySelector('.action-button');
+        const originalText = button.innerHTML;
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        successMessage.style.display = 'none';
+        errorMessage.style.display = 'none';
+        button.innerHTML = '<div class="loading-spinner"></div>Enviando...';
+        button.disabled = true;
+
+        const tabla = $('#nuevosTable').DataTable();
+        const rows = tabla.rows().nodes().toArray();
+        const productos = [];
+        rows.forEach((row) => {
+            const celdas = row.querySelectorAll(".editable-cell");
+            const datosFila = [];
+
+            celdas.forEach(celda => {
+                datosFila.push(celda.innerText.trim());
+            });
+
+            // Obtener el índice real de DataTable
+            const realIndex = parseInt(row.getAttribute('data-index'));
+
+            const productoSAT = productosSATNuevos[realIndex] ?? [];
+            const proveedor = proveedoresNuevos[realIndex] ?? [];
+
+            productos.push({
+                producto: datosFila,
+                sat: productoSAT,
+                proveedor: proveedor
+            });
+        });
+
+
+        const formData = new FormData();
+        formData.append("productos_completos", JSON.stringify(productos));
+
+        fetch('/Planeador/GuardarProductosNuevos', {
+            method: 'POST',
+            body: formData
+        })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.success) {
+                    successMessage.style.display = 'flex';
+                    successMessage.querySelector('span').textContent = 'Productos guardados exitosamente';
+                    document.querySelectorAll('.editable-cell.editado').forEach(cell => {
+                        cell.classList.remove('editado');
+                        cell.dataset.original = cell.innerText;
+                    });
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    errorMessage.style.display = 'flex';
+                    errorMessage.querySelector('span').textContent = data.message || 'Error al guardar productos';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                errorMessage.style.display = 'flex';
+                errorMessage.querySelector('span').textContent = 'Error de conexión al enviar datos';
+            })
+            .finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+    }
+
+
+    // Esperar que cargue DOM para inicializar todo
+    document.addEventListener('DOMContentLoaded', function () {
+        updateCounters();
+        inicializarEditableCells();
+
+        // Agregar efecto de aparición suave a secciones
+        document.querySelectorAll('.section-card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 200);
+        });
+    });
+
+    $(document).ready(function () {
+        $('#existentesTable').DataTable({
+            responsive: true,
+        });
+
+        $('#sinProveedorTable').DataTable({
+            responsive: true,
+        });
+
+        $('#nuevosTable').DataTable({
+            responsive: false,
+        });
+    });
+</script>

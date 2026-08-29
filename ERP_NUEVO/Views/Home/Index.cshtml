@@ -1,0 +1,1053 @@
+﻿@using BOS_ERP.Controllers
+@using BOS_ERP.Models
+
+@section styles {
+    <link href="~/content/colors.css" rel="stylesheet" />
+}
+
+@functions {
+    public string GetRelativeTime(DateTime date)
+    {
+        var span = DateTime.Now - date;
+        if (span.TotalSeconds < 60)
+            return $"Hace {Math.Floor(span.TotalSeconds)}s";
+        if (span.TotalMinutes < 60)
+            return $"Hace {Math.Floor(span.TotalMinutes)}m";
+        if (span.TotalHours < 24)
+            return $"Hace {Math.Floor(span.TotalHours)}h";
+        if (span.TotalDays < 30)
+            return $"Hace {Math.Floor(span.TotalDays)}d";
+        return date.ToString("dd/MM/yy");
+    }
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+
+    /* LIGHT MODE */
+    .erp-index {
+        --idx-neon-cyan: var(--accent-blue);
+        --idx-neon-violet: var(--accent-purple);
+        --idx-neon-green: var(--success-color);
+        --idx-neon-pink: var(--danger-color);
+        --idx-neon-amber: var(--warning-color);
+        --idx-base: var(--bg-gray);
+        --idx-surface: var(--bg-gray);
+        --idx-card: var(--bg-light);
+        --idx-border: var(--border-light);
+        --idx-border2: rgba(99, 102, 241, 0.20);
+        --idx-grid-line: rgba(30, 58, 95, 0.05);
+        --idx-text-primary: var(--text-dark);
+        --idx-text-secondary: var(--text-light);
+        --idx-text-muted: var(--secondary-blue);
+        --idx-glow-cyan: var(--shadow);
+        --idx-glow-violet: var(--shadow);
+        --idx-glow-green: var(--shadow);
+        --idx-font-ui: 'Space Grotesk', sans-serif;
+        --idx-font-mono: 'JetBrains Mono', monospace;
+        --idx-slide1-bg: linear-gradient(120deg, var(--bg-gray) 40%, #dbeafe 100%);
+        --idx-slide2-bg: linear-gradient(120deg, var(--bg-gray) 40%, var(--accent-purple-light) 100%);
+        --idx-slide3-bg: linear-gradient(120deg, var(--bg-gray) 40%, #d1fae5 100%);
+        --idx-particle-opacity: 0.30;
+        --idx-scanline: none;
+    }
+
+    /* DARK MODE */
+    [data-theme="dark"] .erp-index {
+        --idx-border2: rgba(99, 102, 241, 0.28);
+        --idx-grid-line: rgba(148, 163, 184, 0.04);
+        --idx-glow-cyan: 0 0 20px rgba(96, 165, 250, 0.28), 0 0 50px rgba(96, 165, 250, 0.08);
+        --idx-glow-violet: 0 0 20px rgba(99, 102, 241, 0.28), 0 0 50px rgba(99, 102, 241, 0.08);
+        --idx-glow-green: 0 0 20px rgba(16, 185, 129, 0.28);
+        --idx-slide1-bg: linear-gradient(120deg, var(--bg-gray) 40%, #0f2040 100%);
+        --idx-slide2-bg: linear-gradient(120deg, var(--bg-gray) 40%, #1a1040 100%);
+        --idx-slide3-bg: linear-gradient(120deg, var(--bg-gray) 40%, #0a2010 100%);
+        --idx-particle-opacity: 0.50;
+        --idx-scanline: repeating-linear-gradient( 0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px );
+    }
+
+    /* ── RESET SCOPE ── */
+    .erp-index * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    .erp-index {
+        font-family: var(--idx-font-ui);
+        background: var(--idx-base);
+        min-height: 100vh;
+        color: var(--idx-text-primary);
+        position: relative;
+        overflow-x: hidden;
+    }
+
+        /* ── GRID BACKGROUND ── */
+        .erp-index::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(var(--idx-grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--idx-grid-line) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+    /* ── SCANLINE OVERLAY ── */
+    .erp-index::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: var(--idx-scanline);
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    /* ── MAIN WRAPPER ── */
+    .idx-wrap {
+        position: relative;
+        z-index: 10;
+        max-width: 1360px;
+        margin: 0 auto;
+        padding: 32px 24px 60px;
+    }
+
+    /* ── HEADER BAR ── */
+    .idx-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 36px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--idx-border);
+    }
+
+    .idx-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .idx-brand-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(99, 102, 241, 0.12));
+        border: 1px solid var(--idx-neon-cyan);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--idx-glow-cyan);
+        animation: brand-pulse 3s ease-in-out infinite;
+    }
+
+        .idx-brand-icon i {
+            font-size: 22px;
+            color: var(--idx-neon-cyan);
+        }
+
+    .idx-brand-name {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        color: var(--idx-text-primary);
+    }
+
+        .idx-brand-name span {
+            color: var(--idx-neon-cyan);
+        }
+
+    .idx-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--idx-font-mono);
+        font-size: 11px;
+        color: var(--idx-neon-green);
+        background: rgba(5, 150, 105, 0.08);
+        border: 1px solid rgba(5, 150, 105, 0.25);
+        border-radius: 20px;
+        padding: 6px 14px;
+    }
+
+    [data-theme="dark"] .idx-status {
+        background: rgba(16, 185, 129, 0.08);
+        border-color: rgba(16, 185, 129, 0.22);
+    }
+
+    .idx-status::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        background: var(--idx-neon-green);
+        border-radius: 50%;
+        box-shadow: var(--idx-glow-green);
+        animation: blink 1.4s ease-in-out infinite;
+    }
+
+    /* ── CAROUSEL ── */
+    .idx-carousel {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--idx-border);
+        background: var(--idx-card);
+        margin-bottom: 36px;
+        height: 280px;
+    }
+
+    .idx-carousel-inner {
+        position: relative;
+        height: 100%;
+    }
+
+    .idx-slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        padding: 0 80px;
+        opacity: 0;
+        transform: translateX(30px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+        pointer-events: none;
+    }
+
+        .idx-slide.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .idx-slide:nth-child(1) {
+            background: var(--idx-slide1-bg);
+        }
+
+        .idx-slide:nth-child(2) {
+            background: var(--idx-slide2-bg);
+        }
+
+        .idx-slide:nth-child(3) {
+            background: var(--idx-slide3-bg);
+        }
+
+    .idx-slide-deco {
+        position: absolute;
+        right: 60px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0.08;
+        font-size: 140px;
+        line-height: 1;
+        pointer-events: none;
+    }
+
+    .idx-slide:nth-child(1) .idx-slide-deco {
+        color: var(--idx-neon-cyan);
+    }
+
+    .idx-slide:nth-child(2) .idx-slide-deco {
+        color: var(--idx-neon-violet);
+    }
+
+    .idx-slide:nth-child(3) .idx-slide-deco {
+        color: var(--idx-neon-green);
+    }
+
+    .idx-slide-tag {
+        font-family: var(--idx-font-mono);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        display: inline-block;
+        width: fit-content;
+    }
+
+    .idx-slide:nth-child(1) .idx-slide-tag {
+        background: rgba(59, 130, 246, 0.10);
+        color: var(--idx-neon-cyan);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    [data-theme="dark"] .idx-slide:nth-child(1) .idx-slide-tag {
+        background: rgba(96, 165, 250, 0.12);
+        border-color: rgba(96, 165, 250, 0.28);
+    }
+
+    .idx-slide:nth-child(2) .idx-slide-tag {
+        background: rgba(99, 102, 241, 0.10);
+        color: var(--idx-neon-violet);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    .idx-slide:nth-child(3) .idx-slide-tag {
+        background: rgba(5, 150, 105, 0.10);
+        color: var(--idx-neon-green);
+        border: 1px solid rgba(5, 150, 105, 0.25);
+    }
+
+    [data-theme="dark"] .idx-slide:nth-child(3) .idx-slide-tag {
+        background: rgba(16, 185, 129, 0.12);
+        border-color: rgba(16, 185, 129, 0.28);
+    }
+
+    .idx-slide-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        line-height: 1.15;
+        margin-bottom: 14px;
+        max-width: 520px;
+    }
+
+    .idx-slide:nth-child(1) .idx-slide-title {
+        color: var(--idx-neon-cyan);
+        text-shadow: 0 0 30px rgba(59, 130, 246, 0.30);
+    }
+
+    [data-theme="dark"] .idx-slide:nth-child(1) .idx-slide-title {
+        text-shadow: 0 0 30px rgba(96, 165, 250, 0.40);
+    }
+
+    .idx-slide:nth-child(2) .idx-slide-title {
+        color: var(--idx-neon-violet);
+        text-shadow: 0 0 30px rgba(99, 102, 241, 0.35);
+    }
+
+    .idx-slide:nth-child(3) .idx-slide-title {
+        color: var(--idx-neon-green);
+        text-shadow: 0 0 30px rgba(5, 150, 105, 0.30);
+    }
+
+    [data-theme="dark"] .idx-slide:nth-child(3) .idx-slide-title {
+        text-shadow: 0 0 30px rgba(16, 185, 129, 0.40);
+    }
+
+    .idx-slide-text {
+        font-size: 1rem;
+        color: var(--idx-text-secondary);
+        line-height: 1.6;
+        max-width: 480px;
+    }
+
+    /* Carousel controls */
+    .idx-carousel-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 20;
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid var(--idx-border);
+        color: var(--idx-neon-cyan);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: background 0.2s, box-shadow 0.2s;
+        backdrop-filter: blur(8px);
+    }
+
+        .idx-carousel-btn:hover {
+            background: rgba(59, 130, 246, 0.18);
+            box-shadow: var(--idx-glow-cyan);
+        }
+
+    [data-theme="dark"] .idx-carousel-btn:hover {
+        background: rgba(96, 165, 250, 0.18);
+    }
+
+    .idx-carousel-btn.prev {
+        left: 16px;
+    }
+
+    .idx-carousel-btn.next {
+        right: 16px;
+    }
+
+    .idx-carousel-dots {
+        position: absolute;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        z-index: 20;
+    }
+
+    .idx-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--idx-text-muted);
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+        .idx-dot.active {
+            background: var(--idx-neon-cyan);
+            box-shadow: 0 0 8px var(--idx-neon-cyan);
+            width: 22px;
+            border-radius: 3px;
+        }
+
+    /* ── MAIN 2-COL LAYOUT ── */
+    .idx-body {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    @@media (max-width: 1100px) {
+        .idx-body {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ── SECTION LABEL ── */
+    .idx-section-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+        .idx-section-label i {
+            color: var(--idx-neon-cyan);
+            font-size: 16px;
+        }
+
+        .idx-section-label span {
+            font-family: var(--idx-font-mono);
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--idx-text-secondary);
+        }
+
+        .idx-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--idx-border);
+        }
+
+    /* ── ACTIONS GRID ── */
+    .idx-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 16px;
+    }
+
+    .idx-action-card {
+        position: relative;
+        background: var(--idx-card);
+        border: 1px solid var(--idx-border);
+        border-radius: 12px;
+        padding: 24px 20px;
+        cursor: pointer;
+        overflow: hidden;
+        transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+        text-decoration: none;
+        display: block;
+        animation: fadeUp 0.5s ease both;
+    }
+
+        .idx-action-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .idx-action-card:nth-child(2) {
+            animation-delay: 0.10s;
+        }
+
+        .idx-action-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .idx-action-card:nth-child(4) {
+            animation-delay: 0.20s;
+        }
+
+        .idx-action-card:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .idx-action-card:nth-child(6) {
+            animation-delay: 0.30s;
+        }
+
+        .idx-action-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.04), rgba(99, 102, 241, 0.04));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .idx-action-card:hover {
+            border-color: var(--idx-neon-cyan);
+            transform: translateY(-4px);
+            box-shadow: var(--idx-glow-cyan);
+        }
+
+            .idx-action-card:hover::before {
+                opacity: 1;
+            }
+
+        .idx-action-card:nth-child(2):hover {
+            border-color: var(--idx-neon-violet);
+            box-shadow: var(--idx-glow-violet);
+        }
+
+        .idx-action-card:nth-child(3):hover {
+            border-color: var(--idx-neon-green);
+            box-shadow: var(--idx-glow-green);
+        }
+
+        .idx-action-card:nth-child(4):hover {
+            border-color: var(--idx-neon-pink);
+            box-shadow: 0 0 16px rgba(220, 38, 38, 0.20);
+        }
+
+    [data-theme="dark"] .idx-action-card:nth-child(4):hover {
+        box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+    }
+
+    .idx-action-card:nth-child(5):hover {
+        border-color: var(--idx-neon-amber);
+        box-shadow: 0 0 16px rgba(217, 119, 6, 0.20);
+    }
+
+    [data-theme="dark"] .idx-action-card:nth-child(5):hover {
+        box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+    }
+
+    .idx-action-card:nth-child(6):hover {
+        border-color: var(--idx-neon-cyan);
+        box-shadow: var(--idx-glow-cyan);
+    }
+
+    /* ── ICON WRAPS ── */
+    .idx-action-icon-wrap {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        font-size: 20px;
+        position: relative;
+    }
+
+    /* Light */
+    .idx-action-card:nth-child(1) .idx-action-icon-wrap {
+        background: rgba(59, 130, 246, 0.10);
+        color: var(--idx-neon-cyan);
+    }
+
+    .idx-action-card:nth-child(2) .idx-action-icon-wrap {
+        background: rgba(99, 102, 241, 0.10);
+        color: var(--idx-neon-violet);
+    }
+
+    .idx-action-card:nth-child(3) .idx-action-icon-wrap {
+        background: rgba(5, 150, 105, 0.10);
+        color: var(--idx-neon-green);
+    }
+
+    .idx-action-card:nth-child(4) .idx-action-icon-wrap {
+        background: rgba(220, 38, 38, 0.10);
+        color: var(--idx-neon-pink);
+    }
+
+    .idx-action-card:nth-child(5) .idx-action-icon-wrap {
+        background: rgba(217, 119, 6, 0.10);
+        color: var(--idx-neon-amber);
+    }
+
+    .idx-action-card:nth-child(6) .idx-action-icon-wrap {
+        background: rgba(59, 130, 246, 0.10);
+        color: var(--idx-neon-cyan);
+    }
+
+    /* Dark */
+    [data-theme="dark"] .idx-action-card:nth-child(1) .idx-action-icon-wrap {
+        background: rgba(96, 165, 250, 0.12);
+    }
+
+    [data-theme="dark"] .idx-action-card:nth-child(2) .idx-action-icon-wrap {
+        background: rgba(99, 102, 241, 0.12);
+    }
+
+    [data-theme="dark"] .idx-action-card:nth-child(3) .idx-action-icon-wrap {
+        background: rgba(16, 185, 129, 0.12);
+    }
+
+    [data-theme="dark"] .idx-action-card:nth-child(4) .idx-action-icon-wrap {
+        background: rgba(239, 68, 68, 0.12);
+    }
+
+    [data-theme="dark"] .idx-action-card:nth-child(5) .idx-action-icon-wrap {
+        background: rgba(245, 158, 11, 0.12);
+    }
+
+    [data-theme="dark"] .idx-action-card:nth-child(6) .idx-action-icon-wrap {
+        background: rgba(96, 165, 250, 0.12);
+    }
+
+    .idx-action-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--idx-text-primary);
+        margin-bottom: 6px;
+    }
+
+    .idx-action-desc {
+        font-size: 12px;
+        color: var(--idx-text-muted);
+        line-height: 1.45;
+    }
+
+    .idx-action-arrow {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 13px;
+        color: var(--idx-text-muted);
+        opacity: 0;
+        transform: translateX(-6px);
+        transition: opacity 0.25s, transform 0.25s;
+    }
+
+    .idx-action-card:hover .idx-action-arrow {
+        opacity: 1;
+        transform: translateX(0);
+        color: var(--idx-neon-cyan);
+    }
+
+    /* ── ACTIVITY FEED (SIDEBAR) ── */
+    .idx-feed {
+        background: var(--idx-card);
+        border: 1px solid var(--idx-border2);
+        border-radius: 14px;
+        overflow: hidden;
+        position: sticky;
+        top: 24px;
+    }
+
+    .idx-feed-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--idx-border2);
+        background: rgba(99, 102, 241, 0.04);
+    }
+
+    .idx-feed-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--idx-neon-violet);
+        letter-spacing: 0.2px;
+    }
+
+        .idx-feed-title i {
+            font-size: 15px;
+        }
+
+    .idx-feed-badge {
+        font-family: var(--idx-font-mono);
+        font-size: 10px;
+        color: var(--idx-neon-violet);
+        background: rgba(99, 102, 241, 0.10);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: 4px;
+        padding: 2px 7px;
+    }
+
+    .idx-feed-list {
+        max-height: 540px;
+        overflow-y: auto;
+        padding: 12px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(99, 102, 241, 0.30) transparent;
+    }
+
+        .idx-feed-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .idx-feed-list::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.30);
+            border-radius: 4px;
+        }
+
+    .idx-feed-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 10px;
+        border-radius: 8px;
+        transition: background 0.2s;
+        position: relative;
+        align-items: flex-start;
+        border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+        animation: slideIn 0.4s ease both;
+    }
+
+        .idx-feed-item:last-child {
+            border-bottom: none;
+        }
+
+        .idx-feed-item:hover {
+            background: rgba(99, 102, 241, 0.06);
+        }
+
+    [data-theme="dark"] .idx-feed-item:hover {
+        background: rgba(99, 102, 241, 0.08);
+    }
+
+    .idx-feed-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--idx-neon-violet);
+        margin-top: 5px;
+        flex-shrink: 0;
+        box-shadow: 0 0 6px rgba(99, 102, 241, 0.45);
+    }
+
+    .idx-feed-item:nth-child(3n+1) .idx-feed-dot {
+        background: var(--idx-neon-cyan);
+        box-shadow: 0 0 6px rgba(59, 130, 246, 0.45);
+    }
+
+    .idx-feed-item:nth-child(3n+2) .idx-feed-dot {
+        background: var(--idx-neon-violet);
+        box-shadow: 0 0 6px rgba(99, 102, 241, 0.45);
+    }
+
+    .idx-feed-item:nth-child(3n) .idx-feed-dot {
+        background: var(--idx-neon-green);
+        box-shadow: 0 0 6px rgba(5, 150, 105, 0.45);
+    }
+
+    [data-theme="dark"] .idx-feed-item:nth-child(3n+1) .idx-feed-dot {
+        box-shadow: 0 0 8px rgba(96, 165, 250, 0.55);
+    }
+
+    [data-theme="dark"] .idx-feed-item:nth-child(3n+2) .idx-feed-dot {
+        box-shadow: 0 0 8px rgba(99, 102, 241, 0.55);
+    }
+
+    [data-theme="dark"] .idx-feed-item:nth-child(3n) .idx-feed-dot {
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.55);
+    }
+
+    .idx-feed-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .idx-feed-module {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--idx-text-primary);
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .idx-feed-action {
+        font-size: 11px;
+        color: var(--idx-text-muted);
+        line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .idx-feed-time {
+        font-family: var(--idx-font-mono);
+        font-size: 10px;
+        color: var(--idx-text-muted);
+        white-space: nowrap;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .idx-feed-empty {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--idx-text-muted);
+        font-size: 13px;
+    }
+
+    /* ── ANIMATIONS ── */
+    @@keyframes brand-pulse {
+        0%, 100% {
+            box-shadow: var(--idx-glow-cyan);
+        }
+
+        50% {
+            box-shadow: var(--idx-glow-violet);
+        }
+    }
+
+    @@keyframes blink {
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.3;
+        }
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .idx-feed-item:nth-child(1) {
+        animation-delay: 0.05s;
+    }
+
+    .idx-feed-item:nth-child(2) {
+        animation-delay: 0.10s;
+    }
+
+    .idx-feed-item:nth-child(3) {
+        animation-delay: 0.15s;
+    }
+
+    .idx-feed-item:nth-child(4) {
+        animation-delay: 0.20s;
+    }
+
+    .idx-feed-item:nth-child(5) {
+        animation-delay: 0.25s;
+    }
+
+    @@media (max-width: 768px) {
+        .idx-slide {
+            padding: 0 50px;
+        }
+
+        .idx-slide-title {
+            font-size: 1.6rem;
+        }
+
+        .idx-slide-deco {
+            font-size: 90px;
+            right: 10px;
+        }
+
+        .idx-actions-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+
+<div class="erp-index">
+    <div class="idx-wrap">
+
+        @*<header class="idx-header">
+            <div class="idx-brand">
+                <div class="idx-brand-icon">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <div class="idx-brand-name">ERP <span>Sistema</span></div>
+            </div>
+            <div class="idx-status">SYS_ONLINE · @DateTime.Now.ToString("HH:mm")</div>
+        </header>*@
+
+        <div class="idx-carousel">
+            <div class="idx-carousel-inner">
+                <div class="idx-slide active">
+                    <div class="idx-slide-deco"><i class="fas fa-layer-group"></i></div>
+                    <div>
+                        <div class="idx-slide-tag">Sistema ERP — v2.0</div>
+                        <div class="idx-slide-title">Bienvenido al centro de control</div>
+                        <div class="idx-slide-text">Gestiona cada proceso de tu empresa desde un solo punto. Datos en tiempo real, siempre disponibles.</div>
+                    </div>
+                </div>
+                <div class="idx-slide">
+                    <div class="idx-slide-deco"><i class="fas fa-chart-network"></i></div>
+                    <div>
+                        <div class="idx-slide-tag">Analítica — Tiempo real</div>
+                        <div class="idx-slide-title">Métricas que impulsan decisiones</div>
+                        <div class="idx-slide-text">Accede a reportes automatizados y dashboards con KPIs clave para mantener el control total de tu operación.</div>
+                    </div>
+                </div>
+                <div class="idx-slide">
+                    <div class="idx-slide-deco"><i class="fas fa-sitemap"></i></div>
+                    <div>
+                        <div class="idx-slide-tag">Integración — Total</div>
+                        <div class="idx-slide-title">Todo conectado, nada duplicado</div>
+                        <div class="idx-slide-text">Ventas, inventario, finanzas y almacén operan como un solo ecosistema unificado y sincronizado.</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="idx-carousel-btn prev" onclick="idxPrevSlide()" aria-label="Anterior">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="idx-carousel-btn next" onclick="idxNextSlide()" aria-label="Siguiente">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            <div class="idx-carousel-dots">
+                <div class="idx-dot active" onclick="idxGoTo(0)"></div>
+                <div class="idx-dot" onclick="idxGoTo(1)"></div>
+                <div class="idx-dot" onclick="idxGoTo(2)"></div>
+            </div>
+        </div>
+
+        <div class="idx-body">
+
+            <div>
+                <div class="idx-section-label">
+                    <i class="fas fa-bolt"></i>
+                    <span>Acciones rápidas</span>
+                </div>
+                <div class="idx-actions-grid">
+                    @foreach (var accion in ViewBag.AccionesRapidas as List<AccionRapida>)
+                    {
+                        <a class="idx-action-card" href="@accion.Ruta">
+                            <div class="idx-action-icon-wrap">
+                                <i class="@accion.Icono"></i>
+                            </div>
+                            <div class="idx-action-name">@accion.Nombre</div>
+                            <div class="idx-action-desc">@accion.Descripcion</div>
+                            <i class="fas fa-arrow-right idx-action-arrow"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <div>
+                <div class="idx-section-label">
+                    <i class="fas fa-satellite-dish"></i>
+                    <span>Actividad reciente</span>
+                </div>
+                <div class="idx-feed">
+                    <div class="idx-feed-header">
+                        <div class="idx-feed-title">
+                            <i class="fas fa-circle-notch fa-spin"></i>
+                            Feed en vivo
+                        </div>
+                        @{
+                            var movs = ViewBag.Movimientos as List<Dictionary<string, object>>;
+                            int movCount = movs != null ? movs.Count : 0;
+                        }
+                        <div class="idx-feed-badge">@movCount eventos</div>
+                    </div>
+                    <div class="idx-feed-list">
+                        @if (movs != null && movs.Count > 0)
+                        {
+                            int feedIdx = 0;
+                            foreach (var item in movs)
+                            {
+                                var modulo = item["modulo"].ToString();
+                                var accionMov = item["accion"].ToString();
+                                var fecha = Convert.ToDateTime(item["fecha"]);
+                                var tiempo = GetRelativeTime(fecha);
+                                feedIdx++;
+
+                                <div class="idx-feed-item" style="animation-delay: @(feedIdx * 0.06)s">
+                                    <div class="idx-feed-dot"></div>
+                                    <div class="idx-feed-content">
+                                        <div class="idx-feed-module">@modulo</div>
+                                        <div class="idx-feed-action">@accionMov</div>
+                                    </div>
+                                    <div class="idx-feed-time">@tiempo</div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="idx-feed-empty">
+                                <i class="fas fa-inbox" style="font-size:28px;color:var(--idx-text-muted);display:block;margin-bottom:10px;"></i>
+                                Sin actividad reciente
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        @{
+            if(Utilities.DoesUserHasRight(User.Identity.Name, "sistemas"))
+                @await Html.PartialAsync("_DashboardGraficos")
+
+        }
+    </div>
+</div>
+
+@section scripts {
+    @* Tablero del Home: ECharts local + GetData de site1.js.
+       El núcleo va primero; luego un módulo por área (se registran solos). *@
+    <script src="~/lib/echarts/dist/echarts.min.js"></script>
+    <script src="~/scripts/Home/dashboard/core.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/scripts/Home/dashboard/ventas.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/scripts/Home/dashboard/cobranza.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/scripts/Home/dashboard/almacen.js?v=@DateTime.Now.Ticks"></script>
+}
+
+<script>
+    /* ── CAROUSEL ── */
+    (function () {
+        let cur = 0;
+        const slides = document.querySelectorAll('.idx-slide');
+        const dots = document.querySelectorAll('.idx-dot');
+
+        function goTo(n) {
+            slides[cur].classList.remove('active');
+            dots[cur].classList.remove('active');
+            cur = (n + slides.length) % slides.length;
+            slides[cur].classList.add('active');
+            dots[cur].classList.add('active');
+        }
+
+        window.idxNextSlide = () => goTo(cur + 1);
+        window.idxPrevSlide = () => goTo(cur - 1);
+        window.idxGoTo = (n) => goTo(n);
+
+        setInterval(idxNextSlide, 9000);
+    })();
+
+</script>

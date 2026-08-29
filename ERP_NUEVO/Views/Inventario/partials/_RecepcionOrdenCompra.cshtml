@@ -1,0 +1,656 @@
+﻿<style>
+    .search-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .document-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        display: none;
+    }
+
+        .document-card.show {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .product-item {
+        background: var(--light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+
+        .product-item:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .product-item.checked {
+            background-color: rgba(5, 150, 105, 0.1);
+            border-color: var(--success-color);
+        }
+
+        .product-item.error {
+            background-color: rgba(220, 38, 38, 0.1);
+            border-color: var(--danger-color);
+        }
+
+    .form-check-input:checked {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    .tom-select .ts-control {
+        background-color: var(--bg-light);
+        border-color: var(--border-light);
+        color: var(--text-dark);
+    }
+
+    .tom-select .ts-dropdown {
+        background-color: var(--bg-light);
+        border-color: var(--border-light);
+        color: var(--text-dark);
+    }
+
+    .stats-summary {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: default;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-blue-dark);
+    }
+
+    .stat-label {
+        font-size: 0.95rem;
+        margin-top: 0.5rem;
+        color: var(--text-light);
+    }
+
+    /* Variantes de color */
+    .stat-success .stat-number {
+        color: var(--success-color);
+    }
+
+    .stat-warning .stat-number {
+        color: var(--warning-color);
+    }
+
+    .stat-danger .stat-number {
+        color: var(--danger-color);
+    }
+
+    .alert-info {
+        position: relative;
+        background: var(--light-blue);
+        padding: 10px 10px 10px 20px;
+        color: var(--text-dark);
+    }
+
+        .alert-info::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background-color: var(--accent-blue);
+        }
+
+    .discrepancia {
+        border: 1px solid var(--bs-body-bg);
+        background-color: var(--bg-gray);
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 7px;
+    }
+</style>
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<!-- Main Container -->
+<div class="table-container">
+    <!-- Search Section -->
+    <div class="search-card">
+        <h3 class="mb-4">
+            <i class="fas fa-search me-2 text-primary"></i>
+            Buscar orden de compra nacional
+        </h3>
+
+        <div class="row align-items-end">
+            <div class="col-md-6 mb-2">
+                <label for="documentSearch" class="form-label">Seleccionar Documento</label>
+                <select id="documentSearch" placeholder="Buscar documento...">
+                    <option style="color: black" value="0">Selecciona un folio</option>
+                    @{
+                        foreach (var folio in Model["folios"])
+                        {
+                            <option style="color: black" value="@folio["uuid"]">@folio["folio"]</option>
+                        }
+                    }
+
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <button type="button" class="btn btn-primary w-100" id="searchBtn">
+                    <i class="fas fa-search me-1"></i>
+                    Buscar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Information -->
+    <div class="document-card" id="documentCard">
+        <!-- Statistics Summary -->
+        <div class="stats-summary container-fluid">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalProducts">0</div>
+                        <div class="stat-label">Total Productos</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card stat-success">
+                        <div class="stat-number" id="checkedProducts">0</div>
+                        <div class="stat-label">Verificados</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card stat-warning">
+                        <div class="stat-number" id="uncheckedProducts">0</div>
+                        <div class="stat-label">Pendientes</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card stat-danger">
+                        <div class="stat-number" id="errorProducts">0</div>
+                        <div class="stat-label">Con Error</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row d-flex justify-content-between align-items-center mb-4">
+            <h4 class="col-md-5 col-sm-12 mb-1 mb-1">
+                <i class="fas fa-file-invoice me-2 text-primary"></i>
+                <span id="documentTitle">Información del Documento</span>
+            </h4>
+            <button type="button" class="btn btn-success col-md-3 col-sm-12 mb-1" id="checkAllBtn">
+                <i class="fas fa-check-double me-1"></i>
+                Marcar Todo
+            </button>
+            <button type="button" class="btn btn-warning col-md-3 col-sm-12 mb-1" id="uncheckAllBtn">
+                <i class="fas fa-times me-1"></i>
+                Desmarcar Todo
+            </button>
+        </div>
+
+        <div class="alert-info mb-4">
+            <p class="mb-1">
+                <i class="fas fa-info-circle me-2"></i>
+                Marca los productos que han sido verificados correctamente.
+                Los productos sin marcar quedarán como pendientes.
+            </p>
+        </div>
+
+
+        <div id="productsList" class="products-list">
+            <!-- Products will be d1ynamically loaded here -->
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-success" id="saveChangesBtn">
+                <i class="fas fa-save me-1"></i>
+                Guardar Cambios
+            </button>
+            <button type="button" class="btn btn-secondary" id="resetBtn">
+                <i class="fas fa-undo me-1"></i>
+                Resetear
+            </button>
+        </div>
+    </div>
+</div>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+
+<script>
+    var currentDocument = null;
+    var productStates = {};
+    var documentsData;
+
+    // Initialize Tom Select
+    var tomS = new TomSelect("#documentSearch", {
+        create: false,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        render: {
+            option: function (data, escape) {
+                return `<div style="color: black;">${escape(data.text)}</div>`;
+            },
+            item: function (data, escape) {
+                return `` +
+                    '<div>' +
+                    `   <span style="color: black;"> ${escape(data.text)} </span>` +
+                    '</div>';
+            }
+        }
+    });
+
+    // Load document and its products <]:{v
+    function loadDocument(documentId) {
+        if (documentId == 0) {
+            toastMixin.fire({
+                icon: "warning",
+                title: "Selecciona un folio para poder filtrar."
+            })
+
+            return;
+        }
+        GetData({
+            path: "/Inventario/GetOrdenesCompra",
+            data: {
+                uuid: documentId,
+            }
+        }).then((docData) => {
+            if (docData.ordenCompra.length === 0) {
+                console.error("Document not found");
+                toastMixin.fire({
+                    icon: "error",
+                    title: "Documento no encontrado",
+                })
+                return;
+            }
+
+            documentsData = docData;
+            document.getElementById("documentTitle").textContent = `${docData.ordenCompra.folio}`;
+
+            // Generate products list
+            const productsList = document.getElementById("productsList");
+            productsList.innerHTML = "";
+
+            productStates = {};
+            docData.partidas.forEach((product, index) => {
+                const productElement = createProductElement(product, index);
+                productsList.appendChild(productElement);
+                productStates[product.id_partidas] = { checked: false, hasError: false };
+            });
+
+            // Show document card
+            document.getElementById("documentCard").classList.add("show");
+
+            // Update statistics
+            updateStatistics();
+
+            // Scroll to document card
+            document.getElementById("documentCard").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        })
+    }
+
+    // Create product element
+    function createProductElement(product, index) {
+        const div = document.createElement("div");
+        div.className = "product-item";
+
+        div.innerHTML = `
+                <div class="row align-items-center">
+                    <div class="col-md-1">
+                        <input class="btn-check product-checkbox" type="radio" name="status_${product.id_partidas}" id="product_${product.id_partidas}" data-product-id="${product.id_partidas}">
+                        <label class="btn btn-outline-success" for="product_${product.id_partidas}" title="Marcar como correcto">
+                            <i class="fa-solid fa-badge-check"></i>
+                        </label>
+                    </div>
+                    <div class="col-md-8 col-sm-12">
+                        <h6 class="mb-1">${product.descripcion}</h6>
+                        <small class="text-muted">Codigo: ${product.codigo}</small>
+                    </div>
+                    <div class="col-md-2 col-sm-12">
+                        <span class="badge bg-secondary">Cant: ${product.cantidad}</span>
+                    </div>
+                    <div class="col-md-1 @(BOS_ERP.Controllers.Utilities.GetEmpresaName(User.Identity.Name) != "SRS" ? "d-none" : "")">
+                        <input class="btn-check product-error-checkbox" type="radio" name="status_${product.id_partidas}" id="error_${product.id_partidas}" data-product-id="${product.id_partidas}">
+                        <label class="btn btn-outline-danger" for="error_${product.id_partidas}" title="Marcar como discrepancia">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </label>
+                    </div>
+                </div>
+            `;
+
+        // Add event listeners
+        const checkbox = div.querySelector(".product-checkbox");
+        const errorCheckbox = div.querySelector(".product-error-checkbox");
+
+        checkbox.addEventListener("change", (e) => {
+            handleProductCheck(product.id_partidas, e.target.checked, div);
+        });
+
+        errorCheckbox.addEventListener("change", (e) => {
+            handleProductError(product.id_partidas, e.target.checked, div);
+        });
+
+        return div;
+    }
+
+    // Handle product checkbox change
+    function handleProductCheck(productId, isChecked, element) {
+        productStates[productId].checked = isChecked;
+        productStates[productId].hasError = false;
+
+        const product = documentsData.partidas.find(p => p.id_partidas === productId);
+        productStates[productId].quantity = product.cantidad;
+
+        updateProductElementState(element, isChecked, false, productId);
+        updateStatistics();
+    }
+
+    function handleProductError(productId, hasError, element) {
+        productStates[productId].hasError = hasError;
+        productStates[productId].checked = false;
+
+        const product = documentsData.partidas.find(p => p.id_partidas === productId);
+        productStates[productId].quantity = product.cantidad;
+
+        updateProductElementState(element, false, hasError);
+        updateStatistics();
+    }
+
+    // Update product element visual state
+    function updateProductElementState(element, isChecked, hasError, productId) {
+        element.classList.remove("checked", "error");
+
+        if (hasError) {
+            element.classList.add("error");
+        } else if (isChecked) {
+            element.classList.add("checked");
+        }
+    }
+
+    // Update statistics
+    function updateStatistics() {
+        const total = documentsData.partidas.length;
+        let checked = 0;
+        let errors = 0;
+
+        Object.values(productStates).forEach(state => {
+            if (state.hasError) errors++;
+            else if (state.checked) checked++;
+        });
+
+        const pending = total - checked - errors;
+
+        document.getElementById("totalProducts").textContent = total;
+        document.getElementById("checkedProducts").textContent = checked;
+        document.getElementById("uncheckedProducts").textContent = pending;
+        document.getElementById("errorProducts").textContent = errors;
+    }
+
+    // Event listeners
+    document.addEventListener("DOMContentLoaded", () => {
+        // Search button
+        document.getElementById("searchBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc !== "0") {
+                loadDocument(selectedDoc);
+            } else {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+            }
+        });
+
+        // Check all button
+        document.getElementById("checkAllBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            Object.keys(productStates).forEach(productId => {
+                if (!productStates[productId].hasError) {
+                    const checkbox = document.getElementById(`product_${productId}`);
+                    const productElement = checkbox.closest(".product-item");
+                    checkbox.checked = true;
+                    handleProductCheck(parseInt(productId), true, productElement)
+                    updateProductElementState(productElement, true, false, productId);
+                }
+            });
+
+            updateStatistics();
+            toastMixin.fire({ title: "Todos los productos han sido verificados (excepto con discrepancias)", icon: "info" });
+        });
+
+        // Uncheck all button
+        document.getElementById("uncheckAllBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            Object.keys(productStates).forEach(productId => {
+                productStates[productId].checked = false;
+                productStates[productId].hasError = false;
+
+                const checkbox = document.getElementById(`product_${productId}`);
+                const errorCheck = document.getElementById(`error_${productId}`);
+                const productElement = checkbox.closest(".product-item");
+                checkbox.checked = false;
+                errorCheck.checked = false;
+
+                $(".remove_discrepancy").click()
+
+                updateProductElementState(productElement, false, false, productId);
+            });
+
+            updateStatistics();
+            toastMixin.fire({ title: "Se han desmarcado todos los productos", icon: "info" });
+        });
+
+        // Save changes button
+        document.getElementById("saveChangesBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            const checkedCount = Object.values(productStates).filter(s => s.checked).length;
+            const errorCount = Object.values(productStates).filter(s => s.hasError).length;
+
+            if (checkedCount == 0 && errorCount == 0) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Debes seleccionar al menos un elemento para guardar."
+                })
+                return;
+            }
+
+            if (documentsData.partidas.length > (checkedCount + errorCount)) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Hay campos sin seleccionar, revisa antes de continuar."
+                })
+                return;
+            }
+
+            let payload = [];
+            for (const [productId, state] of Object.entries(productStates)) {
+                const partidas = documentsData.partidas.find(p => p.id_partidas == productId)
+
+                // normalizar proveedor
+                let proveedor = partidas.proveedorid;
+
+                if (proveedor === "" || proveedor === "null" || proveedor === undefined) {
+                    proveedor = null;
+                }
+
+                if (state.hasError) {
+                    payload.push({
+                        productId,
+                        status: false,
+                        cantidad: state.quantity,
+                        motivo: null,
+                        unidad: partidas.unidad,
+                        cve_unidad: partidas.ud,
+                        encabezado: documentsData.ordenCompra.id_encabezado,
+                        proveedor: documentsData.ordenCompra.refe,
+                        proveedor_nombre: documentsData.ordenCompra.cli_prov,
+                        id_producto: partidas.id_catproductos,
+                        codigo: partidas.codigo,
+                        descripcion: partidas.descripcion,
+                        idp: partidas.idp,
+                        dto: partidas.dto1,
+                        f_pago: partidas.f_pago_id,
+                        idp: partidas.idp,
+                        fp: partidas.fp,
+                    });
+                } else if (state.checked) {
+                    payload.push({
+                        productId,
+                        status: true,
+                        cantidad: state.quantity,
+                        motivo: null,
+                        unidad: partidas.unidad,
+                        cve_unidad: partidas.ud,
+                        encabezado: documentsData.ordenCompra.id_encabezado,
+                        proveedor: documentsData.ordenCompra.refe,
+                        proveedor_nombre: documentsData.ordenCompra.cli_prov,
+                        id_producto: partidas.id_catproductos,
+                        codigo: partidas.codigo,
+                        descripcion: partidas.descripcion,
+                        idp: partidas.idp,
+                        dto: partidas.dto1,
+                        f_pago: partidas.f_pago_id,
+                        idp: partidas.idp,
+                        fp: partidas.fp,
+                    });
+                }
+            };
+
+            const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+                <style>
+                    .flip {
+                        animation: spinY 2s linear infinite;
+                        transform-origin: center;
+                    }
+                    @@keyframes spinY {
+                        0%   { transform: rotateY(0deg); }
+                        100% { transform: rotateY(360deg); }
+                    }
+                </style>
+                <g class="flip">
+                    <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                    <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="32" cy="48" r="3" fill="#000"/>
+                </g>
+            </svg>`;
+
+            _Swal.fire({
+                iconHtml: warningIcon,
+                title: "Confirmar recepción",
+                html: `¿Está seguro que desea proceder con la recepcion del material con el folio ${documentsData.ordenCompra.folio} ? <br> Correctos: ${checkedCount} -- Discrepancias: ${errorCount}`,
+                footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+                customClass: {
+                    icon: "p-0 bg-transparent border-0 shadow-none"
+                },
+                input: "textarea",
+                inputLabel: "Comentarios extra",
+                inputPlaceholder: "Comentarios extra...",
+                inputAttributes: {
+                    "aria-label": "Comentarios extra"
+                },
+                preConfirm: (comentario) => {
+                    GetData({
+                        path: "/Inventario/RecibirMaterial",
+                        data: {
+                            productos: JSON.stringify(payload),
+                            comentario: comentario,
+                            encabezado: documentsData.ordenCompra.id_encabezado,
+                        },
+                        swalType: 'modal',
+                        swalResponse: true,
+                        swalPath: "/Inventario/Recepcion"
+                    })
+                }
+            })
+
+        });
+
+        // Reset button
+        document.getElementById("resetBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            _Swal.fire({
+                title: "¿Estás seguro de que quieres resetear todos los cambios?",
+                preConfirm: () => {
+                    Object.keys(productStates).forEach(productId => {
+                        productStates[productId].checked = false;
+                        productStates[productId].hasError = false;
+
+                        const checkbox = document.getElementById(`product_${productId}`);
+                        const productElement = checkbox.closest(".product-item");
+                        checkbox.checked = false;
+                        updateProductElementState(productElement, false, false, productId);
+                    });
+                    $(".remove_discrepancy").click()
+                    updateStatistics();
+                    toastMixin.fire({ title: "Se han reseteado todos los cambios", icon: "info" });
+                }
+            })
+        });
+
+        // Tom Select change event
+        tomS.on("change", (value) => {
+            if (value) {
+                loadDocument(value);
+            }
+        });
+    });
+</script>

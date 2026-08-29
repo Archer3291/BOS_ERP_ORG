@@ -1,0 +1,123 @@
+﻿@using BOS_ERP.Controllers
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<div class="mb-4 w-50">
+    <label for="selectorTabla" class="form-label">
+        <i class="fa-solid fa-table"></i> Mostrar tabla
+    </label>
+    <select id="selectorTabla" class="form-select">
+        <option value="tablaPendientes">Solicitudes de cotización</option>
+        <option value="tablaPorConfigurar">Cotizaciones por configurar</option>
+        <option value="tablaOrdenes">Órdenes de compra</option>
+        <option value="tablaCreadas">Documentos creados</option>
+    </select>
+</div>
+
+<div>
+    <div class="contenedor-tabla" id="contenedor-tablaPendientes"><div id="tablaPendientes"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaPorConfigurar"><div id="tablaPorConfigurar"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaOrdenes"><div id="tablaOrdenes"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaCreadas"><div id="tablaCreadas"></div></div>
+</div>
+
+<script src="~/scripts/TableBuilder.js"></script>
+<script src="~/scripts/compras-nacionales.js?v=@DateTime.Now.Ticks"></script>
+<script>
+    (function () {
+        const PUEDE_EDITAR_OC = @(Utilities.DoesUserHasRight(User.Identity.Name, "editar-requisiciones") ? "true" : "false");
+
+        const CONFIG_TABLAS = {
+            // Paso 3 — requisiciones aprobadas por el gerente, listas para cotizar
+            tablaPendientes: {
+                url: '/Requisicion/GetRequisiciones',
+                prioridad: true,
+                acciones: [
+                    { icon: 'fa-plus-large', color: 'green-500', title: 'Agregar opciones de proveedor', onClick: row => agregarOpciones(row) },
+                    { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                    { icon: 'fa-download', color: 'sky-500', title: 'Descargar PDF', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+                ]
+            },
+            // Paso 6 — presupuesto ya aprobó: falta método de pago, impuestos y adjuntos
+            tablaPorConfigurar: {
+                url: '/Requisicion/GetCotizacionesPorConfigurar',
+                prioridad: true,
+                acciones: [
+                    { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                    { icon: 'fa-credit-card', color: 'btn-success', title: 'Definir método de pago', onClick: row => aceptarCotizacion(row) },
+                    {
+                        icon: 'fa-file-invoice', color: 'green-500', title: 'Descargar cotización',
+                        onClick: row => row.variacion > 0
+                            ? generarPDFOpciones(row.id_encabezado)
+                            : GenerarPDFGeneral(row.encabezados_padre)
+                    },
+                ]
+            },
+            // Órdenes de compra pendientes de ingreso: aquí se editan y se reenvían al director
+            tablaOrdenes: {
+                url: '/Requisicion/GetOrdenesCompra',
+                prioridad: false,
+                acciones: [
+                    { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                    {
+                        icon: 'fa-pen-to-square', color: 'btn-success', title: 'Revisar o editar la orden',
+                        visible: () => PUEDE_EDITAR_OC,
+                        onClick: row => gestionarOc(row.id_encabezado)
+                    },
+                    { icon: 'fa-download', color: 'green-500', title: 'Descargar orden de compra', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+                ]
+            },
+            tablaCreadas: {
+                url: '/Requisicion/GetCotizacionesCreadas',
+                prioridad: false,
+                acciones: [
+                    { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                    { icon: 'fa-download', color: 'green-500', title: 'Descargar documento', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+                ]
+            }
+        };
+
+        const tablas = {};
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const selector = document.getElementById('selectorTabla');
+
+            mostrarSoloTabla(selector.value);
+            selector.addEventListener('change', () => mostrarSoloTabla(selector.value));
+
+            construirTablas();
+        });
+
+        function mostrarSoloTabla(tablaId) {
+            document.querySelectorAll('.contenedor-tabla').forEach(contenedor => {
+                contenedor.style.display = contenedor.id === `contenedor-${tablaId}` ? 'block' : 'none';
+            });
+        }
+
+        function construirTablas() {
+            const folio = folioDeLaUrl();
+
+            Object.entries(CONFIG_TABLAS).forEach(([id, config]) => {
+                tablas[id] = createTable({
+                    selector: `#${id}`,
+                    path: config.url,
+                    rowKey: 'id_encabezado',
+                    searchPlaceholder: 'Buscar por folio, responsable u observaciones...',
+                    sortDir: 'desc',
+                    data: () => ({ folio }),
+                    columns: columnasDocumento(),
+                    actions: config.acciones,
+                    exports: ['excel'],
+                    GlobalEvents: {
+                        onDataLoaded: respuesta => {
+                            if (config.prioridad) aplicarPrioridadFilas(`#${id}`, respuesta);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Consumido por los modales de opciones / cotización / OC
+        window.tablasCompras = tablas;
+        window.recargarTablasCompras = () => Object.values(tablas).forEach(t => t.refreshPage());
+    })();
+</script>

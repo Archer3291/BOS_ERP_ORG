@@ -1,0 +1,1308 @@
+﻿@using BOS_ERP.Controllers
+@using BOS_ERP.Models
+@using System.Text.Json
+@* El reporter de errores manda el token en una cabecera, así que necesita
+   emitirlo como meta en vez de como input dentro de un form. *@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@{
+    UsuarioTema tema = null;
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    var temaJson = Context.Session.GetString("TemaUsuario");
+
+    if (!string.IsNullOrEmpty(temaJson))
+    {
+        try
+        {
+            tema = JsonSerializer.Deserialize<UsuarioTema>(temaJson);
+        }
+        catch
+        {
+            tema = null;
+        }
+    }
+
+    if (tema == null)
+    {
+        tema = TemaPresets.Presets["default"];
+    }
+
+    var d = TemaPresets.Presets["default"];
+
+    // ── Layout (armazón de navegación) ────────────────────
+    var layoutTipo = tema?.LayoutTipo ?? "sidebar";
+    // Se expone el tema para que los partials de chrome (_ChromeSidebar/_ChromeTopbar) lo lean.
+    ViewData["Tema"] = tema;
+
+    // ── Sidebar vars ──────────────────────────────────────
+    var sbAncho = tema?.SidebarAncho ?? "285";
+    var sbPos = tema?.SidebarPosicion ?? "left";
+    var sbHover = tema?.SidebarHoverEfecto ?? "slide";
+    var sbIcon = tema?.SidebarIconStyle ?? "duotone";
+    var sbBg = tema?.SidebarBgColor;
+    var sbLink = tema?.SidebarLinkColor;
+    var sbActive = tema?.SidebarActiveColor;
+    var sbActLink = tema?.SidebarActiveLinkColor;
+    var sbHdrBg = tema?.SidebarHeaderBg;
+    var sbModo = tema?.SidebarModo ?? "normal";
+}
+
+<!DOCTYPE html>
+<html lang="en" data-mdb-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>@Context.Session.GetString("EmpresaFactura")</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <link rel="shortcut icon" href="~/content/img/@Context.Session.GetString("EmpresaFactura")/logo.png" id="dynamic-favicon" />
+    <!-- SignalR (reemplaza a Pusher: mismo tiempo real, sin límite de requests) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <!-- Jquery JS -->
+    <!-- Jquery JS -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <!-- Captura de errores del navegador (capa 3).
+         Va aquí y no al final del body a propósito: registra window.onerror y los
+         hooks de jQuery antes de que corra cualquier script de la página, así que
+         también atrapa lo que revienta durante la carga. -->
+    <meta name="bos-af-token" content="@Xsrf.GetAndStoreTokens(Context).RequestToken" />
+    <script src="~/Scripts/error-reporter.js?v=@DateTime.Now.Ticks"></script>
+    <!-- Bootstrap 5 CSS -->
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link href="~/content/fontawesome-pro-6.5.0/css/all.min.css" rel="stylesheet" />
+    <!-- DataTables CSS -->
+    <link href="~/lib/datatables/css/datatables.bootstrap.min.css" rel="stylesheet" />
+    <!-- SweetAlert CSS -->
+    <link href="~/lib/sweetalert2/sweetalert2.min.css" rel="stylesheet" />
+    <!-- Toastr CSS -->
+    <link href="~/lib/toastr.js/toastr.min.css" rel="stylesheet" />
+    <!-- Animate CSS -->
+    <link href="~/lib/animate.css/animate.min.css" rel="stylesheet" />
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="~/content/sidebar.css" asp-append-version="true" />
+    <!-- Layouts (variantes de armazón: sidebar / topbar / compact / hybrid) -->
+    <link rel="stylesheet" href="~/content/layouts.css" asp-append-version="true" />
+    <!-- Colores personalizados para botones -->
+    <link href="~/content/colors.css" rel="stylesheet" />
+    <!-- Notificaciones -->
+    <link href="~/content/Notify.css" rel="stylesheet" />
+    <link href="~/content/InfoModal.css" rel="stylesheet" />
+    <link href="~/content/flujo-documento.css" rel="stylesheet" />
+    <link href="~/css/dark-tom-select.css" rel="stylesheet" />
+    @RenderSection("styles", required: false)
+    <style>
+
+        #modalAcciones .modal-content {
+        border: none;
+        border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        background: var(--bg-light);
+        }
+
+        #modalAcciones .modal-header {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+        color: white;
+        border-bottom: none;
+        padding: 25px 30px;
+        position: relative;
+        }
+
+        #modalAcciones .modal-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        opacity: 0.3;
+        }
+
+        #modalAcciones .modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+        }
+
+        #modalAcciones .modal-title::before {
+        content: '⚡';
+        margin-right: 10px;
+        font-size: 1.3rem;
+        }
+
+        #modalAcciones .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        opacity: 0.8;
+        position: relative;
+        z-index: 1;
+        color: white;
+        }
+
+        #modalAcciones .btn-close:hover {
+        opacity: 1;
+        transform: scale(1.1);
+        }
+
+        #modalAcciones .modal-body {
+        padding: 30px;
+        position: relative;
+        }
+
+        #modalAcciones .modal-body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="2" fill="rgba(37,99,235,0.05)"/></pattern></defs><rect width="200" height="200" fill="url(%23dots)"/></svg>');
+        opacity: 0.5;
+        }
+
+        #modalAcciones .acciones-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        position: relative;
+        z-index: 1;
+        }
+
+        #modalAcciones .accion-card {
+        background: var(--bg-gray);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid transparent;
+        }
+
+        #modalAcciones .accion-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+        transform: scaleX(0);
+        transition: transform 0.4s ease;
+        }
+
+        #modalAcciones .accion-card::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.4s ease, height 0.4s ease;
+        z-index: 0;
+        }
+
+        #modalAcciones .accion-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border-color: var(--light-blue);
+        }
+
+        #modalAcciones .accion-card:hover::before {
+        transform: scaleX(1);
+        }
+
+        #modalAcciones .accion-card:hover::after {
+        width: 300px;
+        height: 300px;
+        }
+
+        #modalAcciones .accion-card.selected {
+        /*background: linear-gradient(135deg, var(--light-blue) 0%, var(--very-light-blue) 100%);*/
+        border-color: var(--primary-blue);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px -5px rgba(37, 99, 235, 0.25);
+        }
+
+        #modalAcciones .accion-card.selected::before {
+        transform: scaleX(1);
+        }
+
+        #modalAcciones .accion-card-content {
+        position: relative;
+        z-index: 1;
+        }
+
+        #modalAcciones .accion-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+        }
+
+        #modalAcciones .accion-icon i {
+        font-size: 1.5rem;
+        color: white;
+        transition: all 0.3s ease;
+        }
+
+        #modalAcciones .accion-card:hover .accion-icon {
+        transform: scale(1.1) rotate(5deg);
+        }
+
+        #modalAcciones .accion-card.selected .accion-icon {
+        background: linear-gradient(135deg, var(--primary-blue-dark) 0%, var(--primary-blue) 100%);
+        }
+
+        #modalAcciones .accion-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 8px;
+        line-height: 1.4;
+        }
+
+        #modalAcciones .accion-description {
+        font-size: 0.9rem;
+        color: #6b7280;
+        line-height: 1.5;
+        margin-bottom: 16px;
+        }
+
+        #modalAcciones .form-check {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        }
+
+        #modalAcciones .form-check-input {
+        display: none;
+        }
+
+        #modalAcciones .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 24px;
+        background: #e5e7eb;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        #modalAcciones .toggle-switch::before {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        #modalAcciones .form-check-input:checked + .toggle-switch {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        #modalAcciones .form-check-input:checked + .toggle-switch::before {
+        transform: translateX(26px);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        #modalAcciones .toggle-switch:hover {
+        transform: scale(1.05);
+        }
+
+        #modalAcciones .form-check-label {
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--primary-blue);
+        font-size: 0.9rem;
+        margin-right: 12px;
+        }
+
+        #modalAcciones .modal-footer {
+        background: var(--bg-light);
+        border-top: 1px solid var(--border-light);
+        padding: 20px 30px;
+        justify-content: center;
+        }
+
+        #modalAcciones .btn-primary {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 12px 30px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        }
+
+        #modalAcciones .btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        #modalAcciones .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        #modalAcciones .btn-primary:hover::before {
+        width: 300px;
+        height: 300px;
+        }
+
+        #modalAcciones .contador-seleccionadas {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-left: 15px;
+        }
+
+        @@media (max-width: 768px) {
+        #modalAcciones .modal-dialog {
+        margin: 10px;
+        }
+
+        #modalAcciones .modal-header {
+        padding: 20px;
+        }
+
+        #modalAcciones .modal-body {
+        padding: 20px;
+        }
+
+        #modalAcciones .acciones-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        }
+
+        #modalAcciones .accion-card {
+        padding: 20px;
+        }
+        }
+
+        .maintenance-banner {
+        width: 100%;
+        overflow: hidden;
+        background: linear-gradient(90deg, #dc3545, #b02a37);
+        color: white;
+        padding: 5px 0;
+        white-space: nowrap;
+        position: relative;
+        }
+
+        .maintenance-content {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding-left: 100%;
+        animation: scrollBanner 20s linear infinite;
+        }
+
+        @@keyframes scrollBanner {
+        from {
+        transform: translateX(0);
+        }
+
+        to {
+        transform: translateX(-100%);
+        }
+        }
+    </style>
+
+    <style id="user-theme-vars">
+        :root {
+        @if (!string.IsNullOrEmpty(tema?.PrimaryBlue))
+        {
+            <text>--primary-blue: @(tema.PrimaryBlue ?? d.PrimaryBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.PrimaryBlueHover))
+        {
+            <text>--primary-blue-dark: @(tema.PrimaryBlueHover ?? d.PrimaryBlueHover);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.SecondaryBlue))
+        {
+            <text>--secondary-blue: @(tema.SecondaryBlue ?? d.SecondaryBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.LightBlue))
+        {
+            <text>--light-blue: @(tema.LightBlue ?? d.LightBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.VeryLightBlue))
+        {
+            <text>--very-light-blue: @(tema.VeryLightBlue ?? d.VeryLightBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkBlueLight))
+        {
+            <text>--dark-blue: @(tema.DarkBlueLight ?? d.DarkBlueLight);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.AccentBlue))
+        {
+            <text>--accent-blue: @(tema.AccentBlue ?? d.AccentBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.BgLight))
+        {
+            <text>--bg-light: @(tema.BgLight ?? d.BgLight);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.BgGray))
+        {
+            <text>--bg-gray: @(tema.BgGray ?? d.BgGray);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.TextDark))
+        {
+            <text>--text-dark: @(tema.TextDark ?? d.TextDark);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.TextLight))
+        {
+            <text>--text-light: @(tema.TextLight ?? d.TextLight);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.BorderLight))
+        {
+            <text>--border-light: @(tema.BorderLight ?? d.BorderLight);
+            </text>
+        }
+        }
+
+        [data-theme="dark"] {
+        @if (!string.IsNullOrEmpty(tema?.DarkPrimaryBlue))
+        {
+            <text>--primary-blue: @(tema.DarkPrimaryBlue ?? d.DarkPrimaryBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkBlueHover))
+        {
+            <text>--primary-blue-dark: @(tema.DarkBlueHover ?? d.DarkBlueHover);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkSecondaryBlue))
+        {
+            <text>--secondary-blue: @(tema.DarkSecondaryBlue ?? d.DarkSecondaryBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkLightBlue))
+        {
+            <text>--light-blue: @(tema.DarkLightBlue ?? d.DarkLightBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkVeryLightBlue))
+        {
+            <text>--very-light-blue: @(tema.DarkVeryLightBlue ?? d.DarkVeryLightBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkDarkBlue))
+        {
+            <text>--dark-blue: @(tema.DarkDarkBlue ?? d.DarkDarkBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkAccentBlue))
+        {
+            <text>--accent-blue: @(tema.DarkAccentBlue ?? d.DarkAccentBlue);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkBgLight))
+        {
+            <text>--bg-light: @(tema.DarkBgLight ?? d.DarkBgLight);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkBgGray))
+        {
+            <text>--bg-gray: @(tema.DarkBgGray ?? d.DarkBgGray);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkTextDark))
+        {
+            <text>--text-dark: @(tema.DarkTextDark ?? d.DarkTextDark);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkTextLight))
+        {
+            <text>--text-light: @(tema.DarkTextLight ?? d.DarkTextLight);
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(tema?.DarkBorderLight))
+        {
+            <text>--border-light: @(tema.DarkBorderLight ?? d.DarkBorderLight);
+            </text>
+        }
+        }
+    </style>
+
+    <style id="sidebar-user-vars">
+        :root {
+        --sb-width: @(sbAncho)px;
+        @if (!string.IsNullOrEmpty(sbBg))
+        {
+            <text>--sb-bg: @sbBg;
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(sbLink))
+        {
+            <text>--sb-link-color: @sbLink;
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(sbActive))
+        {
+            <text>--sb-active-bg: @sbActive;
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(sbActLink))
+        {
+            <text>--sb-active-color: @sbActLink;
+            </text>
+        }
+        @if (!string.IsNullOrEmpty(sbHdrBg))
+        {
+            <text>--sb-header-bg: @sbHdrBg;
+            </text>
+        }
+        }
+    </style>
+
+</head>
+
+<body data-layout="@layoutTipo">
+    <!-- Partículas globales -->
+    <canvas id="particle-canvas" style="
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1000;
+    opacity: var(--particle-opacity);
+    "></canvas>
+
+    <!-- Navegacion: el chrome se elige segun layout_tipo del usuario (server-side, sin IDs duplicados). -->
+    @{
+        var chromePartial = (tema?.LayoutTipo ?? "sidebar") == "topbar" ? "_ChromeTopbar" : "_ChromeSidebar";
+    }
+    @await Html.PartialAsync(chromePartial)
+
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="header-content">
+            <div class="d-flex align-items-center gap-3">
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <i class="fa-solid fa-chevrons-left"></i>
+                </button>
+                <div id="header-title" class="d-flex gap-2">
+                    <h1 id="header_title" class="header-title">@ViewData["PageTitle"]</h1>
+                    @{
+                        if (Utilities.EndpointHasProcess(currentController, currentAction))
+                        {
+                            <div id="extra-source">
+                                <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#modalFlujo">
+                                    <i class="bi bi-diagram-3 me-2"></i>Ver Flujo de Documentos
+                                </button>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+            <div class="user-info">
+                <div class="user-details text-end d-none d-sm-block">
+                    <h6 class="mb-0">
+                        @Context.Session.GetString("NombreCompleto")
+
+                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "sistemas"))
+                        {
+                            bool perfilFacturas = Convert.ToBoolean(Utilities.GetSetting("perfil_factura"));
+
+                            <span class="badge @(perfilFacturas ? "bg-danger" : "bg-success") ms-2">
+                                Facturas @(perfilFacturas ? "PROD" : "TEST")
+                            </span>
+                        }
+                    </h6>
+                    <small>@Utilities.GetUserRole(User.Identity.Name, "ERP_SRS") - @Utilities.GetAreaName(User.Identity.Name.ToString()) - @Utilities.GetEmpresaName(User.Identity.Name) - @Utilities.GetSucursalName(User.Identity.Name)</small>
+                </div>
+                <div class="dropdown" style="display:flex; gap:5px;">
+                    @*Avatar*@
+                    <div class="user-avatar">
+                        <img translate="no" class="user-avatar" src="https://ui-avatars.com/api/?name=@Context.Session.GetString("NombreCompleto")&background=1e3a8a&color=fff&rounded=true&size=48&format=svg&bold=true" alt="@Context.Session.GetString("NombreCompleto")" />
+                    </div>
+                    <button class="btn btn-link p-1" type="button" data-bs-toggle="dropdown" style="color: var(--text-dark);">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="@Url.Action("Perfil", "Perfil")"><i class="fas fa-user me-2"></i>Perfil</a></li>
+                        <li>
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="toggleSidebarPreference(this)">
+                                <i class="fas fa-sidebar me-2" id="sidebar-pref-icon"></i>
+                                <span id="sidebar-pref-text">Sidebar al inicio</span>
+                            </a>
+                        </li>
+                        <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalAcciones"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            @using (Html.BeginForm("Logout", "Account", FormMethod.Post, new { id = "logoutForm" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <a class="dropdown-item" href="javascript:document.getElementById('logoutForm').submit()"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a>
+                            }
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="maintenance-banner" id="maintenance-banner" style="display:none;">
+            <div class="maintenance-content">
+                <i class="fas fa-tools"></i>
+
+                <span>
+                    El sistema entrará en mantenimiento en
+                    <strong id="maintenance-counter">10:00</strong>.
+                    Guarda tu trabajo o luego no llores.
+                </span>
+            </div>
+        </div>
+
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <div class="">
+            @RenderBody()
+        </div>
+    </main>
+
+    @*<footer class="footer py-3 mt-auto" id="footer">
+            <div class="container-fluid">
+                © 2025 Derechos Reservados:
+                <a class="text-primary text-decoration-none" href="https://sellosyretenes.com/" target="_blank">
+                    Sellos y Retenes de San Luis
+                </a>
+            </div>
+        </footer>*@
+
+    @{
+        var accionesDisponibles = ViewBag.AccionesDisponibles as List<AccionRapida> ?? new List<AccionRapida>();
+        var accionesUsuario = ViewBag.AccionesUsuario as List<AccionRapida> ?? new List<AccionRapida>();
+    }
+
+    @{
+        if (Utilities.EndpointHasProcess(currentController, currentAction))
+        {
+            <!--  Modal de flujo de documento -->
+            <div class="modal fade" id="modalFlujo" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content border-0">
+                        <!-- Header oscuro con brillo -->
+                        <div class="modal-header px-4 py-3">
+                            <div style="position:relative;z-index:2;">
+                                <p class="modal-eyebrow">Sistema de Recursos Sectoriales</p>
+                                <h5 class="modal-title">
+                                    <i class="bi bi-diagram-3"></i>
+                                    Flujo de Documentos
+                                </h5>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="modal-body px-4 py-4">
+
+                            <p class="flujo-hint">
+                                <i class="bi bi-hand-index"></i>
+                                Selecciona un documento para ver sus detalles y conexiones
+                            </p>
+
+                            <!-- Diagrama generado con JS -->
+                            <div id="flujo-container"></div>
+
+                            <!-- Panel de detalle -->
+                            <div class="detail-panel card border-0" id="detail-panel">
+                                <div class="card-header text-white" id="detail-header"></div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-4" id="detail-info"></div>
+                                        <div class="col-md-4" id="detail-origen"></div>
+                                        <div class="col-md-4" id="detail-destino"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Footer fijo -->
+                        <div class="modal-footer px-4 py-3 justify-content-between">
+                            <div class="d-flex gap-4 align-items-center">
+                                <div class="legend-item">
+                                    <div class="legend-line-solid"></div>
+                                    Obligatorio
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-line-dashed"></div>
+                                    Opcional
+                                </div>
+                            </div>
+                            <button class="btn btn-sm px-4" data-bs-dismiss="modal"
+                                    style="background:var(--bg-gray);border:1px solid var(--border-light);color:var(--text-dark);border-radius:8px;font-size:0.82rem;font-family:'Cabin',sans-serif;">
+                                Cerrar
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Modal de Acciones Rápidas -->
+    <div class="modal fade" id="modalAcciones" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form method="post" action="/Account/GuardarAcciones">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            Selecciona tus acciones rápidas
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="acciones-grid">
+                            @foreach (var accion in accionesDisponibles)
+                            {
+                                var isChecked = accionesUsuario.Any(a => a.Id == accion.Id);
+                                <div class="accion-card @(isChecked ? "selected" : "")" onclick="toggleAccion(this)">
+                                    <div class="accion-card-content">
+                                        <div class="accion-icon">
+                                            <i class="@accion.Icono"></i>
+                                        </div>
+                                        <div class="accion-title">@accion.Nombre</div>
+                                        <div class="accion-description">@accion.Descripcion</div>
+                                        <div class="form-check">
+                                            <label class="form-check-label" for="accion_@accion.Id">
+                                                Seleccionar acción
+                                            </label>
+                                            <input class="form-check-input" type="checkbox" name="accionesSeleccionadas" value="@accion.Id" id="accion_@accion.Id" @(isChecked ? "checked" : "") />
+                                            <div class="toggle-switch"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Guardar Selección
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contenedor de toasts -->
+    <div class="my-toast-container" id="my-toast-container"></div>
+
+    @* Burbuja global con las juntas por venir del usuario *@
+    @await Html.PartialAsync("_AgendaSalas")
+    <script>
+        const empresa = '@Context.Session.GetString("EmpresaFactura")';
+        const _CURRENT_CONTORLLER = '@currentController';
+        const _CURRENT_ACTION = '@currentAction';
+    </script>
+    <!-- Bootstrap 5 JS -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/lib/popper.js/umd/popper.min.js?v=@DateTime.Now.Ticks"></script>
+    <!-- DataTables JS -->
+    <script src="~/lib/datatables/js/jquery.datatables.min.js"></script>
+    <script src="~/lib/datatables/js/datatables.bootstrap4.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="~/lib/sweetalert2/sweetalert2.all.min.js?v=@DateTime.Now.Ticks"></script>
+    <!-- jQuery Validation -->
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <!--begin::Required Plugin(popperjs for Bootstrap 5)-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+    <!-- Toastr JS -->
+    <script src="~/lib/toastr.js/toastr.min.js?v=@DateTime.Now.Ticks"></script>
+    <!-- Sidebar y funciones globales -->
+    <script src="~/Scripts/site1.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/Scripts/sidebar.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/Scripts/InfoModals.js?v=@DateTime.Now.Ticks"></script>
+    <!-- Generar PDF -->
+    <script src="~/lib/jspdf/jspdf.umd.min.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/lib/jspdf-autotable/jspdf.plugin.autotable.min.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/Scripts/GenerarPDF.js?v=@DateTime.Now.Ticks"></script>
+    <!-- Generar ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="~/lib/xlsx/xlsx.full.min.js"></script>
+    <!-- Notificaciones personalizadas -->
+    <script src="~/Scripts/Notify.js?v=@DateTime.Now.Ticks"></script>
+    @{
+        if (Utilities.EndpointHasProcess(currentController, currentAction))
+        {
+            <script src="~/Scripts/flujo-documento.js?v=@DateTime.Now.Ticks"></script>
+        }
+    }
+    <script>
+        // Conexión de notificaciones internas. El destinatario NO se manda desde aquí:
+        // el hub agrupa la conexión por el correo de la sesión, así que el navegador no
+        // puede pedir los avisos de otro usuario.
+        const _hayUsuario = @Json.Serialize(!string.IsNullOrWhiteSpace(Context.Session.GetString("Correo")));
+
+        var notificaciones = _hayUsuario && typeof signalR !== 'undefined'
+            ? new signalR.HubConnectionBuilder()
+                .withUrl('/hubs/notificaciones')
+                .withAutomaticReconnect()
+                .build()
+            : null;
+
+        let alternar = true;
+        let intervalId = null;
+        let alternanciaActiva = false;
+        let tituloBase = "Nuevo Documento";
+        let tituloAlterno = "folio";
+        let originalTitle = document.title;
+        let originalFavicon = document.querySelector('#dynamic-favicon').href;
+        const _PARTICULAS = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(new {
+            activas = tema?.ParticulasActivas ?? true,
+                cantidad = tema?.ParticulasCantidad ?? 200,
+                forma = tema?.ParticulasForma ?? "circle",
+                preset = tema?.ParticulasPreset ?? "theme"
+        }));
+
+        function changeFavicon(url) {
+            const link = document.querySelector("#dynamic-favicon");
+            if (link) link.href = url;
+        }
+
+        function resetFavicon() {
+            changeFavicon(originalFavicon);
+        }
+
+        function showSystemNotification(title, message) {
+            if (Notification.permission === "granted") {
+                const n = new Notification(title, {
+                    body: message
+                });
+                n.onclick = () => {
+                    window.focus();
+                    detenerAlertas();
+                };
+            }
+        }
+
+        function detenerAlertas() {
+            if (intervalId) clearInterval(intervalId);
+            intervalId = null;
+            alternanciaActiva = false;
+            document.title = originalTitle;
+            resetFavicon();
+        }
+
+        if (Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) detenerAlertas();
+        });
+
+        document.addEventListener('click', () => {
+            detenerAlertas();
+        });
+
+        notificaciones?.on('NotificacionInterna', function(data) {
+            showToastWithActions(
+                data.icon ?? 'info',
+                data.title ?? 'Notificación',
+                data.message ?? '',
+                (data.buttons ?? []).map(btn => ({
+                    text: btn.text,
+                    style: btn.style,
+                    icon: btn.icon,
+                    action: btn.action ?
+                        new Function(btn.action) : () => {
+                            alternar = false;
+                        }
+                })),
+                data.timer ?? 5000
+            );
+
+            if (typeof actualizarTabla === "function") {
+                actualizarTabla();
+            }
+
+            // Las pantallas que quieran refrescarse al vuelo escuchan este evento en
+            // lugar de exponer una función global con nombre fijo.
+            document.dispatchEvent(new CustomEvent('erp:notificacion', { detail: data }));
+
+            if (data.modulo) {
+                document.dispatchEvent(new CustomEvent('erp:' + data.modulo + '-actualizadas', { detail: data }));
+            }
+
+            tituloBase = `🟠 ${data.title}` ?? "🟠 Nuevo Documento";
+            tituloAlterno = data.folio ?? "folio";
+            alternar = true;
+
+            changeFavicon("/content/img/alert-icon.png");
+
+            if (document.hidden) {
+                showSystemNotification(data.title ?? "Notificación", data.message ?? "");
+            }
+
+            if (!alternanciaActiva) {
+                alternanciaActiva = true;
+                intervalId = setInterval(() => {
+                    document.title = alternar ? tituloBase : tituloAlterno;
+                    alternar = !alternar;
+                }, 2000);
+            }
+        });
+
+        // Se arranca hasta aquí, con el handler ya registrado, para no perder un aviso
+        // que llegue entre el start() y el on().
+        notificaciones?.start()
+            .catch(err => console.warn('SignalR notificaciones no disponible:', err));
+
+        function toggleAccion(card) {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+
+            if (checkbox.checked) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+
+            actualizarContador();
+        }
+
+        (function() {
+            if (!_PARTICULAS.activas) return;
+            const canvas = document.getElementById('particle-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            /* ── Leer variable CSS ── */
+            function cssVar(name) {
+                return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+            }
+
+            function hexToRgb(hex) {
+                hex = hex.replace('#', '');
+                if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+                const n = parseInt(hex, 16);
+                return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+            }
+
+            function varRgba(cssVarName, alpha) {
+                const raw = cssVar(cssVarName);
+                if (raw.startsWith('rgb')) {
+                    const nums = raw.match(/[\d.]+/g);
+                    return `rgba(${nums[0]},${nums[1]},${nums[2]},${alpha})`;
+                }
+                return `rgba(${hexToRgb(raw)},${alpha})`;
+            }
+
+            /* ── Paletas de color por preset ── */
+            const PALETTES = {
+                theme: () => ['--accent-blue', '--accent-blue', '--accent-purple',
+                    '--success-color', '--warning-color', '--primary-blue'
+                ],
+                snow: () => ['--bg-light', '--border-light', '--very-light-blue',
+                    '--bg-light', '--bg-light', '--light-blue'
+                ],
+                fire: () => null,
+                matrix: () => null,
+                rainbow: () => null,
+                mono: () => ['--text-light', '--text-light', '--text-light',
+                    '--border-light', '--secondary-blue', '--text-light'
+                ],
+            };
+
+            function getColor(preset, alpha) {
+                if (preset === 'fire') {
+                    const fires = [
+                        `rgba(255,80,0,${alpha})`, `rgba(255,140,0,${alpha})`,
+                        `rgba(220,30,0,${alpha})`, `rgba(255,200,0,${alpha})`
+                    ];
+                    return fires[Math.floor(Math.random() * fires.length)];
+                }
+                if (preset === 'matrix') {
+                    const greens = [
+                        `rgba(0,255,65,${alpha})`, `rgba(0,200,50,${alpha})`,
+                        `rgba(50,255,100,${alpha})`, `rgba(0,150,30,${alpha})`
+                    ];
+                    return greens[Math.floor(Math.random() * greens.length)];
+                }
+                if (preset === 'rainbow') {
+                    const h = Math.floor(Math.random() * 360);
+                    return `hsla(${h},80%,60%,${alpha})`;
+                }
+                const vars = PALETTES[preset]?.();
+                if (!vars) return varRgba('--accent-blue', alpha);
+                return varRgba(vars[Math.floor(Math.random() * vars.length)], alpha);
+            }
+
+            /* ── Dibujadores de formas ── */
+            function drawShape(forma, x, y, size, color) {
+                ctx.fillStyle = color;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+
+                switch (forma) {
+                    case 'circle':
+                        ctx.beginPath();
+                        ctx.arc(x, y, size, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+
+                    case 'star': {
+                        const spikes = 5,
+                            outer = size,
+                            inner = size * 0.4;
+                        ctx.beginPath();
+                        for (let i = 0; i < spikes * 2; i++) {
+                            const r = i % 2 === 0 ? outer : inner;
+                            const a = (Math.PI / spikes) * i - Math.PI / 2;
+                            i === 0 ? ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r) :
+                                ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                    }
+
+                    case 'triangle':
+                        ctx.beginPath();
+                        ctx.moveTo(x, y - size);
+                        ctx.lineTo(x + size, y + size);
+                        ctx.lineTo(x - size, y + size);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+
+                    case 'square':
+                        ctx.fillRect(x - size, y - size, size * 2, size * 2);
+                        break;
+
+                    case 'plus':
+                        ctx.beginPath();
+                        ctx.rect(x - size * 0.25, y - size, size * 0.5, size * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.rect(x - size, y - size * 0.25, size * 2, size * 0.5);
+                        ctx.fill();
+                        break;
+                }
+            }
+
+            /* ── Partícula ── */
+            const forma = _PARTICULAS.forma || 'circle';
+            const preset = _PARTICULAS.preset || 'theme';
+            const cantidad = Math.min(Math.max(_PARTICULAS.cantidad || 200, 50), 500);
+
+            class Particle {
+                constructor() {
+                    this.reset(true);
+                }
+                reset(init) {
+                    this.x = Math.random() * canvas.width;
+                    this.y = init ? Math.random() * canvas.height : canvas.height + 10;
+                    this.vx = (Math.random() - 0.5) * 0.4;
+                    this.vy = -(Math.random() * 0.8 + 0.15);
+                    this.size = Math.random() * 2 + 0.4;
+                    this.alpha = Math.random() * 0.55 + 0.08;
+                    this.rot = Math.random() * Math.PI * 2;
+                    this.rotV = (Math.random() - 0.5) * 0.02;
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.rot += this.rotV;
+                    if (this.y < -10) this.reset(false);
+                }
+                draw() {
+                    const color = getColor(preset, this.alpha);
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    if (forma !== 'circle') ctx.rotate(this.rot);
+                    drawShape(forma, 0, 0, this.size * 2.5, color);
+                    ctx.restore();
+                }
+            }
+
+            const particles = Array.from({
+                length: cantidad
+            }, () => new Particle());
+
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                requestAnimationFrame(loop);
+            }
+            loop();
+        })();
+
+        const mantenimientoActivo = '@Utilities.GetSetting("mantenimiento")'.toLowerCase() === 'true';
+
+        const fechaMantenimiento = '@Utilities.GetSetting("fecha_mantenimiento")';
+
+        if (mantenimientoActivo) {
+            @{
+                if(!Utilities.DoesUserHasRight(User.Identity.Name, "sustemas")){
+                    <text>
+                        window.location.href = '@Url.Action("Maintenance", "Home")';
+                    </text>
+                }
+            }
+        } else {
+            iniciarContadorMantenimiento();
+        }
+
+        function iniciarContadorMantenimiento() {
+            if (!fechaMantenimiento)
+                return;
+
+            const fechaObjetivo = new Date(fechaMantenimiento);
+            const ahora = new Date();
+            // Si ya pasó la hora y todavía no está activo,
+            // no hacemos nada.
+            if (fechaObjetivo <= ahora)
+                return;
+
+            const banner = document.getElementById('maintenance-banner');
+            const counter = document.getElementById('maintenance-counter');
+            let requestEnviado = false;
+
+            const interval = setInterval(() => {
+                const diferencia = Math.floor((fechaObjetivo - new Date()) / 1000);
+                if (diferencia <= 300 && diferencia > 0) {
+                    banner.style.display = 'block';
+                    const minutos = Math.floor(diferencia / 60);
+                    const segundos = diferencia % 60;
+                    counter.textContent = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+
+                } else {
+                    banner.style.display = 'none';
+                }
+
+                if (diferencia <= 0) {
+                    clearInterval(interval);
+
+                    if (requestEnviado)
+                        return;
+
+                    requestEnviado = true;
+                    GetData({
+                        path: '/Account/ActivarModoMantenimiento'
+                    }).then(res => {
+                        if (res.success) {
+                            @{
+                                if(!Utilities.DoesUserHasRight(User.Identity.Name, "sustemas")){
+                                    <text>
+                                        window.location.href = '@Url.Action("Maintenance", "Home")';
+                                    </text>
+                                }
+                            }
+                        } else {
+                            toastMixin.fire({
+                                icon: 'error',
+                                title: res.message
+                            });
+                        }
+                    });
+                }
+            }, 1000);
+        }
+
+        @* Funcion para mostrar alerta de expiracion de sesion *@
+        const sessionExpiry = '@Context.Session.GetString("FechaExpiracion")';
+
+        (function () {
+            if (!sessionExpiry)
+                return;
+
+            let warningShown = false;
+            setInterval(() => {
+                const expiry = new Date(sessionExpiry);
+                const now = new Date();
+                const diff = expiry - now;
+
+                if (diff <= 0) {
+                    location.href = "/Account/Login";
+                    return;
+                }
+
+                const minutes = Math.floor(diff / 60000);
+                if (minutes <= 5 && !warningShown) {
+
+                    warningShown = true;
+                    _Swal.fire({
+                        icon: 'warning',
+                        title: 'La sesión está por expirar',
+                        html: `Tu sesión expirará en <b>${minutes}</b> minutos.<br><br>` +
+                            `Guarda tu trabajo o recarga la página.`,
+                        confirmButtonText: 'Entendido',
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                    });
+                }
+            }, 1000);
+        })();
+    </script>
+
+    @RenderSection("scripts", required: false)
+</body>
+
+</html>

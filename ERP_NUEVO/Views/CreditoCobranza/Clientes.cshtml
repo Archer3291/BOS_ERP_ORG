@@ -1,0 +1,73 @@
+@*
+    ─────────────────────────────────────────────────────────────
+    Clientes (Crédito y Cobranza)
+
+    Esta vista sólo orquesta: carga estilos, arma la pantalla a
+    partir de los parciales y declara los scripts compartidos.
+    Toda la UI y su lógica viven en ClientesParcial/, un archivo
+    por responsabilidad:
+
+      _TablaClientes                    listado + acceso al detalle
+      _ModalAgregarClienteNacional      alta nacional
+      _ModalAgregarClienteInternacional alta internacional
+      _ModalEditarClienteNacional       edición nacional (5 pestañas)
+      _ModalEditarClienteInternacional  edición internacional (5 pestañas)
+      _ModalAddenda / _ModalEjemploJSON addendas CFDI
+      _ModalAgregarCorreo               correos del cliente
+      _ModalAgregarTelefono             teléfonos del cliente
+      _ModalSincronizarClientes         importación desde el sistema externo
+    ─────────────────────────────────────────────────────────────
+*@
+@{
+    ViewData["Title"] = "Clientes";
+    ViewBag.PageTitle = "Clientes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@* El orden importa: tom-select.css trae sus colores fijos, así que
+   su tema y los estilos de la pantalla deben ir después. *@
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/tom-select-theme.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="~/content/clientes.css" rel="stylesheet" />
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+<script>window.document.title = 'Clientes'</script>
+
+@* ── Listado ────────────────────────────────────────────────── *@
+@Html.Partial("ClientesParcial/_TablaClientes")
+
+@* ── Alta de clientes ───────────────────────────────────────── *@
+@Html.Partial("ClientesParcial/_ModalAgregarClienteNacional")
+@Html.Partial("ClientesParcial/_ModalAgregarClienteInternacional")
+
+@* ── Edición de clientes ────────────────────────────────────── *@
+@Html.Partial("ClientesParcial/_ModalEditarClienteNacional")
+@Html.Partial("ClientesParcial/_ModalEditarClienteInternacional")
+
+@* ── Addendas CFDI ──────────────────────────────────────────── *@
+@Html.Partial("ClientesParcial/_ModalAddenda")
+@Html.Partial("ClientesParcial/_ModalEjemploJSON")
+
+@* ── Datos de contacto ──────────────────────────────────────── *@
+@Html.Partial("ClientesParcial/_ModalAgregarCorreo")
+@Html.Partial("ClientesParcial/_ModalAgregarTelefono")
+
+@* ── Sincronización con el sistema externo ──────────────────── *@
+@Html.Partial("ClientesParcial/_ModalSincronizarClientes")
+
+@section Scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/TableBuilder.js"></script>
+
+    @* Estado y utilidades que comparten todos los parciales.
+       Se cargan al final del body: los parciales sólo los usan
+       dentro de sus handlers, nunca al momento de parsearse. *@
+    <script src="~/Scripts/Credito_Cobranza/Clientes/clientes-core.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/Scripts/Credito_Cobranza/Clientes/clientes-validaciones.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/Scripts/Credito_Cobranza/Clientes/clientes-direcciones-nacional.config.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/Scripts/Credito_Cobranza/Clientes/clientes-direcciones-internacional.config.js?v=@DateTime.Now.Ticks"></script>
+}

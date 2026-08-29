@@ -1,0 +1,287 @@
+﻿@using BOS_ERP.Controllers;
+
+<!-- Modal para gestionar orden de compra u orden de gasto -->
+<div class="modal fade" id="modalGestionarOC" tabindex="-1" aria-labelledby="modalGestionarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalGestionarLabel">
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Aquí se cargan las partidas con sus opciones -->
+                <div id="modalGestionarPartidas">
+                    <div class="table-responsive mb-4">
+                        <div class="d-flex gap-3">
+                            @{
+                                if (Utilities.DoesUserHasRight(User.Identity.Name, "editar-requisiciones"))
+                                {
+                                    <button class="btn btn-sm blue-500 mb-3" onclick="editarDatosOp()">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                        Editar datos
+                                    </button>
+                                    <button class="btn btn-sm red-500 mb-3" onclick="mantenerDatosOp()">
+                                        <i class="fa-solid fa-pencil-slash"></i>
+                                        Dejar de editar
+                                    </button>
+                                }
+                            }
+                            <div class="">
+                                <select class="form-select" id="centro_costos">
+                                    <option value="0" selected>Selecciona el centro de costos</option>
+                                    @foreach (var centro in (ViewBag.areas ?? new List<Dictionary<string, object>>()))
+                                    {
+                                        <option value="@centro["areaid"]">@centro["nombre"]</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <table id="tabla_partidas" class="table table-bordered table-hover" style="min-width: 800px;">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Cant.</th>
+                                    <th>Codigo</th>
+                                    <th>Descripcion</th>
+                                    <th>Unidad</th>
+                                    <th>Prov.</th>
+                                    <th>C/U</th>
+                                    <th>Sub total</th>
+                                    <th>Descuento %</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_partidas_tbody"></tbody>
+                        </table>
+
+                        @{
+                            if (Utilities.DoesUserHasRight(User.Identity.Name, "editar-requisiciones"))
+                            {
+                                <div class="bento-item large">
+                                    <div class="section-title">
+                                        <i class="fa-thin fa-comment-dots"></i>
+                                    </div>
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="ComentarioGerente" name="ComentarioGerente" style="height: 100px;"></textarea>
+                                        <label for="Comentario"></label>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
+                        </button>
+                        @{
+                            if (Utilities.DoesUserHasRight(User.Identity.Name, "editar-requisiciones"))
+                            {
+                                <button type="button" id="aceptar_orden_btn" class="btn btn-success" onclick="aceptarOrdenGerente(this)">
+                                    <i class="bi bi-check-lg me-1"></i> Aceptar orden
+                                </button>
+                            }
+
+                        }
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('modalGestionarOC').addEventListener('hidden.bs.modal', () => {
+        document.getElementById("tabla_partidas_tbody").innerHTML = "";
+    })
+
+    function gestionarOc(id_encabezado) {
+        GetData({
+            path: '/Requisicion/gerPdfData',
+            data: { id: id_encabezado }
+        }).then((_res) => {
+            const partidas = _res.partidas;
+            const encabezado = _res.requisicion;
+            const tbody = document.getElementById('tabla_partidas_tbody');
+            tbody.innerHTML = '';
+            let htmlPartidas = '';
+
+            // El descuento (dto1) es un porcentaje por partida
+            Object.values(partidas).forEach(partida => {
+                const cantidad = parseFloat(partida.cantidad) || 0;
+                const precio = parseFloat(partida.costounitario) || 0;
+                const dto1 = porcentajeDescuento(partida.descuento);
+                const subtotal = brutoPartida(cantidad, precio);
+                const neto = netoPartida(cantidad, precio, dto1);
+
+                htmlPartidas += `` +
+                    `<tr>` +
+                    `    <td class="cantidad" data-original="${cantidad}" data-value="${cantidad}">${cantidad.toFixed(2)}</td>` +
+                    `    <td class="codigo">${partida.codigo}</td>` +
+                    `    <td class="descripcion">${partida.descripcion}</td>` +
+                    `    <td class="descripcion">${partida.unidad}</td>` +
+                    `    <td class="proveedor">${partida.proveedor}</td>` +
+                    `    <td class="precio-unitario" data-original="${precio}" data-value="${precio}">${Currency.format(precio)}</td>` +
+                    `    <td class="subtotal-fila" data-value="${subtotal}">${Currency.format(subtotal)}</td>` +
+                    `    <td class="descuento" data-original="${dto1}" data-value="${dto1}">${formatoPorcentaje(dto1)}</td>` +
+                    `    <td class="total-fila" data-value="${neto}">${Currency.format(neto)}</td>` +
+                    `</tr>`;
+            });
+            tbody.innerHTML = htmlPartidas;
+
+            $('#modalGestionarOC').modal('show');
+            $('#modalGestionarLabel').text(`${encabezado.nat === 'OC' ? 'Orden de compra' : 'Orden de gasto'} No. ${encabezado.folio}`);
+            document.getElementById('aceptar_orden_btn').setAttribute('data-encabezado', id_encabezado)
+            document.getElementById('aceptar_orden_btn').setAttribute('data-nat', encabezado.nat)
+        });
+    }
+
+    const tabla = document.querySelector('#tabla_partidas');
+    // Manejador de edición
+    const CELDAS_EDITABLES = "td.precio-unitario, td.cantidad, td.descuento";
+
+    tabla.addEventListener("blur", (e) => {
+        if (!e.target.matches(CELDAS_EDITABLES)) return;
+
+        const td = e.target;
+        const tr = td.closest("tr");
+
+        let nuevoValor = limpiarNumero(td.innerText);
+        if (td.classList.contains("descuento")) nuevoValor = porcentajeDescuento(nuevoValor);
+
+        td.dataset.value = nuevoValor;
+        td.innerText = td.classList.contains("precio-unitario")
+            ? Currency.format(nuevoValor)
+            : td.classList.contains("descuento")
+                ? formatoPorcentaje(nuevoValor)
+                : nuevoValor.toFixed(2);
+
+        const precio = parseFloat(tr.querySelector(".precio-unitario").dataset.value) || 0;
+        const cantidad = parseFloat(tr.querySelector(".cantidad").dataset.value) || 0;
+        const dto1 = porcentajeDescuento(tr.querySelector(".descuento").dataset.value);
+
+        const tdSubtotal = tr.querySelector(".subtotal-fila");
+        const tdTotal = tr.querySelector(".total-fila");
+
+        tdSubtotal.dataset.value = brutoPartida(cantidad, precio);
+        tdSubtotal.innerText = Currency.format(brutoPartida(cantidad, precio));
+        tdTotal.dataset.value = netoPartida(cantidad, precio, dto1);
+        tdTotal.innerText = Currency.format(netoPartida(cantidad, precio, dto1));
+
+        td.classList.toggle("editable", nuevoValor != parseFloat(td.dataset.original));
+    }, true);
+
+    tabla.addEventListener("focusin", (e) => {
+        if (!e.target.matches(CELDAS_EDITABLES)) return;
+        const value = e.target.dataset.value;
+        e.target.innerText = value ? parseFloat(value) : '';
+    });
+
+    @{
+        if (Utilities.DoesUserHasRight(User.Identity.Name, "editar-requisiciones"))
+        {
+            <text>
+                function alternarEdicionOp(editable) {
+                    document
+                        .querySelectorAll('#tabla_partidas tbody td.precio-unitario, #tabla_partidas tbody td.cantidad, #tabla_partidas tbody td.descuento')
+                        .forEach(td => td.setAttribute('contenteditable', editable));
+                }
+
+                function editarDatosOp() { alternarEdicionOp(true); }
+                function mantenerDatosOp() { alternarEdicionOp(false); }
+
+                function aceptarOrdenGerente(e) {
+                    const tabla = document.querySelectorAll('#tabla_partidas tbody tr');
+                    let datos = [];
+                    const dataToSend = {};
+                    const nat = $(e).data('nat');
+                    const id_encabezado = $(e).data('encabezado');
+                    const centro_costos = document.getElementById('centro_costos').value;
+
+                    if (centro_costos === 0 || centro_costos === "0") {
+                        toastMixin.fire({
+                            icon: 'error',
+                            title: 'El centro de costos es obligatorio'
+                        });
+                        return;
+                    }
+
+                    tabla.forEach(tr => {
+                        const cantidad = limpiarNumero(tr.querySelector(".cantidad").innerText);
+                        const precio = limpiarNumero(tr.querySelector(".precio-unitario").innerText);
+                        const dto1 = porcentajeDescuento(limpiarNumero(tr.querySelector(".descuento").innerText));
+
+                        datos.push({
+                            CantUd: cantidad,
+                            CveProd: tr.querySelector(".codigo").innerText.trim(),
+                            PvProd: precio,
+                            Dto1: dto1,
+                            ImpPart: brutoPartida(cantidad, precio),
+                            total: netoPartida(cantidad, precio, dto1),
+                        })
+                    })
+
+                    const warningIcon = `` +
+                        `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">` +
+                        `    <style>` +
+                        `       .flip {` +
+                        `           animation: spinY 2s linear infinite;` +
+                        `           transform-origin: center;` +
+                        `       }` +
+                        `       @@keyframes spinY {` +
+                        `           0%   { transform: rotateY(0deg); }` +
+                        `           100% { transform: rotateY(360deg); }` +
+                        `       }` +
+                        `    </style>` +
+                        `    <g class="flip">` +
+                        `       <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>` +
+                        `       <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>` +
+                        `       <circle cx="32" cy="48" r="3" fill="#000"/>` +
+                        `    </g>` +
+                        `</svg>`;
+
+                    _Swal.fire({
+                        iconHtml: warningIcon,
+                        title: 'Seguro?',
+                        text: `¿Está seguro que desea guardar la ${nat === 'GTO' ? 'solicitud de gasto' : 'orden de compra'}?`,
+                        footer: '<b style="color: red;">ADVERTENCIA - Este cambio no se puede revertir</b>',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        customClass: {
+                            icon: 'p-0 bg-transparent border-0 shadow-none'
+                        },
+                        preConfirm: () => {
+                            dataToSend.id_encabezado = id_encabezado;
+                            dataToSend.datos = JSON.stringify(datos);
+                            dataToSend.comentario = $('#ComentarioGerente').val();
+                            dataToSend.centro_costos = parseInt(centro_costos);
+                            GetData({
+                                path: '/Requisicion/AceptarOrdenGerente',
+                                data: dataToSend,
+                            }).then((_res) => {
+                                if (_res.success) {
+                                    _SwalReload({
+                                        icon: 'success',
+                                        title: `La ${nat === 'GTO' ? 'solicitud de gasto' : 'orden de compra'} fue aprobada exitosamente`,
+                                        text: _res.message,
+                                        showCancelButton: false,
+                                    })
+
+                                    recargarTablasCompras();
+                                    $('#modalGestionarOC').modal('hide')
+                                } else {
+                                    _Swal.fire({
+                                        icon: 'error',
+                                        title: _res.message,
+                                        showCancelButton: false,
+                                    })
+                                }
+                            })
+                        },
+                    })
+                }
+            </text>
+        } 
+    }
+</script>

@@ -1,0 +1,542 @@
+﻿@model BOS_ERP.Models.ModulaAuditoriaFiltro
+@{
+    ViewBag.Title = "Historial Modula";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .hist-wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .hist-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 1.75rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1.5px solid var(--border-light);
+    }
+
+        .hist-header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+        .hist-header p {
+            font-size: .78rem;
+            color: var(--text-light);
+            margin: 2px 0 0;
+        }
+
+    /* Filtros */
+    .hist-filters {
+        background: var(--bg-light);
+        border: 1.5px solid var(--border-light);
+        border-radius: var(--table-radius);
+        padding: 1.25rem 1.5rem;
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+    }
+
+    .hist-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill,minmax(170px,1fr));
+        gap: .75rem;
+        align-items: end;
+    }
+
+    .hist-field label {
+        display: block;
+        font-size: .75rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: .3rem;
+    }
+
+    .hist-field input,
+    .hist-field select {
+        width: 100%;
+        padding: .42rem .7rem;
+        border: 1.5px solid var(--border-light);
+        border-radius: 8px;
+        font-size: .82rem;
+        color: var(--text-dark);
+        background: var(--bg-light);
+        outline: none;
+    }
+
+        .hist-field input:focus,
+        .hist-field select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+        }
+
+    .hist-btn-row {
+        display: flex;
+        gap: .5rem;
+        margin-top: 1rem;
+        justify-content: flex-end;
+    }
+
+    .hist-btn {
+        padding: .42rem .95rem;
+        border-radius: 8px;
+        font-size: .8rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1.5px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .hist-btn-primary {
+        background: var(--primary-blue);
+        color: #fff;
+        border-color: var(--primary-blue);
+    }
+
+        .hist-btn-primary:hover {
+            background: var(--primary-blue-dark);
+        }
+
+    .hist-btn-ghost {
+        background: var(--bg-light);
+        border-color: var(--border-light);
+        color: var(--secondary-blue);
+    }
+
+        .hist-btn-ghost:hover {
+            border-color: var(--secondary-blue);
+            color: var(--text-dark);
+        }
+
+    /* Tabla */
+    .hist-table-wrap {
+        background: var(--bg-light);
+        border: 1.5px solid var(--border-light);
+        border-radius: var(--table-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .hist-table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .85rem 1.25rem;
+        border-bottom: 1.5px solid var(--border-light);
+    }
+
+        .hist-table-header span {
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+    .hist-count {
+        background: var(--primary-blue);
+        color: #fff;
+        font-size: .65rem;
+        padding: 2px 9px;
+        border-radius: 99px;
+        font-weight: 600;
+        margin-left: 6px;
+    }
+
+    .hist-scroll {
+        overflow-x: auto;
+    }
+
+    table.hist-t {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .75rem;
+    }
+
+        table.hist-t thead th {
+            background: var(--bg-gray);
+            color: var(--secondary-blue);
+            font-weight: 600;
+            padding: .55rem .85rem;
+            text-align: left;
+            border-bottom: 1.5px solid var(--border-light);
+            white-space: nowrap;
+        }
+
+        table.hist-t tbody tr {
+            border-bottom: 1px solid var(--border-light);
+        }
+
+            table.hist-t tbody tr:hover {
+                background: var(--very-light-blue);
+            }
+
+        table.hist-t tbody td {
+            padding: .45rem .85rem;
+            color: var(--text-dark);
+            vertical-align: middle;
+        }
+
+    .hist-muted {
+        color: var(--text-light);
+    }
+
+    .hist-mono {
+        font-family: monospace;
+        font-size: .72rem;
+    }
+
+    /* Badges */
+    .hbadge {
+        display: inline-flex;
+        align-items: center;
+        font-size: .65rem;
+        font-weight: 600;
+        padding: 2px 9px;
+        border-radius: 99px;
+        white-space: nowrap;
+    }
+
+    .hb-ok {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .hb-err {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .hb-ib {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .hb-item {
+        background: #f3e8ff;
+        color: #7e22ce;
+    }
+
+    .hb-csv {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .hb-ind {
+        background: #e0f2fe;
+        color: #075985;
+    }
+
+    [data-theme="dark"] .hb-ok {
+        background: rgba(21,128,61,.2);
+        color: #86efac;
+    }
+
+    [data-theme="dark"] .hb-err {
+        background: rgba(185,28,28,.2);
+        color: #fca5a5;
+    }
+
+    [data-theme="dark"] .hb-ib {
+        background: rgba(30,64,175,.2);
+        color: #93c5fd;
+    }
+
+    [data-theme="dark"] .hb-item {
+        background: rgba(126,34,206,.2);
+        color: #d8b4fe;
+    }
+
+    [data-theme="dark"] .hb-csv {
+        background: rgba(133,77,14,.2);
+        color: #fde68a;
+    }
+
+    [data-theme="dark"] .hb-ind {
+        background: rgba(7,89,133,.2);
+        color: #7dd3fc;
+    }
+
+    /* Payload modal */
+    .hist-payload-btn {
+        background: none;
+        border: none;
+        color: var(--secondary-blue);
+        font-size: .72rem;
+        cursor: pointer;
+        text-decoration: underline;
+        padding: 0;
+    }
+
+        .hist-payload-btn:hover {
+            color: var(--primary-blue);
+        }
+
+    .hist-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.45);
+        z-index: 9000;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .hist-modal-overlay.open {
+            display: flex;
+        }
+
+    .hist-modal {
+        background: var(--bg-light);
+        border-radius: 14px;
+        padding: 1.5rem;
+        width: min(680px,92vw);
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+
+        .hist-modal h3 {
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0 0 1rem;
+        }
+
+        .hist-modal pre {
+            background: var(--bg-gray);
+            border: 1.5px solid var(--border-light);
+            border-radius: 9px;
+            padding: 1rem;
+            font-size: .73rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+    .hist-modal-close {
+        float: right;
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        color: var(--text-light);
+        line-height: 1;
+        margin-top: -4px;
+    }
+
+        .hist-modal-close:hover {
+            color: var(--danger-color);
+        }
+
+    .hist-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-light);
+        font-size: .85rem;
+    }
+</style>
+
+<div class="hist-wrap">
+
+    <!-- Header -->
+    <div class="hist-header">
+        <div>
+            <h1>Historial de operaciones — Modula</h1>
+            <p>Auditoría completa de envíos al WebService</p>
+        </div>
+        @Html.ActionLink("← Volver", "Modula", "Almacen",
+            null, new { @class = "hist-btn hist-btn-ghost", style = "margin-left:auto" })
+    </div>
+
+    <!-- Filtros -->
+    @using (Html.BeginForm("Historial", "Modula", FormMethod.Get,
+            new { @class = "hist-filters" }))
+    {
+        <div class="hist-filter-grid">
+            <div class="hist-field">
+                <label>Desde</label>
+                <input type="date" name="Desde"
+                       value="@(Model.Desde.HasValue ? Model.Desde.Value.ToString("yyyy-MM-dd") : "")" />
+            </div>
+            <div class="hist-field">
+                <label>Hasta</label>
+                <input type="date" name="Hasta"
+                       value="@(Model.Hasta.HasValue ? Model.Hasta.Value.ToString("yyyy-MM-dd") : "")" />
+            </div>
+            <div class="hist-field">
+                <label>Usuario</label>
+                <input type="text" name="Usuario" value="@Model.Usuario" placeholder="nombre o email" />
+            </div>
+            <div class="hist-field">
+                <label>Tipo de acción</label>
+                <select name="TipoAccion">
+                    <option value="">Todos</option>
+
+                    <option value="INBOUND"
+                            selected="@(Model.TipoAccion == "INBOUND")">
+                        Inbound
+                    </option>
+
+                    <option value="ITEM_MASTER"
+                            selected="@(Model.TipoAccion == "ITEM_MASTER")">
+                        Item Master
+                    </option>
+                </select>
+            </div>
+            <div class="hist-field">
+                <label>Resultado WS</label>
+                <select name="WsStatus">
+                    <option value="">Todos</option>
+
+                    <option value="OK"
+                            selected="@(Model.WsStatus == "OK")">
+                        ✓ OK
+                    </option>
+
+                    <option value="ERROR"
+                            selected="@(Model.WsStatus == "ERROR")">
+                        ✕ Error
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="hist-btn-row">
+            <a href="@Url.Action("Historial","Modula")" class="hist-btn hist-btn-ghost">↺ Limpiar</a>
+            <button type="submit" class="hist-btn hist-btn-primary">🔍 Filtrar</button>
+        </div>
+    }
+
+    <!-- Tabla -->
+    <div class="hist-table-wrap">
+        <div class="hist-table-header">
+            <span>
+                Registros
+                <span class="hist-count">@Model.Registros.Count</span>
+            </span>
+        </div>
+
+        @if (!Model.Registros.Any())
+        {
+            <div class="hist-empty">No se encontraron registros con los filtros seleccionados.</div>
+        }
+        else
+        {
+            <div class="hist-scroll">
+                <table class="hist-t">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Origen</th>
+                            <th>Orden</th>
+                            <th>Artículo</th>
+                            <th>Cantidad</th>
+                            <th>Resultado</th>
+                            <th>Respuesta WS</th>
+                            <th>Payload</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Registros)
+                        {
+                            <tr>
+                                <td class="hist-mono hist-muted">
+                                    @r.Fecha.ToString("dd/MM/yy HH:mm:ss")
+                                </td>
+                                <td>@r.Usuario</td>
+                                <td>
+                                    @if (r.TipoAccion == "INBOUND")
+                                    {
+                                        <span class="hbadge hb-ib">Inbound</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="hbadge hb-item">Item Master</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (r.Origen == "CSV")
+                                    {
+                                        <span class="hbadge hb-csv">CSV</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="hbadge hb-ind">Individual</span>
+                                    }
+                                </td>
+                                <td class="hist-mono">@(r.OrdenNumero ?? "—")</td>
+                                <td class="hist-mono">@(r.CodigoArticulo ?? "—")</td>
+                                <td style="text-align:right; font-variant-numeric:tabular-nums">
+                                    @(r.Cantidad.HasValue ? r.Cantidad.Value.ToString("N0") : "—")
+                                </td>
+                                <td>
+                                    @if (r.WsStatus == "OK")
+                                    {
+                                        <span class="hbadge hb-ok">✓ OK</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="hbadge hb-err">✕ Error</span>
+                                    }
+                                </td>
+                                <td style="max-width:220px; overflow:hidden;
+                                           text-overflow:ellipsis; white-space:nowrap;"
+                                    title="@r.WsRespuesta" class="hist-muted hist-mono">
+                                    @r.WsRespuesta
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(r.PayloadJson))
+                                    {
+                                        <button class="hist-payload-btn"
+                                                onclick="abrirPayload(@r.Id)">
+                                            { } ver
+                                        </button>
+                                        <script>
+                                            var payload_@r.Id = @Html.Raw(r.PayloadJson);
+                                        </script>
+                                    }
+                                    else
+                                    { <span class="hist-muted">—</span>}
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal payload -->
+<div class="hist-modal-overlay" id="payload-modal">
+    <div class="hist-modal">
+        <button class="hist-modal-close" onclick="cerrarPayload()">✕</button>
+        <h3>Payload enviado al WebService</h3>
+        <pre id="payload-content"></pre>
+    </div>
+</div>
+
+<script>
+    function abrirPayload(id) {
+        var data = window['payload_' + id];
+        document.getElementById('payload-content').textContent =
+            JSON.stringify(data, null, 2);
+        document.getElementById('payload-modal').classList.add('open');
+    }
+    function cerrarPayload() {
+        document.getElementById('payload-modal').classList.remove('open');
+    }
+    document.getElementById('payload-modal').addEventListener('click', function(e) {
+        if (e.target === this) cerrarPayload();
+    });
+</script>

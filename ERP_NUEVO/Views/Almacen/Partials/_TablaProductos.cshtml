@@ -1,0 +1,126 @@
+@*
+    Listado de productos: encabezado, barra de acciones y tabla.
+    También resuelve la sincronización completa contra Kepler, que
+    no tiene modal propio (sólo confirmación).
+*@
+@using BOS_ERP.Controllers
+
+<div class="container-fluid py-4 productos-page prod-animate">
+    <div class="prod-card">
+        <div class="prod-card-body">
+
+            <div class="prod-header">
+                <div class="prod-icon">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+                <div>
+                    <h4 class="prod-title">Productos</h4>
+                    <p class="prod-subtitle">Catálogo de productos: alta, edición y sincronización con las bases externas.</p>
+                </div>
+            </div>
+
+            <div class="prod-note">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Doble clic sobre un producto abre su edición. La clave no se puede cambiar una vez creado el producto.</span>
+            </div>
+
+            <div class="prod-toolbar">
+                <button type="button" class="prod-action prod-action--nuevo" onclick="abrirModalCrear()">
+                    <i class="fa-solid fa-plus"></i> Nuevo producto
+                </button>
+
+                @if (Utilities.DoesUserHasRight(User.Identity.Name, "carga_layout"))
+                {
+                    <button type="button" class="prod-action prod-action--layout" onclick="abrirModalCargaMasiva()">
+                        <i class="fa-solid fa-file-csv"></i> Carga layout
+                    </button>
+                }
+
+                <button type="button" class="prod-action prod-action--sync" onclick="sincronizarProductos()">
+                    <i class="fa-solid fa-rotate"></i> Sincronizar todo
+                </button>
+
+                <button type="button" class="prod-action prod-action--importar" onclick="abrirModalImportarBD()">
+                    <i class="fa-solid fa-database"></i> Sincronizar seleccionados
+                </button>
+            </div>
+
+            <div class="prod-table-shell">
+                <div id="tablaProductos"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        /* ── Sincronización completa contra Kepler ────────────────── */
+        const ICONO_ADVERTENCIA = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:auto">
+            <style>
+                .flip { animation: spinY 2s linear infinite; transform-origin: center; }
+                @@keyframes spinY {
+                    0%   { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                }
+            </style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g>
+        </svg>`;
+
+        window.sincronizarProductos = function () {
+            _Swal.fire({
+                iconHtml: ICONO_ADVERTENCIA,
+                title: 'Confirmar sincronización',
+                html: '¿Está seguro que desea proceder con la sincronización de los productos de kepler?',
+                footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+                customClass: { icon: 'p-0 bg-transparent border-0 shadow-none' },
+                preConfirm: () => {
+                    Swal.fire({
+                        title: 'Sincronizando productos con kepler...',
+                        html: 'Esto pueda tardar unos minutos',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    GetData({
+                        path: '/Productos/SyncProducts',
+                        swalResponse: true,
+                        swalType: 'modal',
+                        swalPath: '/Almacen/Productos'
+                    });
+                }
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Global: guardarProducto() la recarga tras guardar
+            window.tablaProductos = createTable({
+                selector: '#tablaProductos',
+                path: '/Almacen/Producto/Buscar',
+                searchPlaceholder: 'Buscar producto...',
+                columns: [
+                    { title: 'Clave', data: 'id' },
+                    { title: 'Descripción', data: 'descripcion' },
+                    { title: 'Línea', data: 'lin_prod' },
+                    { title: 'Grupo', data: 'gpo' },
+                    { title: 'Estado', data: 'stat', formatter: v => badgeEstado(v) },
+                    { title: 'UDM', data: 'udm' },
+                ],
+                actions: [
+                    { icon: 'fa-pen-to-square', color: 'blue-500', title: 'Editar producto', onClick: row => abrirModalEditar(row) }
+                ],
+                RowsEvents: {
+                    onRowDblClick: row => abrirModalEditar(row)
+                }
+            });
+        });
+    })();
+</script>

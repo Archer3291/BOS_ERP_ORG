@@ -1,0 +1,377 @@
+﻿@{
+    ViewBag.Title = "Cargar Excel";
+}
+<style>
+ .upload-container {
+            background: var(--bg-light);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid var(--border-light);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .upload-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(37, 99, 235, 0.15);
+        }
+
+        h2 {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            margin: 30px 0;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-upload-area {
+            border: 3px dashed var(--border-light);
+            border-radius: 16px;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, var(--very-light-blue) 0%, var(--light-blue) 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary-blue);
+            background: linear-gradient(135deg, var(--light-blue) 0%, var(--very-light-blue) 100%);
+            transform: scale(1.02);
+        }
+
+        .file-upload-area:hover::before {
+            left: 100%;
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover .upload-icon {
+            transform: scale(1.1) rotate(10deg);
+        }
+
+        .upload-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+
+        .upload-text {
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+
+        .file-selected {
+            background: var(--light-blue);
+            border-color: var(--accent-blue);
+            color: var(--dark-blue);
+        }
+
+        .file-name {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: rgba(37, 99, 235, 0.1);
+            border-radius: 8px;
+            color: var(--primary-blue);
+            font-weight: 600;
+            display: none;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .features {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+
+        .feature-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            fill: var(--accent-blue);
+        }
+
+        @@media (max-width: 480px) {
+            .upload-container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            h2 {
+                font-size: 1.8em;
+            }
+
+            .file-upload-area {
+                padding: 30px 15px;
+            }
+        }
+</style>
+
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="upload-container">
+        <h2>Cargar Excel</h2>
+        <p class="subtitle">Compras Internacionales - Procesamiento de datos</p>
+
+        <form action="/Planeador/ProcesarExcel" method="post" enctype="multipart/form-data" id="uploadForm">
+            <div class="file-upload-wrapper">
+                <input type="file" name="archivoExcel" accept=".xlsx" required class="file-input" id="fileInput">
+                <div class="file-upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                        </svg>
+                    </div>
+                    <div class="upload-text">Haz clic para seleccionar archivo</div>
+                    <div class="upload-hint">o arrastra y suelta tu archivo .xlsx aquí</div>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                <div class="loading-spinner" id="loadingSpinner"></div>
+                <span id="btnText">Selecciona un archivo Excel</span>
+            </button>
+        </form>
+
+        <div class="features">
+            <div class="feature-item">
+                <svg class="feature-icon" viewBox="0 0 24 24">
+                    <path d="M9,10H7V12H9V10M13,10H11V12H13V10M17,10H15V12H17V10M19,3A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5A2,2 0 0,1 5,3H6V1H8V3H16V1H18V3H19M19,19V8H5V19H19Z" />
+                </svg>
+                Solo archivos .xlsx
+            </div>
+            <div class="feature-item">
+                <svg class="feature-icon" viewBox="0 0 24 24">
+                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z" />
+                </svg>
+                Procesamiento seguro
+            </div>
+            <div class="feature-item">
+                <svg class="feature-icon" viewBox="0 0 24 24">
+                    <path d="M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M11,4H6V16H11V4Z" />
+                </svg>
+                Análisis automático
+            </div>
+        </div>
+    </div>
+</div>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const uploadForm = document.getElementById('uploadForm');
+
+        // Drag and drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            uploadArea.style.borderColor = 'var(--primary-blue)';
+            uploadArea.style.backgroundColor = 'var(--light-blue)';
+        }
+
+        function unhighlight() {
+            uploadArea.style.borderColor = 'var(--border-light)';
+            uploadArea.style.backgroundColor = '';
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        }
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                if (file.name.endsWith('.xlsx')) {
+                    fileName.textContent = file.name;
+                    fileName.style.display = 'block';
+                    uploadArea.classList.add('file-selected');
+                    submitBtn.disabled = false;
+                    btnText.textContent = 'Subir y Procesar Excel';
+                } else {
+                    alert('Por favor selecciona un archivo .xlsx válido');
+                    fileInput.value = '';
+                    resetUpload();
+                }
+            } else {
+                resetUpload();
+            }
+        }
+
+        function resetUpload() {
+            fileName.style.display = 'none';
+            uploadArea.classList.remove('file-selected');
+            submitBtn.disabled = true;
+            btnText.textContent = 'Selecciona un archivo Excel';
+        }
+
+        uploadForm.addEventListener('submit', function (e) {
+            if (!fileInput.files[0]) {
+                e.preventDefault();
+                alert('Por favor selecciona un archivo Excel antes de continuar');
+                return;
+            }
+
+            // Show loading state
+            loadingSpinner.style.display = 'inline-block';
+            btnText.textContent = 'Procesando...';
+            submitBtn.disabled = true;
+        });
+
+        // Click area to trigger file input
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+    </script>

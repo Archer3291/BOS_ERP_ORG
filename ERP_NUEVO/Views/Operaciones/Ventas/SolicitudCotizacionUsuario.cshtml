@@ -1,0 +1,281 @@
+﻿
+
+@section styles {
+    <style>
+        .form-outline .form-control:focus ~ .form-label {
+            color: #0d6efd;
+        }
+
+        th, td {
+            vertical-align: middle !important;
+        }
+
+        /* Estilo para fila seleccionada */
+        tr.fila-seleccionada {
+            background-color: #d1ecf1 !important;
+        }
+
+        .form-outline .form-control:disabled,
+        .form-outline .form-control.disabled,
+        .form-outline .form-control[readonly] {
+            background-color: transparent !important;
+        }
+
+        #loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6); /* Fondo semitransparente oscuro */
+            z-index: 1050; /* Por encima de todo */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader-content {
+            text-align: center;
+        }
+    </style>
+
+}
+
+<div class="table-responsive-sm">
+    <table id="tablaTickets" class="table table-striped table-bordered table-hover" style="width:100%">
+        <thead class="table-secondary">
+            <tr>
+                <th>Folio</th>
+                <th>Actualizado</th>
+                <th>Acciones</th>
+                <th>Iva</th>
+                <th>Importe</th>
+                <th>Opción 1</th>
+                <th>Opción 2</th>
+                <th>Opción 3</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="modalPartidas" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">Partidas del documento</h5>
+                <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Clave Producto</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-partidas-body">
+                        <!-- Contenido dinámico -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="loader-overlay" style="display: none;">
+    <div class="loader-content">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-3 text-white">Procesando, por favor espere...</p>
+    </div>
+</div>
+
+
+@section scripts{
+    <script>
+        var tablaTickets;
+        $(document).ready(function () {
+            tablaTickets = $('#tablaTickets').DataTable({
+                ajax: {
+                    url: '/SolicitudCotizacion/SolicitudPorUsuario', // ← Ruta directa
+                    type: 'GET',
+                    dataType: 'json',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'Folio', title: 'Folio' },
+                    {
+                        data: 'Fecha',
+                        title: 'Fecha',
+                        render: function (data) {
+                            if (!data) return '';
+                            const fecha = new Date(parseInt(data.replace(/\/Date\((\d+)\)\//, '$1')));
+                            return `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
+                        }
+                    },
+                    { data: 'Iva', title: 'IVA' },
+                    { data: 'Importe', title: 'Importe' },
+                    { data: 'Comentario1', title: 'Opción 1' },
+                    { data: 'Comentario2', title: 'Opción 2' },
+                    { data: 'Comentario3', title: 'Opción 3' },
+                    { data: 'ComentAut', title: 'Nota' },
+                    {
+                        data: null,
+                        title: 'Acciones',
+                        orderable: false,
+                        searchable: false,
+                        render: function (data, type, row) {
+                            return `
+                                            <div class="d-flex justify-content-center gap-2" role="group">
+                                                <button class="btn btn-sm btn-floating btn-outline-info ver-usuario"
+                                                        data-mdb-ripple-init
+                                                        data-mdb-ripple-color="info"
+                                                        data-mdb-ripple-duration="1000ms"
+                                                        title="Ver información"
+                                                        data-id="${row.Folio}">
+                                                    <i class="fa-duotone fa-info-circle fa-beat"></i>
+                                                </button>
+
+                                                `;
+                        }
+                    }
+                ],
+                layout: {
+                    topStart: {
+                        buttons: [
+                            {
+                                extend: 'copyHtml5',
+                                text: '<i class="fa-solid fa-copy"></i>',
+                                titleAttr: 'Copiar'
+                            },
+                            {
+                                extend: 'excelHtml5',
+                                text: '<i class="fa-solid fa-file-excel"></i>',
+                                titleAttr: 'Exportar a Excel'
+                            },
+                            {
+                                extend: 'pdfHtml5',
+                                text: '<i class="fa-solid fa-file-pdf"></i>',
+                                titleAttr: 'Exportar a PDF'
+                            },
+                            'colvis'
+                        ],
+                        pageLength: {
+                            menu: [5, 10, 25, 50]
+                        }
+                    }
+                },
+                responsive: true
+            });
+
+            // Aplicar filtros
+            $('#filtroEstado, #filtroPrioridad, #filtroUsuario, input[name="filtroAsignado"]').on('change', function () {
+                tablaTickets.column(5).search($('#filtroEstado').val());        // Estado
+                tablaTickets.column(7).search($('#filtroPrioridad').val());     // Prioridad
+                tablaTickets.column(3).search($('#filtroUsuario').val());       // Usuario
+                let asignado = $('input[name="filtroAsignado"]:checked').val();
+                tablaTickets.column(8).search(asignado ? '^' + asignado + '$' : '', true, false);
+
+                tablaTickets.draw();
+            });
+
+            // Limpiar filtros
+            $('#btnLimpiarFiltros').click(function () {
+                $('#filtroEstado, #filtroPrioridad, #filtroUsuario').val('');
+                $('input[name="filtroAsignado"][value=""]').prop('checked', true); // "Todos"
+                tablaTickets.columns().search('').draw();
+            });
+
+            $('#tablaTickets tbody').on('click', 'a.ver-ticket', function (e) {
+                e.preventDefault();
+                const ticketId = $(this).data('id');
+                obtenerDetalleTicket(ticketId);
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('.ver-usuario')) {
+                    const button = e.target.closest('.ver-usuario');
+                    const folio = button.getAttribute('data-id');
+
+                    // Mostrar el loader
+                    document.getElementById('loader-overlay').style.display = 'flex';
+
+                    fetch(`/SolicitudCotizacion/SolicitudPorUsuarioPartidas?fol_doc=${encodeURIComponent(folio)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Error en la respuesta del servidor');
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success === false) {
+                                alert("Ocurrió un error: " + data.error);
+                                return;
+                            }
+
+                            mostrarModalConDatos(data.data);
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert("Error al obtener los datos.");
+                        })
+                        .finally(() => {
+                            // Ocultar el loader
+                            document.getElementById('loader-overlay').style.display = 'none';
+                        });
+                }
+            });
+        });
+
+
+        function mostrarModalConDatos(partidas) {
+            let contenido = partidas.map(p => `
+                    <tr>
+                        <td>${p.fol_doc}</td>
+                        <td>${p.cve_prod}</td>
+                        <td>${p.descr_prod}</td>
+                        <td>${p.cant_ud}</td>
+                        <td>${p.imp_part}</td>
+                    </tr>
+                `).join('');
+
+            document.getElementById('tabla-partidas-body').innerHTML = contenido;
+
+            const modal = new mdb.Modal(document.getElementById('modalPartidas'));
+            modal.show();
+        }
+
+
+    </script>
+
+    @*<button class="btn btn-sm btn-floating btn-outline-warning editar-usuario"
+            data-mdb-ripple-init
+            data-mdb-ripple-color="warning"
+            data-mdb-ripple-duration="1000ms"
+            title="Editar"
+            data-id="${row.Folio}">
+        <i class="fa-duotone fa-pen-to-square fa-beat"></i>
+    </button>
+    <button class="btn btn-sm btn-floating btn-outline-danger eliminar-usuario"
+            data-mdb-ripple-init
+            data-mdb-ripple-color="danger"
+            data-mdb-ripple-duration="1000ms"
+            title="Borrar"
+            data-id="${row.Folio}">
+        <i class="fa-duotone fa-trash fa-beat"></i>
+    </button>
+    </div>*@
+}

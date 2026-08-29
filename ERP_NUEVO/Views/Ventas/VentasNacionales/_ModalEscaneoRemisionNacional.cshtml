@@ -1,0 +1,333 @@
+@using BOS_ERP.Controllers
+@* ============================================================
+   _ModalEscaneoRemisionNacional.cshtml
+   Vista parcial — se incluye junto al parcial de remisión:
+   @Html.Partial("VentasNacionales/_ModalEscaneoRemisionNacional")
+
+   Verificación de mercancía por escáner antes de aceptar la remisión.
+   Al abrirse lista las partidas del documento con la cantidad en 0; cada
+   código escaneado (la clave del producto) marca su partida y revela la
+   cantidad solicitada.
+
+   El setting `escaneo_remision_obligatorio` decide si es requisito para
+   guardar (true) o un apoyo opcional (false). Viaja al front en
+   data-obligatorio y lo revalida VNRemision.Guardar al guardar.
+
+   La lógica vive en ~/Scripts/Ventas/escaneo-remision.js (módulo
+   EscaneoRemision), que se engancha por el prefix "vn-rem".
+   ============================================================ *@
+
+@{
+    var escaneoRemisionObligatorio =
+        (Utilities.GetSetting("escaneo_remision_obligatorio") ?? "").Trim().ToLower() == "true";
+}
+
+<style>
+    /* ── Caja del escáner ── */
+    .vn-esc-scan-box {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        border: 2px dashed var(--accent-blue, #3b82f6);
+        border-radius: 12px;
+        background: var(--very-light-blue, #eff6ff);
+        padding: .9rem 1.1rem;
+        transition: border-color .2s, background .2s;
+    }
+
+        .vn-esc-scan-box.is-ok {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+
+        .vn-esc-scan-box.is-error {
+            border-color: #dc2626;
+            background: #fef2f2;
+            animation: vnEscShake .3s;
+        }
+
+    .vn-esc-scan-icon {
+        width: 2.6rem;
+        height: 2.6rem;
+        border-radius: 10px;
+        background: var(--primary-blue, #1e3a5f);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .vn-esc-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        font-size: 1.15rem;
+        font-weight: 600;
+        letter-spacing: .06em;
+        font-family: 'Courier New', monospace;
+        color: var(--text-dark, #1f2937);
+        outline: none;
+    }
+
+        .vn-esc-input::placeholder {
+            font-weight: 400;
+            letter-spacing: normal;
+            font-family: inherit;
+            color: #9ca3af;
+        }
+
+    /* ── Progreso ── */
+    .vn-esc-progress {
+        height: 10px;
+        border-radius: 99px;
+        background: #e5e7eb;
+        overflow: hidden;
+    }
+
+    .vn-esc-progress-fill {
+        height: 100%;
+        width: 0;
+        border-radius: 99px;
+        background: linear-gradient(90deg, #3b82f6, #10b981);
+        transition: width .3s ease;
+    }
+
+    /* ── Mensaje de feedback del último escaneo ── */
+    .vn-esc-feedback {
+        min-height: 1.4rem;
+        font-size: .84rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .vn-esc-feedback-ok {
+        color: #047857;
+    }
+
+    .vn-esc-feedback-warn {
+        color: #b45309;
+    }
+
+    .vn-esc-feedback-error {
+        color: #b91c1c;
+    }
+
+    /* ── Tabla de partidas ── */
+    .vn-esc-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .83rem;
+    }
+
+        .vn-esc-table thead th {
+            background: var(--primary-blue, #1e3a5f);
+            color: #fff;
+            padding: .55rem .6rem;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .vn-esc-table td {
+            padding: .55rem .6rem;
+            border-bottom: 1px solid var(--border-light, #e5e7eb);
+            vertical-align: middle;
+        }
+
+        .vn-esc-table tbody tr.is-pendiente {
+            background: #fff;
+        }
+
+        .vn-esc-table tbody tr.is-escaneado {
+            background: #f0fdf4;
+        }
+
+        .vn-esc-table tbody tr.is-flash {
+            animation: vnEscFlash .9s ease;
+        }
+
+    .vn-esc-codigo {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+        letter-spacing: .04em;
+    }
+
+    .vn-esc-cant {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+        font-size: .95rem;
+    }
+
+        .vn-esc-cant.is-cero {
+            color: #9ca3af;
+        }
+
+        .vn-esc-cant.is-lista {
+            color: #047857;
+        }
+
+    .vn-esc-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        padding: .2rem .6rem;
+        border-radius: 99px;
+        white-space: nowrap;
+    }
+
+    .vn-esc-badge-pendiente {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .vn-esc-badge-ok {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .vn-esc-badge-na {
+        background: #e5e7eb;
+        color: #4b5563;
+    }
+
+    .vn-esc-undo {
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: .75rem;
+        cursor: pointer;
+        padding: 0 .25rem;
+    }
+
+        .vn-esc-undo:hover {
+            color: #b91c1c;
+        }
+
+    @@keyframes vnEscShake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        25% {
+            transform: translateX(-5px);
+        }
+
+        75% {
+            transform: translateX(5px);
+        }
+    }
+
+    @@keyframes vnEscFlash {
+        0% {
+            background: #bbf7d0;
+        }
+
+        100% {
+            background: #f0fdf4;
+        }
+    }
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: VERIFICACIÓN DE MERCANCÍA POR ESCÁNER
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="vn-rem-modalEscaneo" tabindex="-1"
+     aria-labelledby="vn-rem-modalEscaneo-label" aria-hidden="true"
+     data-obligatorio="@(escaneoRemisionObligatorio ? "true" : "false")">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+
+            <!-- Header -->
+            <div class="modal-header vn-modal-header">
+                <div class="flex-grow-1">
+                    <h5 class="modal-title mb-1" id="vn-rem-modalEscaneo-label">
+                        <i class="fas fa-barcode me-2"></i>Verificación de mercancía
+                    </h5>
+                    <div class="small" style="opacity:.85">
+                        Escanea el código de cada producto para confirmar lo que sale en la remisión
+                    </div>
+                </div>
+                <span class="badge @(escaneoRemisionObligatorio ? "bg-danger" : "bg-light text-dark") me-2"
+                      id="vn-rem-esc-modo">
+                    @(escaneoRemisionObligatorio ? "Obligatoria" : "Opcional")
+                </span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body" id="vn-rem-esc-body">
+
+                <!-- Lector -->
+                <div class="vn-esc-scan-box mb-3" id="vn-rem-esc-box">
+                    <div class="vn-esc-scan-icon"><i class="fas fa-barcode"></i></div>
+                    <input type="text" class="vn-esc-input" id="vn-rem-esc-input"
+                           placeholder="Escanea o captura el código del producto y presiona Enter…"
+                           autocomplete="off" spellcheck="false">
+                    <span class="text-muted small d-none d-md-inline">
+                        <i class="fas fa-keyboard me-1"></i>Enter
+                    </span>
+                </div>
+
+                <!-- Progreso -->
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="small fw-semibold" style="color:var(--text-light,#6b7280)">
+                        Partidas verificadas
+                    </span>
+                    <span class="small fw-bold" id="vn-rem-esc-contador">0 de 0</span>
+                </div>
+                <div class="vn-esc-progress mb-2">
+                    <div class="vn-esc-progress-fill" id="vn-rem-esc-bar"></div>
+                </div>
+
+                <div class="vn-esc-feedback mb-2" id="vn-rem-esc-feedback"></div>
+
+                <!-- Partidas -->
+                <div style="border:1px solid var(--border-light,#e5e7eb);border-radius:8px;overflow:auto;max-height:46vh;">
+                    <table class="vn-esc-table">
+                        <thead>
+                            <tr>
+                                <th style="width:3rem;">#</th>
+                                <th style="width:11rem;">Código</th>
+                                <th>Descripción</th>
+                                <th style="width:8rem;" class="text-end">Cantidad</th>
+                                <th style="width:6rem;">Unidad</th>
+                                <th style="width:11rem;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vn-rem-esc-tbody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer d-flex justify-content-between flex-wrap gap-2">
+                <button type="button" class="vn-btn vn-btn-outline" id="vn-rem-esc-reiniciar">
+                    <i class="fas fa-undo"></i> Reiniciar
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="vn-btn vn-btn-ghost" data-bs-dismiss="modal"
+                            id="vn-rem-esc-cancelar">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="vn-btn vn-btn-success" id="vn-rem-esc-confirmar" disabled>
+                        <i class="fas fa-check"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

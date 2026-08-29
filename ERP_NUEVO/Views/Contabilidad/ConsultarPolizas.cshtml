@@ -1,0 +1,988 @@
+﻿@{
+    ViewBag.Title = "ConsultarPolizas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/content/contabilidad/style.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+@*Filtros de búsqueda*@
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Filtros de Búsqueda</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label for="filtroTipo" class="form-label">Clasificacion de Póliza</label>
+                <select class="form-select" id="filtroTipo">
+                    <option value="">Todos</option>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="egreso">Egreso</option>
+                    <option value="diario">Diario</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <label for="filtroCat" class="form-label">Categoria de Póliza</label>
+                <select class="form-select" id="filtroCat">
+                    <option value="0">Todos</option>
+                    <option value="1">Ventas</option>
+                    <option value="2">Gastos</option>
+                    <option value="3">Compras</option>
+                    <option value="4">Traspaso</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <label for="filtroEstado" class="form-label">Estado</label>
+                <select class="form-select" id="filtroEstado">
+                    <option value="">Todos</option>
+                    <option value="borrador">Borrador</option>
+                    <option value="registrada">Registrada</option>
+                    <option value="cerrada">Cerrada</option>
+                    <option value="cancelada">Cancelada</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <label for="saldoMayor" class="form-label">Saldo mayor a:</label>
+                <input type="number" class="form-control" id="saldoMayor" placeholder="Ej. 5">
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <label for="filtroFechaInicio" class="form-label">Fecha Inicio</label>
+                <input type="date" class="form-control" id="filtroFechaInicio">
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <label for="filtroFechaFin" class="form-label">Fecha Fin</label>
+                <input type="date" class="form-control" id="filtroFechaFin">
+            </div>
+
+            <div class="col-md-3 mb-3 w-auto d-flex flex-column">
+                <label class="form-label">Mostrar polizas</label>
+                <div class="bootstrap-toggle-triple toggle-success">
+                    <input type="hidden" id="polizasCuadradas" value="2">
+                    <div class="toggle-group-triple" data-state="2">
+                        <span class="toggle-state" data-value="0">Cuadradas</span>
+                        <span class="toggle-state active" data-value="2">Todas</span>
+                        <span class="toggle-state" data-value="1">Descuadradas</span>
+                        <span class="toggle-handle-triple"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <button type="button" class="btn btn-primary" id="btnBuscar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    Buscar
+                </button>
+                <button type="button" class="btn btn-secondary ms-2" id="btnLimpiar">
+                    Limpiar Filtros
+                </button>
+                <button type="button" class="btn btn-danger ms-2" id="btnImprimirTodo" onclick="imprimirTodo()">
+                    Imprimir todas las polizas
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*Tabla de resultados*@
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Resultados</h5>
+    </div>
+    <div class="card-body">
+        <div id="tablaPolizas"></div>
+    </div>
+</div>
+
+@*Modal de Detalle*@
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-invoice me-2"></i>Detalle de Póliza Contable</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-0">
+                <div class="poliza-documento">
+                    <!-- Encabezado Oficial -->
+                    <div class="poliza-header-oficial">
+                        <div class="poliza-header-content">
+                            <div class="poliza-tipo-banner">
+                                <div class="poliza-tipo-titulo">
+                                    <i class="fas fa-file-invoice me-2"></i><span id="detallePolizaTitulo">PÓLIZA</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cuerpo del Documento -->
+                    <div class="poliza-body">
+                        <!-- Grid de Información -->
+                        <div class="info-documento-grid">
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-fingerprint"></i> <span id="copySpan">Identificador Único</span>
+                                </div>
+                                <div class="info-value-documento">
+                                    <div class="uuid-display">
+                                        <span id="detalleFolioUUID">-</span>
+                                        <i class="fas fa-copy copy-btn-poliza" id="copyUUIDBtn"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-calendar-alt"></i> Fecha de Emisión
+                                </div>
+                                <div class="info-value-documento" id="detalleFechaEmision">-</div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fa-regular fa-file-invoice"></i> Paridad de documento
+                                </div>
+                                <div class="info-value-documento" id="paridadDocumento">-</div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-user"></i> Elaborado Por
+                                </div>
+                                <div class="info-value-documento" id="detalleUsuarioNombre">-</div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-hashtag"></i> Referencia
+                                </div>
+                                <div class="info-value-documento" id="detalleReferenciaNum">-</div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-clock"></i> Estado
+                                </div>
+                                <div class="info-value-documento" id="detalleEstadoBadge">-</div>
+                            </div>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="descripcion-nota">
+                            <div class="descripcion-nota-label">
+                                <i class="fas fa-sticky-note me-1"></i> Concepto
+                            </div>
+                            <p class="descripcion-nota-texto" id="detalleDescripcionTexto">-</p>
+                        </div>
+
+                        <!-- Partidas Contables -->
+                        <div class="partidas-section">
+                            <div class="partidas-header">
+                                <i class="fas fa-list-ol"></i>
+                                <h6>Movimientos Contables</h6>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="tabla-partidas-profesional">
+                                    <thead>
+                                        <tr>
+                                            <th>CUENTA</th>
+                                            <th>NOMBRE DE LA CUENTA</th>
+                                            <th>CENTRO DE COSTOS</th>
+                                            <th class="text-end">DEBE</th>
+                                            <th class="text-end">HABER</th>
+                                            <th class="text-end">TIPO DE CAMBIO</th>
+                                            <th>CONCEPTO</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detallePartidasProfesional">
+                                        <!-- Se llenará dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Totales Footer -->
+                        <div class="totales-footer">
+                            <div class="totales-grid">
+                                <div class="total-card">
+                                    <div class="total-icon">
+                                        <i class="fas fa-hashtag"></i>
+                                    </div>
+                                    <div class="total-label-nuevo">Total Partidas</div>
+                                    <div class="total-valor" id="detalleTotalPartidasCard">0</div>
+                                </div>
+
+                                <div class="total-card debe">
+                                    <div class="total-icon">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </div>
+                                    <div class="total-label-nuevo">Total Debe</div>
+                                    <div class="total-valor" id="detalleTotalDebeCard">$0.00</div>
+                                </div>
+
+                                <div class="total-card haber">
+                                    <div class="total-icon">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </div>
+                                    <div class="total-label-nuevo">Total Haber</div>
+                                    <div class="total-valor" id="detalleTotalHaberCard">$0.00</div>
+                                </div>
+
+                                <div class="total-card balance">
+                                    <div class="total-icon">
+                                        <i class="fas fa-check-double"></i>
+                                    </div>
+                                    <div class="total-label-nuevo">Estado Balance</div>
+                                    <div class="total-valor" id="detalleBalanceCard">CUADRADO ✓</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer del Documento -->
+                    <div class="documento-footer">
+                        <div class="documento-footer-info">
+                            <span><i class="fas fa-calendar me-1"></i> Fecha de consulta: <span id="fechaConsulta"></span></span>
+                            <span><i class="fas fa-user me-1"></i> Usuario: <span id="usuarioConsulta"></span></span>
+                        </div>
+                        <span><i class="fas fa-file-alt me-1"></i> Documento oficial</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cerrar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="generarPDFPoliza(polizaActualDetalle.uuid)">
+                    <i class="fas fa-file-pdf me-2"></i>Generar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*Modal de Edición*@
+<div class="modal fade" id="modalEditar" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Póliza</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                @*Información general - Solo lectura*@
+                <div class="row mb-3">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Folio</label>
+                        <input type="text" class="form-control disabled" id="editUuid" readonly disabled>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Usuario</label>
+                        <input type="text" class="form-control disabled" id="editUsuario" readonly disabled>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Referencia</label>
+                        <input type="text" class="form-control disabled" id="editReferencia" readonly disabled>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Tipo</label>
+                        <input type="text" class="form-control disabled" id="editTipo" readonly disabled>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="editFecha">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Estado</label>
+                        <select class="form-control" id="editEstado">
+                            <option value="0" disabled selected>-- Selecciona el estado --</option>
+                            <option value="borrador">Borrador</option>
+                            <option value="registrada">Registrada</option>
+                            <option value="cerrada">Cerrada</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" id="editDescripcion" rows="2"></textarea>
+                    </div>
+                </div>
+
+                @*Partidas contables editables*@
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 style="color: var(--text-dark); font-weight: 600; margin: 0;">Partidas Contables</h6>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnAgregarFila">
+                        <i class="fa-solid fa-plus"></i> Agregar Fila
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table modern-table" id="tablaEditPartidas">
+                        <thead>
+                            <tr>
+                                <th style="width: 250px !important">Cuenta Contable*</th>
+                                <th>Centro de Costos*</th>
+                                <th>Debe*</th>
+                                <th>Haber*</th>
+                                <th>Descripción*</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="editPartidas">
+                        </tbody>
+                    </table>
+                </div>
+
+                @*Indicador de balance*@
+                <div class="totals-box">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="d-flex justify-content-between">
+                                <span class="total-label">Total Partidas:</span>
+                                <span class="total-value" id="editTotalPartidas">0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex justify-content-between">
+                                <span class="total-label">Total Debe:</span>
+                                <span class="total-value" id="editTotalDebe">$0.00</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex justify-content-between">
+                                <span class="total-label">Total Haber:</span>
+                                <span class="total-value" id="editTotalHaber">$0.00</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div id="balanceStatus" class="balance-indicator balance-ok">
+                                Balance: OK
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="alertBalance" class="alert-warning mt-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <strong>Advertencia:</strong> Los totales de Debe y Haber no cuadran. Por favor, revisa los montos.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarEdicion">
+                    <i class="fa-solid fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script src="~/Scripts/Switch.js"></script>
+
+<script>
+    let tomManager;
+    let polizaActual = null;
+    let partidasEditables = [];
+    let cuentasContables = [];
+    let centrosCostos = [];
+
+    // Función para capitalizar
+    const capitalizeLetter = (tipo) => {
+        if (!tipo) return '';
+        return tipo.charAt(0).toUpperCase() + tipo.slice(1).toLowerCase();
+    }
+
+    // Función para ver detalle de póliza
+    async function verDetalle(poliza) {
+        if (!poliza) return;
+
+        polizaActualDetalle = poliza;
+
+        // Header del documento
+        document.getElementById('detallePolizaTitulo').textContent = `PÓLIZA DE ${poliza.tipo.toUpperCase()}`;
+        //document.getElementById('detalleFolioHeader').textContent = poliza.folio || 'N/A';
+
+        // Grid de información
+        document.getElementById('detalleFolioUUID').textContent = poliza.factura_uuid ?? poliza.folio_poliza;
+        document.getElementById('copySpan').textContent = poliza.factura_uuid ? 'UUID FACTURA' : 'FOLIO POLIZA';
+        document.getElementById('detalleFechaEmision').textContent = dateFormatter(poliza.fecha);
+        document.getElementById('paridadDocumento').textContent = Currency.format(poliza.par);
+
+        // Badge de estado
+        const estadoBadge = `<span class="badge-profesional badge-${poliza.estado}">
+            <i class="fas fa-check-circle"></i> ${capitalizeLetter(poliza.estado)}
+        </span>`;
+        document.getElementById('detalleEstadoBadge').innerHTML = estadoBadge;
+
+        document.getElementById('detalleUsuarioNombre').textContent = poliza.usuario;
+        document.getElementById('detalleReferenciaNum').textContent = poliza.folio || 'N/A';
+
+        document.getElementById('detalleDescripcionTexto').innerHTML = poliza.descripcion.replace(/\n/g, '<br>').replace('_', ' ');
+
+        // Footer info
+        const fechaHoy = new Date().toLocaleDateString('es-MX');
+        document.getElementById('fechaConsulta').textContent = fechaHoy;
+        document.getElementById('usuarioConsulta').textContent = poliza.usuario;
+
+        // Copiar UUID
+        document.getElementById('copyUUIDBtn').onclick = async function () {
+            try {
+                await navigator.clipboard.writeText(
+                    poliza.factura_uuid ?? poliza.folio_poliza
+                );
+
+                const icon = this;
+
+                icon.classList.remove('fa-copy');
+                icon.classList.add('fa-check');
+                icon.style.color = '#10b981';
+
+                setTimeout(() => {
+                    icon.classList.remove('fa-check');
+                    icon.classList.add('fa-copy');
+                    icon.style.color = '';
+                }, 2000);
+
+            } catch (err) {
+                console.error('Error al copiar:', err);
+            }
+        };
+
+        // Cargar detalles de partidas
+        const data = await GetData({
+            path: '/Contabilidad/GetDetallesPoliza',
+            data: { uuid: poliza.uuid }
+        });
+
+        const detalles = data.detalles;
+
+        // Renderizar partidas con el nuevo diseño
+        const partidasHtml = detalles.map(p => `
+            <tr>
+                <td class="col-cuenta">${p.codigo}</td>
+                <td class="col-nombre-cuenta">${p.nombrecuenta}</td>
+                <td class="col-centro">${p.nombre_costos || 'N/A'}</td>
+                <td class="col-monto ${p.debe > 0 ? 'monto-debe' : ''}">${p.debe === 0 ? '' : Currency.format(p.debe)}</td>
+                <td class="col-monto ${p.haber > 0 ? 'monto-haber' : ''}">${p.haber === 0 ? '' : Currency.format(p.haber)}</td>
+                <td class="col-centro"> ${p.ccy}</td>
+                <td class="col-descripcion">${p.descripcion}</td>
+            </tr>
+        `).join('');
+        document.getElementById('detallePartidasProfesional').innerHTML = partidasHtml;
+
+        // Calcular totales
+        const totalDebe = detalles.reduce((sum, p) => sum + p.debe, 0);
+        const totalHaber = detalles.reduce((sum, p) => sum + p.haber, 0);
+        const totalPartidas = detalles.length;
+        const diferencia = Math.abs(totalDebe - totalHaber);
+
+        document.getElementById('detalleTotalPartidasCard').textContent = totalPartidas;
+        document.getElementById('detalleTotalDebeCard').textContent = Currency.format(totalDebe);
+        document.getElementById('detalleTotalHaberCard').textContent = Currency.format(totalHaber);
+
+        // Balance
+        // Balance
+        const balanceCard = document.querySelector('.total-card.balance');
+        const balanceValor = document.getElementById('detalleBalanceCard');
+
+        if (diferencia < 0.01) {
+            balanceCard.classList.remove('warning');
+            balanceValor.innerHTML = 'CUADRADO <i class="fas fa-check"></i>';
+        } else {
+            balanceCard.classList.add('warning');
+            balanceValor.innerHTML = `DIF: ${Currency.format(diferencia)}`;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+        modal.show();
+    }
+
+    // Función para calcular totales y validar balance
+    function calcularTotales() {
+        let totalDebe = 0;
+        let totalHaber = 0;
+
+        partidasEditables.forEach(partida => {
+            totalDebe += parseFloat(partida.debe) || 0;
+            totalHaber += parseFloat(partida.haber) || 0;
+        });
+
+        document.getElementById('editTotalPartidas').textContent = `${partidasEditables.length} Polizas`;
+        document.getElementById('editTotalDebe').textContent = Currency.format(totalDebe);
+        document.getElementById('editTotalHaber').textContent = Currency.format(totalHaber);
+
+        const diferencia = Math.abs(totalDebe - totalHaber);
+        const balanceStatus = document.getElementById('balanceStatus');
+        const alertBalance = document.getElementById('alertBalance');
+
+        if (diferencia < 0.01) {
+            balanceStatus.className = 'balance-indicator balance-ok';
+            balanceStatus.textContent = 'Balance: OK ✓';
+            alertBalance.classList.remove('show');
+            return true;
+        } else {
+            balanceStatus.className = 'balance-indicator balance-error';
+            balanceStatus.textContent = `Diferencia: $${diferencia.toFixed(2)}`;
+            alertBalance.classList.add('show');
+            return false;
+        }
+    }
+
+    // Función para renderizar la tabla editable
+    function renderizarTablaEditable() {
+        const tbody = document.getElementById('editPartidas');
+        tbody.innerHTML = '';
+
+        partidasEditables.forEach((partida, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `` +
+                `<td>` +
+                `    <select class="form-select cuenta-${index} select-cuenta-pequeno" required onchange="actualizarPartida(${index}, 'cuenta', this.value)">` +
+                `        <option value="">Seleccione una cuenta</option>` +
+                `    </select>` +
+                `</td>` +
+                `<td>` +
+                `    <select class="form-select centro-${index}" onchange="actualizarPartida(${index}, 'centro', this.value)">` +
+                `        <option class="disabled" value="0" disabled selected>-- Selecciona un centro de costos --</option>` +
+                `        ${centrosCostos.map(item => `<option value="${item.areaid}" ${item.areaid == partida.centro ? 'selected' : ''}>${item.nombre}</option>`).join('')}` +
+                `    </select>` +
+                `</td>` +
+                `<td>` +
+                `   <div class="input-group">` +
+                `       <span class="input-group-text" id="basic-addon1">$</span>` +
+                `       <input type="number" class="form-control form-control-sm debe-input" step="0.01" min="0" placeholder="0.00" value="${partida.debe}" onchange="actualizarPartida(${index}, 'debe', this.value)">` +
+                `   </div>` +
+                `</td>` +
+                `<td>` +
+                `   <div class="input-group">` +
+                `        <span class="input-group-text" id="basic-addon1">$</span>` +
+                `        <input type="number" class="form-control form-control-sm haber-input" step="0.01" min="0" placeholder="0.00" value="${partida.haber}" onchange="actualizarPartida(${index}, 'haber', this.value)">` +
+                `    </div>` +
+                `</td>` +
+                `<td>` +
+                `    <input type="text" class="form-control desc-input" placeholder="Descripción de la partida" value="${partida.descripcion ?? ''}" onchange="actualizarPartida(${index}, 'descripcion', this.value)">` +
+                `</td>` +
+                `<td class="text-center">` +
+                `    <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="eliminarFila(${index})">` +
+                `        <i class="fa-solid fa-trash-xmark"></i>` +
+                `    </button>` +
+                `</td>`;
+
+            tbody.appendChild(tr);
+            calcularTotales();
+
+            tomManager.create(`.cuenta-${index}`, {
+                selector: `.cuenta-${index}`,
+                options: cuentasContables,
+                valueField: 'id_cuenta_contable',
+                searchField: ['codigo', 'descripcion', 'nombre'],
+                placeholder: 'Selecciona una cuenta...',
+                maxItems: 1,
+                create: false,
+                render: {
+                    option: (data, escape) =>
+                        `<div style="color: var(--text-dark);">${escape(data.codigo)} - ${escape(data.nombre)}</div>`,
+                    item: (data, escape) =>
+                        `<div><span style="color:#6C757D;">${escape(data.codigo)} - ${escape(data.nombre)}</span></div>`
+                },
+            });
+
+            tomManager.instances.get(`.cuenta-${index}`).setValue(partida.cuenta_finanzas_id)
+
+            const debeInput = tr.querySelector(`.debe-input`);
+            const haberInput = tr.querySelector(`.haber-input`);
+
+            const validarDebeHaber = (input, otroInput) => {
+                if (parseFloat(input.value) > 0) {
+                    otroInput.value = '';
+                    otroInput.disabled = true;
+                    otroInput.classList.add('disabled')
+                } else {
+                    otroInput.disabled = false;
+                    otroInput.classList.remove('disabled')
+                }
+                calcularTotales();
+            };
+
+            debeInput.addEventListener('change', () => validarDebeHaber(debeInput, haberInput));
+            haberInput.addEventListener('change', () => validarDebeHaber(haberInput, debeInput));
+
+            // Dispara validación inicial
+            debeInput.dispatchEvent(new Event("change"));
+            haberInput.dispatchEvent(new Event("change"));
+        });
+
+        calcularTotales();
+    }
+
+    // Función para actualizar una partida
+    function actualizarPartida(index, campo, valor) {
+        if (campo === 'debe' || campo === 'haber') {
+            partidasEditables[index][campo] = parseFloat(valor) || 0;
+        } else if (campo === 'cuenta') {
+            partidasEditables[index][campo] = parseInt(valor);
+            partidasEditables[index]['cuenta_finanzas_id'] = parseInt(valor);
+        } else if (campo === 'centro') {
+            partidasEditables[index][campo] = parseInt(valor);
+        } else {
+            partidasEditables[index][campo] = valor;
+        }
+        calcularTotales();
+    }
+
+    // Función para agregar una nueva fila
+    function agregarNuevaFila() {
+        partidasEditables.push({
+            id: 0,
+            cuenta: 0,
+            centro: 0,
+            debe: 0,
+            haber: 0,
+            descripcion: '',
+            cuenta_finanzas_id: 0,
+        });
+        renderizarTablaEditable();
+    }
+
+    // Función para eliminar una fila
+    function eliminarFila(index) {
+        if (confirm('¿Estás seguro de eliminar esta partida?')) {
+            partidasEditables.splice(index, 1);
+            renderizarTablaEditable();
+        }
+    }
+
+    function parseDate(date) {
+        const timestamp = parseInt(date.match(/\d+/)[0], 10);
+        return new Date(timestamp);
+    }
+
+    // Función para editar póliza
+    async function editarPoliza(poliza) {
+        if (!poliza) return;
+
+        polizaActual = poliza;
+        console.log(poliza)
+        // Cargar información general
+        document.getElementById('editUuid').value = poliza.folio_poliza;
+        document.getElementById('editTipo').value = capitalizeLetter(poliza.tipo);
+        document.getElementById('editFecha').value = poliza.fecha;
+        document.getElementById('editEstado').value = poliza.estado;
+        document.getElementById('editUsuario').value = poliza.usuario;
+        document.getElementById('editReferencia').value = poliza.folio || '';
+        document.getElementById('editDescripcion').value = poliza.descripcion;
+        document.getElementById('editFecha').valueAsDate = parseDate(poliza.fecha);
+
+        // Cargar detalles
+        const data = await GetData({
+            path: '/Contabilidad/GetDetallesPoliza',
+            data: {
+                uuid: poliza.uuid,
+            }
+        });
+
+        const detalles = data.detalles;
+
+        partidasEditables = detalles.map(d => ({
+            id: d.id_detalle_poliza || null,
+            cuenta: d.cuenta,
+            centro: d.centro_costos || 0,
+            debe: d.debe,
+            haber: d.haber,
+            descripcion: d.descripcion,
+            cuenta_finanzas_id: d.cuenta_finanzas_id,
+        }));
+
+        renderizarTablaEditable();
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+        modal.show();
+    }
+
+
+    // Event listener para el botón de agregar fila
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btnAgregarFila').addEventListener('click', agregarNuevaFila);
+        document.getElementById('btnGuardarEdicion').addEventListener('click', guardarEdicion);
+    });
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const datos = await GetData({
+            path: '/Contabilidad/GetCuentasFinanzas'
+        });
+
+        cuentasContables = datos.cuentas;
+        centrosCostos = datos.centroCostos;
+        tomManager = new TomSelectManager()
+    })
+
+    async function imprimirTodo() {
+        const filtros = {
+            tipo: document.getElementById('filtroTipo').value,
+            estado: document.getElementById('filtroEstado').value,
+            fechaInicio: document.getElementById('filtroFechaInicio').value,
+            fechaFin: document.getElementById('filtroFechaFin').value,
+            saldoMayor: parseFloat(document.getElementById('saldoMayor').value),
+            polizasCuadradas: parseInt(document.getElementById('polizasCuadradas').value),
+            categoria: parseInt(document.getElementById('filtroCat').value),
+        };
+        const { polizasCuadradas, ...otrosFiltros } = filtros;
+
+        const sinFiltros = Object.values(otrosFiltros).every(
+            valor => valor === '' || valor === null || isNaN(valor) || valor === 0
+        );
+
+        if (sinFiltros && polizasCuadradas === 2) {
+            const continuar = confirm(
+                "⚠️ No has aplicado ningún filtro y seleccionaste 'Todas las pólizas'.\nEl proceso puede tardar ya que se imprimirán las primeras 1000 pólizas.\n\n¿Deseas continuar?"
+            );
+
+            if (!continuar) return;
+        }
+
+        // Ejecutar solo si el usuario acepta o si hay filtros
+        generarPDFPolizas(filtros);
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const tablaPolizas = createTable({
+            selector: '#tablaPolizas',
+            path: '/Contabilidad/GetPolizas',
+            searchPlaceholder: 'Buscar poliza...',
+            exports: ['excel'],
+            columns: [
+                {
+                    title: 'Tipo',
+                    data: 'tipo',
+                    formatter: (v) => {
+                        if (!v) return '';
+                        const capitalized = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+                        return `<span class="badge badge-${v.toLowerCase()}">${capitalized}</span>`;
+                    }
+                },
+                { title: 'Fecha', data: 'fecha_creacion', formatter: (v) => dateFormatter(v) },
+                { title: 'Usuario', data: 'usuario' },
+                {
+                    title: 'Estado',
+                    data: null,
+                    formatter: (row) => {
+                        if (!row) return '';
+                        const capitalized = row.estado.charAt(0).toUpperCase() + row.estado.slice(1).toLowerCase();
+                        const htmlContent = `` +
+                            `<span class="badge badge-${row.estado.toLowerCase()}">${capitalized}</span>` +
+                            `<span class="desc-tooltip">${row.descripcion.match(/Descripcion:\s*(.*?)(\n|$)/)?.[1] ?? null} - ${row.folio}</span>`;
+                        return htmlContent;
+                    }
+                },
+                { title: 'Total Debe', data: 'total_debe', formatter: (v) => Currency.format(v) },
+                { title: 'Total Haber', data: 'total_haber', formatter: (v) => Currency.format(v) },
+                { title: 'Saldo', data: 'saldo', formatter: (v) => Currency.format(v) },
+                { title: 'Folio', data: 'folio_poliza' },
+                { title: 'Metodo', data: 'metodo', className: 'text-center',  formatter: v => v == true ? 'M' : 'A' },
+            ],
+            actions: [
+                { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalle', onClick: row => verDetalle(row) },
+                { icon: 'fa-file-pdf', color: 'red-500', title: 'Generar pdf', onClick: row => generarPDFPoliza(row.uuid) },
+                { icon: 'fa-pen-to-square', color: 'green-500', title: 'Editar', onClick: row => editarPoliza(row), visible: row => row.metodo == true },
+            ],
+            RowsEvents: {
+                onRowDblClick: row => verDetalle(row),
+                onKeyPress: (event, row) => {
+                    if (event.key === 'F4') verDetalle(row);
+                }
+            },
+            GlobalEvents: {
+                //onDataLoaded: (response) => {
+                //    const totales = response.totales;
+                //    document.getElementById('totalPolizas').textContent = totales.totalPolizas;
+                //    document.getElementById('totalHaber').textContent = Currency.format(totales.saldosTotales.total_haber);
+                //    document.getElementById('totalDebe').textContent = Currency.format(totales.saldosTotales.total_debe);
+                //    document.getElementById('montoTotal').textContent = Currency.format(totales.saldosTotales.total_saldo);
+                //},
+                onLoading: (isLoading) => {
+                    document.querySelector('#tablaPolizas').classList.toggle('opacity-50', isLoading);
+                },
+                onError: (err) => {
+                    alert('Error al cargar los datos: ' + err.message);
+                }
+            },
+            data: () => ({
+                tipo: document.getElementById('filtroTipo').value,
+                estado: document.getElementById('filtroEstado').value,
+                fechaInicio: document.getElementById('filtroFechaInicio').value,
+                fechaFin: document.getElementById('filtroFechaFin').value,
+                saldoMayor: parseFloat(document.getElementById('saldoMayor').value),
+                polizasCuadradas: parseInt(document.getElementById('polizasCuadradas').value),
+                categoria: parseInt(document.getElementById('filtroCat').value),
+            }),
+        });
+
+        // Asignar la tabla a una variable global para usarla en guardarEdicion
+        window.tablaPolizas = tablaPolizas;
+
+        document.getElementById('btnBuscar').addEventListener('click', () => {
+            tablaPolizas.reload();
+        });
+
+        document.getElementById('btnLimpiar').addEventListener('click', () => {
+            document.getElementById('filtroTipo').value = '';
+            document.getElementById('filtroEstado').value = '';
+            document.getElementById('filtroFechaInicio').value = '';
+            document.getElementById('filtroFechaFin').value = '';
+            document.getElementById('saldoMayor').value = '';
+            document.getElementById('polizasCuadradas').value = 2;
+            document.getElementById('filtroCat').value = 0;  // ← nuevo
+            initTriStateToggles();
+            tablaPolizas.reload();
+        });
+    })
+
+    // Función para guardar cambios
+    async function guardarEdicion() {
+        // Validar balance
+        //if (!calcularTotales()) {
+        //    alert('Los totales de Debe y Haber no cuadran. Por favor, revisa los montos antes de guardar.');
+        //    return;
+        //}
+
+        // Validar que haya al menos una partida
+        if (partidasEditables.length === 0) {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Debe haber al menos una partida contable.',
+            })
+            throw new Error(`Debe haber al menos una partida contable.`)
+            return;
+        }
+
+        const filas = document.querySelectorAll("#tablaEditPartidas tbody tr");
+        partidasEditables.forEach((partida, index) => {
+            if (partida.centro === 0 || partida.centro === "0" || partida.centro === "" || !partida.centro) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `La fila ${index} tiene el centro de costos vacío`,
+                });
+                throw new Error(`La fila ${index} tiene el centro de costos vacío`)
+                return;
+            }
+
+            if (partida.cuenta === 0 || partida.cuenta === "0" || partida.cuenta === "" || !partida.cuenta) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `La fila ${index} tiene la cuenta contable vacía`,
+                });
+                throw new Error(`La fila ${index} tiene la cuenta contable vacía`)
+                return;
+            }
+
+            if (partida.debe === 0 && partida.haber === 0 || partida.debe === "0" && partida.haber === "0" || partida.debe === "" && partida.haber === "" || !partida.debe && !partida.haber) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `La fila ${index} debe tener un valor en "Debe" o "Haber"`,
+                });
+                throw new Error(`La fila ${index} debe tener un valor en "Debe" o "Haber"`)
+                return;
+            }
+
+            if (partida.descripcion == "" || !partida.descripcion) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `La fila ${index} tiene la descripcion vacia`,
+                });
+                throw new Error(`La fila ${index} tiene la descripcion vacia`)
+                return;
+            }
+        })
+
+        // Preparar datos para enviar
+        const poliza = {
+            id: polizaActual.id_poliza,
+            estado: document.getElementById('editEstado').value,
+            tipo: polizaActual.tipo,
+            fecha: document.getElementById('editFecha').value,
+            id_encabezado: polizaActual.referencia,
+            descripcion: document.getElementById('editDescripcion').value,
+            detalles: partidasEditables
+        };
+
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+            <style>
+                .flip {
+                    animation: spinY 2s linear infinite;
+                    transform-origin: center;
+                }
+                @@keyframes spinY {
+                    0%   { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                }
+            </style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g>
+        </svg>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: "Confirmar recepción",
+            html: `
+        <div>
+            <p>¿Está seguro que desea proceder con la edicion de la poliza con la referencia ${polizaActual.folio_poliza}?</p>
+        </div>
+    `,
+            footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+            customClass: {
+                icon: "p-0 bg-transparent border-0 shadow-none"
+            },
+            preConfirm: () => {
+                Swal.fire({
+                    title: 'Registrando poliza, esto puede tardar unos minutos...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                GetData({
+                    path: '/Contabilidad/EditarPoliza',
+                    data: {
+                        encabezado_id: polizaActual.referencia,
+                        folio: polizaActual.folio_poliza,
+                        id_poliza: polizaActual.id_poliza,
+                        datosPoliza: JSON.stringify(poliza),
+                    },
+                    swalResponse: true,
+                    swalType: 'modal',
+                    swalPath: '/Contabilidad/ConsultarPolizas'
+                })
+            }
+        })
+    }
+</script>

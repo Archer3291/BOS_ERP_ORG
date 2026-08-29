@@ -1,0 +1,827 @@
+/* ─────────────────────────────────────────────────────────────
+   Productos — Almacén
+   Vista: Views/Almacen/Productos.cshtml
+
+   Mismo lenguaje visual que content/clientes.css, con prefijo
+   .prod- y acotado a .productos-page / .prod-modal: nada de
+   sobrescribir selectores globales de Bootstrap.
+
+   Los colores salen de las variables de content/sidebar.css,
+   así que el tema oscuro funciona solo.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+    --prod-radius: 16px;
+    --prod-radius-md: 12px;
+    --prod-radius-sm: 10px;
+    --prod-ease: 0.18s cubic-bezier(.4, 0, .2, 1);
+    --prod-accent-wash: linear-gradient(135deg, rgba(59, 130, 246, .08), rgba(59, 130, 246, .01));
+    --prod-accent-soft: rgba(59, 130, 246, .08);
+    --prod-accent-line: rgba(59, 130, 246, .16);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   1. Contenedor y encabezado de página
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-card {
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+    border-radius: var(--prod-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.prod-card-body {
+    background: var(--bg-gray);
+}
+
+.prod-header {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: 1.15rem 1.25rem;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--prod-accent-wash);
+}
+
+.prod-icon {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    background: var(--very-light-blue);
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+
+.prod-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.prod-subtitle {
+    margin: .22rem 0 0;
+    font-size: .84rem;
+    color: var(--text-light);
+}
+
+.prod-note {
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    margin: 1rem 1.25rem 0;
+    padding: .8rem .95rem;
+    border: 1px solid var(--prod-accent-line);
+    border-radius: var(--prod-radius-md);
+    background: rgba(59, 130, 246, .06);
+    color: var(--text-light);
+    font-size: .9rem;
+}
+
+.prod-note i {
+    color: var(--accent-blue);
+    margin-top: .15rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. Barra de acciones
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin: 1rem 1.25rem;
+}
+
+/* Contorno neutro que se tiñe con su color al pasar el cursor:
+   cuatro botones sólidos competirían entre sí. */
+.prod-action {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .5rem .9rem;
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    background: var(--bg-light);
+    color: var(--text-dark);
+    font-size: .84rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition: border-color var(--prod-ease), color var(--prod-ease), background var(--prod-ease), transform var(--prod-ease);
+}
+
+.prod-action i {
+    font-size: .82rem;
+    color: var(--prod-action-color, var(--text-light));
+    transition: color var(--prod-ease);
+}
+
+.prod-action:hover {
+    border-color: var(--prod-action-color, var(--accent-blue));
+    color: var(--prod-action-color, var(--accent-blue));
+    background: var(--bg-gray);
+    transform: translateY(-1px);
+}
+
+.prod-action:hover i {
+    color: inherit;
+}
+
+.prod-action--nuevo {
+    --prod-action-color: var(--accent-blue);
+}
+
+.prod-action--layout {
+    --prod-action-color: var(--secondary-blue);
+}
+
+.prod-action--sync {
+    --prod-action-color: var(--success-color);
+}
+
+.prod-action--importar {
+    --prod-action-color: var(--warning-color);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3. Contenedor de la tabla
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-table-shell {
+    padding: 0 1.25rem 1.25rem;
+    min-width: 0;
+}
+
+.prod-table-shell > div {
+    border: 1px solid var(--border-light);
+    border-radius: var(--prod-radius-md);
+    overflow: hidden;
+    background: var(--bg-light);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. Modales
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-modal .modal-content {
+    border: 1px solid var(--border-light);
+    border-radius: var(--prod-radius);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    background: var(--bg-light);
+    color: var(--text-dark);
+}
+
+.prod-modal .modal-header {
+    align-items: center;
+    gap: .85rem;
+    padding: 1.1rem 1.35rem;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--prod-accent-wash);
+}
+
+.prod-modal .modal-title {
+    display: block;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.prod-modal .modal-subtitle {
+    display: block;
+    margin-top: .15rem;
+    font-size: .8rem;
+    font-weight: 400;
+    color: var(--text-light);
+}
+
+.prod-modal .modal-body {
+    padding: 1.25rem 1.35rem;
+    background: var(--bg-gray);
+}
+
+.prod-modal .modal-footer {
+    gap: .5rem;
+    padding: .85rem 1.35rem;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-light);
+}
+
+/* El header quedó claro: la aspa invertida ya no se vería */
+.prod-modal .btn-close {
+    filter: none;
+    opacity: .5;
+}
+
+.prod-modal .btn-close:hover {
+    opacity: 1;
+}
+
+/* Acento por modal: cada uno hereda el tinte de su acción */
+.prod-modal--importar .modal-header {
+    background: linear-gradient(135deg, rgba(217, 119, 6, .1), rgba(217, 119, 6, .01));
+}
+
+.prod-modal--importar .prod-icon {
+    background: rgba(217, 119, 6, .12);
+    color: var(--warning-color);
+}
+
+.prod-modal--layout .modal-header {
+    background: linear-gradient(135deg, rgba(71, 85, 105, .1), rgba(71, 85, 105, .01));
+}
+
+.prod-modal--layout .prod-icon {
+    background: rgba(71, 85, 105, .12);
+    color: var(--secondary-blue);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5. Pestañas del formulario (segmented control)
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .2rem;
+    margin-bottom: 1.15rem;
+    padding: .3rem;
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    background: var(--bg-light);
+}
+
+.prod-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .45rem .95rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-light);
+    font-size: .82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--prod-ease), color var(--prod-ease);
+}
+
+.prod-tab-btn:hover {
+    color: var(--accent-blue);
+    background: var(--very-light-blue);
+}
+
+.prod-tab-btn.active {
+    color: var(--accent-blue);
+    background: var(--prod-accent-soft);
+    box-shadow: inset 0 0 0 1px var(--prod-accent-line);
+}
+
+.prod-tab-btn i {
+    font-size: .8rem;
+}
+
+.prod-tab-pane {
+    display: none;
+}
+
+.prod-tab-pane.active {
+    display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6. Bloques de formulario
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-fieldset {
+    padding: 1rem 1.1rem 1.1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--prod-radius-md);
+    background: var(--bg-light);
+}
+
+.prod-fieldset:last-child {
+    margin-bottom: 0;
+}
+
+.prod-legend {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0 0 .9rem;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-dark);
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.prod-legend::before {
+    content: '';
+    flex: 0 0 auto;
+    width: 3px;
+    height: 1rem;
+    border-radius: 2px;
+    background: var(--accent-blue);
+}
+
+.prod-legend i {
+    color: var(--accent-blue);
+    font-size: .82rem;
+}
+
+.prod-legend-action {
+    margin-left: auto;
+}
+
+.prod-field {
+    margin-bottom: 1rem;
+}
+
+.prod-label {
+    display: block;
+    margin-bottom: .35rem;
+    color: var(--text-dark);
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.prod-label .req {
+    margin-left: 2px;
+    color: var(--danger-color);
+}
+
+.prod-modal .form-control,
+.prod-modal .form-select {
+    border: 1px solid var(--border-light);
+    border-radius: var(--prod-radius-sm);
+    padding: .5rem .75rem;
+    background: var(--bg-light);
+    color: var(--text-dark);
+    font-size: .875rem;
+    transition: border-color var(--prod-ease), box-shadow var(--prod-ease);
+}
+
+.prod-modal .form-control:focus,
+.prod-modal .form-select:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--prod-accent-soft);
+}
+
+.prod-modal .form-control:disabled,
+.prod-modal .form-control[readonly] {
+    background: var(--bg-gray);
+    color: var(--text-light);
+}
+
+.prod-modal .form-control.is-invalid,
+.prod-modal .form-select.is-invalid {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, .1);
+}
+
+.prod-modal .form-text,
+.prod-modal .text-muted {
+    color: var(--text-light) !important;
+    font-size: .78rem;
+}
+
+/* Tom Select: los colores los pone content/tom-select-theme.css.
+   Aquí sólo se le da la misma geometría que a los .form-control. */
+.prod-modal .ts-wrapper .ts-control {
+    border-radius: var(--prod-radius-sm);
+    padding: .5rem .75rem;
+    font-size: .875rem;
+    min-height: auto;
+    box-shadow: none;
+}
+
+.prod-modal .ts-wrapper.focus .ts-control {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--prod-accent-soft);
+}
+
+.prod-modal .ts-dropdown {
+    border-radius: var(--prod-radius-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. Rejilla de precios y valores numéricos
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: .6rem;
+}
+
+.prod-grid + .prod-grid {
+    margin-top: .6rem;
+}
+
+.prod-cell {
+    padding: .55rem .7rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--prod-radius-sm);
+    background: var(--bg-gray);
+    transition: border-color var(--prod-ease), box-shadow var(--prod-ease);
+}
+
+.prod-cell:focus-within {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--prod-accent-soft);
+}
+
+.prod-cell-label {
+    margin-bottom: .25rem;
+    font-size: .68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-light);
+}
+
+.prod-cell input {
+    width: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: none;
+    color: var(--text-dark);
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+.prod-cell input::placeholder {
+    color: var(--text-light);
+    font-weight: 400;
+    opacity: .5;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8. Interruptores e imagen
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+    height: 100%;
+    padding: .5rem .9rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--prod-radius-sm);
+    background: var(--bg-gray);
+}
+
+.prod-upload-zone {
+    padding: 1.4rem;
+    border: 2px dashed var(--border-light);
+    border-radius: var(--prod-radius-sm);
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg-gray);
+    transition: border-color var(--prod-ease), background var(--prod-ease);
+}
+
+.prod-upload-zone:hover {
+    border-color: var(--accent-blue);
+    background: var(--prod-accent-soft);
+}
+
+.prod-upload-zone i {
+    display: block;
+    margin-bottom: .4rem;
+    font-size: 1.6rem;
+    color: var(--accent-blue);
+}
+
+.prod-upload-zone p {
+    margin: 0;
+    font-size: .82rem;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.prod-upload-zone small {
+    font-size: .73rem;
+    color: var(--text-light);
+}
+
+.prod-img-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    padding: .5rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--prod-radius-sm);
+    background: var(--bg-gray);
+}
+
+.prod-img-preview {
+    display: none;
+    width: 100%;
+    max-height: 175px;
+    object-fit: contain;
+    border-radius: var(--prod-radius-sm);
+}
+
+.prod-img-empty {
+    color: var(--text-light);
+    font-size: .8rem;
+    text-align: center;
+}
+
+.prod-img-empty i {
+    display: block;
+    margin-bottom: .35rem;
+    font-size: 1.5rem;
+    opacity: .45;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   9. Estados en la tabla
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-tag {
+    display: inline-block;
+    padding: .12rem .55rem;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.prod-tag--activo {
+    background: rgba(5, 150, 105, .12);
+    color: var(--success-color);
+}
+
+.prod-tag--inactivo {
+    background: rgba(220, 38, 38, .12);
+    color: var(--danger-color);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10. Panel de seleccionados (importar desde BD externa)
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-sync-panel {
+    margin-top: 1rem;
+    border: 1px dashed rgba(217, 119, 6, .3);
+    border-radius: var(--prod-radius-md);
+    overflow: hidden;
+    background: rgba(217, 119, 6, .06);
+}
+
+.prod-sync-title {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .55rem .9rem;
+    border-bottom: 1px solid rgba(217, 119, 6, .2);
+    color: var(--warning-color);
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.prod-sync-count {
+    margin-left: auto;
+    padding: .1rem .5rem;
+    border-radius: 999px;
+    background: var(--warning-color);
+    color: #fff;
+    font-size: .72rem;
+    letter-spacing: 0;
+}
+
+.prod-sync-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    padding: .75rem .9rem;
+}
+
+.prod-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    max-width: 100%;
+    padding: .25rem .7rem;
+    border: 1px solid rgba(217, 119, 6, .3);
+    border-radius: 999px;
+    background: var(--bg-light);
+    color: var(--text-dark);
+    font-size: .78rem;
+    font-weight: 600;
+    transition: border-color var(--prod-ease);
+}
+
+.prod-chip:hover {
+    border-color: var(--warning-color);
+}
+
+.prod-chip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.prod-chip-remove {
+    flex: 0 0 auto;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-light);
+    font-size: .7rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--prod-ease);
+}
+
+.prod-chip-remove:hover {
+    color: var(--danger-color);
+}
+
+.prod-empty {
+    padding: .35rem 0;
+    color: var(--text-light);
+    font-size: .82rem;
+    font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11. Botones
+   ═══════════════════════════════════════════════════════════════ */
+
+.prod-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem 1.05rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: .84rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition: background var(--prod-ease), border-color var(--prod-ease), color var(--prod-ease), transform var(--prod-ease);
+}
+
+.prod-btn:hover {
+    transform: translateY(-1px);
+}
+
+.prod-btn:disabled {
+    opacity: .5;
+    transform: none;
+    cursor: not-allowed;
+}
+
+.prod-btn-ghost {
+    border-color: var(--border-light);
+    background: var(--bg-light);
+    color: var(--text-light);
+}
+
+.prod-btn-ghost:hover {
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+.prod-btn-primary {
+    background: var(--accent-blue);
+    color: #fff;
+}
+
+.prod-btn-primary:hover {
+    background: var(--primary-blue);
+    color: #fff;
+}
+
+.prod-btn-success {
+    background: var(--success-color);
+    color: #fff;
+}
+
+.prod-btn-success:hover {
+    background: #047857;
+    color: #fff;
+}
+
+.prod-btn-warning {
+    background: var(--warning-color);
+    color: #fff;
+}
+
+.prod-btn-warning:hover {
+    background: #b45309;
+    color: #fff;
+}
+
+.prod-btn-soft {
+    border-color: var(--prod-accent-line);
+    background: var(--prod-accent-soft);
+    color: var(--accent-blue);
+}
+
+.prod-btn-soft:hover {
+    background: var(--accent-blue);
+    color: #fff;
+}
+
+.prod-btn-sm {
+    padding: .32rem .75rem;
+    font-size: .78rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12. Animaciones
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes prodFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.prod-animate {
+    animation: prodFadeUp .28s ease both;
+}
+
+@keyframes prodShake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/* La aplica guardarProducto() a los campos requeridos vacíos */
+.shake {
+    animation: prodShake .4s ease-in-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   13. Responsive
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767.98px) {
+    .prod-header,
+    .prod-modal .modal-header,
+    .prod-modal .modal-body {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .prod-note,
+    .prod-toolbar {
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+
+    .prod-table-shell {
+        padding: 0 1rem 1rem;
+    }
+
+    .prod-toolbar .prod-action {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
+
+    .prod-tabs {
+        border-radius: var(--prod-radius-md);
+    }
+
+    .prod-tab-btn {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+}

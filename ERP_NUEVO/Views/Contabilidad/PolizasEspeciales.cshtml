@@ -1,0 +1,783 @@
+﻿
+@{
+    ViewBag.Title = "PolizasEspeciales";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .card {
+        background-color: var(--bg-light);
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+        background-color: var(--very-light-blue);
+        color: var(--primary-blue);
+        font-weight: 600;
+        border-bottom: 2px solid var(--border-light);
+    }
+
+    .form-label {
+        color: var(--text-dark);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control, .form-select {
+        border-color: var(--border-light);
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+        }
+
+    .table {
+        color: var(--text-dark);
+    }
+
+        .table thead {
+            background-color: var(--light-blue);
+            color: var(--primary-blue);
+        }
+
+        .table tbody tr {
+            background-color: var(--bg-light);
+        }
+
+            .table tbody tr:hover {
+                background-color: var(--very-light-blue);
+            }
+
+    .totals-section {
+        background-color: var(--light-blue);
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-top: 1rem;
+    }
+
+    .total-label {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .total-value {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: var(--text-dark);
+    }
+
+    .btn-primary {
+        background-color: var(--primary-blue);
+        border-color: var(--primary-blue);
+    }
+
+        .btn-primary:hover {
+            background-color: var(--primary-blue-dark);
+            border-color: var(--primary-blue-dark);
+        }
+
+    .btn-secondary {
+        background-color: var(--secondary-blue);
+        border-color: var(--secondary-blue);
+    }
+
+    .btn-danger {
+        background-color: var(--danger-color);
+        border-color: var(--danger-color);
+    }
+
+    .btn-success {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    .alert-warning {
+        background-color: rgba(217, 119, 6, 0.1);
+        border-color: var(--warning-color);
+        color: var(--warning-color);
+    }
+
+    .btn-remove {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .actions-bar {
+        background-color: var(--bg-light);
+        padding: 1.5rem;
+        border-top: 2px solid var(--border-light);
+        margin-top: 2rem;
+        border-radius: 0.375rem;
+        box-shadow: var(--shadow);
+    }
+</style>
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<form id="polizaForm">
+    <!-- Sección: Datos Generales -->
+    <div class="alert-info mb-4">
+        <p class="mb-1">
+            <i class="fas fa-info-circle me-2"></i>
+            Selecciona un documento en el campo de <b>“Referencia”</b>; después podrás editar
+            los detalles de la póliza.
+        </p>
+        <p class="mb-1">
+            <i class="fas fa-info-circle me-2"></i>
+            Los campos en la tabla marcados con un <b>*</b> son obligatorios.
+        </p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Datos Generales de la Póliza</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="tipo" class="form-label">Tipo de Póliza*</label>
+                    <select class="form-select" id="tipo" required>
+                        <option value="0">Selecciona el tipo de poliza</option>
+                        <option value="1">Ingreso</option>
+                        <option value="2">Egreso</option>
+                        <option value="3">Diario</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="fecha" class="form-label">Fecha de Póliza*</label>
+                    <input type="date" class="form-control disabled" id="fecha" required>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="usuario" class="form-label">Usuario*</label>
+                    <input type="text" class="form-control disabled" id="usuario" value="@Context.Session.GetString("NombreCompleto")" readonly disabled>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <label for="referencia" class="form-label">Referencia*</label>
+                    @*<input type="text" class="form-control" id="referencia" placeholder="Opcional">*@
+                    <select class="form-select" id="referencia">
+                        <option value="">-- Seleccione una solicitud --</option>
+                        @{
+                            foreach (var folio in Model["folios"])
+                            {
+                                <option value="@folio["uuid"]">@folio["folio"]</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <label for="descripcion" class="form-label">Descripción</label>
+                    <textarea class="form-control" id="descripcion" rows="3" placeholder="Descripción general de la póliza" required></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección: Detalles de la Póliza -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Detalles de la Póliza (Partidas Contables)</h5>
+            <button type="button" class="btn btn-success btn-sm" id="agregarFila">
+                <span>+ Agregar Fila</span>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table modern-table" id="tablaDetalles">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Cuenta Contable*</th>
+                            <th style="width: 20%;">Centro de Costos*</th>
+                            <th style="width: 15%;">Debe*</th>
+                            <th style="width: 15%;">Haber*</th>
+                            <th style="width: 20%;">Descripción*</th>
+                            <th style="width: 5%;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detallesBody">
+                        <!-- Las filas se agregarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="totals-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="total-label">Total Debe:</span>
+                            <span class="total-value" id="totalDebe">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="total-label">Total Haber:</span>
+                            <span class="total-value" id="totalHaber">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="alertaDiferencia" class="alert alert-warning mt-3 d-none" role="alert">
+                    <strong>⚠ Advertencia:</strong> Los totales Debe y Haber no coinciden. La diferencia es: <span id="diferencia"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="actions-bar">
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-danger" id="btnCancelar">Cancelar</button>
+            @*<button type="button" class="btn btn-secondary" id="btnBorrador" data-estado="borrador" onclick="registrarPoliza(this)">Guardar Borrador</button>*@
+            <button type="button" class="btn btn-primary" id="btnRegistrar" data-estado="cerrada" onclick="registrarPoliza(this)">Registrar Póliza</button>
+        </div>
+    </div>
+</form>
+
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script src="~/Scripts/Switch.js"></script>
+<script>
+    let referencia;
+    let contadorFilas = 0;
+    let tomManager;
+
+    new TomSelect('#referencia', {
+        maxItems: 1,
+        create: false,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        dropdownParent: 'body',
+        render: {
+            option: (data, escape) => `<div style="color: var(--text-dark);">${escape(data.text)}</div>`,
+            item: (data, escape) =>
+                `<div><span style="color:#6C757D;">${escape(data.text)}</span></div>`
+        }
+    })
+
+    // Establecer fecha actual
+    document.getElementById('fecha').valueAsDate = new Date();
+
+    // Datos de ejemplo para cuentas contables
+    let cuentasContables = [];
+    let centrosCostos = [];
+
+    // Función para agregar una nueva fila
+    function agregarFila() {
+        contadorFilas++;
+        const tbody = document.getElementById('detallesBody');
+        let tr = document.createElement('tr');
+        tr.setAttribute('data-fila', contadorFilas);
+
+        tr.innerHTML = `` +
+            `<td>` +
+            `    <select class="form-select cuenta-${contadorFilas}" required>` +
+            `        <option value="">Seleccione una cuenta</option>` +
+            `    </select>` +
+            `</td>` +
+            `<td>` +
+            `    <select class="form-select centro-${contadorFilas}">` +
+            `        <option value="0" disabled selected>-- Seleccione un centro de costos --</option>` +
+            `        ${centrosCostos.map(item => `<option value="${item.areaid}">${item.nombre}</option>`).join('')}` +
+            `    </select>` +
+            `</td>` +
+            `<td>` +
+            `   <div class="input-group">` +
+            `       <span class="input-group-text" id="basic-addon1">$</span>` +
+            `       <input type="number" class="form-control form-control-sm debe-input" step="0.01" min="0" placeholder="0.00">` +
+            `   </div>` +
+            `</td>` +
+            `<td>` +
+            `   <div class="input-group">` +
+            `        <span class="input-group-text" id="basic-addon1">$</span>` +
+            `        <input type="number" class="form-control form-control-sm haber-input" step="0.01" min="0" placeholder="0.00">` +
+            `    </div>` +
+            `</td>` +
+            `<td>` +
+            `    <input type="text" class="form-control form-control desc-input"` +
+            `           placeholder="Descripción de la partida">` +
+            `</td>` +
+            `<td class="text-center">` +
+            `    <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="eliminarFila(${contadorFilas})">` +
+            `        <i class="fa-solid fa-trash-xmark"></i>` +
+            `    </button>` +
+            `</td>`;
+
+        tbody.appendChild(tr);
+
+        tomManager.create(`.cuenta-${contadorFilas}`, {
+            selector: `.cuenta-${contadorFilas}`,
+            options: cuentasContables,
+            valueField: 'id_cuenta_contable',
+            searchField: ['codigo', 'descripcion', 'nombre'],
+            placeholder: 'Selecciona una cuenta...',
+            maxItems: 1,
+            dropdownParent: 'body',
+            create: false,
+            render: {
+                option: (data, escape) =>
+                    `<div style="color: var(--text-dark);">${escape(data.codigo)} - ${escape(data.nombre)}</div>`,
+                item: (data, escape) =>
+                    `<div><span style="color:#6C757D;">${escape(data.codigo)} - ${escape(data.nombre)}</span></div>`
+            },
+        });
+
+        // Agregar eventos para validación de Debe/Haber
+        const debeInput = tr.querySelector('.debe-input');
+        const haberInput = tr.querySelector('.haber-input');
+
+        debeInput.addEventListener('input', function () {
+            if (this.value && parseFloat(this.value) > 0) {
+                haberInput.value = '';
+                haberInput.disabled = true;
+                haberInput.classList.add('disabled')
+            } else {
+                haberInput.disabled = false;
+                haberInput.classList.remove('disabled')
+            }
+            calcularTotales();
+        });
+
+        haberInput.addEventListener('input', function () {
+            if (this.value && parseFloat(this.value) > 0) {
+                debeInput.value = '';
+                debeInput.disabled = true;
+                debeInput.classList.add('disabled')
+            } else {
+                debeInput.disabled = false;
+                debeInput.classList.remove('disabled')
+            }
+            calcularTotales();
+        });
+    }
+
+    async function agergarDocumento(id) {
+        Swal.fire({
+            title: 'Obteniendo datos, esto puede tardar unos minutos...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        contadorFilas = 0;
+        const tbody = document.getElementById('detallesBody');
+
+        if (id.target.value === '') {
+            referencia = undefined;
+            tbody.innerHTML = '';
+            //$('#agregarFila').prop('disabled', true);
+            return;
+        }
+
+        tbody.innerHTML = '';
+
+        referencia = await GetData({
+            path: '/Contabilidad/GetDetallesDocumento',
+            data: {
+                uuid: id.target.value
+            }
+        })
+
+        if (referencia.icon === "error") {
+            _Swal.fire(referencia);
+            return;
+        }
+
+        let montoHaber = 0;
+        let montoDebe = 0;
+
+        //$('#agregarFila').prop('disabled', false);
+
+        switch (referencia.detalles.nat) {
+            case "VNFAC":
+                generarPolizaVenta(referencia, montoDebe, montoHaber, tbody);
+                toastMixin.fire({
+                    icon: 'success',
+                    title: 'Datos obtenidos correctamente'
+                })
+                break;
+            case "OC":
+            case "GTO":
+            case "OCD":
+                generarPolizaCompra(referencia, montoDebe, montoHaber, tbody);
+                toastMixin.fire({
+                    icon: 'success',
+                    title: 'Datos obtenidos correctamente'
+                })
+                break;
+            default:
+                montoDebe = 0;
+                montoHaber = 0;
+                toastMixin.fire({
+                    icon: 'warning',
+                    title: 'No se encontro configuracion para este documento'
+                })
+                break;
+        }
+    }
+
+    function generarPolizaVenta(referencia, debe, haber, tbody) {
+        debe = 0;
+        haber = referencia.subtotal;
+        let descripcion = `Venta de producto o servicio`;
+        generarColumna(debe, haber, descripcion, tbody);
+
+        if (referencia.impuestos.length > 0) {
+            referencia.impuestos.forEach(imp => {
+                if (imp.es_retencion) {
+                    haber = 0;
+                    debe = imp.importe;
+                    descripcion = `Registro de impuesto ${imp.cve_impuesto}`;
+                    generarColumna(debe, haber, descripcion, tbody)
+                } else {
+                    debe = 0;
+                    haber = imp.importe;
+                    descripcion = `Registro de impuesto ${imp.cve_impuesto}`;
+                    generarColumna(debe, haber, descripcion, tbody)
+                }
+            })
+        }
+
+        debe = referencia.detalles.imp;
+        haber = 0;
+        descripcion = `Cliente por cobrar`;
+        generarColumna(debe, haber, descripcion, tbody);
+    }
+
+    function generarPolizaCompra(referencia, debe, haber, tbody) {
+        debe = referencia.subtotal;
+        haber = 0;
+        let descripcion = `Gasto o compra por subtotal`;
+        generarColumna(debe, haber, descripcion, tbody);
+
+        if (referencia.impuestos.length > 0) {
+            referencia.impuestos.forEach(imp => {
+                if (imp.es_retencion) {
+                    haber = imp.importe;
+                    debe = 0;
+                    descripcion = `Registro de impuesto ${imp.cve_impuesto}`;
+                    generarColumna(debe, haber, descripcion, tbody)
+                } else {
+                    debe = imp.importe;
+                    haber = 0;
+                    descripcion = `Registro de impuesto ${imp.cve_impuesto}`;
+                    generarColumna(debe, haber, descripcion, tbody)
+                }
+            })
+        }
+
+        debe = 0;
+        haber = referencia.detalles.imp;
+        descripcion = `Pago a proveedor`;
+        generarColumna(debe, haber, descripcion, tbody);
+    }
+
+    function generarColumna(debe, haber, descripcion, tbody) {
+        contadorFilas++;
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-fila', contadorFilas);
+
+        tr.innerHTML = `` +
+            `<td>` +
+            `    <select class="form-select cuenta-${contadorFilas}" required>` +
+            `        <option value="">Seleccione una cuenta</option>` +
+            `    </select>` +
+            `</td>` +
+            `<td>` +
+            `    <select class="form-select centro-${contadorFilas}">` +
+            `        <option value="0" disabled selected>-- Seleccione un centro de costos --</option>` +
+            `        ${centrosCostos.map(item => `<option value="${item.areaid}">${item.nombre}</option>`).join('')}` +
+            `    </select>` +
+            `</td>` +
+            `<td>` +
+            `   <div class="input-group">` +
+            `       <span class="input-group-text" id="basic-addon1">$</span>` +
+            `       <input type="number" class="form-control form-control-sm debe-input" step="0.01" min="0" placeholder="0.00" value="${debe}">` +
+            `   </div>` +
+            `</td>` +
+            `<td>` +
+            `   <div class="input-group">` +
+            `        <span class="input-group-text" id="basic-addon1">$</span>` +
+            `        <input type="number" class="form-control form-control-sm haber-input" step="0.01" min="0" placeholder="0.00" value="${haber}">` +
+            `    </div>` +
+            `</td>` +
+            `<td>` +
+            `    <input type="text" class="form-control desc-input" placeholder="Descripción de la partida" value="${descripcion ?? ''}">` +
+            `</td>` +
+            `<td class="text-center">` +
+            `    <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="eliminarFila(${contadorFilas})">` +
+            `        <i class="fa-solid fa-trash-xmark"></i>` +
+            `    </button>` +
+            `</td>`;
+
+        tbody.appendChild(tr);
+        calcularTotales();
+
+        tomManager.create(`.cuenta-${contadorFilas}`, {
+            selector: `.cuenta-${contadorFilas}`,
+            options: cuentasContables,
+            valueField: 'id_cuenta_contable',
+            searchField: ['codigo', 'descripcion', 'nombre'],
+            placeholder: 'Selecciona una cuenta...',
+            maxItems: 1,
+            dropdownParent: 'body',
+            create: false,
+            render: {
+                option: (data, escape) =>
+                    `<div style="color: var(--text-dark);">${escape(data.codigo)} - ${escape(data.nombre)}</div>`,
+                item: (data, escape) =>
+                    `<div><span style="color:#6C757D;">${escape(data.codigo)} - ${escape(data.nombre)}</span></div>`
+            },
+        });
+
+        const debeInput = tr.querySelector(`.debe-input`);
+        const haberInput = tr.querySelector(`.haber-input`);
+
+        const validarDebeHaber = (input, otroInput) => {
+            if (parseFloat(input.value) > 0) {
+                otroInput.value = '';
+                otroInput.disabled = true;
+                otroInput.classList.add('disabled')
+            } else {
+                otroInput.disabled = false;
+                otroInput.classList.remove('disabled')
+            }
+            calcularTotales();
+        };
+
+        debeInput.addEventListener('change', () => validarDebeHaber(debeInput, haberInput));
+        haberInput.addEventListener('change', () => validarDebeHaber(haberInput, debeInput));
+
+        // Dispara validación inicial
+        debeInput.dispatchEvent(new Event("change"));
+        haberInput.dispatchEvent(new Event("change"));
+    }
+
+    // Función para eliminar una fila
+    function eliminarFila(id) {
+        const fila = document.querySelector(`tr[data-fila="${id}"]`);
+        if (fila) {
+            fila.remove();
+            calcularTotales();
+        }
+    }
+
+    // Función para calcular totales
+    function calcularTotales() {
+        let totalDebe = 0;
+        let totalHaber = 0;
+
+        document.querySelectorAll('.debe-input').forEach(input => {
+            if (input.value) {
+                totalDebe += parseFloat(input.value);
+            }
+        });
+
+        document.querySelectorAll('.haber-input').forEach(input => {
+            if (input.value) {
+                totalHaber += parseFloat(input.value);
+            }
+        });
+
+        document.getElementById('totalDebe').textContent = Currency.format(totalDebe);
+        document.getElementById('totalHaber').textContent = Currency.format(totalHaber);
+
+        // Mostrar alerta si hay diferencia
+        const diferencia = Math.abs(totalDebe - totalHaber);
+        const alertaDiferencia = document.getElementById('alertaDiferencia');
+
+        if (diferencia > 0.01) {
+            alertaDiferencia.classList.remove('d-none');
+            document.getElementById('diferencia').textContent = '$' + diferencia.toFixed(2);
+        } else {
+            alertaDiferencia.classList.add('d-none');
+        }
+    }
+
+    // Event listeners
+    document.getElementById('agregarFila').addEventListener('click', agregarFila);
+
+    document.getElementById('referencia').addEventListener('change', agergarDocumento);
+
+    // Agregar una fila inicial
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const datos = await GetData({
+            path: '/Contabilidad/GetCuentasFinanzas'
+        })
+
+        cuentasContables = datos.cuentas
+        centrosCostos = datos.centroCostos
+        tomManager = new TomSelectManager()
+    })
+
+    function registrarPoliza(e) {
+        //if (!referencia) {
+        //    toastMixin.fire({
+        //        icon: 'error',
+        //        title: 'No se ha seleccionado una referencia válida',
+        //    });
+        //    throw new Error('No se ha seleccionado una referenca válida')
+        //    return;
+        //}
+
+        const estado = $(e).data('estado');
+        const tipo = $('#tipo').val();
+        const fecha = $('#fecha').val();
+        const id_encabezado = referencia?.detalles?.id_encabezado ?? null;
+        const descripcionPoliza = $('#descripcion').val();
+        let orden = 0;
+
+        if (tipo == 0) {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'El campo "Tipo" es obligatorio.'
+            });
+            throw new Error('El campo "Tipo" es obligatorio.')
+            return;
+        }
+        if (!fecha) {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'El campo "Fecha" es obligatorio.',
+            });
+            throw new Error('El campo "Fecha" es obligatorio.')
+            return;
+        }
+
+        const detalles = [];
+        const filas = document.querySelectorAll("#tablaDetalles tbody tr");
+
+        for (const fila of filas) {
+            orden++;
+            const indice = $(fila).data('fila');
+            const cuenta = parseInt(tomManager.instances.get(`.cuenta-${indice}`).getValue());
+            const centro = parseInt(fila.querySelector(`.centro-${indice}`).value);
+            const debe = parseFloat(fila.querySelector(`.debe-input`).value) || 0;
+            const haber = parseFloat(fila.querySelector(`.haber-input`).value) || 0;
+            const descripcion = fila.querySelector(`.desc-input`).value || '';
+
+            // ✅ Validaciones de detalle
+            if (!cuenta) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `La fila ${orden} tiene la cuenta vacía`,
+                });
+                throw new Error(`La fila ${orden} tiene la cuenta vacía`)
+                return;
+            }
+            if (!centro) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `La fila ${orden} tiene el centro de costos vacío`,
+                });
+                throw new Error(`La fila ${orden} tiene el centro de costos vacío`)
+                return;
+            }
+            if (debe === 0 && haber === 0) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `La fila ${orden} debe tener un valor en "Debe" o "Haber"`,
+                });
+                throw new Error(`La fila ${orden} debe tener un valor en "Debe" o "Haber"`)
+                return;
+            }
+            if (!descripcion) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `La fila ${orden} tiene la descripción vacía`,
+                });
+                throw new Error(`La fila ${orden} tiene la descripción vacía`)
+                return;
+            }
+
+            detalles.push({
+                orden,
+                cuenta,
+                centro,
+                debe,
+                haber,
+                descripcion
+            });
+        }
+
+        const poliza = {
+            estado,
+            tipo,
+            fecha,
+            id_encabezado,
+            descripcion: descripcionPoliza,
+            detalles
+        };
+
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+            <style>
+                .flip {
+                    animation: spinY 2s linear infinite;
+                    transform-origin: center;
+                }
+                @@keyframes spinY {
+                    0%   { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                }
+            </style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g>
+        </svg>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: "Confirmar creación",
+            html: `
+                <div>
+                    <p>¿Está seguro que desea proceder con la creacion de una poliza especial?</p>
+                </div>
+            `,
+            footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+            customClass: {
+                icon: "p-0 bg-transparent border-0 shadow-none"
+            },
+            preConfirm: () => {
+                Swal.fire({
+                    title: 'Registrando poliza, esto puede tardar unos minutos...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                GetData({
+                    path: '/Contabilidad/RegistrarPoliza',
+                    data: {
+                        encabezado_id: referencia?.detalles?.id_encabezado ?? null,
+                        datosPoliza: JSON.stringify(poliza),
+                    },
+                    swalResponse: true,
+                    swalType: 'modal',
+                    swalPath: '/Contabilidad/PolizasEspeciales'
+                })
+            }
+        })
+    }
+</script>

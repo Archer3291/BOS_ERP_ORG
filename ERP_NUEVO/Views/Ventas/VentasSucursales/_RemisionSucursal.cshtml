@@ -1,0 +1,1384 @@
+﻿@using BOS_ERP.Controllers
+@model BOS_ERP.Models.FolioInfo
+
+@*<style>
+ 
+    /* ===== LAYOUT DE PÁGINA ===== */
+    .vi-page {
+        background: var(--vi-gray-100);
+        min-height: 100vh;
+        padding: 2rem 0 4rem;
+    }
+
+    /* ===== TARJETA PRINCIPAL ===== */
+    .vi-card {
+        background: var(--bg-light, #fff);
+        border-radius: var(--vi-radius-lg);
+        border: 1px solid var(--vi-gray-200);
+        box-shadow: var(--vi-shadow-md);
+        overflow: hidden;
+    }
+
+    /* ===== CABECERA DE SECCIÓN ===== */
+    .vi-section-header {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding-bottom: .75rem;
+        border-bottom: 2px solid var(--vi-blue-50);
+        margin-bottom: 1.25rem;
+    }
+
+    .vi-section-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 10px;
+        background: var(--vi-blue-600);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .vi-section-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--vi-gray-800);
+        margin: 0;
+    }
+
+    /* ===== CAMPOS DE FORMULARIO ===== */
+    .vi-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--vi-gray-600);
+        margin-bottom: .3rem;
+        display: block;
+    }
+
+        .vi-label i {
+            color: #3b82f6;
+            margin-right: .3rem;
+        }
+
+    .vi-control {
+        border: 1.5px solid var(--vi-gray-200);
+        border-radius: var(--vi-radius);
+        padding: .65rem 1rem;
+        font-size: .9rem;
+        background: var(--vi-gray-50);
+        color: var(--vi-gray-800);
+        width: 100%;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .vi-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            outline: none;
+            background: var(--bg-light, #fff);
+        }
+
+        .vi-control[readonly] {
+            background: var(--vi-gray-100);
+            cursor: default;
+        }
+
+    /* ===== TOGGLE TIPO PAGO (3 estados) — mantenido de vs-rem ===== */
+    .vi-pay-toggle {
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        background: var(--vi-gray-100);
+        border: 1px solid var(--vi-gray-200);
+        border-radius: var(--vi-radius);
+        padding: 4px;
+    }
+
+    .vi-pay-btn {
+        position: relative;
+        border: none;
+        border-radius: 7px;
+        padding: .55rem 1.25rem;
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--vi-gray-600);
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+        white-space: nowrap;
+        transition: color .18s;
+    }
+
+        .vi-pay-btn .vi-pay-pill {
+            position: absolute;
+            inset: 0;
+            border-radius: 7px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .22s, background .22s;
+        }
+
+        .vi-pay-btn.active {
+            color: var(--vi-blue-600);
+        }
+
+            .vi-pay-btn.active .vi-pay-pill {
+                opacity: 1;
+                background: var(--vi-blue-50);
+            }
+
+        .vi-pay-btn[data-val="credito"].active {
+            color: var(--vi-green-700);
+        }
+
+            .vi-pay-btn[data-val="credito"].active .vi-pay-pill {
+                background: var(--vi-green-50);
+            }
+
+        .vi-pay-btn[data-val="anticipo"].active {
+            color: var(--vi-amber-600);
+        }
+
+            .vi-pay-btn[data-val="anticipo"].active .vi-pay-pill {
+                background: var(--vi-amber-50);
+            }
+
+        .vi-pay-btn i, .vi-pay-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+    /* ===== TABLA PRODUCTOS ===== */
+    .vi-table-wrap {
+        border-radius: var(--vi-radius);
+        border: 1px solid var(--vi-gray-200);
+        overflow: hidden;
+        overflow-x: auto;
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+    .vi-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1100px;
+        font-size: .82rem;
+    }
+
+        .vi-table thead {
+            background: var(--vi-blue-600);
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .vi-table th {
+            padding: .65rem .6rem;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .vi-table td {
+            padding: .65rem .6rem;
+            border-bottom: 1px solid var(--vi-gray-200);
+            vertical-align: middle;
+            color: var(--vi-gray-800);
+        }
+
+        .vi-table tbody tr:hover {
+            background: var(--vi-blue-50);
+        }
+
+    .vi-table-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--vi-gray-400);
+    }
+
+        .vi-table-empty i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: .75rem;
+            opacity: .35;
+        }
+
+    /* ===== BOTONES ===== */
+    .vi-btn {
+        border: none;
+        border-radius: var(--vi-radius);
+        padding: .6rem 1.25rem;
+        font-weight: 600;
+        font-size: .85rem;
+        cursor: pointer;
+        transition: transform .2s, box-shadow .2s, background .2s;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+    }
+
+        .vi-btn:hover {
+            transform: translateY(-1px);
+        }
+
+    .vi-btn-primary {
+        background: var(--vi-blue-600);
+        color: #fff;
+    }
+
+        .vi-btn-primary:hover {
+            background: var(--vi-blue-700);
+            box-shadow: 0 4px 14px rgba(30,58,95,.3);
+        }
+
+    .vi-btn-success {
+        background: var(--vi-green-600);
+        color: #fff;
+    }
+
+        .vi-btn-success:hover {
+            background: var(--vi-green-700);
+            box-shadow: 0 4px 14px rgba(5,150,105,.3);
+        }
+
+    .vi-btn-danger {
+        background: var(--vi-red-600);
+        color: #fff;
+        padding: .35rem .75rem;
+        font-size: .8rem;
+    }
+
+        .vi-btn-danger:hover {
+            background: #b91c1c;
+        }
+
+    .vi-btn-outline {
+        background: transparent;
+        color: #3b82f6;
+        border: 1.5px solid #3b82f6;
+    }
+
+        .vi-btn-outline:hover {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+    .vi-btn-ghost {
+        background: transparent;
+        color: var(--vi-red-600);
+        border: 1.5px solid var(--vi-red-600);
+    }
+
+        .vi-btn-ghost:hover {
+            background: var(--vi-red-600);
+            color: #fff;
+        }
+
+    /* ===== TICKET / RESUMEN ===== */
+    .vi-ticket {
+        border: 1px solid var(--vi-gray-200);
+        border-radius: var(--vi-radius-lg);
+        overflow: hidden;
+        box-shadow: var(--vi-shadow);
+    }
+
+    .vi-ticket-head {
+        background: var(--vi-blue-600);
+        color: #fff;
+        padding: 1.1rem 1.4rem;
+        text-align: center;
+    }
+
+    .vi-ticket-head-icon {
+        font-size: 1.5rem;
+        opacity: .9;
+        display: block;
+        margin-bottom: .2rem;
+    }
+
+    .vi-ticket-head-label {
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+    }
+
+    .vi-ticket-body {
+        padding: 1.1rem 1.4rem;
+        background: var(--bg-light, #fff);
+    }
+
+    .vi-ticket-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: .55rem 0;
+        border-bottom: 1px dashed var(--vi-gray-200);
+        font-size: .85rem;
+        color: var(--vi-gray-800);
+    }
+
+        .vi-ticket-row:last-child {
+            border-bottom: none;
+        }
+
+    .vi-ticket-row-label {
+        color: var(--vi-gray-600);
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vi-ticket-row-val {
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+        color: var(--vi-gray-800);
+    }
+
+        .vi-ticket-row-val.vi-negative {
+            color: var(--vi-red-600);
+        }
+
+    .vi-ticket-footer {
+        background: var(--vi-blue-50);
+        border-top: 2px dashed var(--vi-blue-100);
+        padding: 1.1rem 1.4rem;
+    }
+
+    .vi-ticket-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .vi-ticket-total-label {
+        font-size: .85rem;
+        color: var(--vi-blue-600);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vi-ticket-total-val {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--vi-blue-600);
+        font-family: 'Courier New', monospace;
+    }
+
+    /* ===== TOGGLE SWITCH ===== */
+    .vi-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+
+    .vi-switch-track {
+        position: relative;
+        width: 52px;
+        height: 28px;
+        border-radius: 99px;
+        background: var(--vi-gray-200);
+        transition: background .3s;
+        flex-shrink: 0;
+    }
+
+        .vi-switch-track::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.2);
+            transition: transform .3s;
+        }
+
+    .vi-switch input {
+        display: none;
+    }
+
+        .vi-switch input:checked ~ .vi-switch-track {
+            background: var(--vi-green-600);
+        }
+
+            .vi-switch input:checked ~ .vi-switch-track::after {
+                transform: translateX(24px);
+            }
+
+    .vi-switch-label {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--vi-gray-600);
+        user-select: none;
+    }
+
+    /* ===== SEPARADOR ===== */
+    .vi-sep {
+        border: none;
+        border-top: 1px dashed var(--vi-gray-200);
+        margin: 1.25rem 0;
+    }
+
+    /* ===== MODAL ===== */
+    .vi-modal-header {
+        background: var(--vi-blue-600);
+        color: #fff;
+        border-radius: .5rem .5rem 0 0;
+    }
+
+        .vi-modal-header .btn-close {
+            filter: invert(1);
+        }
+
+    /* ===== SEARCH RESULT ITEM ===== */
+    .vi-search-item {
+        padding: .7rem 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--vi-gray-200);
+        margin-bottom: .5rem;
+        cursor: pointer;
+        transition: border-color .2s, background .2s, transform .15s;
+        background: var(--bg-light, #fff);
+        color: var(--vi-gray-800);
+    }
+
+        .vi-search-item:hover {
+            border-color: #3b82f6;
+            background: var(--vi-blue-50);
+            transform: translateX(3px);
+        }
+
+    /* ===== UTILIDADES ===== */
+    .vi-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: .2rem .6rem;
+        border-radius: 99px;
+    }
+
+    .vi-badge-blue {
+        background: var(--vi-blue-50);
+        color: var(--vi-blue-600);
+    }
+
+    .vi-badge-green {
+        background: var(--vi-green-50);
+        color: var(--vi-green-600);
+    }
+
+    /* ===== BOTÓN FLOTANTE ===== */
+    .vi-floating-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--vi-blue-600);
+        color: #fff;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        box-shadow: 0 8px 25px rgba(30,58,95,.4);
+        transition: transform .3s, box-shadow .3s;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .vi-floating-btn:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 35px rgba(30,58,95,.5);
+        }
+
+    .vi-floating-tooltip {
+        position: fixed;
+        bottom: 38px;
+        right: 96px;
+        background: var(--vi-gray-800);
+        color: #fff;
+        padding: .4rem .9rem;
+        border-radius: 8px;
+        font-size: .8rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .3s;
+        z-index: 999;
+    }
+
+    .vi-floating-btn:hover + .vi-floating-tooltip {
+        opacity: 1;
+    }
+
+    /* ===== DOCUMENT BADGE ===== */
+    .document-badge {
+        display: inline-block;
+        padding: .2rem .7rem;
+        border-radius: 99px;
+        font-size: .7rem;
+        font-weight: 700;
+    }
+
+    .badge-pending {
+        background: var(--vi-amber-50);
+        color: var(--vi-amber-600);
+    }
+
+    .badge-approved {
+        background: var(--vi-green-50);
+        color: var(--vi-green-600);
+    }
+
+    .badge-cancelled {
+        background: var(--vi-red-50);
+        color: var(--vi-red-600);
+    }
+
+    /* ===== PRODUCT INPUT ===== */
+    .vs-rem-product-input {
+        width: 100%;
+        min-width: 70px;
+        border: 1.5px solid var(--vi-gray-200);
+        border-radius: 7px;
+        padding: .35rem .6rem;
+        font-size: .82rem;
+        background: var(--vi-gray-50);
+        color: var(--vi-gray-800);
+        transition: border-color .2s;
+    }
+
+        .vs-rem-product-input:focus {
+            border-color: #3b82f6;
+            outline: none;
+            background: var(--bg-light, #fff);
+        }
+
+    /* ===== DELETE BTN ===== */
+    .vs-rem-btn-delete {
+        background: var(--vi-red-600);
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        padding: .35rem .75rem;
+        font-size: .8rem;
+        cursor: pointer;
+        transition: background .2s, transform .15s;
+    }
+
+        .vs-rem-btn-delete:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+
+        .vs-rem-btn-delete:active {
+            transform: scale(.96);
+        }
+
+        .vs-rem-btn-delete:disabled {
+            background: #bdbdbd;
+            cursor: not-allowed;
+            opacity: .7;
+        }
+</style>*@
+
+@{var role = Utilities.GetUserRole(User.Identity.Name, "ERP_SRS"); }
+
+<div class="vi-page">
+    <div class="container-xl">
+
+        <!-- Encabezado de página -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="vi-section-icon" style="width:2.75rem;height:2.75rem;border-radius:12px;">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div>
+                <h1 class="h4 mb-0 fw-bold" style="color:var(--vi-gray-800)">Nueva Remisión</h1>
+                <p class="mb-0 small" style="color:var(--vi-gray-600)">Complete los datos para generar la remisión</p>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <form id="vs-rem-formCotizacion" class="vs-rem-formCotizacion" method="post">
+
+            <div class="row g-4">
+
+                <!-- ========== COLUMNA IZQUIERDA ========== -->
+                <div class="col-12 col-xl-12">
+
+                    <!-- TARJETA: Tipo de Pago -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-credit-card"></i></div>
+                            <h2 class="vi-section-title">Tipo de Pago</h2>
+                        </div>
+
+                        <!-- Toggle 3 estados — IDs originales intactos -->
+                        <div class="vi-pay-toggle" id="vs-rem-toggle-pago" data-state="contado"
+                             style="grid-template-columns: 1fr 1fr;">
+                            <button type="button" class="vi-pay-btn active" data-val="contado"
+                                    onclick="setTipoPagoRemision('contado')">
+                                <div class="vi-pay-pill"></div>
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Contado</span>
+                            </button>
+                            <button type="button" class="vi-pay-btn" data-val="credito"
+                                    onclick="setTipoPagoRemision('credito')">
+                                <div class="vi-pay-pill"></div>
+                                <i class="fas fa-credit-card"></i>
+                                <span>Crédito</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Información General -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-info-circle"></i></div>
+                            <h2 class="vi-section-title">Información General</h2>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-hashtag"></i>Folio</label>
+                                <input type="text" id="vs-rem-folio" value="@Model.Folio" name="folio"
+                                       class="vi-control" readonly autocomplete="off">
+                            </div>
+                            <!-- Sucursal / Almacén — ocultos, IDs intactos -->
+                            <div class="col-12 col-sm-4 d-none">
+                                <label class="vi-label"><i class="fas fa-building"></i>Sucursal</label>
+                                <select class="vi-control form-select" id="vs-rem-sucursal" name="sucursal">
+                                    <option selected>CEDIS</option>
+                                    <option>Sucursal Centro</option>
+                                    <option>Sucursal Norte</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4 d-none">
+                                <label class="vi-label"><i class="fas fa-warehouse"></i>Almacén</label>
+                                <select class="vi-control form-select" id="vs-rem-almacen" name="almacen">
+                                    <option selected>ALMACÉN GENERAL</option>
+                                    <option>ALMACÉN A</option>
+                                    <option>ALMACÉN B</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Información del Cliente -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-user"></i></div>
+                            <h2 class="vi-section-title">Información del Cliente</h2>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Buscador cliente -->
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-search"></i>Cliente</label>
+                                <div class="input-group" style="flex-wrap:nowrap">
+                                    <button class="vi-btn vi-btn-primary" type="button"
+                                            data-bs-toggle="modal" data-bs-target="#vs-rem-modalBuscarCliente">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                    <input type="text" name="cliente" class="vi-control" id="vs-rem-cliente"
+                                           placeholder="Seleccione un cliente…"
+                                           style="border-radius:0 var(--vi-radius) var(--vi-radius) 0; border-left:none;">
+                                </div>
+                            </div>
+
+                            <!-- RFC -->
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-id-card"></i>RFC</label>
+                                <input type="text" name="rfc" id="vs-rem-rfc" class="vi-control" autocomplete="off">
+                            </div>
+
+                            <!-- Banner crédito (solo se muestra en ventas a crédito) -->
+                            <div class="col-12">
+                                <div id="vs-rem-credit-banner" style="display:none;" class="vi-credit-banner">
+                                    <div id="vs-rem-credit-icon" style="font-size:18px;flex-shrink:0;margin-top:2px;"></div>
+                                    <div style="flex:1">
+                                        <div id="vs-rem-credit-title" style="font-weight:600;font-size:.8rem;margin-bottom:2px;"></div>
+                                        <div id="vs-rem-credit-sub" style="font-size:.75rem;opacity:.85;"></div>
+                                        <div class="vi-banner-bar-wrap" id="vs-rem-credit-bar-wrap">
+                                            <div class="vi-banner-bar-fill" id="vs-rem-credit-bar" style="width:0%;"></div>
+                                        </div>
+                                    </div>
+                                    <div id="vs-rem-credit-pct" style="font-size:.8rem;font-weight:600;flex-shrink:0;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Info adicional -->
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-info-circle"></i>Información del Cliente</label>
+                                <textarea class="vi-control" id="vs-rem-info-proveedor" rows="3" readonly autocomplete="off"></textarea>
+                            </div>
+
+                            <!-- Vendedor + Moneda + Paridad -->
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-user-tie"></i>Vendedor</label>
+                                <select class="vi-control form-select" name="vendedor" id="vs-rem-vendedor">
+                                    <option selected disabled>Seleccionar vendedor</option>
+                                    <option value="1">Carlos Mendoza</option>
+                                    <option value="2">Ana García</option>
+                                    <option value="3">Luis Fernández</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-dollar-sign"></i>Moneda</label>
+                                <select class="vi-control form-select" name="moneda" id="vs-rem-moneda">
+                                    <option selected disabled>Seleccione una moneda</option>
+                                    <option>PESOS</option>
+                                    <option>DOLARES</option>
+                                    <option>EUROS</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-exchange-alt"></i>Paridad</label>
+                                <input type="text" id="vs-rem-paridad" name="paridad" class="vi-control" value="1" autocomplete="off">
+                            </div>
+
+                            <!-- Referencia -->
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-comment"></i>Referencia</label>
+                                <input type="text" id="vs-rem-concepto" name="concepto" class="vi-control" autocomplete="off">
+                            </div>
+
+                            <!-- Incoterm — oculto, ID intacto -->
+                            <div class="col-12 d-none">
+                                <label class="vi-label"><i class="fas fa-shipping-fast"></i>Incoterm</label>
+                                <select class="vi-control form-select" name="incoterm" id="vs-rem-incoterm">
+                                    <option selected disabled>Seleccionar Incoterm</option>
+                                    <option value="EXW">EXW – En fábrica</option>
+                                    <option value="FOB">FOB – Libre a bordo</option>
+                                    <option value="CFR">CFR – Costo y flete</option>
+                                    <option value="CIF">CIF – Costo, seguro y flete</option>
+                                    <option value="DAP">DAP – Entregado en lugar</option>
+                                    <option value="DDP">DDP – Entregado con derechos pagados</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div><!-- /tarjeta cliente -->
+                    <!-- TARJETA: Artículos -->
+                    <div class="vi-card p-4 mb-4" id="vs-rem-seccion-productos">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-box-open"></i></div>
+                            <h2 class="vi-section-title">Artículos y Productos</h2>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="vi-badge vi-badge-blue">
+                                <i class="fas fa-list"></i> Lista de productos
+                            </span>
+                            <button type="button" class="vi-btn vi-btn-success"
+                                    data-bs-toggle="modal" data-bs-target="#vs-rem-modalBuscarProducto">
+                                <i class="fas fa-plus"></i> Agregar producto
+                            </button>
+                        </div>
+
+                        <div class="vi-table-wrap">
+                            <table class="vi-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Artículo</th>
+                                        <th>Descripción</th>
+                                        <th>Existencia</th>
+                                        <th>Cantidad</th>
+                                        <th>Unidad</th>
+                                        <th class="d-none">Precio</th>
+                                        <th class="d-none">Desc %</th>
+                                        <th class="d-none">Importe</th>
+                                        <th>Comentario</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vs-rem-productosTable">
+                                    <tr>
+                                        <td colspan="11" class="vi-table-empty">
+                                            <i class="fas fa-box-open"></i>
+                                            <div class="fw-semibold mb-1">Sin productos</div>
+                                            <small style="color:var(--vi-gray-400)">Haz clic en "Agregar producto" para comenzar</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr class="vi-sep">
+
+                        <!-- Flete — IDs originales intactos -->
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <label class="vi-switch" for="vs-rem-flete">
+                                <input type="checkbox" id="vs-rem-flete">
+                                <span class="vi-switch-track"></span>
+                                <span class="vi-switch-label"><i class="fas fa-truck me-1"></i>Con Flete</span>
+                            </label>
+                            <input type="number" class="vi-control d-none" name="flete"
+                                   id="vs-rem-flete-val" placeholder="Costo de flete" style="max-width:180px;">
+                        </div>
+
+                        <!-- Orden de Compra — IDs originales intactos -->
+                        <div class="d-flex align-items-center gap-3">
+                            <label class="vi-switch" for="vs-rem-orden-compra-check">
+                                <input type="checkbox" id="vs-rem-orden-compra-check">
+                                <span class="vi-switch-track"></span>
+                                <span class="vi-switch-label"><i class="fas fa-file-alt me-1"></i>Con Orden de Compra</span>
+                            </label>
+                            <input type="text" class="vi-control d-none" name="ordenCompra"
+                                   id="vs-rem-orden-compra-val" placeholder="Número de orden de compra"
+                                   autocomplete="off" style="max-width:220px;">
+                        </div>
+                        <!-- Botones de acción -->
+                        <div class="d-grid gap-2">
+                            <button type="button" class="vi-btn vi-btn-success vs-rem-btn-submit"
+                                    style="width:100%;justify-content:center;padding:.85rem;">
+                                <i class="fas fa-paper-plane"></i> Generar Remisión
+                            </button>
+                        </div>
+                    </div><!-- /tarjeta artículos -->
+                    <!-- TARJETA: Condiciones de Pago -->
+                    <div class="vi-card p-4 mb-4 d-none">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-file-invoice"></i></div>
+                            <h2 class="vi-section-title">Condiciones de Pago</h2>
+                        </div>
+
+                        <!-- Campos crédito — IDs originales intactos -->
+                        <div id="vs-rem-campos-credito" >
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-credit-card"></i>Límite de Crédito</label>
+                                    <input type="number" id="vs-rem-limite-credito" name="limite-credito"
+                                           value="0.00" readonly class="vi-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-credit-card"></i>Crédito Disponible</label>
+                                    <input type="number" id="vs-rem-limite-disponible" name="limite-disponible"
+                                           value="0.00" readonly class="vi-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-calendar-day"></i>Plazo (días)</label>
+                                    <input type="number" id="vs-rem-plazo" name="plazo" class="vi-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-calendar"></i>Fecha de Pago</label>
+                                    <input type="date" id="vs-rem-fecha-pago" name="fecha-pago" class="vi-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos anticipo — IDs originales intactos -->
+                        <div id="vs-rem-campos-anticipo" style="display:none;">
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-6 d-none">
+                                    <label class="vi-label"><i class="fas fa-percent"></i>Porcentaje de Anticipo (%)</label>
+                                    <input type="number" id="vs-rem-porcentaje-anticipo" name="porcentaje-anticipo"
+                                           class="vi-control" placeholder="Ej: 50" min="0" max="100"
+                                           oninput="calcularAnticipoRemision()" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-dollar-sign"></i>Monto Anticipo</label>
+                                    <input type="number" id="vs-rem-monto-anticipo" name="monto-anticipo"
+                                           class="vi-control" placeholder="0.00" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 d-none">
+                                    <label class="vi-label"><i class="fas fa-dollar-sign"></i>Saldo Pendiente</label>
+                                    <input type="number" id="vs-rem-saldo-pendiente" name="saldo-pendiente"
+                                           class="vi-control" placeholder="0.00" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-calendar"></i>Fecha de Anticipo</label>
+                                    <input type="date" id="vs-rem-fecha-anticipo" name="fecha-anticipo"
+                                           class="vi-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 d-none">
+                                    <label class="vi-label"><i class="fas fa-calendar-alt"></i>Fecha Pago Final</label>
+                                    <input type="date" id="vs-rem-fecha-pago-final" name="fecha-pago-final"
+                                           class="vi-control" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Método / Forma / CFDI — IDs originales intactos -->
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-money-bill"></i>Método de Pago</label>
+                                <select class="vi-control form-select" id="vs-rem-metodo-pago" name="metodo-pago" required>
+                                    <option value="" selected disabled>Seleccione un método de pago</option>
+                                    <option value="PUE">PUE - Pago en una sola exhibición</option>
+                                    <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-money-bill"></i>Forma de Pago</label>
+                                <select class="vi-control form-select" id="vs-rem-forma-pago" name="forma-pago">
+                                    <option selected>Efectivo</option>
+                                    <option value="01">01 - Efectivo</option>
+                                    <option value="02">02 - Cheque nominativo</option>
+                                    <option value="03">03 - Transferencia electrónica</option>
+                                    <option value="04">04 - Tarjeta de crédito</option>
+                                    <option value="28">28 - Tarjeta de débito</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-file-invoice"></i>Uso CFDI</label>
+                                <select class="vi-control form-select" id="vs-rem-uso-cfdi" name="uso-cfdi">
+                                    <option selected>G03 - Gastos en general</option>
+                                    <option value="D01">D01 - Honorarios médicos</option>
+                                    <option value="D02">D02 - Gastos médicos por incapacidad</option>
+                                    <option value="P01">P01 - Por definir</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Vista previa -->
+                        <div class="d-grid mt-3">
+                            <button type="button" class="vi-btn vi-btn-outline d-none"
+                                    data-bs-toggle="modal" data-bs-target="#vs-rem-modalVistaPrevia"
+                                    onclick="actualizarVistaPreviaRemision()"
+                                    style="justify-content:center;">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                        </div>
+
+                        <!-- Comentarios — ID original intacto -->
+                        <div class="mt-3" style="display:none;">
+                            <label class="vi-label"><i class="fas fa-comment-dots"></i>Comentarios Adicionales</label>
+                            <textarea class="vi-control" id="vs-rem-comentarios" name="comentarios" rows="3"></textarea>
+                        </div>
+                    </div><!-- /tarjeta condiciones pago -->
+
+                </div><!-- /col izquierda -->
+                <!-- ========== COLUMNA DERECHA: RESUMEN ========== -->
+                <div class="col-12 col-xl-4 d-none">
+                    <div class="sticky-top" style="top:5rem; z-index:0;">
+
+                        <!-- Ticket resumen -->
+                        <div class="vi-ticket mb-3">
+                            <div class="vi-ticket-head">
+                                <i class="fas fa-calculator vi-ticket-head-icon"></i>
+                                <div class="vi-ticket-head-label">Resumen de Remisión</div>
+                            </div>
+                            <div class="vi-ticket-body">
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">Subtotal 1</span>
+                                    <span class="vi-ticket-row-val" id="vs-rem-total-subtotal1-display">$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">Descuento</span>
+                                    <span class="vi-ticket-row-val vi-negative" id="vs-rem-total-descuento-display">-$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">Flete</span>
+                                    <span class="vi-ticket-row-val" id="vs-rem-total-flete-display">$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row" style="margin-top:.5rem;padding-top:.75rem;border-top:1px solid var(--vi-gray-200);border-bottom:none;">
+                                    <span class="vi-ticket-row-label">Subtotal 2</span>
+                                    <span class="vi-ticket-row-val" id="vs-rem-total-subtotal2-display">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="vi-ticket-footer">
+                                <div class="vi-ticket-total-row">
+                                    <span class="vi-ticket-total-label"><i class="fas fa-coins me-1"></i>Total</span>
+                                    <strong class="vi-ticket-total-val" id="vs-rem-importe-display">$0.00</strong>
+                                </div>
+                            </div>
+
+                            <!-- Hidden inputs — todos intactos -->
+                            <input type="hidden" id="vs-rem-total-subtotal1" name="total-subtotal1" value="0.00">
+                            <input type="hidden" id="vs-rem-total-descuento" name="total-descuento" value="0.00">
+                            <input type="hidden" id="vs-rem-total-flete" name="total-flete" value="0.00">
+                            <input type="hidden" id="vs-rem-total-subtotal2" name="total-subtotal2" value="0.00">
+                            <input type="hidden" id="vs-rem-importe" name="importe" value="0.00">
+                            <input type="hidden" id="vs-rem-documentid" name="documentid">
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="d-grid gap-2">
+                            <button type="button" class="vi-btn vi-btn-success vs-rem-btn-submit"
+                                    style="width:100%;justify-content:center;padding:.85rem;">
+                                <i class="fas fa-paper-plane"></i> Generar Remisión
+                            </button>
+                        </div>
+
+                    </div>
+                </div><!-- /col derecha -->
+
+            </div><!-- /row -->
+        </form>
+    </div><!-- /container -->
+</div><!-- /vi-page -->
+<style>
+    /* Etiquetas Zebra: solo existe en sucursales, donde se imprime la etiqueta del
+       producto al momento de remisionar. El botón se apila sobre el de documentos. */
+    .vs-rem-floating-btn-label {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--success-color, #059669);
+        color: #fff;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        box-shadow: 0 8px 25px rgba(5,150,105,.4);
+        transition: transform .3s, box-shadow .3s;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .vs-rem-floating-btn-label:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 35px rgba(5,150,105,.5);
+        }
+
+    .vs-rem-floating-tooltip-label {
+        position: fixed;
+        bottom: 108px;
+        right: 96px;
+        background: var(--text-dark, #1f2937);
+        color: #fff;
+        padding: .4rem .9rem;
+        border-radius: 8px;
+        font-size: .8rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .3s;
+        z-index: 999;
+    }
+
+    .vs-rem-floating-btn-label:hover + .vs-rem-floating-tooltip-label {
+        opacity: 1;
+    }
+</style>
+
+<!-- Botón Flotante para Etiquetas -->
+<button type="button" class="vs-rem-floating-btn-label" data-bs-toggle="modal" data-bs-target="#vs-rem-modalEtiquetas">
+    <i class="fas fa-tag"></i>
+</button>
+<div class="vs-rem-floating-tooltip-label">Generar Etiqueta</div>
+<!-- Modal Generar Etiqueta -->
+<div class="modal fade" id="vs-rem-modalEtiquetas" tabindex="-1" aria-labelledby="vs-rem-modalEtiquetasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="vs-rem-modalEtiquetasLabel">
+                    <i class="fas fa-tag me-2"></i> Generar Etiqueta de Remisión
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtros de búsqueda -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="vs-rem-inputBuscarEtiqueta" class="form-control" placeholder="Folio o Cliente">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-warning w-100" id="vs-rem-btnLimpiarEtiquetas">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista de resultados -->
+                <ul class="list-group list-group-flush" id="vs-rem-listaResultadosEtiquetas" style="max-height: 500px; overflow-y: auto;">
+                    <!-- Resultados dinámicos -->
+                </ul>
+            </div>
+
+            <div class="modal-footer flex-column">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap mb-2">
+                    <div>
+                        <span>Mostrando <strong id="vs-rem-recordsFromEtiquetas">0</strong> a <strong id="vs-rem-recordsToEtiquetas">0</strong> de <strong id="vs-rem-totalRecordsEtiquetas">0</strong> registros</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vs-rem-pageSizeEtiquetas" class="form-select form-select-sm">
+                            <option value="25">25 por página</option>
+                            <option value="50" selected>50 por página</option>
+                            <option value="100">100 por página</option>
+                        </select>
+                        <div id="vs-rem-spinnerEtiquetas" class="spinner-border text-primary d-none" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paginación -->
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vs-rem-paginationEtiquetas"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+<!-- ===== BOTÓN FLOTANTE ===== -->
+<button type="button" class="vi-floating-btn"
+        data-bs-toggle="modal" data-bs-target="#vs-rem-modalBuscarDocumentos">
+    <i class="fas fa-file-alt"></i>
+</button>
+<div class="vi-floating-tooltip">Buscar Documentos</div>
+
+<!-- ===== MODAL: BUSCAR DOCUMENTOS ===== -->
+<div class="modal fade" id="vs-rem-modalBuscarDocumentos" tabindex="-1"
+     aria-labelledby="vs-rem-modalBuscarDocumentosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title" id="vs-rem-modalBuscarDocumentosLabel">
+                    <i class="fas fa-file-alt me-2"></i>Buscar Documentos Previos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="vs-rem-inputBuscarDocumento" class="form-control"
+                                   placeholder="Folio o Cliente">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-warning w-100" id="vs-rem-btnLimpiarDocumentos">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+                <ul class="list-unstyled" id="vs-rem-listaResultadosDocumentos"
+                    style="max-height:500px;overflow-y:auto;">
+                    <div class="vi-search-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold mb-1">
+                                    <i class="fas fa-file-invoice text-primary me-1"></i>
+                                    <strong>Folio:</strong> REM-2024-001
+                                </div>
+                                <div class="small" style="color:var(--vi-gray-600)">
+                                    <i class="fas fa-user me-1"></i> Empresa Demo S.A. de C.V.
+                                </div>
+                                <div class="d-flex gap-3 mt-1" style="font-size:.75rem;color:var(--vi-gray-400)">
+                                    <span><i class="fas fa-calendar me-1"></i>15/09/2024</span>
+                                    <span><i class="fas fa-money-bill-wave me-1"></i>$125,450.00</span>
+                                    <span><i class="fas fa-user-tie me-1"></i>Carlos Mendoza</span>
+                                </div>
+                            </div>
+                            <span class="document-badge badge-cancelled">Cancelado</span>
+                        </div>
+                    </div>
+                </ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vs-rem-recordsFromDocumentos">1</strong> a
+                        <strong id="vs-rem-recordsToDocumentos">3</strong> de
+                        <strong id="vs-rem-totalRecordsDocumentos">3</strong> registros
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vs-rem-pageSizeDocumentos" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25 / pág</option>
+                            <option value="50" selected>50 / pág</option>
+                            <option value="100">100 / pág</option>
+                        </select>
+                        <div id="vs-rem-spinnerDocumentos" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vs-rem-paginationDocumentos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: BUSCAR CLIENTE ===== -->
+<div class="modal fade" id="vs-rem-modalBuscarCliente" tabindex="-1"
+     aria-labelledby="vs-rem-modalBuscarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title" id="vs-rem-modalBuscarClienteLabel">
+                    <i class="fas fa-search me-2"></i>Buscar Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vs-rem-inputBuscarCliente" class="form-control"
+                           placeholder="Nombre o RFC…">
+                    <button type="button" class="btn btn-outline-secondary" id="vs-rem-btnLimpiarClientes">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-unstyled" id="vs-rem-listaResultadosClientes"
+                    style="max-height:400px;overflow-y:auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vs-rem-recordsFromClientes">0</strong> a
+                        <strong id="vs-rem-recordsToClientes">0</strong> de
+                        <strong id="vs-rem-totalRecordsClientes">0</strong> registros
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vs-rem-pageSizeClientes" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25 / pág</option>
+                            <option value="50" selected>50 / pág</option>
+                            <option value="100">100 / pág</option>
+                        </select>
+                        <div id="vs-rem-spinnerClientes" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vs-rem-paginationClientes"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: BUSCAR PRODUCTO ===== -->
+<div class="modal fade" id="vs-rem-modalBuscarProducto" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-box-open me-2"></i>Buscar Producto
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vs-rem-inputBuscarProducto" class="form-control"
+                           placeholder="Código o descripción…">
+                    <button type="button" class="btn btn-outline-secondary" id="vs-rem-btnLimpiarProductos">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-unstyled" id="vs-rem-listaResultadosProductos"
+                    style="max-height:380px;overflow-y:auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vs-rem-recordsFromProductos">0</strong> a
+                        <strong id="vs-rem-recordsToProductos">0</strong> de
+                        <strong id="vs-rem-totalRecordsProductos">0</strong>
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vs-rem-pageSizeProductos" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <div id="vs-rem-spinnerProductos" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vs-rem-paginationProductos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== JS: toggle de 3 estados (lógica original intacta) ===== -->
+<script>
+    let paymentStates2 = ['contado', 'credito', 'anticipo'];
+    let currentStateIndex2 = 0;
+
+    // REEMPLAZA todo el bloque de toggle (incluyendo limpiarCampos* y calcularAnticipo*)
+    // por esto:
+
+    function setTipoPagoRemision(nuevoEstado) {
+        const toggle = document.getElementById('vs-rem-toggle-pago');
+        const camposCredito = document.getElementById('vs-rem-campos-credito');
+        const seccionProductos = document.getElementById('vs-rem-seccion-productos');
+
+        toggle.setAttribute('data-state', nuevoEstado);
+
+        document.querySelectorAll('#vs-rem-toggle-pago .vi-pay-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.val === nuevoEstado);
+        });
+
+        if (nuevoEstado === 'contado') {
+            camposCredito.style.display = 'none';
+            seccionProductos.style.display = '';
+            limpiarCamposCreditoRemision();
+        } else if (nuevoEstado === 'credito') {
+            camposCredito.style.display = 'block';
+            seccionProductos.style.display = '';
+        }
+
+        // El crédito solo se valida en ventas a crédito.
+        window.CreditoVentas?.evaluar('vs-rem');
+    }
+
+    // Mantén estas dos funciones auxiliares que siguen siendo usadas:
+    function limpiarCamposCreditoRemision() {
+        document.getElementById('vs-rem-limite-credito').value = '0.00';
+        document.getElementById('vs-rem-plazo').value = '';
+        document.getElementById('vs-rem-fecha-pago').value = '';
+    }
+
+    function limpiarCamposRemision() {
+        limpiarCamposCreditoRemision();
+    }
+
+    function limpiarCamposAnticipoRemision() {
+        document.getElementById('vs-rem-porcentaje-anticipo').value = '';
+        document.getElementById('vs-rem-monto-anticipo').value = '';
+        document.getElementById('vs-rem-saldo-pendiente').value = '';
+        document.getElementById('vs-rem-fecha-anticipo').value = '';
+        document.getElementById('vs-rem-fecha-pago-final').value = '';
+    }
+
+    function calcularAnticipoRemision() {
+        const porcentaje = parseFloat(document.getElementById('vs-rem-porcentaje-anticipo').value) || 0;
+        const totalVenta = parseFloat(document.getElementById('vs-rem-importe').value) || 0;
+        const montoAnticipo = (totalVenta * porcentaje) / 100;
+        const saldoPendiente = totalVenta - montoAnticipo;
+        document.getElementById('vs-rem-monto-anticipo').value = montoAnticipo.toFixed(2);
+        document.getElementById('vs-rem-saldo-pendiente').value = saldoPendiente.toFixed(2);
+    }
+</script>
+
+<script>
+    /* ===== TOGGLE FLETE — lógica original intacta ===== */
+    document.getElementById('vs-rem-flete').addEventListener('change', function () {
+        const inp = document.getElementById('vs-rem-flete-val');
+        inp.classList.toggle('d-none', !this.checked);
+        if (!this.checked) inp.value = '';
+    });
+
+    /* ===== TOGGLE ORDEN DE COMPRA — lógica original intacta ===== */
+    document.getElementById('vs-rem-orden-compra-check').addEventListener('change', function () {
+        const inp = document.getElementById('vs-rem-orden-compra-val');
+        inp.classList.toggle('d-none', !this.checked);
+        if (!this.checked) inp.value = '';
+    });
+</script>

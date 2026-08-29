@@ -1,0 +1,128 @@
+@*
+    Modal de alta de teléfono + render de la lista de teléfonos.
+    Único responsable de ClientesState.telefonos; lo usan las pestañas
+    de Contacto de ambos modales de edición.
+*@
+<div class="modal fade cli-modal" id="modalAgregarTelefono" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="cli-icon">
+                    <i class="fa-solid fa-phone"></i>
+                </div>
+                <h5 class="modal-title">Agregar teléfono</h5>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label for="input_nuevo_telefono" class="form-label required">Número de teléfono</label>
+                <input type="tel" class="form-control" id="input_nuevo_telefono"
+                       placeholder="Ej: +52 55 1234 5678" autocomplete="off">
+                <div class="invalid-feedback" id="error_telefono"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cli-btn cli-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>Cancelar
+                </button>
+                <button type="button" class="cli-btn cli-btn-primary" onclick="confirmarAgregarTelefono()">
+                    <i class="fa-solid fa-plus"></i>Agregar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        let _modal = null;
+        // Pestaña desde la que se abrió: define qué lista se repinta
+        let _tipoActivo = 'Nacional';
+
+        /* ── Pinta la lista a partir del estado en memoria ─────────── */
+        window.actualizarListaTelefonos = function (tipo = 'Nacional') {
+            const lista = document.getElementById(`listaTelefonos${tipo}`);
+            if (!lista) return;
+
+            lista.innerHTML = '';
+
+            if (ClientesState.telefonos.length === 0) {
+                lista.innerHTML = `
+                    <li class="cli-empty">
+                        <i class="fa-solid fa-phone-slash"></i>
+                        No hay teléfonos registrados.
+                    </li>`;
+                return;
+            }
+
+            ClientesState.telefonos.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'cli-list-item';
+                li.innerHTML = `
+                    <span class="cli-list-text">
+                        <i class="fa-solid fa-phone"></i>${item.telefono || item}
+                    </span>
+                    <button type="button" class="cli-list-remove" title="Quitar" onclick="eliminarTelefono(${index}, '${tipo}')">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>`;
+                lista.appendChild(li);
+            });
+        };
+
+        /* ── Alta ─────────────────────────────────────────────────── */
+        window.agregarTelefono = function (tipo = 'Nacional') {
+            _tipoActivo = tipo;
+
+            const input = document.getElementById('input_nuevo_telefono');
+            input.value = '';
+            input.classList.remove('is-invalid');
+            _modal.show();
+
+            document.getElementById('modalAgregarTelefono').addEventListener('shown.bs.modal', () => {
+                input.focus();
+            }, { once: true });
+        };
+
+        window.confirmarAgregarTelefono = function () {
+            const input = document.getElementById('input_nuevo_telefono');
+            const errorDiv = document.getElementById('error_telefono');
+            const valor = input.value.trim();
+
+            input.classList.remove('is-invalid');
+
+            const error = validar(valor);
+            if (error) {
+                errorDiv.textContent = error;
+                input.classList.add('is-invalid');
+                return;
+            }
+
+            ClientesState.telefonos.push({ telefono: valor });
+            actualizarListaTelefonos(_tipoActivo);
+            _modal.hide();
+        };
+
+        /** @@returns {string|null} mensaje de error, o null si es válido */
+        function validar(valor) {
+            if (!valor) return 'Debe ingresar un número de teléfono.';
+            if (valor.replace(/\D/g, '').length < 7) return 'El número debe tener al menos 7 dígitos.';
+            return null;
+        }
+
+        /* ── Baja ─────────────────────────────────────────────────── */
+        window.eliminarTelefono = function (index, tipo) {
+            if (confirm('¿Está seguro de eliminar este teléfono?')) {
+                ClientesState.telefonos.splice(index, 1);
+                actualizarListaTelefonos(tipo);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            _modal = new bootstrap.Modal(document.getElementById('modalAgregarTelefono'));
+
+            document.getElementById('input_nuevo_telefono').addEventListener('keydown', e => {
+                if (e.key === 'Enter') confirmarAgregarTelefono();
+            });
+        });
+    })();
+</script>

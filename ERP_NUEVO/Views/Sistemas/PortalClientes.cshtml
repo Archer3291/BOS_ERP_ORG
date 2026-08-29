@@ -1,0 +1,461 @@
+@{
+    ViewBag.Title = "Portal de Clientes";
+    ViewBag.PageTitle = "Portal de Clientes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link href="~/content/compras-nacionales.css" rel="stylesheet" />
+    <style>
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            color: #fff;
+            padding: 22px 25px;
+            border-radius: 10px;
+            margin-bottom: 22px;
+        }
+
+        .panel {
+            background: var(--bg-light);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .buscador { position: relative; }
+
+        .resultados {
+            position: absolute;
+            z-index: 30;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 250px;
+            overflow-y: auto;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+        }
+
+            .resultados.abierto { display: block; }
+
+        .resultado-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); }
+
+            .resultado-item:hover { background: var(--very-light-blue); }
+
+        .badge-estado {
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .e-activo { background: #dcfce7; color: #166534; }
+        .e-pendiente { background: #fef3c7; color: #92400e; }
+        .e-bloqueado { background: #fee2e2; color: #991b1b; }
+
+        .aviso {
+            background: #fff8e1;
+            border-left: 3px solid #ffc107;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: .84rem;
+            margin-bottom: 16px;
+        }
+
+        table.datos { width: 100%; font-size: .87rem; }
+
+            table.datos th {
+                background: var(--primary-blue);
+                color: #fff;
+                font-size: .75rem;
+                text-transform: uppercase;
+                padding: 9px;
+                text-align: left;
+            }
+
+            table.datos td { padding: 9px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+
+        .vacio { text-align: center; color: var(--text-light); padding: 30px; }
+    </style>
+}
+
+<div class="header-section">
+    <h3 class="mb-1"><i class="fas fa-users-gear me-2"></i>Portal de Clientes</h3>
+    <p class="mb-0" style="opacity:.9; font-size:.9rem;">
+        Accesos de clientes para consultar sus facturas
+    </p>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="aviso">
+    <i class="fas fa-circle-info me-1"></i>
+    Dar acceso aquí <strong>no</strong> agrega el correo a la lista de envío de facturas.
+    Son cosas distintas: los correos de <em>Clientes → Contacto</em> deciden a dónde se
+    mandan los CFDI; esto decide quién puede entrar a consultarlos.
+</div>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabAccesos" type="button">
+            <i class="fas fa-key me-1"></i>Accesos
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPendientes" type="button">
+            <i class="fas fa-triangle-exclamation me-1"></i>Intentos sin resolver
+            <span class="badge bg-warning text-dark ms-1" id="contadorPendientes">0</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    @* ── Accesos ─────────────────────────────────────────────────── *@
+    <div class="tab-pane fade show active" id="tabAccesos">
+
+        <div class="panel">
+            <h6 class="fw-bold mb-3"><i class="fas fa-plus me-1"></i>Dar acceso a un cliente</h6>
+
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4 buscador">
+                    <label class="form-label">Cliente</label>
+                    <input type="text" id="buscaCliente" class="form-control"
+                           placeholder="Clave, nombre o RFC…" autocomplete="off" />
+                    <div class="resultados" id="resultadosCliente"></div>
+                    <input type="hidden" id="clienteId" value="0" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Correo del contacto</label>
+                    <input type="email" id="nuevoCorreo" class="form-control" placeholder="contacto@empresa.com" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nota <span class="text-muted">(opcional)</span></label>
+                    <input type="text" id="nuevaNota" class="form-control" placeholder="Ej. contadora del cliente" />
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-primary w-100" id="btnCrear" title="Crear y enviar enlace">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="d-flex gap-2 mb-3">
+                <input type="text" id="filtroAccesos" class="form-control form-control-sm"
+                       placeholder="Filtrar por cliente, clave o correo…" style="max-width:340px;" />
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnFiltrar">
+                    <i class="fas fa-magnifying-glass"></i>
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="datos">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Correo</th>
+                            <th>Estado</th>
+                            <th>Origen</th>
+                            <th>Último acceso</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoAccesos">
+                        <tr><td colspan="6" class="vacio">Cargando…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @* ── Intentos sin resolver ────────────────────────────────────── *@
+    <div class="tab-pane fade" id="tabPendientes">
+        <div class="panel">
+            <p class="text-muted" style="font-size:.86rem;">
+                Solicitudes de acceso que no encontraron cliente. Cada renglón es alguien
+                esperando un correo que nunca va a llegar. Desaparecen de esta lista en
+                cuanto ese correo obtiene acceso.
+            </p>
+
+            <div class="table-responsive">
+                <table class="datos">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Correo que capturó</th>
+                            <th>Motivo</th>
+                            <th>Datos capturados</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoPendientes">
+                        <tr><td colspan="5" class="vacio">Cargando…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const token = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
+
+            async function postear(url, datos) {
+                const fd = new FormData();
+                Object.entries(datos).forEach(([k, v]) => fd.append(k, v));
+                const t = token();
+                if (t) fd.append('__RequestVerificationToken', t);
+
+                const r = await fetch(url, { method: 'POST', body: fd });
+                if (!r.ok) throw new Error(`El servidor respondió ${r.status}`);
+                return await r.json();
+            }
+
+            // ── Buscador de clientes ─────────────────────────────────
+            const inputCliente = document.getElementById('buscaCliente');
+            const panelCliente = document.getElementById('resultadosCliente');
+            let timer = null;
+
+            inputCliente.addEventListener('input', () => {
+                clearTimeout(timer);
+                document.getElementById('clienteId').value = 0;
+
+                const term = inputCliente.value.trim();
+                if (term.length < 2) { panelCliente.classList.remove('abierto'); return; }
+
+                timer = setTimeout(async () => {
+                    try {
+                        const r = await fetch(`@Url.Action("BuscarClientes", "PortalClientesAdmin")?term=${encodeURIComponent(term)}`);
+                        const data = await r.json();
+                        if (!data.success) throw new Error(data.message);
+
+                        panelCliente.innerHTML = data.clientes.length
+                            ? data.clientes.map(c => `
+                                <div class="resultado-item" data-id="${c.id}"
+                                     data-etiqueta="${esc(c.clave)} — ${esc(c.nombre)}">
+                                    <div style="font-weight:700;font-size:.85rem;">${esc(c.clave)} — ${esc(c.nombre)}</div>
+                                    <div style="font-size:.78rem;color:var(--text-light);">
+                                        ${esc(c.empresa)} · ${esc(c.rfc)} · ${c.correosRegistrados} correo(s) de facturación
+                                    </div>
+                                </div>`).join('')
+                            : '<div class="resultado-item text-muted">Sin coincidencias</div>';
+
+                        panelCliente.classList.add('abierto');
+                    } catch (err) {
+                        panelCliente.innerHTML = `<div class="resultado-item text-danger">${esc(err.message)}</div>`;
+                        panelCliente.classList.add('abierto');
+                    }
+                }, 300);
+            });
+
+            panelCliente.addEventListener('click', e => {
+                const item = e.target.closest('.resultado-item[data-id]');
+                if (!item) return;
+                document.getElementById('clienteId').value = item.dataset.id;
+                inputCliente.value = item.dataset.etiqueta;
+                panelCliente.classList.remove('abierto');
+            });
+
+            document.addEventListener('click', e => {
+                if (!panelCliente.contains(e.target) && e.target !== inputCliente)
+                    panelCliente.classList.remove('abierto');
+            });
+
+            // ── Crear acceso ─────────────────────────────────────────
+            document.getElementById('btnCrear').addEventListener('click', async e => {
+                const clienteId = parseInt(document.getElementById('clienteId').value, 10);
+                const correo = document.getElementById('nuevoCorreo').value.trim();
+
+                if (!clienteId) {
+                    Swal.fire({ icon: 'warning', title: 'Falta el cliente', text: 'Selecciona un cliente de la lista.' });
+                    return;
+                }
+                if (!correo || !correo.includes('@@')) {
+                    Swal.fire({ icon: 'warning', title: 'Correo inválido', text: 'Captura un correo válido.' });
+                    return;
+                }
+
+                const boton = e.currentTarget;
+                boton.disabled = true;
+
+                try {
+                    const data = await postear('@Url.Action("Crear", "PortalClientesAdmin")', {
+                        clienteId, correo, notas: document.getElementById('nuevaNota').value
+                    });
+
+                    Swal.fire({
+                        icon: data.success ? 'success' : 'error',
+                        title: data.success ? 'Listo' : 'No se pudo crear',
+                        text: data.message
+                    });
+
+                    if (data.success) {
+                        inputCliente.value = '';
+                        document.getElementById('clienteId').value = 0;
+                        document.getElementById('nuevoCorreo').value = '';
+                        document.getElementById('nuevaNota').value = '';
+                        cargarAccesos();
+                        cargarPendientes();
+                    }
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+                } finally {
+                    boton.disabled = false;
+                }
+            });
+
+            // ── Listado de accesos ───────────────────────────────────
+            async function cargarAccesos() {
+                const cuerpo = document.getElementById('cuerpoAccesos');
+                cuerpo.innerHTML = '<tr><td colspan="6" class="vacio">Cargando…</td></tr>';
+
+                try {
+                    const term = document.getElementById('filtroAccesos').value.trim();
+                    const r = await fetch(`@Url.Action("Accesos", "PortalClientesAdmin")?term=${encodeURIComponent(term)}`);
+                    const data = await r.json();
+
+                    if (!data.success) {
+                        cuerpo.innerHTML = `<tr><td colspan="6" class="vacio">${esc(data.message)}</td></tr>`;
+                        return;
+                    }
+
+                    if (!data.accesos.length) {
+                        cuerpo.innerHTML = '<tr><td colspan="6" class="vacio">Todavía no hay accesos registrados.</td></tr>';
+                        return;
+                    }
+
+                    cuerpo.innerHTML = data.accesos.map(a => {
+                        const clase = a.estado === 'Activo' ? 'e-activo'
+                                    : a.estado === 'Bloqueado' ? 'e-bloqueado' : 'e-pendiente';
+
+                        const detalleBloqueo = a.bloqueadoHasta
+                            ? `<div style="font-size:.74rem;color:#991b1b;">hasta ${esc(a.bloqueadoHasta)}</div>` : '';
+
+                        return `
+                        <tr>
+                            <td>
+                                <strong>${esc(a.clave)}</strong> — ${esc(a.cliente)}
+                                <div style="font-size:.76rem;color:var(--text-light);">${esc(a.empresa)}</div>
+                            </td>
+                            <td>
+                                ${esc(a.correo)}
+                                ${a.notas ? `<div style="font-size:.74rem;color:var(--text-light);font-style:italic;">${esc(a.notas)}</div>` : ''}
+                            </td>
+                            <td>
+                                <span class="badge-estado ${clase}">${esc(a.estado)}</span>
+                                ${detalleBloqueo}
+                            </td>
+                            <td style="font-size:.8rem;">
+                                ${esc(a.origen)}
+                                ${a.creadoPor ? `<div style="font-size:.74rem;color:var(--text-light);">${esc(a.creadoPor)}</div>` : ''}
+                            </td>
+                            <td style="font-size:.82rem;">${esc(a.ultimoAcceso)}</td>
+                            <td style="white-space:nowrap;">
+                                <button class="btn btn-sm btn-outline-primary accion" data-accion="reenviar"
+                                        data-id="${a.idAcceso}" title="Reenviar enlace">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                ${a.estado === 'Bloqueado' ? `
+                                <button class="btn btn-sm btn-outline-warning accion" data-accion="desbloquear"
+                                        data-id="${a.idAcceso}" title="Desbloquear">
+                                    <i class="fas fa-lock-open"></i>
+                                </button>` : ''}
+                                <button class="btn btn-sm btn-outline-secondary accion" data-accion="estado"
+                                        data-id="${a.idAcceso}" data-activo="${a.estado === 'Activo' ? 'false' : 'true'}"
+                                        title="${a.estado === 'Activo' ? 'Suspender' : 'Reactivar'}">
+                                    <i class="fas fa-${a.estado === 'Activo' ? 'ban' : 'circle-check'}"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                } catch (err) {
+                    cuerpo.innerHTML = `<tr><td colspan="6" class="vacio">${esc(err.message)}</td></tr>`;
+                }
+            }
+
+            document.getElementById('cuerpoAccesos').addEventListener('click', async e => {
+                const boton = e.target.closest('.accion');
+                if (!boton) return;
+
+                const id = boton.dataset.id;
+                const accion = boton.dataset.accion;
+
+                const rutas = {
+                    reenviar: ['@Url.Action("ReenviarEnlace", "PortalClientesAdmin")', { idAcceso: id }],
+                    desbloquear: ['@Url.Action("Desbloquear", "PortalClientesAdmin")', { idAcceso: id }],
+                    estado: ['@Url.Action("CambiarEstado", "PortalClientesAdmin")', { idAcceso: id, activo: boton.dataset.activo }]
+                };
+
+                const [url, datos] = rutas[accion];
+                boton.disabled = true;
+
+                try {
+                    const data = await postear(url, datos);
+                    Swal.fire({
+                        icon: data.success ? 'success' : 'error',
+                        title: data.success ? 'Listo' : 'Error',
+                        text: data.message,
+                        timer: data.success ? 2200 : undefined,
+                        showConfirmButton: !data.success
+                    });
+                    if (data.success) cargarAccesos();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+                } finally {
+                    boton.disabled = false;
+                }
+            });
+
+            // ── Intentos sin resolver ────────────────────────────────
+            async function cargarPendientes() {
+                const cuerpo = document.getElementById('cuerpoPendientes');
+
+                try {
+                    const r = await fetch('@Url.Action("IntentosFallidos", "PortalClientesAdmin")');
+                    const data = await r.json();
+
+                    document.getElementById('contadorPendientes').textContent =
+                        data.success ? data.intentos.length : 0;
+
+                    if (!data.success) {
+                        cuerpo.innerHTML = `<tr><td colspan="5" class="vacio">${esc(data.message)}</td></tr>`;
+                        return;
+                    }
+
+                    cuerpo.innerHTML = data.intentos.length
+                        ? data.intentos.map(i => `
+                            <tr>
+                                <td>${esc(i.fecha)}</td>
+                                <td><strong>${esc(i.correo)}</strong></td>
+                                <td>${esc(i.motivo)}</td>
+                                <td style="font-size:.8rem;color:var(--text-light);">${esc(i.detalle)}</td>
+                                <td style="font-size:.78rem;color:var(--text-light);">${esc(i.ip)}</td>
+                            </tr>`).join('')
+                        : '<tr><td colspan="5" class="vacio">No hay intentos pendientes.</td></tr>';
+                } catch (err) {
+                    cuerpo.innerHTML = `<tr><td colspan="5" class="vacio">${esc(err.message)}</td></tr>`;
+                }
+            }
+
+            document.getElementById('btnFiltrar').addEventListener('click', cargarAccesos);
+            document.getElementById('filtroAccesos').addEventListener('keydown', e => {
+                if (e.key === 'Enter') cargarAccesos();
+            });
+
+            cargarAccesos();
+            cargarPendientes();
+        })();
+    </script>
+}

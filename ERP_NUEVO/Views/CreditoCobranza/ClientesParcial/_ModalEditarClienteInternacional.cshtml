@@ -1,0 +1,310 @@
+@*
+    Modal de EDICIÓN de cliente internacional.
+    Mismo esquema que el nacional, pero con cascada país → estado →
+    ciudad, incoterms y la pestaña de tipos de transporte.
+*@
+<div class="modal fade cli-modal" id="modalEditarClienteInternacional" tabindex="-1" aria-labelledby="modalEditarClienteInternacionalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="cli-icon">
+                    <i class="fa-solid fa-globe"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title" id="modalEditarClienteInternacionalLabel">Editar cliente internacional</h5>
+                    <span class="modal-subtitle">Datos generales, contacto, financiero, facturación y transportes.</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav cli-tabs" id="tabsEditarClienteInternacional" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="datos-tab-internacional" data-bs-toggle="tab" data-bs-target="#datos-generales-internacional" type="button" role="tab">
+                            <i class="fa-solid fa-user"></i>Datos Generales
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="contacto-tab-internacional" data-bs-toggle="tab" data-bs-target="#contacto-internacional" type="button" role="tab">
+                            <i class="fa-solid fa-address-book"></i>Contacto
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="financiero-tab-internacional" data-bs-toggle="tab" data-bs-target="#financiero-internacional" type="button" role="tab">
+                            <i class="fa-solid fa-money-bill"></i>Financiero
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="facturacion-tab-internacional" data-bs-toggle="tab" data-bs-target="#facturacion-internacional" type="button" role="tab">
+                            <i class="fa-solid fa-file-invoice"></i>Facturación
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="transportes-tab-internacional" data-bs-toggle="tab" data-bs-target="#transportes-internacional" type="button" role="tab">
+                            <i class="fa-solid fa-truck"></i>Transporte
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="tabsEditarClienteInternacionalContent">
+                    @Html.Partial("ClientesParcial/Tabs/_TabDatosGeneralesInternacional")
+                    @Html.Partial("ClientesParcial/Tabs/_TabContacto", "Internacional")
+                    @Html.Partial("ClientesParcial/Tabs/_TabFinanciero", "Internacional")
+                    @Html.Partial("ClientesParcial/Tabs/_TabFacturacionInternacional")
+                    @Html.Partial("ClientesParcial/Tabs/_TabTransportes")
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cli-btn cli-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>Cancelar
+                </button>
+                <button type="button" class="cli-btn cli-btn-success" onclick="guardarClienteInternacionalEdit()">
+                    <i class="fa-solid fa-floppy-disk"></i>Guardar cliente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        const val = id => document.getElementById(id).value.trim();
+
+        // Los niveles de la cascada (estado, ciudad) sólo tienen Tom Select
+        // montado si el usuario llegó a ese nivel. Se devuelve '' y la
+        // validación de abajo se encarga de avisar.
+        const tom = id => document.getElementById(id)?.tomselect?.getValue() ?? '';
+
+        /* ── Tarjeta de sólo lectura con la dirección actual ───────── */
+        function renderResumenDireccion(cliente) {
+            const campos = [
+                ['País', cliente.cve_pais],
+                ['Estado/Provincia', cliente.pob],
+                ['Ciudad', cliente.municipio],
+                ['Código Postal', cliente.cp],
+                ['Colonia', cliente.col],
+                ['Dirección', cliente.dir],
+            ];
+
+            document.getElementById('detalles_direccion_internacional').innerHTML = `
+                <div class="cli-summary">
+                    ${campos.map(([etiqueta, valor]) => `
+                        <div class="cli-summary-item">
+                            <span class="cli-summary-label">${etiqueta}</span>
+                            <span class="cli-summary-value">${valor || '—'}</span>
+                        </div>`).join('')}
+                </div>`;
+        }
+
+        /* ── Llena las pestañas con el detalle del cliente ─────────── */
+        window.cargarDatosEdicionInternacional = async function (data) {
+            const cliente = data.cliente[0];
+            const facturacion = data.datosFiscales[0] || {};
+
+            ClientesState.tom.editarInternacional = new TomSelectManager();
+            const manager = ClientesState.tom.editarInternacional;
+
+            ClientesState.limpiarSelectsDeModal(
+                '#modalEditarClienteInternacional',
+                '#edit_clasificacion_internacional, #edit_estatus_internacional'
+            );
+
+            // Datos generales
+            document.getElementById('edit_id_cliente_internacional').value = cliente.id_cliente || '';
+            document.getElementById('edit_cve_cli_internacional').value = cliente.cve_cli || '';
+            document.getElementById('edit_n_cli_internacional').value = cliente.n_cli || '';
+            document.getElementById('edit_tax_id_internacional').value = cliente.idf || '';
+            document.getElementById('edit_vat_internacional').value = cliente.rfc || '';
+            document.getElementById('edit_clasificacion_internacional').value = cliente.clasificacion || 'regular';
+            document.getElementById('edit_estatus_internacional').value = cliente.estatus_cliente || 'activo';
+
+            renderResumenDireccion(cliente);
+
+            // Dirección
+            document.getElementById('edit_cp_internacional').value = cliente.cp || '';
+            document.getElementById('edit_col_internacional').value = cliente.col || '';
+            document.getElementById('edit_dir_internacional').value = cliente.dir || '';
+            document.getElementById('edit_num_int_internacional').value = cliente.numero_int_domicilio || '';
+            document.getElementById('edit_num_ext_internacional').value = cliente.numero_ext_domiclio || '';
+
+            await cargarDireccion(direccionConfigInternacional, cliente, "edit", "pais", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigInternacional, cliente, "edit", "vendedores", null, { instanceName: manager });
+
+            // Asignaciones
+            document.getElementById('edit_cve_gpo_internacional').value = cliente.cve_gpo || '';
+            document.getElementById('edit_lim_crd_datos_internacional').value = cliente.lim_crd || 0;
+            document.getElementById('edit_pl_dias_internacional').value = cliente.pl_crd || 0;
+
+            // Pestaña Financiero
+            document.getElementById('edit_lim_crd_internacional').value = cliente.lim_crd || 0;
+            document.getElementById('edit_pl_crd_internacional').value = cliente.pl_crd || 0;
+            document.getElementById('edit_com_por_internacional').value = cliente.com_por || 0;
+            document.getElementById('edit_dto_internacional').value = cliente.dto || '';
+            document.getElementById('edit_dto2_internacional').value = cliente.dto2 || '';
+            document.getElementById('edit_bco_cli1_internacional').value = cliente.bco_cli1 || '';
+            document.getElementById('edit_cta_bco_cli1_internacional').value = cliente.cta_bco_cli1 || '';
+            document.getElementById('edit_bco_cli2_internacional').value = cliente.bco_cli2 || '';
+            document.getElementById('edit_cta_bco_cli2_internacional').value = cliente.cta_bco_cli2 || '';
+            document.getElementById('edit_bco_cli3_internacional').value = cliente.bco_cli3 || '';
+            document.getElementById('edit_cta_bco_cli3_internacional').value = cliente.cta_bco_cli3 || '';
+            document.getElementById('edit_coment1_internacional').value = cliente.coment1 || '';
+
+            // Pestaña Contacto
+            ClientesState.correos = data.correos || [];
+            actualizarListaCorreos('Internacional');
+
+            ClientesState.telefonos = data.telefonos || [];
+            actualizarListaTelefonos('Internacional');
+
+            // Pestaña Tipos de Transporte
+            ClientesState.transportes = data.transportes || [];
+            actualizarListaTransportes();
+
+            // Catálogos fiscales (se inyectan como opciones de la config)
+            const datosFiscales = await GetData({ path: '/Clientes/GetDatosFiscales' });
+
+            Object.assign(direccionConfigInternacional.edit, {
+                fact_regimen: { ...direccionConfigInternacional.edit.fact_regimen, options: datosFiscales.regimen },
+                fact_cfdi: { ...direccionConfigInternacional.edit.fact_cfdi, options: datosFiscales.cfdi },
+                fact_pago: { ...direccionConfigInternacional.edit.fact_pago, options: datosFiscales.fpago }
+            });
+
+            // Pestaña Datos de Facturación
+            document.getElementById('fact_raz_soc_edit_int').value = facturacion.razon_social || '';
+            document.getElementById('fact_dir_edit_int').value = facturacion.calle || '';
+            document.getElementById('fact_num_int_edit_int').value = facturacion.no_interior || '';
+            document.getElementById('fact_num_ext_edit_int').value = facturacion.no_exterior || '';
+            document.getElementById('fact_cp_edit_int').value = facturacion.codigo_postal || '';
+            document.getElementById('fact_col_edit_int').value = facturacion.colonia || '';
+
+            await cargarDireccion(direccionConfigInternacional, cliente, "edit", "incoterns", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigInternacional, facturacion, "edit", "fact_pais", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigInternacional, facturacion, "edit", "fact_regimen", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigInternacional, facturacion, "edit", "fact_cfdi", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigInternacional, facturacion, "edit", "fact_pago", null, { instanceName: manager });
+
+            cargarAddendas(cliente.id_cliente);
+        };
+
+        /* ── Arma el payload de las 5 pestañas ────────────────────── */
+        function construirPayload() {
+            return {
+                // Datos generales
+                id_cliente: val('edit_id_cliente_internacional'),
+                cve_cli: val('edit_cve_cli_internacional'),
+                n_cli: val('edit_n_cli_internacional'),
+                tax_id: val('edit_tax_id_internacional'),
+                rfc: val('edit_vat_internacional'),
+                pais: tom('edit_pais_internacional'),
+                estado: tom('edit_estado_internacional'),
+                municipio: tom('edit_municipio_internacional'),
+                cp: val('edit_cp_internacional'),
+                colonia: val('edit_col_internacional'),
+                dir: val('edit_dir_internacional'),
+                numero_int: val('edit_num_int_internacional'),
+                numero_ext: val('edit_num_ext_internacional'),
+                cve_vdr: tom('edit_cve_vdr_internacional'),
+                incoterm: tom('edit_incot_internacional'),
+                cve_gpo: val('edit_cve_gpo_internacional'),
+                es_internacional: true,
+                clasificacion: document.getElementById('edit_clasificacion_internacional').value,
+                estatus_cliente: document.getElementById('edit_estatus_internacional').value,
+
+                // Contacto y transportes
+                correos: JSON.stringify(ClientesState.correos),
+                telefonos: JSON.stringify(ClientesState.telefonos),
+                transportes: JSON.stringify(ClientesState.transportes),
+
+                // Financiero
+                lim_crd: val('edit_lim_crd_internacional'),
+                pl_crd: val('edit_pl_crd_internacional'),
+                com_por: val('edit_com_por_internacional'),
+                dto: val('edit_dto_internacional'),
+                dto2: val('edit_dto2_internacional'),
+                bco_cli1: val('edit_bco_cli1_internacional'),
+                cta_bco_cli1: val('edit_cta_bco_cli1_internacional'),
+                bco_cli2: val('edit_bco_cli2_internacional'),
+                cta_bco_cli2: val('edit_cta_bco_cli2_internacional'),
+                bco_cli3: val('edit_bco_cli3_internacional'),
+                cta_bco_cli3: val('edit_cta_bco_cli3_internacional'),
+                coment1: val('edit_coment1_internacional'),
+
+                // Facturación
+                fact_pais: val('fact_pais_edit'),
+                fact_estado: val('fact_est_edit_int'),
+                fact_municipio: val('fact_mpio_edit_int'),
+                fact_cp: val('fact_cp_edit_int'),
+                fact_colonia: val('fact_col_edit_int'),
+                fact_dir: val('fact_dir_edit_int'),
+                fact_numero_int: val('fact_num_int_edit_int'),
+                fact_numero_ext: val('fact_num_ext_edit_int'),
+                fact_razon_social: val('fact_raz_soc_edit_int'),
+                fact_regimen_fiscal: val('fact_reg_soc_edit_int'),
+                fact_uso_cfdi: val('fact_uso_sug_edit_int'),
+                fact_forma_pago: val('fact_forma_pago_edit_int'),
+            };
+        }
+
+        /* ── Valida y envía ───────────────────────────────────────── */
+        window.guardarClienteInternacionalEdit = function () {
+            const data = construirPayload();
+
+            const errores = ClientesValidaciones.validarCamposObligatorios(data, {
+                cve_cli: 'Código del cliente',
+                n_cli: 'Nombre del cliente',
+                tax_id: 'Tax ID / Número Fiscal',
+                rfc: 'RFC Internacional',
+                pais: 'País',
+                estado: 'Estado / Provincia',
+                cp: 'Código Postal',
+                colonia: 'Colonia',
+                dir: 'Dirección completa',
+                numero_ext: 'Número exterior'
+            });
+
+            if (data.tax_id && data.tax_id.length < 9) {
+                errores.push('El Tax ID debe tener al menos 9 caracteres');
+            }
+
+            if (errores.length > 0) {
+                ClientesValidaciones.mostrarErrores('Faltan campos o datos inválidos:', errores);
+                return;
+            }
+
+            const erroresFin = ClientesValidaciones.validarFinanciero(data);
+            if (erroresFin.length > 0) {
+                ClientesValidaciones.mostrarErrores('Errores en sección financiera:', erroresFin);
+                return;
+            }
+
+            // El servidor exige la dirección fiscal completa: se valida aquí
+            // para poder decir exactamente qué falta y en qué pestaña.
+            // La ciudad es opcional en clientes del extranjero.
+            const erroresFact = ClientesValidaciones.validarCamposObligatorios(data, {
+                fact_razon_social: 'Razón social',
+                fact_regimen_fiscal: 'Régimen fiscal',
+                fact_uso_cfdi: 'Uso sugerido',
+                fact_forma_pago: 'Forma de pago',
+                fact_pais: 'País',
+                fact_estado: 'Estado/Provincia',
+                fact_cp: 'Código Postal',
+                fact_dir: 'Dirección',
+                fact_numero_ext: 'Número exterior',
+            });
+
+            if (erroresFact.length > 0) {
+                ClientesValidaciones.mostrarErrores(
+                    'Faltan datos en la pestaña <b>Datos de Facturación</b>:', erroresFact);
+                return;
+            }
+
+            GetData({
+                path: '/Clientes/ActualizarCliente',
+                data: data,
+                swalResponse: true,
+                swalPath: '/CreditoCobranza/Clientes',
+                swalType: 'modal'
+            });
+        };
+    })();
+</script>

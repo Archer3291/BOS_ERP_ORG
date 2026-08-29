@@ -1,0 +1,130 @@
+@*
+    Modal de alta de correo + render de la lista de correos.
+    Único responsable de ClientesState.correos; lo usan las pestañas
+    de Contacto de ambos modales de edición.
+*@
+<div class="modal fade cli-modal" id="modalAgregarCorreo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="cli-icon">
+                    <i class="fa-solid fa-envelope"></i>
+                </div>
+                <h5 class="modal-title">Agregar correo</h5>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label for="input_nuevo_correo" class="form-label required">Correo electrónico</label>
+                <input type="email" class="form-control" id="input_nuevo_correo"
+                       placeholder="ejemplo@correo.com" autocomplete="off">
+                <div class="invalid-feedback" id="error_correo"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cli-btn cli-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>Cancelar
+                </button>
+                <button type="button" class="cli-btn cli-btn-primary" onclick="confirmarAgregarCorreo()">
+                    <i class="fa-solid fa-plus"></i>Agregar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        let _modal = null;
+        // Pestaña desde la que se abrió: define qué lista se repinta
+        let _tipoActivo = 'Nacional';
+
+        /* ── Pinta la lista a partir del estado en memoria ─────────── */
+        window.actualizarListaCorreos = function (tipo = 'Nacional') {
+            const lista = document.getElementById(`listaCorreos${tipo}`);
+            if (!lista) return;
+
+            lista.innerHTML = '';
+
+            if (ClientesState.correos.length === 0) {
+                lista.innerHTML = `
+                    <li class="cli-empty">
+                        <i class="fa-solid fa-envelope-open"></i>
+                        No hay correos registrados.
+                    </li>`;
+                return;
+            }
+
+            ClientesState.correos.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'cli-list-item';
+                li.innerHTML = `
+                    <span class="cli-list-text">
+                        <i class="fa-solid fa-envelope"></i>${item.correo}
+                    </span>
+                    <button type="button" class="cli-list-remove" title="Quitar" onclick="eliminarCorreo(${index}, '${tipo}')">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>`;
+                lista.appendChild(li);
+            });
+        };
+
+        /* ── Alta ─────────────────────────────────────────────────── */
+        window.agregarCorreo = function (tipo = 'Nacional') {
+            _tipoActivo = tipo;
+
+            const input = document.getElementById('input_nuevo_correo');
+            input.value = '';
+            input.classList.remove('is-invalid');
+            _modal.show();
+
+            document.getElementById('modalAgregarCorreo').addEventListener('shown.bs.modal', () => {
+                input.focus();
+            }, { once: true });
+        };
+
+        window.confirmarAgregarCorreo = function () {
+            const input = document.getElementById('input_nuevo_correo');
+            const errorDiv = document.getElementById('error_correo');
+            const valor = input.value.trim();
+
+            input.classList.remove('is-invalid');
+
+            const error = validar(valor);
+            if (error) {
+                errorDiv.textContent = error;
+                input.classList.add('is-invalid');
+                return;
+            }
+
+            ClientesState.correos.push({ correo: valor });
+            actualizarListaCorreos(_tipoActivo);
+            _modal.hide();
+        };
+
+        /** @@returns {string|null} mensaje de error, o null si es válido */
+        function validar(valor) {
+            if (!valor) return 'Debe ingresar un correo.';
+            if (!validarEmail(valor)) return 'Ingrese un correo electrónico válido.';
+            if (ClientesState.correos.some(c => c.correo.toLowerCase() === valor.toLowerCase()))
+                return 'Este correo ya está registrado.';
+            return null;
+        }
+
+        /* ── Baja ─────────────────────────────────────────────────── */
+        window.eliminarCorreo = function (index, tipo) {
+            if (confirm('¿Está seguro de eliminar este correo?')) {
+                ClientesState.correos.splice(index, 1);
+                actualizarListaCorreos(tipo);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            _modal = new bootstrap.Modal(document.getElementById('modalAgregarCorreo'));
+
+            document.getElementById('input_nuevo_correo').addEventListener('keydown', e => {
+                if (e.key === 'Enter') confirmarAgregarCorreo();
+            });
+        });
+    })();
+</script>

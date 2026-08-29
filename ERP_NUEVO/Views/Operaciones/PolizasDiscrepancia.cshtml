@@ -1,0 +1,781 @@
+﻿@using BOS_ERP.Controllers;
+
+@{
+    ViewBag.Title = "PolizasDiscrepancia";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Polizas con discrepancia";
+}
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/polizasDiscrepancia/style.css" rel="stylesheet" />
+<style>
+    .info-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.5rem;
+    }
+</style>
+
+<div class="main-container">
+    <!-- Filters -->
+    <div class="filters-card">
+        <div class="filters-title">
+            <i class="fa fa-sliders"></i> Filtros de Búsqueda
+        </div>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="far fa-calendar"></i>
+                    Fecha Desde
+                </label>
+                <input type="date" id="fecha_inicio" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="far fa-calendar"></i>
+                    Fecha Hasta
+                </label>
+                <input type="date" id="fecha_fin" class="form-control">
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-custom btn-primary-custom w-100" id="btnBuscar">
+                    <i class="fa fa-search"></i> Buscar
+                </button>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-custom btn-outline-custom w-100" id="btnLimpiar">
+                    <i class="fa fa-arrow-rotate-left"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div id="tablaPolizas"></div>
+</div>
+
+<!-- Modal mejorado con campos adicionales -->
+<div class="modal fade" id="modalDiscrepancia" tabindex="-1" aria-labelledby="modalDiscrepanciaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDiscrepanciaLabel">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Detalle de Discrepancia en Póliza
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <!-- Contenido adicional -->
+                    <div id="contenidoModal" class="mt-3"></div>
+
+                    <div class="section-title">
+                        <i class="fas fa-code-compare"></i>
+                        Informacion obligatoria para cerrar la poliza
+                    </div>
+                    <div class="row g-3">
+                        <!-- Descripción -->
+                        <div class="col-md-6">
+                            <div class="info-card shadow-sm">
+                                <div class="info-row">
+                                    <h6 class="info-item">
+                                        <i class="fas fa-file-lines me-2"></i>Descripción de la accion tomada
+                                        <span class="text-danger">*</span>
+                                    </h6>
+                                    <textarea id="descripcionDiscrepancia"
+                                              class="form-control mt-2"
+                                              placeholder="Describa en detalle la accion o acuerdo que se tomo con el proveedor..."
+                                              maxlength="500"
+                                              required></textarea>
+                                    <div class="text-end small text-muted mt-1" id="charCounter">0 / 500 caracteres</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acción -->
+                        <div class="col-md-6">
+                            <div class="info-card shadow-sm">
+                                <div class="info-row">
+                                    <h6 class="info-item">
+                                        <i class="fas fa-hands-helping me-2"></i>Acción Acordada con Proveedor
+                                        <span class="text-danger">*</span>
+                                    </h6>
+                                    <select id="accionDiscrepancia" class="form-select mt-2" required>
+                                        <option value="" selected disabled>Seleccione la acción acordada...</option>
+                                        <option value="completar">Completar faltante - Envío del material faltante</option>
+                                        <option value="cambio">Cambio de material - Reemplazo de producto</option>
+                                        <option value="credito">Crédito a favor - Diferencia como crédito</option>
+                                        <option value="devolucion_efectivo">Devolución en efectivo - Reembolso total</option>
+                                        <option value="nota_credito">Nota de crédito - Documento formal</option>
+                                        <option value="aceptar_como_esta">Aceptar como está - Sin cambios</option>
+                                        <option value="devolucion_total">Devolución total - Regreso completo</option>
+                                    </select>
+                                    <p class="form-text mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Seleccione el acuerdo con el proveedor para resolver la discrepancia.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Archivos -->
+                        <div class="container">
+                            <div class="col-12">
+                                <div class="info-card">
+                                    <div class="info-row">
+                                        <h6 class="info-item">
+                                            <i class="fas fa-paperclip me-2"></i>Documentos de evidencia
+                                            <span class="text-danger">*</span>
+                                        </h6>
+
+                                        <div class="file-upload-wrapper">
+                                            <label for="archivoSoporte" class="file-upload-label" id="uploadLabel">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                <p><strong>Haz clic o arrastra archivos aquí</strong></p>
+                                                <p>Máximo 3 archivos - 10 MB total</p>
+                                            </label>
+                                            <input type="file" id="archivoSoporte" multiple
+                                                   accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx" required>
+                                        </div>
+
+                                        <!-- Loader -->
+                                        <div class="upload-loader" id="uploadLoader">
+                                            <div class="loader-spinner"></div>
+                                            <div class="loader-text">Procesando archivos...</div>
+                                        </div>
+
+                                        <!-- Lista de archivos -->
+                                        <div class="files-list" id="filesList">
+                                            <div class="empty-state" id="emptyState">
+                                                <i class="fas fa-inbox"></i>
+                                                <p>No hay archivos seleccionados</p>
+                                            </div>
+                                        </div>
+
+                                        <p class="form-text">
+                                            <i class="fas fa-info-circle"></i>
+                                            Formatos permitidos: PDF, JPG, PNG, XLSX, DOCX.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-custom btn-outline-custom" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+                <button type="button" class="btn btn-custom btn-danger-custom" id="btnGuardarDiscrepancia">
+                    <i class="fas fa-save"></i> Guardar Discrepancia
+                </button>
+                <button type="button" class="btn btn-custom btn-primary-custom">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script>
+    // Contador de caracteres para la descripción
+    document.addEventListener('DOMContentLoaded', () => {
+        const textarea = document.getElementById('descripcionDiscrepancia');
+        const charCounter = document.getElementById('charCounter');
+
+        if (textarea && charCounter) {
+            textarea.addEventListener('input', () => {
+                const length = textarea.value.length;
+                const maxLength = textarea.getAttribute('maxlength');
+                charCounter.textContent = `${length} / ${maxLength} caracteres`;
+
+                if (length > maxLength * 0.9) {
+                    charCounter.classList.add('warning');
+                } else {
+                    charCounter.classList.remove('warning');
+                }
+            });
+        }
+
+        // Manejo de archivos con preview
+        const fileInput = document.getElementById('archivoSoporte');
+        const filesList = document.getElementById('filesList');
+        const emptyState = document.getElementById('emptyState');
+        const uploadLoader = document.getElementById('uploadLoader');
+        const uploadLabel = document.getElementById('uploadLabel');
+
+        const MAX_ARCHIVOS = 3;
+        const MAX_PESO_MB = 10;
+        const EXTENSIONES_PERMITIDAS = ['pdf', 'jpg', 'jpeg', 'png', 'xlsx', 'docx'];
+
+        let archivosSeleccionados = [];
+
+        // Función para formatear tamaño de archivo
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Función para obtener icono según extensión
+        function getFileIcon(extension) {
+            const icons = {
+                'pdf': 'fa-file-pdf',
+                'jpg': 'fa-file-image',
+                'jpeg': 'fa-file-image',
+                'png': 'fa-file-image',
+                'xlsx': 'fa-file-excel',
+                'docx': 'fa-file-word'
+            };
+            return icons[extension] || 'fa-file';
+        }
+
+        // Validar archivos
+        function validarArchivos(files) {
+            if (archivosSeleccionados.length + files.length > MAX_ARCHIVOS) {
+                alert(`Solo puedes subir hasta ${MAX_ARCHIVOS} archivos en total.`);
+                return false;
+            }
+
+            let totalSize = archivosSeleccionados.reduce((sum, f) => sum + f.size, 0);
+
+            for (const file of files) {
+                const extension = file.name.split('.').pop().toLowerCase();
+                if (!EXTENSIONES_PERMITIDAS.includes(extension)) {
+                    alert(`Archivo no permitido: ${file.name}`);
+                    return false;
+                }
+                totalSize += file.size;
+            }
+
+            if (totalSize > MAX_PESO_MB * 1024 * 1024) {
+                alert(`El tamaño total no debe superar ${MAX_PESO_MB} MB.`);
+                return false;
+            }
+
+            return true;
+        }
+
+        // Mostrar loader
+        function showLoader() {
+            uploadLoader.classList.add('active');
+        }
+
+        // Ocultar loader
+        function hideLoader() {
+            uploadLoader.classList.remove('active');
+        }
+
+        // Renderizar lista de archivos
+        function renderFilesList() {
+            if (archivosSeleccionados.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            filesList.innerHTML = '';
+
+            archivosSeleccionados.forEach((file, index) => {
+                const extension = file.name.split('.').pop().toLowerCase();
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.style.animationDelay = `${index * 0.1}s`;
+
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-icon ${extension}">
+                            <i class="fas ${getFileIcon(extension)}"></i>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                            <div class="file-progress">
+                                <div class="file-progress-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn-remove" onclick="removeFile(${index})">
+                            <i class="fa fa-trash"></i> Eliminar
+                        </button>
+                    </div>
+                `;
+
+                filesList.appendChild(fileItem);
+            });
+        }
+
+        // Agregar archivos
+        function addFiles(files) {
+            if (!validarArchivos(files)) {
+                fileInput.value = '';
+                return;
+            }
+
+            showLoader();
+
+            // Simular carga con delay
+            setTimeout(() => {
+                for (const file of files) {
+                    archivosSeleccionados.push(file);
+                }
+
+                hideLoader();
+                renderFilesList();
+                fileInput.value = '';
+            }, 1000);
+        }
+
+        // Eliminar archivo
+        window.removeFile = function (index) {
+            archivosSeleccionados.splice(index, 1);
+            renderFilesList();
+
+            // Actualizar el input
+            const dt = new DataTransfer();
+            archivosSeleccionados.forEach(file => dt.items.add(file));
+            fileInput.files = dt.files;
+        };
+
+        // Event listener para input
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                addFiles(files);
+            }
+        });
+
+        // Drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadLabel.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadLabel.addEventListener(eventName, () => {
+                uploadLabel.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadLabel.addEventListener(eventName, () => {
+                uploadLabel.classList.remove('drag-over');
+            });
+        });
+
+        uploadLabel.addEventListener('drop', (e) => {
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) {
+                addFiles(files);
+            }
+        });
+
+        // Validación antes de guardar
+        const btnGuardar = document.getElementById('btnGuardarDiscrepancia');
+        if (btnGuardar) {
+            btnGuardar.addEventListener('click', () => {
+                const descripcion = document.getElementById('descripcionDiscrepancia').value;
+                //const archivos = document.getElementById('archivoSoporte').files;
+                const accion = document.getElementById('accionDiscrepancia').value;
+                const poliza = $('#btnGuardarDiscrepancia').data('id');
+
+                // Validar descripción
+                if (!descripcion.trim()) {
+                    _Swal.fire({
+                        icon: 'error',
+                        title: 'Campo obligatorio',
+                        text: 'Debe proporcionar una descripción de la discrepancia',
+                    });
+                    return;
+                }
+
+                // Validar acción
+                if (!accion) {
+                    _Swal.fire({
+                        icon: 'error',
+                        title: 'Campo obligatorio',
+                        text: 'Debe seleccionar la acción acordada con el proveedor',
+                    });
+                    return;
+                }
+
+                // Validar archivos
+                if (archivosSeleccionados.length === 0) {
+                    _Swal.fire({
+                        icon: 'error',
+                        title: 'Campos obligatorios',
+                        text: 'Debe adjuntar al menos un documento que respalde la edición',
+                    });
+                    return;
+                }
+
+                // Enviar datos
+                GetData({
+                    path: '/PolizasDiscrepancia/ProcesarPolizas',
+                    data: {
+                        poliza_id: poliza,
+                        descripcion: descripcion,
+                        accion: accion,
+                        archivos: archivosSeleccionados
+                    },
+                    swalResponse: true,
+                    swalType: 'modal',
+                    swalPath: '/Operaciones/PolizasDiscrepancia',
+                });
+            });
+        }
+    });
+
+    function compararPartidas(partidasOriginal, partidasDiscrepancia) {
+        const comparacion = [];
+
+        const mapaDiscrepancia = {};
+        partidasDiscrepancia.forEach(p => {
+            mapaDiscrepancia[p.codigo_producto] = p;
+        });
+
+        partidasOriginal.forEach(original => {
+            const discrepancia = mapaDiscrepancia[original.codigo_producto];
+            const cantidadOriginal = original.cantidad || 0;
+            const cantidadDiscrepancia = discrepancia ? (discrepancia.cantidad || 0) : 0;
+            const diferencia = cantidadOriginal - cantidadDiscrepancia;
+
+            if (cantidadDiscrepancia > 0) {
+                comparacion.push({
+                    codigo: original.codigo_producto,
+                    descripcion: original.descripcion,
+                    unidad: original.unidad,
+                    cantidadOriginal,
+                    cantidadDiscrepancia,
+                    diferencia,
+                    precio: original.precio,
+                    descuento: original.descuento,
+                    importeOriginal: original.importe,
+                    importeRecibido: discrepancia.importe,
+                    estado: discrepancia.estado,
+                });
+                delete mapaDiscrepancia[original.codigo_producto];
+            }
+        });
+
+        return comparacion;
+    }
+
+    function generarContenidoModal(data) {
+        const comparacion = compararPartidas(data.partidasReferencia, data.partidasReferenciaDiscrepancia);
+        let html = `
+                <div class="section-title">
+                    <i class="fas fa-file-invoice"></i>
+                    Detalles de la Póliza
+                </div>
+
+                <div class="info-container">
+                    <div class="info-card">
+                        <h6 class="info-item">
+                            UUID de poliza:
+                        </h6>
+                        <span class="info-value">${data.detallesPoliza[0].poliza_uuid}</span>
+                    </div>
+
+                    <div class="info-card">
+                        <h6 class="info-item">
+                            Proveedor
+                        </h6>
+                        <span class="info-value">${data.referencia.cli_prov} - ${data.referencia.cve_prov}</span>
+                    </div>
+
+
+                    <div class="info-card">
+                        <h6 class="info-item">
+                            Centro de costos
+                        </h6>
+                        <span class="info-value">${data.detallesPoliza[0].centro_costos}</span>
+                    </div>
+                </div>
+
+                <div class="section-title">
+                    <i class="fas fa-code-compare"></i>
+                    Comparación de Documentos
+                </div>
+                <div class="comparison-container">
+                    <div class="comparison-card original">
+                        <div class="comparison-header original">
+                            <i class="fas fa-file-alt"></i>Documento Original
+                        </div>
+                        <div class="info-item mb-2">
+                            <span class="info-label">Folio</span>
+                            <span class="info-value">${data.referencia.folio}</span>
+                        </div>
+                        <div class="info-item mb-2">
+                            <span class="info-label">Tipo de Proceso</span>
+                            <span class="info-value">${data.referencia.tipo_proceso.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) }</span>
+                        </div>
+                        <div class="info-item mb-2">
+                            <span class="info-label">Responsable</span>
+                            <span class="info-value">${data.referencia.responsable}</span>
+                        </div>
+                        <div class="info-item mb-2">
+                            <span class="info-label">Fecha</span>
+                            <span class="info-value">${dateFormatter(data.referencia.fch)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Importe</span>
+                            <span class="info-value">${Currency.format(data.referencia.imp)} (Sin iva)</span>
+                        </div>
+                    </div>
+
+                    <div class="comparison-card discrepancia">
+                        <div class="comparison-header discrepancia">
+                            <i class="fas fa-exclamation-circle"></i>Documento con Discrepancia
+                        </div>
+                        <div class="info-item mb-2">
+                            <span class="info-label">Folio</span>
+                            <span class="info-value">${data.referenciaDiscrepancia.folio}</span>
+                        </div>
+                        <div class="info-item mb-2">
+                            <span class="info-label">Tipo de Proceso</span>
+                            <span class="info-value">${data.referenciaDiscrepancia.tipo_proceso.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) }</span>
+                        </div>
+                        <div class="info-item mb-2">
+                            <span class="info-label">Responsable</span>
+                            <span class="info-value">${data.referenciaDiscrepancia.responsable}</span>
+                        </div>
+                        <div class="info-item mb-2">
+                            <span class="info-label">Fecha</span>
+                            <span class="info-value">${dateFormatter(data.referenciaDiscrepancia.fch)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Importe</span>
+                            <span class="info-value">${data.referenciaDiscrepancia.imp ? Currency.format(data.referenciaDiscrepancia.imp) : '-'} (Sin iva)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-title">
+                    <i class="fas fa-boxes"></i>
+                    Comparación de Partidas
+                </div>
+                <div class="table-responsive">
+                    <table class="table modern-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Unidad</th>
+                                <th class="text-end">Cant. Completa</th>
+                                <th class="text-end">Cant. Discrepancia</th>
+                                <th class="text-end">Costo unitario</th>
+                                <th class="text-end">Importe original</th>
+                                <th class="text-end">Importe discrepancia</th>
+                                <th class="text-end">Descuento</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+        let totalOriginal = 0;
+        let totalRecibido = 0;
+
+        comparacion.forEach(item => {
+            totalOriginal += item.importeOriginal;
+            totalRecibido += item.importeRecibido;
+
+            const estadoClass = item.estado === 'incompleto' ? 'cantidad-incompleto' :
+                item.estado === 'excedente' ? 'cantidad-excedente' : 'cantidad-correcta';
+
+            const badgeClass = item.cantidadDiscrepancia === 0 ? 'badge-correcto' :
+                item.estado === 'incompleto' ? 'badge-incompleto' : item.estado === 'daño' ? 'badge-dano' :
+                    item.estado === 'diferente' ? 'badge-diferente' : 'badge-otro';
+
+            const estadoTexto = item.cantidadDiscrepancia === 0 ? 'Correcto' :
+                item.estado === 'incompleto' ? 'Incompleto' : item.estado === 'daño' ? 'Daño' :
+                    item.estado === 'diferente' ? 'Diferente' : 'Otro';
+
+            html += `
+                    <tr>
+                        <td><strong>${item.codigo}</strong></td>
+                        <td>${item.descripcion}</td>
+                        <td>${item.unidad}</td>
+                        <td class="text-end">${item.cantidadOriginal}</td>
+                        <td class="text-end">${item.cantidadDiscrepancia}</td>
+                        <td class="text-end">${Currency.format(item.precio)}</td>
+                        <td class="text-end">${Currency.format(item.importeOriginal)}</td>
+                        <td class="text-end">${Currency.format(item.importeRecibido)}</td>
+                        <td class="text-end">${Currency.format(item.descuento)}</td>
+                        <td class="text-center">
+                            <span class="badge ${badgeClass}">${estadoTexto}</span>
+                        </td>
+                    </tr>
+                `;
+        });
+
+        html += `
+                        <tr class="total-row">
+                            <td colspan="6" class="text-end"><strong>TOTALES:</strong></td>
+                            <td class="text-end"><strong>${Currency.format(totalOriginal)}</strong></td>
+                            <td class="text-end"><strong>${Currency.format(totalRecibido)}</strong></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>`;
+
+    @{
+        if(Utilities.DoesUserHasRole(User.Identity.Name, "Contador")) {
+        <text>
+        html += `<div class="section-title">
+                <i class="fas fa-calculator"></i>
+                Movimientos Contables de la Póliza
+            </div>
+            <a class="btn green-500 mb-3" target="_blank" href="/Contabilidad/ConsultarPolizas?q=${data.detallesPoliza[0].poliza_uuid}">
+                <i class="fa-solid fa-pen-to-square"></i>
+                Editar poliza
+            </a>
+            <div class="table-responsive">
+                <table class="table modern-table">
+                    <thead>
+                        <tr>
+                            <th>Código de Cuenta</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Debe</th>
+                            <th class="text-end">Haber</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+        let totalDebe = 0;
+        let totalHaber = 0;
+
+        data.detallesPoliza.forEach(detalle => {
+            totalDebe += detalle.debe;
+            totalHaber += detalle.haber;
+
+            html += `
+                    <tr>
+                        <td><strong>${detalle.codigo}</strong></td>
+                        <td>${detalle.descripcion}</td>
+                        <td class="text-end">${detalle.debe > 0 ? Currency.format(detalle.debe) : '-'}</td>
+                        <td class="text-end">${detalle.haber > 0 ? Currency.format(detalle.haber) : '-'}</td>
+                    </tr>
+                `;
+        });
+
+        html += `
+                        <tr class="total-row">
+                            <td colspan="2" class="text-end"><strong>TOTALES:</strong></td>
+                            <td class="text-end"><strong>${Currency.format(totalDebe)}</strong></td>
+                            <td class="text-end"><strong>${Currency.format(totalHaber)}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            `;
+            </text>
+    }
+    }
+
+        return html;
+    }
+
+    async function verDetalle(poliza) {
+        // Limpiar campos al abrir modal
+        document.getElementById('descripcionDiscrepancia').value = '';
+        document.getElementById('archivoSoporte').value = '';
+        document.getElementById('accionDiscrepancia').value = '';
+        document.getElementById('filesList').innerHTML = `
+            <div class="files-list" id="filesList">
+                <div class="empty-state" id="emptyState">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hay archivos seleccionados</p>
+                </div>
+            </div>`;
+
+        GetData({
+            path: '/PolizasDiscrepancia/GetDetallesPolizaDiscrepancia',
+            data: {
+                id_poliza: poliza.id_poliza,
+                referencia: poliza.referencia,
+                referencia_discrepancia: poliza.id_documento_disc
+            }
+        }).then((_res) => {
+            const contenido = generarContenidoModal(_res);
+            document.getElementById('contenidoModal').innerHTML = contenido;
+            const modal = new bootstrap.Modal(document.getElementById('modalDiscrepancia'));
+            modal.show();
+            document.getElementById('btnGuardarDiscrepancia').setAttribute('data-id', poliza.id_poliza)
+        })
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const tablaPolizas = createTable({
+            selector: '#tablaPolizas',
+            path: '/PolizasDiscrepancia/GetPolziasDiscrepancia',
+            searchPlaceholder: 'Buscar poliza...',
+            columns: [
+                {
+                    title: 'Tipo',
+                    data: 'tipo',
+                    formatter: (v) => {
+                        if (!v) return '';
+                        const capitalized = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+                        return `<span class="badge badge-${v.toLowerCase()}">${capitalized}</span>`;
+                    }
+                },
+                { title: 'Fecha', data: 'fecha', formatter: (v) => dateFormatter(v) },
+                { title: 'Usuario', data: 'usuario' },
+                {
+                    title: 'Estado',
+                    data: null,
+                    formatter: (row) => {
+                        if (!row) return '';
+                        const capitalized = row.estado.charAt(0).toUpperCase() + row.estado.slice(1).toLowerCase();
+                        const htmlContent = `` +
+                            `<span class="badge badge-${row.estado.toLowerCase()}">${capitalized}</span>` +
+                            `<span class="desc-tooltip">${row.coment1}</span>`;
+                        return htmlContent;
+                    }
+                },
+            ],
+            actions: [
+                { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalle', onClick: row => verDetalle(row) },
+                { icon: 'fa-file-pdf', color: 'red-500', title: 'Generar pdf', onClick: row => generarPDFPoliza(row.uuid) }
+            ],
+            RowsEvents: {
+                onRowDblClick: row => verDetalle(row),
+                onKeyPress: (event, row) => {
+                    if (event.key === 'F4') verDetalle(row);
+                }
+            },
+            data: () => ({
+                fechaInicio: document.getElementById('fecha_inicio').value,
+                fechaFin: document.getElementById('fecha_fin').value
+            }),
+        });
+
+        window.tablaPolizas = tablaPolizas;
+
+        document.getElementById('btnBuscar').addEventListener('click', () => {
+            tablaPolizas.reload();
+        });
+
+        document.getElementById('btnLimpiar').addEventListener('click', () => {
+            document.getElementById('fecha_inicio').value = '';
+            document.getElementById('fecha_fin').value = '';
+            tablaPolizas.reload();
+        });
+    })
+</script>

@@ -1,0 +1,279 @@
+﻿@model BOS_ERP.Models.Factura
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Factura @Model.UUID</title>
+    <style>
+        @@page {
+            size: A4;
+            margin: 20mm;
+        }
+        thead {
+            display: table-header-group;
+            background-color: #e0e0e0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #1a1a1a;
+        }
+
+        h1, h2 {
+            color: #d32f2f;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th {
+            background-color: #1976d2;
+            color: white;
+            padding: 6px 10px;
+            text-align: left;
+        }
+
+        td {
+            padding: 6px 10px;
+            vertical-align: top;
+        }
+
+        .section-title {
+            font-size: 15px;
+            color: #d32f2f;
+            margin-top: 25px;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .productos th, .productos td {
+            border: 1px solid #bbb;
+            font-size: 11px;
+        }
+
+        .productos tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .totales {
+            margin-top: 25px;
+            text-align: right;
+            font-size: 13px;
+        }
+
+            .totales span {
+                font-weight: bold;
+                color: #1976d2;
+            }
+
+        .sello {
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 10px;
+            background-color: #f9f9f9;
+            border: 1px dashed #aaa;
+            padding: 8px;
+            margin-bottom: 12px;
+        }
+
+        .qr {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+            .qr img {
+                width: 160px;
+                height: 160px;
+            }
+
+        .info-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 5px;
+        }
+
+            .info-box strong {
+                color: #333;
+            }
+
+        .productos thead {
+            margin-top: 20px;
+        }
+        .productos {
+            page-break-inside: auto;
+        }
+
+            .productos thead {
+                display: table-header-group;
+            }
+
+            .productos tfoot {
+                display: table-footer-group;
+            }
+
+            .productos tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+
+        /*como agrego esto en dondo*/
+    </style>
+</head>
+<body>
+    <!-- DATOS COMPROBANTE -->
+    <div class="section-title">Datos del Comprobante</div>
+    <table>
+        <tr>
+            <td><strong>Lugar de Expedición:</strong></td>
+            <td>@Model.LugarExpedicion</td>
+            <td><strong>Método de Pago:</strong></td>
+            <td>@Model.MdpFactura -- @Model.metodoPagoTexto</td>
+        </tr>
+        <tr>
+            <td><strong>Forma de Pago:</strong></td>
+            <td>@Model.FormaPago -- @Model.formaPagoTexto </td>
+            <td><strong>Moneda:</strong></td>
+            <td>@Model.Moneda</td>
+        </tr>
+        <tr>
+            <td><strong>Tipo de Cambio:</strong></td>
+            <td>@Model.TipoCambio</td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+
+    <!-- EMISOR Y RECEPTOR EN TABLA CON TÍTULO SEPARADO -->
+    <table style="width: 100%;">
+        <tr>
+            <td style="width: 50%; vertical-align: top;">
+                <div class="section-title">Emisor</div>
+                <div class="info-box">
+                    <table style="width: 100%;">
+                        <tr><td><strong>RFC:</strong></td><td>@Model.RfcEmisor</td></tr>
+                        <tr><td><strong>Razón Social:</strong></td><td>@Model.RsoEmisor</td></tr>
+                        <tr><td><strong>Régimen Fiscal:</strong></td><td>@Model.Rege -- @Model.regimenEText</td></tr>
+                        <tr><td><strong>Dirección Fiscal:</strong></td><td>@Model.CpR</td></tr>
+                    </table>
+                </div>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+                <div class="section-title">Receptor</div>
+                <div class="info-box">
+                    <table style="width: 100%;">
+                        <tr><td><strong>RFC:</strong></td><td>@Model.RfcCliente</td></tr>
+                        <tr><td><strong>Razón Social:</strong></td><td>@Model.RsoCliente</td></tr>
+                        <tr><td><strong>Régimen Fiscal:</strong></td><td>@Model.Regc</td></tr>
+                        <tr><td><strong>Dirección Fiscal:</strong></td><td>@Model.CpE</td></tr>
+                        <tr><td><strong>Uso CFDI:</strong></td><td>@Model.IdUsoCFDI -- @Model.CFDIText</td></tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- CONCEPTOS -->
+    <div class="section-title">Conceptos</div>
+    <table class="productos">
+        <thead class="table-light">
+            <tr>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Precio</th>
+                <th>Importe</th>
+                <th>IVA</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (System.Data.DataRow row in Model.Tproductos.Rows)
+            {
+                <tr>
+                    <td>
+                        @row["descripcion"]
+                        <br />
+                        <span style="display: block; margin-left: 15px; font-size: 11px; color: #555;">
+                            Pedimento: @*@row["pedimento"]*@
+                        </span>
+                    </td>
+                    <td>@string.Format("{0:N2}", row["cantidad"])</td>
+                    <td>@string.Format("{0:C2}", row["precio"])</td>
+                    <td>@string.Format("{0:C2}", row["importe"])</td>
+                    <td>@string.Format("{0:C2}", row["iva"])</td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+
+    <br />
+    <table style="width: 100%;">
+        <tr>
+            <td style="vertical-align: top; width: 60%;">
+                <strong>Total con Letra:</strong> @Model.TotalTexto @Model.Moneda
+            </td>
+            <td style="vertical-align: top; width: 40%;">
+                <table style="width: 100%;">
+                    <tr>
+                        <td style="text-align: right;"><strong>Subtotal:</strong></td>
+                        <td style="text-align: right;">@string.Format("{0:C2}", Model.Subtotal)</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: right;"><strong>IVA:</strong></td>
+                        <td style="text-align: right;">@string.Format("{0:C2}", Model.IVA)</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: right;"><strong>Total:</strong></td>
+                        <td style="text-align: right;">@string.Format("{0:C2}", Model.Total)</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+
+    <!-- SELLOS Y QR USANDO TABLA -->
+    <div class="section-title">Sellos y Cadena Original</div>
+    <table>
+        <tr>
+            <!-- Columna Sellos -->
+            <td style="width: 75%; vertical-align: top;">
+                <p><strong>No. de Serie del Certificado del SAT:</strong></p>
+                <div class="sello">@Model.NoCertificadoSAT</div>
+
+                <p><strong>No de Serie del  CSD del Emisor:</strong></p>
+                <div class="sello">@Model.NoCertificado</div>
+
+                <p><strong>Sello CFDI:</strong></p>
+                <div class="sello">@Model.SelloCFDI</div>
+
+                <p><strong>Sello SAT:</strong></p>
+                <div class="sello">@Model.SelloSAT</div>
+
+                <p><strong>Cadena original:</strong></p>
+                <div class="sello">@Model.CadenaOriginal</div>
+            </td>
+
+            <!-- Columna QR -->
+            @if (!string.IsNullOrEmpty(Model.RutaQr))
+            {
+                <td style="width: 25%; text-align: center; vertical-align: top;">
+                    <img src="@Url.Content(Model.RutaQr)" alt="QR CFDI" style="width: 160px; height: 160px;" />
+                </td>
+            }
+        </tr>
+    </table>
+
+
+</body>
+</html>

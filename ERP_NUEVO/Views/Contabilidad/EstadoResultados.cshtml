@@ -1,0 +1,1051 @@
+﻿@{
+    ViewBag.Title = "EstadoResultados";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Estado de resultados";
+}
+
+<style>
+    .er-wrap {
+        padding: 1rem 0;
+    }
+
+    /* ── Filter Bar ─────────────────────────────────────────── */
+    .filter-bar {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+        box-shadow: var(--shadow);
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        min-width: 140px;
+        flex: 1;
+    }
+
+        .filter-group label {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-light);
+        }
+
+        .filter-group input,
+        .filter-group select {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--row-radius);
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 13px;
+            outline: none;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+            .filter-group input:focus,
+            .filter-group select:focus {
+                border-color: var(--accent-blue);
+                background: var(--bg-light);
+                box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+            }
+
+    .filter-divider {
+        width: 1px;
+        background: var(--border-light);
+        align-self: stretch;
+        margin: 0 4px;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    .btn {
+        height: 34px;
+        padding: 0 16px;
+        border-radius: var(--row-radius);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        white-space: nowrap;
+        border: 1px solid var(--border-light);
+        color: var(--text-dark);
+        background: var(--bg-light);
+    }
+
+        .btn:hover {
+            background: var(--bg-gray);
+            border-color: var(--secondary-blue);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+    .btn-primary {
+        background: var(--primary-blue);
+        color: #fff;
+        border-color: var(--primary-blue);
+    }
+
+        .btn-primary:hover {
+            background: var(--primary-blue-dark);
+            border-color: var(--primary-blue-dark);
+        }
+
+    /* ── Validación ──────────────────────────────────────────── */
+    .field-error input,
+    .field-error select {
+        border-color: var(--danger-color) !important;
+        background: color-mix(in srgb, var(--danger-color) 6%, var(--bg-light)) !important;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-color) 15%, transparent) !important;
+    }
+
+    .field-error label {
+        color: var(--danger-color) !important;
+    }
+
+    .error-msg {
+        font-size: 10px;
+        color: var(--danger-color);
+        font-weight: 500;
+        margin-top: 2px;
+        display: none;
+    }
+
+    .field-error .error-msg {
+        display: block;
+    }
+
+    /* ── Estado de Resultados card ───────────────────────────── */
+    .er-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    /* ── Secciones — grid 3 columnas (sin acumulado anterior) ── */
+    .er-section-header,
+    .er-row,
+    .er-subtotal,
+    .er-utilidad {
+        display: grid;
+        grid-template-columns: 1fr 150px 150px;
+        align-items: center;
+    }
+
+    .er-section-header {
+        padding: 10px 20px;
+        background: var(--primary-blue);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+    }
+
+        .er-section-header > span:nth-child(2),
+        .er-section-header > span:nth-child(3) {
+            text-align: right;
+            opacity: .75;
+            font-weight: 400;
+            font-size: 10px;
+        }
+
+    .er-row {
+        padding: 9px 20px;
+        border-bottom: 1px solid var(--border-light);
+        transition: background var(--transition-fast);
+    }
+
+        .er-row:last-child {
+            border-bottom: none;
+        }
+
+        .er-row:hover {
+            background: var(--bg-gray);
+        }
+
+        .er-row.er-row-sub {
+            padding-left: 44px;
+            background: color-mix(in srgb, var(--bg-gray) 40%, var(--bg-light));
+        }
+
+            .er-row.er-row-sub .er-row-label .er-title {
+                font-size: 12px;
+                font-weight: 400;
+                color: var(--text-light);
+            }
+
+            .er-row.er-row-sub .er-row-amount {
+                font-size: 12px;
+                font-weight: 400;
+            }
+
+    .er-row-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-dark);
+    }
+
+        .er-row-label .er-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .er-row-label .er-desc {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .er-row-label .er-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .er-row-label .er-sub {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+
+    .er-row-amount {
+        text-align: right;
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+
+    /* ── Subtotales ──────────────────────────────────────────── */
+    .er-subtotal {
+        padding: 10px 20px;
+        background: var(--light-blue);
+        border-top: 1px solid var(--border-light);
+        border-bottom: 2px solid var(--border-light);
+    }
+
+    .er-subtotal-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary-blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .er-subtotal-amount {
+        text-align: right;
+        font-size: 14px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--primary-blue);
+    }
+
+    /* ── Utilidad Neta ───────────────────────────────────────── */
+    .er-utilidad {
+        padding: 14px 20px;
+        background: var(--primary-blue);
+    }
+
+    .er-utilidad-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+    }
+
+    .er-utilidad-amount {
+        text-align: right;
+        font-size: 18px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        color: #fff;
+    }
+
+        .er-utilidad-amount.positivo {
+            color: #6ee7b7;
+        }
+
+        .er-utilidad-amount.negativo {
+            color: #fca5a5;
+        }
+
+    /* ── Separador entre secciones ───────────────────────────── */
+    .er-spacer {
+        height: 8px;
+        background: var(--bg-gray);
+        border-top: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    /* ── Colores de icono ────────────────────────────────────── */
+    .icon-ventas {
+        background: color-mix(in srgb, #059669 12%, transparent);
+        color: #059669;
+    }
+
+    .icon-costos {
+        background: color-mix(in srgb, #dc2626 12%, transparent);
+        color: #dc2626;
+    }
+
+    .icon-gastos {
+        background: color-mix(in srgb, #d97706 12%, transparent);
+        color: #d97706;
+    }
+
+    .icon-financ {
+        background: color-mix(in srgb, #3b82f6 12%, transparent);
+        color: #3b82f6;
+    }
+
+    .amt-pos {
+        color: var(--success-color) !important;
+    }
+
+    .amt-neg {
+        color: var(--danger-color) !important;
+    }
+
+    /* ── Placeholder vacío ───────────────────────────────────── */
+    #er-empty {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--text-light);
+    }
+
+    /* ── Toolbar acciones ────────────────────────────────────── */
+    .er-toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+</style>
+<link href="~/content/contabilidad/MayorAuxiliar.css" rel="stylesheet" />
+
+<div class="er-wrap">
+
+    <!-- Filtros -->
+    <div class="filter-bar">
+        <div class="filter-group" id="group-mes">
+            <label>Mes</label>
+            <select id="sel-mes">
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+            </select>
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+
+        <div class="filter-group" id="group-anio">
+            <label>Año</label>
+            <input type="number" id="inp-anio" min="2000" max="2099" placeholder="ej. 2025">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-group">
+            <label>Empresa</label>
+            <select id="sel-empresa">
+                <option value="">Todas las empresas</option>
+            </select>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-group">
+            <label>Sucursal</label>
+            <select id="sel-sucursal">
+                <option value="">Todas las sucursales</option>
+            </select>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-group">
+            <label>Centro de costos</label>
+            <select id="sel-centro">
+                <option value="">Todos los centros de costos</option>
+            </select>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-toggle-group">
+            <span>Tipo reporte</span>
+            <div class="bootstrap-toggle toggle-success">
+                <input type="checkbox" id="tipoReporte" checked>
+                <label for="tipoReporte" class="toggle-group">
+                    <span class="toggle-on" data-value="resumido">Resumido</span>
+                    <span class="toggle-handle"></span>
+                    <span class="toggle-off" data-value="detallado">Detallado</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-actions">
+            <button class="btn" onclick="clearFilters()">Limpiar</button>
+            <button class="btn btn-primary" onclick="applyFilters()">Consultar</button>
+        </div>
+    </div>
+
+    <!-- Toolbar exportar -->
+    <div class="er-toolbar">
+        <button class="btn" onclick="exportarPDF()">
+            Exportar a PDF <i class="fa-solid fa-file-pdf ms-1"></i>
+        </button>
+    </div>
+
+    <!-- Tarjeta resultado -->
+    <div class="er-card" id="er-container">
+        <div id="er-empty">
+            <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 14 14">
+                <path fill="#999" fill-rule="evenodd"
+                      d="M5.5 0a1 1 0 0 0-1 1v.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1zM2.75 1h.5v.5A2.25 2.25 0 0 0 5.5 3.75h3a2.25 2.25 0 0 0 2.25-2.25V1h.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5h-8.5a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 2.75 1"
+                      clip-rule="evenodd" />
+            </svg>
+            <div class="mt-2">Da click en "Consultar" para ver los resultados</div>
+        </div>
+    </div>
+
+</div>
+
+<script src="~/Scripts/Switch.js"></script>
+<script>
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Estado de Resultados — lógica de vista
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    let _ER_DATA = null;
+    let _ENTERPRISE_DATA = {};
+    let _ES_DETALLADO = false;
+
+    const MESES = [
+        '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    function field(d, ...keys) {
+        for (const k of keys) {
+            if (d[k] !== undefined && d[k] !== null) return parseFloat(d[k]);
+        }
+        return 0;
+    }
+
+    function initDates() {
+        const now = new Date();
+        document.getElementById('sel-mes').value = now.getMonth() + 1;
+        document.getElementById('inp-anio').value = now.getFullYear();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  CARGAR CATÁLOGOS (empresas, sucursales, centros de costos)
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function cargarCatalogos() {
+        try {
+            const empre = await GetData({ path: '/Contabilidad/GetEmpresas' });
+            const selEmpresa = document.getElementById('sel-empresa');
+            if (empre && empre.length > 0) {
+                empre.forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.empresaid;
+                    opt.textContent = e.nombre;
+                    selEmpresa.appendChild(opt);
+                });
+            }
+
+            const centro = await GetData({ path: '/Contabilidad/GetCentroCostos' });
+            const selCentro = document.getElementById('sel-centro');
+            if (centro && centro.length > 0) {
+                centro.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.areaid;
+                    opt.textContent = c.nombre;
+                    selCentro.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Error cargando catálogos:', e);
+        }
+    }
+
+    async function cargarSucursales(empresaId) {
+        const selSucursal = document.getElementById('sel-sucursal');
+        selSucursal.innerHTML = '<option value="">Todas las sucursales</option>';
+        if (!empresaId) return;
+        try {
+            const succ = await GetData({ path: '/Contabilidad/GetSucursales', data: { empresa: empresaId } });
+            if (succ && succ.length > 0) {
+                succ.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id_sucursal;
+                    opt.textContent = `${s.cve_sucursal} - ${s.descripcion}`;
+                    selSucursal.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Error cargando sucursales:', e);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  FILTROS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function applyFilters() {
+        const selMes = document.getElementById('sel-mes');
+        const inpAnio = document.getElementById('inp-anio');
+        const gMes = document.getElementById('group-mes');
+        const gAnio = document.getElementById('group-anio');
+        const empresa = document.getElementById('sel-empresa').value;
+        const sucursal = document.getElementById('sel-sucursal').value;
+        const centro = document.getElementById('sel-centro').value;
+
+        let isValid = true;
+        [[selMes, gMes], [inpAnio, gAnio]].forEach(([inp, grp]) => {
+            if (!inp.value.trim()) { grp.classList.add('field-error'); isValid = false; }
+            else { grp.classList.remove('field-error'); }
+        });
+        if (!isValid) return;
+
+        const esDetallado = !document.getElementById('tipoReporte').checked;
+        _ES_DETALLADO = esDetallado;
+
+        const url = esDetallado ? 'GetEstadoResultadosDetallado' : 'GetEstadoResultadosGeneral';
+
+        GetData({
+            path: `/Contabilidad/${url}`,
+            data: {
+                mes: selMes.value,
+                anio: inpAnio.value,
+                empresa,
+                sucursal,
+                centro,
+            }
+        }).then(data => {
+            _ER_DATA = data.estado;
+            _ENTERPRISE_DATA = data.datos_empresa;
+            renderER(data.estado[0], selMes.value, inpAnio.value, esDetallado);
+        });
+    }
+
+    function clearFilters() {
+        initDates();
+        document.getElementById('group-mes').classList.remove('field-error');
+        document.getElementById('group-anio').classList.remove('field-error');
+        document.getElementById('sel-empresa').value = '';
+        document.getElementById('sel-sucursal').innerHTML = '<option value="">Todas las sucursales</option>';
+        document.getElementById('sel-centro').value = '';
+        document.getElementById('er-container').innerHTML = `
+        <div id="er-empty" style="padding:40px 20px;text-align:center;color:var(--text-light)">
+            Da click en "Consultar" para ver los resultados
+        </div>`;
+        _ER_DATA = null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  RENDER
+    // ═══════════════════════════════════════════════════════════════════════════
+    function renderER(d, mes, anio, detallado) {
+        if (!d) {
+            document.getElementById('er-container').innerHTML =
+                '<div style="padding:32px;text-align:center;color:var(--text-light)">Sin datos para el período seleccionado.</div>';
+            return;
+        }
+
+        const fmt = v => Currency.format(v);
+        const amtCls = v => v >= 0 ? 'amt-pos' : 'amt-neg';
+        const fmtSgn = v => v < 0 ? `(${fmt(Math.abs(v))})` : fmt(v);
+        const mesStr = MESES[parseInt(mes)] ?? mes;
+
+        // ── Campos del mes ──────────────────────────────────────────────────────
+        const totalIngresos = field(d, 'total_ingresos', 'TotalIngresos');
+        const totalCostos = field(d, 'total_costos', 'TotalCostos');
+        const utilidadBruta = field(d, 'utilidad_bruta', 'UtilidadBruta');
+        const totalGastos = field(d, 'total_gastos', 'TotalGastos');
+        const utilidadOper = field(d, 'utilidad_operativa', 'UtilidadOperativa');
+        const totalFinanciero = field(d, 'total_financiero', 'total_financieros', 'TotalFinancieros');
+        const utilidadNeta = field(d, 'utilidad_neta', 'UtilidadNeta');
+
+        // ── Campos acumulado total (año hasta el mes) ───────────────────────────
+        const totalIngresosAcum = field(d, 'total_ingresos_acumulados', 'TotalIngresosAcumulados');
+        const totalCostosAcum = field(d, 'total_costos_acumulados', 'TotalCostosAcumulados');
+        const utilidadBrutaAcum = field(d, 'utilidad_bruta_acumulada', 'UtilidadBrutaAcumulada');
+        const totalGastosAcum = field(d, 'total_gastos_acumulados', 'TotalGastosAcumulados');
+        const utilidadOperAcum = field(d, 'utilidad_operativa_acumulada', 'UtilidadOperativaAcumulada');
+        const totalFinancieroAcum = field(d, 'total_financiero_acumulado', 'TotalFinancieroAcumulado');
+        const utilidadNetaAcum = field(d, 'utilidad_neta_acumulada', 'UtilidadNetaAcumulada');
+
+        // ── Campos detalle ──────────────────────────────────────────────────────
+        const ventas = field(d, 'ventas', 'Ventas');
+        const descuentos = field(d, 'descuentos', 'Descuentos');
+        const otrosIngresos = field(d, 'otros_ingresos', 'OtrosIngresos');
+        const costoVenta = field(d, 'costo_venta', 'CostoVenta');
+        const compras = field(d, 'compras', 'Compras');
+        const devoluciones = field(d, 'devoluciones', 'Devoluciones');
+        const gastosGenerales = field(d, 'gastos_generales', 'GastosGenerales');
+        const gastosFinancieros = field(d, 'gastos_financieros', 'GastosFinancieros');
+        const productosFinancieros = field(d, 'productos_financieros', 'ProductosFinancieros');
+        const otrosGastos = field(d, 'otros_gastos', 'OtrosGastos');
+        const otrosProductos = field(d, 'otros_productos', 'OtrosProductos');
+
+        // ── Helpers de columnas (mes | acumulado) ───────────────────────────────
+        const cols2 = (vMes, vAcum, negSign = false) => {
+            const disp = v => negSign ? `(${fmt(v)})` : fmtSgn(v);
+            const clsMes = negSign ? 'amt-neg' : amtCls(vMes);
+            const clsAcum = negSign ? 'amt-neg' : amtCls(vAcum);
+            return `
+            <span class="er-row-amount ${clsMes}">${disp(vMes)}</span>
+            <span class="er-row-amount ${clsAcum}" style="opacity:.75">${disp(vAcum)}</span>`;
+        };
+
+        // Sub-filas detallado (solo muestra columna mes, acum queda como —)
+        const colSub = (v, negSign = false) => `
+        <span class="er-row-amount ${negSign ? 'amt-neg' : 'amt-pos'}">${negSign ? `(${fmt(v)})` : fmt(v)}</span>
+        <span class="er-row-amount" style="opacity:.4">—</span>`;
+
+        // ── Filas desglose ──────────────────────────────────────────────────────
+        const rowsIngresos = detallado ? `
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Ventas brutas</span></div></div>
+            ${colSub(ventas, false)}
+        </div>
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Otros ingresos</span></div></div>
+            ${colSub(otrosIngresos, false)}
+        </div>
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">(-) Descuentos</span></div></div>
+            ${colSub(descuentos, true)}
+        </div>` : '';
+
+        const rowsCostos = detallado ? `
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Costo de venta</span></div></div>
+            ${colSub(costoVenta, true)}
+        </div>
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Compras</span></div></div>
+            ${colSub(compras, true)}
+        </div>
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">(+) Devoluciones</span></div></div>
+            ${colSub(devoluciones, false)}
+        </div>` : '';
+
+        const rowsGastos = detallado ? `
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Gastos generales</span></div></div>
+            ${colSub(gastosGenerales, true)}
+        </div>` : '';
+
+        const rowsFinancieros = detallado ? `
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Gastos financieros</span></div></div>
+            ${colSub(gastosFinancieros, true)}
+        </div>
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Productos financieros</span></div></div>
+            ${colSub(productosFinancieros, false)}
+        </div>
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Otros gastos</span></div></div>
+            ${colSub(otrosGastos, true)}
+        </div>
+        <div class="er-row er-row-sub">
+            <div class="er-row-label"><div class="er-desc"><span class="er-title">Otros productos</span></div></div>
+            ${colSub(otrosProductos, false)}
+        </div>` : '';
+
+        document.getElementById('er-container').innerHTML = `
+
+        <!-- Encabezado período -->
+        <div class="er-section-header">
+            <span>Estado de Resultados — ${mesStr} ${anio}${detallado ? ' (Detallado)' : ''}</span>
+            <span>${mesStr} ${anio}</span>
+            <span>Acum. ${anio}</span>
+        </div>
+
+        <!-- INGRESOS -->
+        <div class="er-section-header" style="background:color-mix(in srgb,#059669 18%,var(--bg-light));color:var(--text-dark);padding:7px 20px;">
+            <span style="color:#059669">INGRESOS</span><span></span><span></span>
+        </div>
+        <div class="er-row">
+            <div class="er-row-label">
+                <div class="er-icon icon-ventas"><i class="fa-solid fa-receipt" style="font-size:12px;"></i></div>
+                <div class="er-desc">
+                    <span class="er-title">Ingresos totales</span>
+                    <span class="er-sub">Ventas netas + otros ingresos</span>
+                </div>
+            </div>
+            ${cols2(totalIngresos, totalIngresosAcum)}
+        </div>
+        ${rowsIngresos}
+
+        <div class="er-spacer"></div>
+
+        <!-- COSTO DE VENTAS -->
+        <div class="er-section-header" style="background:color-mix(in srgb,#dc2626 14%,var(--bg-light));color:var(--text-dark);padding:7px 20px;">
+            <span style="color:#dc2626">COSTO DE VENTAS</span><span></span><span></span>
+        </div>
+        <div class="er-row">
+            <div class="er-row-label">
+                <div class="er-icon icon-costos"><i class="fa-solid fa-boxes-stacked" style="font-size:12px;"></i></div>
+                <div class="er-desc">
+                    <span class="er-title">Costo de ventas total</span>
+                    <span class="er-sub">Mercancía + compras − devoluciones</span>
+                </div>
+            </div>
+            ${cols2(totalCostos, totalCostosAcum, true)}
+        </div>
+        ${rowsCostos}
+
+        <div class="er-subtotal">
+            <span class="er-subtotal-label">Utilidad Bruta</span>
+            <span class="er-subtotal-amount ${amtCls(utilidadBruta)}">${fmtSgn(utilidadBruta)}</span>
+            <span class="er-subtotal-amount ${amtCls(utilidadBrutaAcum)}" style="opacity:.75">${fmtSgn(utilidadBrutaAcum)}</span>
+        </div>
+
+        <div class="er-spacer"></div>
+
+        <!-- GASTOS DE OPERACIÓN -->
+        <div class="er-section-header" style="background:color-mix(in srgb,#d97706 14%,var(--bg-light));color:var(--text-dark);padding:7px 20px;">
+            <span style="color:#d97706">GASTOS DE OPERACIÓN</span><span></span><span></span>
+        </div>
+        <div class="er-row">
+            <div class="er-row-label">
+                <div class="er-icon icon-gastos"><i class="fa-solid fa-file-invoice-dollar" style="font-size:12px;"></i></div>
+                <div class="er-desc">
+                    <span class="er-title">Total gastos de operación</span>
+                    <span class="er-sub">Gastos generales + participación</span>
+                </div>
+            </div>
+            ${cols2(totalGastos, totalGastosAcum, true)}
+        </div>
+        ${rowsGastos}
+
+        <div class="er-subtotal">
+            <span class="er-subtotal-label">Utilidad de Operación</span>
+            <span class="er-subtotal-amount ${amtCls(utilidadOper)}">${fmtSgn(utilidadOper)}</span>
+            <span class="er-subtotal-amount ${amtCls(utilidadOperAcum)}" style="opacity:.75">${fmtSgn(utilidadOperAcum)}</span>
+        </div>
+
+        <div class="er-spacer"></div>
+
+        <!-- OTROS INGRESOS Y GASTOS -->
+        <div class="er-section-header" style="background:color-mix(in srgb,#3b82f6 14%,var(--bg-light));color:var(--text-dark);padding:7px 20px;">
+            <span style="color:#3b82f6">OTROS INGRESOS Y GASTOS</span><span></span><span></span>
+        </div>
+        <div class="er-row">
+            <div class="er-row-label">
+                <div class="er-icon icon-financ"><i class="fa-solid fa-landmark" style="font-size:12px;"></i></div>
+                <div class="er-desc">
+                    <span class="er-title">Resultado financiero neto</span>
+                    <span class="er-sub">Cuentas</span>
+                </div>
+            </div>
+            ${cols2(totalFinanciero, totalFinancieroAcum)}
+        </div>
+        ${rowsFinancieros}
+
+        <div class="er-spacer"></div>
+
+        <!-- UTILIDAD NETA -->
+        <div class="er-utilidad">
+            <span class="er-utilidad-label">Utilidad Neta del Período</span>
+            <span class="er-utilidad-amount ${utilidadNeta >= 0 ? 'positivo' : 'negativo'}">
+                ${utilidadNeta < 0 ? '(' + fmt(Math.abs(utilidadNeta)) + ')' : fmt(utilidadNeta)}
+            </span>
+            <span class="er-utilidad-amount ${utilidadNetaAcum >= 0 ? 'positivo' : 'negativo'}" style="opacity:.75;font-size:14px">
+                ${utilidadNetaAcum < 0 ? '(' + fmt(Math.abs(utilidadNetaAcum)) + ')' : fmt(utilidadNetaAcum)}
+            </span>
+        </div>
+    `;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  EXPORTAR PDF
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function exportarPDF() {
+        if (!_ER_DATA) {
+            toastMixin.fire({ icon: 'warning', title: 'Primero consulta los resultados para exportar' });
+            return;
+        }
+
+        const mes = document.getElementById('sel-mes').value;
+        const anio = document.getElementById('inp-anio').value;
+        const mesStr = MESES[parseInt(mes)] ?? mes;
+        const detallado = _ES_DETALLADO;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const logoBase64 = await convertToBase64(`/Content/img/${empresa}/logo.png`);
+        const d = _ER_DATA[0];
+
+        // Campos mes
+        const totalIngresos = field(d, 'total_ingresos', 'TotalIngresos');
+        const totalCostos = field(d, 'total_costos', 'TotalCostos');
+        const utilidadBruta = field(d, 'utilidad_bruta', 'UtilidadBruta');
+        const totalGastos = field(d, 'total_gastos', 'TotalGastos');
+        const utilidadOper = field(d, 'utilidad_operativa', 'UtilidadOperativa');
+        const totalFinanciero = field(d, 'total_financiero', 'total_financieros', 'TotalFinancieros');
+        const utilidadNeta = field(d, 'utilidad_neta', 'UtilidadNeta');
+
+        // Campos acumulados
+        const totalIngresosAcum = field(d, 'total_ingresos_acumulados');
+        const totalCostosAcum = field(d, 'total_costos_acumulados');
+        const utilidadBrutaAcum = field(d, 'utilidad_bruta_acumulada');
+        const totalGastosAcum = field(d, 'total_gastos_acumulados');
+        const utilidadOperAcum = field(d, 'utilidad_operativa_acumulada');
+        const totalFinancieroAcum = field(d, 'total_financiero_acumulado');
+        const utilidadNetaAcum = field(d, 'utilidad_neta_acumulada');
+
+        // Detalle
+        const ventas = field(d, 'ventas');
+        const descuentos = field(d, 'descuentos');
+        const otrosIngresos = field(d, 'otros_ingresos');
+        const costoVenta = field(d, 'costo_venta');
+        const compras = field(d, 'compras');
+        const devoluciones = field(d, 'devoluciones');
+        const gastosGenerales = field(d, 'gastos_generales');
+        const gastosFinancieros = field(d, 'gastos_financieros');
+        const productosFinancieros = field(d, 'productos_financieros');
+        const otrosGastos = field(d, 'otros_gastos');
+        const otrosProductos = field(d, 'otros_productos');
+
+        const fmt = v => Currency.format(v);
+        const fmtN = v => v < 0 ? `(${fmt(Math.abs(v))})` : fmt(v);
+        const fmtNeg = v => `(${fmt(v)})`;
+        const DASH = '—';
+
+        const C_HEADER = [30, 58, 95];
+        const C_SUB_BG = [225, 231, 239];
+        const C_SUB_TEXT = [30, 58, 95];
+        const C_VENTAS = [5, 150, 105];
+        const C_COSTO = [220, 38, 38];
+        const C_GASTOS = [217, 119, 6];
+        const C_FINANC = [59, 130, 246];
+        const C_POS = [5, 150, 105];
+        const C_NEG = [220, 38, 38];
+        const C_ROW_ALT = [248, 250, 252];
+        const C_SUB_ROW = [241, 245, 249];
+        const C_GRAY = [148, 163, 184];
+
+        // ── Construir filas ───────────────────────────────────────────────────────
+        const rows = [];
+
+        const addSection = (label, color) =>
+            rows.push({ label, mes: '', acum: '', type: 'section', color });
+
+        const addRow = (label, mes, acum, mesC, acumC) =>
+            rows.push({ label, mes, acum, type: 'row', mesColor: mesC, acumColor: acumC ?? C_GRAY });
+
+        const addSubrow = (label, mes, mesC) =>
+            rows.push({ label, mes, acum: DASH, type: 'subrow', mesColor: mesC, acumColor: C_GRAY });
+
+        const addSubtotal = (label, mes, acum, mesC, acumC) =>
+            rows.push({ label, mes, acum, type: 'subtotal', mesColor: mesC, acumColor: acumC });
+
+        // — Ingresos —
+        addSection('INGRESOS', C_VENTAS);
+        addRow('Ingresos totales', fmt(totalIngresos), fmt(totalIngresosAcum), C_POS, C_POS);
+        if (detallado) {
+            addSubrow('  · Ventas brutas', fmt(ventas), C_POS);
+            addSubrow('  · Otros ingresos', fmt(otrosIngresos), C_POS);
+            addSubrow('  · (-) Descuentos', fmtNeg(descuentos), C_NEG);
+        }
+
+        // — Costos —
+        addSection('COSTO DE VENTAS', C_COSTO);
+        addRow('Costo de ventas total', fmtNeg(totalCostos), fmtNeg(totalCostosAcum), C_NEG, C_NEG);
+        if (detallado) {
+            addSubrow('  · Costo de venta', fmtNeg(costoVenta), C_NEG);
+            addSubrow('  · Compras', fmtNeg(compras), C_NEG);
+            addSubrow('  · (+) Devoluciones', fmt(devoluciones), C_POS);
+        }
+        addSubtotal('Utilidad Bruta',
+            fmtN(utilidadBruta), fmtN(utilidadBrutaAcum),
+            utilidadBruta >= 0 ? C_POS : C_NEG,
+            utilidadBrutaAcum >= 0 ? C_POS : C_NEG);
+
+        // — Gastos —
+        addSection('GASTOS DE OPERACIÓN', C_GASTOS);
+        addRow('Total gastos de operación', fmtNeg(totalGastos), fmtNeg(totalGastosAcum), C_NEG, C_NEG);
+        if (detallado) {
+            addSubrow('  · Gastos generales', fmtNeg(gastosGenerales), C_NEG);
+        }
+        addSubtotal('Utilidad de Operación',
+            fmtN(utilidadOper), fmtN(utilidadOperAcum),
+            utilidadOper >= 0 ? C_POS : C_NEG,
+            utilidadOperAcum >= 0 ? C_POS : C_NEG);
+
+        // — Financieros —
+        addSection('OTROS INGRESOS Y GASTOS', C_FINANC);
+        addRow('Resultado financiero neto',
+            fmtN(totalFinanciero), fmtN(totalFinancieroAcum),
+            totalFinanciero >= 0 ? C_POS : C_NEG,
+            totalFinancieroAcum >= 0 ? C_POS : C_NEG);
+        if (detallado) {
+            addSubrow('  · Gastos financieros', fmtNeg(gastosFinancieros), C_NEG);
+            addSubrow('  · Productos financieros', fmt(productosFinancieros), C_POS);
+            addSubrow('  · Otros gastos', fmtNeg(otrosGastos), C_NEG);
+            addSubrow('  · Otros productos', fmt(otrosProductos), C_POS);
+        }
+
+        // ── autoTable ─────────────────────────────────────────────────────────────
+        doc.autoTable({
+            startY: 55,
+            margin: { left: 10, right: 10, top: 55 },
+            head: [['Concepto', `${mesStr} ${anio}`, `Acum. ${anio}`]],
+            body: rows.map(r => [r.label, r.mes, r.acum]),
+            styles: {
+                fontSize: 8.5,
+                font: 'helvetica',
+                textColor: [40, 40, 40],
+                cellPadding: { top: 3, bottom: 3, left: 5, right: 5 },
+                lineColor: [220, 220, 220],
+                lineWidth: 0.1,
+                overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: C_HEADER,
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                halign: 'left',
+                fontSize: 8.5,
+            },
+            columnStyles: {
+                0: { cellWidth: 'auto' },
+                1: { cellWidth: 44, halign: 'right' },
+                2: { cellWidth: 44, halign: 'right' },
+            },
+            didParseCell: ({ section, row, cell, column }) => {
+                if (section !== 'body') return;
+                const meta = rows[row.index];
+                if (!meta) return;
+                const ci = column.index;
+
+                if (meta.type === 'section') {
+                    const bg = meta.color.map(c => Math.round(c * 0.15 + 240 * 0.85));
+                    cell.styles.fillColor = bg;
+                    cell.styles.textColor = ci === 0 ? meta.color : [160, 160, 160];
+                    cell.styles.fontStyle = 'bold';
+                    cell.styles.fontSize = 8;
+                    cell.styles.lineWidth = 0;
+                }
+                if (meta.type === 'row') {
+                    cell.styles.fillColor = row.index % 2 === 0 ? [255, 255, 255] : C_ROW_ALT;
+                    if (ci === 1) { cell.styles.textColor = meta.mesColor; cell.styles.fontStyle = 'bold'; cell.styles.halign = 'right'; }
+                    if (ci === 2) { cell.styles.textColor = meta.acumColor; cell.styles.halign = 'right'; }
+                }
+                if (meta.type === 'subrow') {
+                    cell.styles.fillColor = C_SUB_ROW;
+                    cell.styles.fontSize = 7.5;
+                    cell.styles.textColor = [100, 116, 139];
+                    if (ci === 1) { cell.styles.textColor = meta.mesColor; cell.styles.halign = 'right'; }
+                    if (ci === 2) { cell.styles.halign = 'right'; }
+                }
+                if (meta.type === 'subtotal') {
+                    cell.styles.fillColor = C_SUB_BG;
+                    cell.styles.textColor = C_SUB_TEXT;
+                    cell.styles.fontStyle = 'bold';
+                    cell.styles.lineWidth = 0;
+                    if (ci === 1) { cell.styles.textColor = meta.mesColor; cell.styles.halign = 'right'; cell.styles.fontSize = 9.5; }
+                    if (ci === 2) { cell.styles.textColor = meta.acumColor; cell.styles.halign = 'right'; cell.styles.fontSize = 9; }
+                }
+            },
+
+            didDrawPage: async (data) => {
+                const lastDay = new Date(anio, parseInt(mes), 0).getDate().toString().padStart(2, '0');
+                agregarEncabezadoPDF(doc, logoBase64, 'ESTADO DE RESULTADOS', _ENTERPRISE_DATA, `${mesStr} ${anio}`);
+                agregarFolioFecha(doc, 'N/A', `Estado de Resultados al día ${lastDay} de ${mesStr} del ${anio}`);
+                const W = doc.internal.pageSize.getWidth();
+                const H = doc.internal.pageSize.getHeight();
+                doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(100, 116, 139);
+                doc.text(`Página ${data.pageNumber} de ${doc.internal.getNumberOfPages()}`, W - 10, H - 6, { align: 'right' });
+                doc.text(`Documento generado automáticamente el ${new Date().toLocaleDateString()}`, 10, H - 6);
+            },
+        });
+
+        // ── Utilidad Neta al pie ──────────────────────────────────────────────────
+        const finalY = doc.lastAutoTable.finalY + 2;
+        const W = doc.internal.pageSize.getWidth();
+        const mL = 10, mR = 10, rowH = 12;
+
+        doc.setFillColor(...C_HEADER);
+        doc.roundedRect(mL, finalY, W - mL - mR, rowH, 2, 2, 'F');
+        doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(255, 255, 255);
+        doc.text('UTILIDAD NETA DEL PERÍODO', mL + 5, finalY + rowH / 2 + 3);
+
+        const posC = [110, 231, 183];
+        const negC = [252, 165, 165];
+
+        // Mes
+        doc.setFontSize(11).setTextColor(...(utilidadNeta >= 0 ? posC : negC));
+        doc.text(fmtN(utilidadNeta), W - mR - 46, finalY + rowH / 2 + 3.5, { align: 'right' });
+
+        // Acumulado
+        doc.setFontSize(9).setTextColor(...(utilidadNetaAcum >= 0 ? posC : negC));
+        doc.text(fmtN(utilidadNetaAcum), W - mR - 5, finalY + rowH / 2 + 3.5, { align: 'right' });
+
+        window.open(URL.createObjectURL(doc.output('blob')), '_blank');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  DOMContentLoaded
+    // ═══════════════════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', async () => {
+        initDates();
+
+        ['sel-mes', 'inp-anio'].forEach(id => {
+            document.getElementById(id).addEventListener('change', function () {
+                const grpId = id === 'sel-mes' ? 'group-mes' : 'group-anio';
+                if (this.value) document.getElementById(grpId).classList.remove('field-error');
+            });
+        });
+
+        // Cargar empresas y centros de costos al inicio
+        await cargarCatalogos();
+
+        // Al cambiar empresa → recargar sucursales
+        document.getElementById('sel-empresa').addEventListener('change', function () {
+            cargarSucursales(this.value);
+        });
+    });
+</script>

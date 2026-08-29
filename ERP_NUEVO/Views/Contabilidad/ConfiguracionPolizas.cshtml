@@ -1,0 +1,2111 @@
+﻿@{
+    ViewBag.Title = "ConfiguracionPolizas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Configuracion de polizas";
+}
+
+<style>
+    /* ── Modales generales ── */
+    .modal-content {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+        background: var(--bg-light);
+        border-bottom: 1px solid var(--border-light);
+        padding: 1.1rem 1.5rem;
+    }
+
+    .modal-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        letter-spacing: -0.01em;
+    }
+
+    .modal-body {
+        background: var(--bg-gray);
+        padding: 1.25rem 1.5rem;
+    }
+
+    .modal-footer {
+        background: var(--bg-light);
+        border-top: 1px solid var(--border-light);
+        padding: 0.85rem 1.5rem;
+        gap: 0.5rem;
+    }
+
+    /* ── Sección card interna ── */
+    .cp-section {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1.1rem 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .cp-section-title {
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-light);
+        margin-bottom: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+        .cp-section-title .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            flex-shrink: 0;
+        }
+
+    /* ── Tabla de partidas ── */
+    #tablaPartidas {
+        font-size: 0.82rem;
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+    }
+
+        #tablaPartidas thead th {
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 9px 10px;
+            border-bottom: 1px solid var(--border-light);
+            border-top: none;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #tablaPartidas tbody tr {
+            border-bottom: 1px solid var(--border-light);
+            transition: background var(--transition-fast);
+        }
+
+            #tablaPartidas tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            #tablaPartidas tbody tr:hover {
+                background: var(--bg-gray);
+            }
+
+        #tablaPartidas td {
+            padding: 7px 8px;
+            vertical-align: middle;
+            border: none;
+        }
+
+    /* ── Tabla genérica (categorías, tipos, documentos) ── */
+    .cp-table {
+        font-size: 0.84rem;
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+    }
+
+        .cp-table thead th {
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--border-light);
+            border-top: none;
+            white-space: nowrap;
+        }
+
+        .cp-table tbody tr {
+            border-bottom: 1px solid var(--border-light);
+            transition: background var(--transition-fast);
+        }
+
+            .cp-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .cp-table tbody tr:hover {
+                background: var(--very-light-blue);
+            }
+
+        .cp-table td {
+            padding: 9px 12px;
+            vertical-align: middle;
+            border: none;
+            color: var(--text-dark);
+        }
+
+    .cp-table-wrap {
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    /* ── Badges ── */
+    .cp-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 3px 9px;
+        border-radius: 20px;
+        line-height: 1.4;
+    }
+
+    .cp-badge-blue {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .cp-badge-slate {
+        background: #f1f5f9;
+        color: var(--secondary-blue);
+    }
+
+    .cp-badge-green {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .cp-badge-red {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    .cp-badge-amber {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .cp-badge-purple {
+        background: var(--accent-purple-light);
+        color: #4338ca;
+    }
+
+    [data-theme="dark"] .cp-badge-blue {
+        background: #1e3a5f;
+        color: #93c5fd;
+    }
+
+    [data-theme="dark"] .cp-badge-slate {
+        background: #334155;
+        color: #94a3b8;
+    }
+
+    [data-theme="dark"] .cp-badge-green {
+        background: #064e3b;
+        color: #6ee7b7;
+    }
+
+    [data-theme="dark"] .cp-badge-red {
+        background: #7f1d1d;
+        color: #fca5a5;
+    }
+
+    [data-theme="dark"] .cp-badge-amber {
+        background: #78350f;
+        color: #fcd34d;
+    }
+
+    [data-theme="dark"] .cp-badge-purple {
+        background: #3730a3;
+        color: #c4b5fd;
+    }
+
+    /* ── Documentos — chips ── */
+    .doc-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 38px;
+        padding: 2px 0;
+    }
+
+    .doc-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        color: var(--text-dark);
+        transition: background var(--transition-fast);
+    }
+
+        .doc-chip:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .doc-chip .chip-clave {
+            font-weight: 600;
+            color: var(--accent-blue);
+            font-size: 0.75rem;
+        }
+
+        .doc-chip .chip-proceso {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            background: var(--light-blue);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+
+        .doc-chip .chip-remove {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            font-size: 0.75rem;
+            transition: color var(--transition-fast);
+        }
+
+            .doc-chip .chip-remove:hover {
+                color: var(--danger-color);
+            }
+
+    .doc-chip-empty {
+        color: var(--text-light);
+        font-size: 0.82rem;
+        padding: 6px 0;
+    }
+
+    /* ── Formulario inline de agregar documento ── */
+    .add-doc-form {
+        background: var(--bg-gray);
+        border: 1px dashed var(--border-light);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-top: 10px;
+    }
+
+    /* ── Formulario de edición (categoría / tipo póliza) ── */
+    .cp-edit-form {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-left: 3px solid var(--accent-blue);
+        border-radius: 10px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+        .cp-edit-form .form-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
+
+        .cp-edit-form .form-control,
+        .cp-edit-form .form-select {
+            font-size: 0.85rem;
+            border-color: var(--border-light);
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            border-radius: 8px;
+        }
+
+            .cp-edit-form .form-control:focus,
+            .cp-edit-form .form-select:focus {
+                border-color: var(--accent-blue);
+                box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+            }
+
+    /* ── Config general del modal de edición ── */
+    #modalContentEdit .form-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+
+    #modalContentEdit .form-control,
+    #modalContentEdit .form-select {
+        font-size: 0.85rem;
+        border-color: var(--border-light);
+        background: var(--bg-light);
+        color: var(--text-dark);
+        border-radius: 8px;
+    }
+
+        #modalContentEdit .form-control:focus,
+        #modalContentEdit .form-select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+
+    /* ── Selects dentro de la tabla de partidas ── */
+    #tablaPartidas .form-select-sm,
+    #tablaPartidas .form-control-sm {
+        font-size: 0.8rem;
+        border-radius: 6px;
+        border-color: var(--border-light);
+        background: var(--bg-light);
+        color: var(--text-dark);
+        padding: 4px 8px;
+    }
+
+        #tablaPartidas .form-select-sm:focus,
+        #tablaPartidas .form-control-sm:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.12);
+        }
+
+    /* Hint de descripción bajo el select */
+    .field-hint {
+        font-size: 0.68rem;
+        color: var(--text-light);
+        min-height: 1.3em;
+        line-height: 1.3;
+        margin-top: 3px;
+        max-width: 230px;
+    }
+
+    .tipo-cuenta-desc {
+        background: var(--border-light);
+        padding: 6px;
+        border-radius: 8px;
+        border-color: var(--border-light);
+    }
+
+    /* ── Orden input ── */
+    .orden-input {
+        background: var(--bg-gray) !important;
+        font-weight: 600;
+        font-size: 0.82rem;
+        text-align: center;
+        border-radius: 6px;
+        border-color: var(--border-light);
+        color: var(--text-light);
+    }
+
+    /* ── TomSelect override ── */
+    .ts-wrapper.form-select-sm .ts-control {
+        min-height: 30px !important;
+        font-size: 0.8rem !important;
+        border-radius: 6px !important;
+        border-color: var(--border-light) !important;
+        background: var(--bg-light) !important;
+        padding: 3px 8px !important;
+    }
+
+    .ts-dropdown {
+        z-index: 9999 !important;
+        border-radius: 8px !important;
+        border-color: var(--border-light) !important;
+        font-size: 0.82rem !important;
+        box-shadow: var(--shadow-lg) !important;
+    }
+
+    /* ── Botones ── */
+    .btn-cp-primary {
+        background: var(--accent-blue);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        padding: 6px 14px;
+        transition: opacity var(--transition-fast);
+    }
+
+        .btn-cp-primary:hover {
+            opacity: 0.88;
+            color: #fff;
+        }
+
+    .btn-cp-ghost {
+        background: transparent;
+        color: var(--text-light);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        font-size: 0.8rem;
+        padding: 6px 14px;
+        transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+        .btn-cp-ghost:hover {
+            background: var(--bg-gray);
+            color: var(--text-dark);
+        }
+
+    .btn-cp-danger {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        transition: background var(--transition-fast);
+    }
+
+        .btn-cp-danger:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+    [data-theme="dark"] .btn-cp-danger {
+        background: #7f1d1d;
+        color: #fca5a5;
+        border-color: #991b1b;
+    }
+
+    .btn-cp-success {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        padding: 6px 14px;
+        transition: background var(--transition-fast);
+    }
+
+        .btn-cp-success:hover {
+            background: #dcfce7;
+            color: #14532d;
+        }
+
+    [data-theme="dark"] .btn-cp-success {
+        background: #064e3b;
+        color: #6ee7b7;
+        border-color: #065f46;
+    }
+
+    /* ── Info box (validaciones) ── */
+    .cp-info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.78rem;
+        color: #1e40af;
+        line-height: 1.6;
+        margin-top: 0.75rem;
+    }
+
+    [data-theme="dark"] .cp-info-box {
+        background: #1e3a5f;
+        border-color: #1d4ed8;
+        color: #93c5fd;
+    }
+
+    /* ── Vista previa ── */
+    #modalVistaPrevia .cp-table th {
+        white-space: nowrap;
+    }
+
+    .vp-header {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .vp-logo-box {
+        width: 64px;
+        height: 64px;
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: var(--bg-gray);
+    }
+
+        .vp-logo-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+    .vp-meta {
+        flex: 1;
+    }
+
+        .vp-meta h6 {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .vp-meta small {
+            color: var(--text-light);
+            font-size: 0.78rem;
+        }
+
+    .vp-stats {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+    }
+
+    .vp-example-bar {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 8px;
+        padding: 7px 12px;
+        font-size: 0.78rem;
+        color: #92400e;
+        margin-bottom: 1rem;
+    }
+
+    [data-theme="dark"] .vp-example-bar {
+        background: #78350f;
+        border-color: #b45309;
+        color: #fcd34d;
+    }
+
+    .cp-section {
+        position: relative;
+    }
+
+    /* ── Scroll personalizado ── */
+    .cp-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .cp-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .cp-scroll::-webkit-scrollbar-thumb {
+        background: var(--border-light);
+        border-radius: 3px;
+    }
+
+        .cp-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-blue);
+        }
+
+    /* ── Totales row ── */
+    .totales-row td {
+        background: var(--bg-gray);
+        font-weight: 600;
+        font-size: 0.82rem;
+        border-top: 2px solid var(--border-light) !important;
+    }
+</style>
+
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+@* Tabla principal *@
+<div class="contenedor-tabla">
+    <div class="card-body">
+        <div class="d-flex gap-2 mb-3">
+            <button class="btn btn-sm btn-cp-ghost" onclick="agregarCategoria()">
+                <i class="fa-solid fa-tag fa-xs me-1"></i> Categorías
+            </button>
+            <button class="btn btn-sm btn-cp-primary" onclick="agregarTipoPoliza()">
+                <i class="fa-solid fa-plus fa-xs me-1"></i> Tipo de póliza
+            </button>
+        </div>
+        <div id="tablaTiposPoliza"></div>
+    </div>
+</div>
+
+@* Modal Vista Previa *@
+<div class="modal fade" id="modalVistaPrevia" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-regular fa-eye fa-sm me-2 text-muted"></i>Vista previa de póliza</h5>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cp-ghost" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal Edición *@
+<div class="modal fade" id="modalEdicion" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-regular fa-pen-to-square fa-sm me-2 text-muted"></i>Editar póliza</h5>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContentEdit"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cp-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-cp-primary" id="btnGuardarEdicion">
+                    <i class="fa-solid fa-check fa-xs me-1"></i> Guardar cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal Categoría *@
+<div class="modal fade" id="modalCategoria" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-tag fa-sm me-2 text-muted"></i>Gestionar categorías</h5>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContentCat"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cp-ghost" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal Tipo Póliza *@
+<div class="modal fade" id="modalTipoPoliza" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"></h5>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContentTpoliza"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cp-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-cp-primary" id="btnGuardarTipoPoliza">
+                    <i class="fa-solid fa-check fa-xs me-1"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+
+<script>
+    /* ═══════════════════════════════════════════════
+       CATÁLOGOS
+       Tipos de cuenta, lados, orígenes de monto y tipos de proceso viven en las
+       tablas poliza_cat_* (ver sql/poliza_catalogos.sql). Antes eran arreglos
+       escritos a mano aquí: agregar un valor obligaba a editar esta vista.
+       Se cachean en memoria porque los usan la vista previa y la edición.
+    ═══════════════════════════════════════════════ */
+    let _catalogosPoliza = null;
+
+    async function getCatalogosPoliza() {
+        if (_catalogosPoliza) return _catalogosPoliza;
+
+        const data = await GetData({
+            path: '/ConfiguracionPolizas/GetCatalogosPoliza'
+        });
+
+        if (!data || !Array.isArray(data.tiposCuenta)) {
+            /* Casi siempre significa que falta correr sql/poliza_catalogos.sql */
+            _Swal.fire({
+                icon: 'error',
+                title: 'Catálogos de pólizas no disponibles',
+                html: data?.html || 'No se pudieron leer las tablas poliza_cat_*. Verifica que se haya ejecutado sql/poliza_catalogos.sql en esta base.',
+                showCancelButton: false
+            });
+            throw new Error('Catálogos de pólizas no disponibles');
+        }
+
+        _catalogosPoliza = {
+            tiposCuenta: data.tiposCuenta,
+            lados: data.lados,
+            origenesMonto: data.origenesMonto,
+            tiposProceso: data.tiposProceso
+        };
+        return _catalogosPoliza;
+    }
+
+    /* Índice clave → renglón, para no andar buscando con find() en cada celda */
+    function indexarPorClave(catalogo) {
+        return Object.fromEntries((catalogo || []).map(x => [x.clave, x]));
+    }
+
+    /* ═══════════════════════════════════════════════
+   TIPOS DE PÓLIZA
+═══════════════════════════════════════════════ */
+    async function agregarTipoPoliza() {
+        const modalTipoPoliza = new bootstrap.Modal(document.getElementById('modalTipoPoliza'));
+        const modalContent = document.getElementById('modalContentTpoliza');
+        const modalTitle = document.querySelector('#modalTipoPoliza .modal-title');
+
+        const data = await GetData({
+            path: '/ConfiguracionPolizas/GetTiposPoliza'
+        });
+        const tiposPoliza = data.tipos;
+        const empresas = data.empresas;
+        const categorias = await GetData({
+            path: '/ConfiguracionPolizas/GetCategorias'
+        });
+        const clasificaciones = await GetData({
+            path: '/ConfiguracionPolizas/GetClasificaciones'
+        });
+
+        window.datosComplementariosTipos = {
+            categorias,
+            clasificaciones
+        };
+
+        const empresaId = tiposPoliza.length > 0 ? tiposPoliza[0].empresa_id : null;
+        const empresaActual = empresas.find(e => e.empresaid == empresaId);
+        modalTitle.textContent = empresaActual ? `Tipos de póliza — ${empresaActual.nombre}` : 'Tipos de póliza';
+
+        let html = `
+    <!-- Formulario oculto -->
+    <div id="formularioTipoPoliza" style="display:none;" class="mb-3">
+        <div class="cp-edit-form">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="cp-section-title mb-0">
+                    <span class="dot"></span>
+                    <span id="tituloFormularioTipo">Nuevo tipo de póliza</span>
+                </span>
+                <button type="button" class="btn btn-cp-ghost btn-sm" id="btnCancelarFormTipo">
+                    <i class="fa-solid fa-times fa-xs"></i>
+                </button>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" id="tipo_nombre"
+                        placeholder="Ej: Póliza de venta a crédito">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Categoría <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" id="tipo_categoria">
+                        <option value="">Selecciona...</option>
+                        ${categorias.map(cat => `<option value="${cat.id_categoria}">${cat.nombre}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Clasificación <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" id="tipo_clasificacion">
+                        <option value="">Selecciona...</option>
+                        ${clasificaciones.map(c => `<option value="${c.id_clasificacion_poliza}">${c.nombre}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Descripción</label>
+                    <textarea class="form-control form-control-sm" id="tipo_descripcion" rows="2"
+                        placeholder="Opcional"></textarea>
+                </div>
+                <div class="col-md-12 d-flex align-items-center justify-content-between">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="tipo_activo" checked>
+                        <label class="form-check-label" for="tipo_activo" style="font-size:0.82rem; color:var(--text-light);">Activo</label>
+                    </div>
+                    <button type="button" class="btn btn-cp-primary btn-sm" id="btnGuardarTipoPolizaForm">
+                        <i class="fa-solid fa-check fa-xs me-1"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Encabezado lista -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+            <p class="mb-0" style="font-size:0.85rem; font-weight:600; color:var(--text-dark);">Tipos registrados</p>
+            ${empresaActual ? `<small style="color:var(--text-light);font-size:0.75rem;"><i class="fa-solid fa-building fa-xs me-1"></i>${empresaActual.nombre}</small>` : ''}
+        </div>
+        <button type="button" class="btn btn-cp-success btn-sm" id="btnNuevoTipo">
+            <i class="fa-solid fa-plus fa-xs me-1"></i> Nuevo
+        </button>
+    </div>
+
+    <div class="cp-table-wrap">
+        <table class="cp-table">
+            <thead>
+                <tr>
+                    <th style="width:60px;">ID</th>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Clasificación</th>
+                    <th>Descripción</th>
+                    <th class="text-center" style="width:90px;">Estado</th>
+                    <th class="text-center" style="width:70px;"></th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        if (!tiposPoliza || tiposPoliza.length === 0) {
+            html += `<tr><td colspan="7" class="text-center py-4" style="color:var(--text-light);font-size:0.82rem;">
+            <i class="fa-solid fa-inbox mb-2 d-block" style="font-size:1.4rem;"></i>Sin tipos registrados</td></tr>`;
+        } else {
+            tiposPoliza.forEach(tipo => {
+                const categoria = categorias.find(c => c.id_categoria == tipo.id_categoria);
+                const clasificacion = clasificaciones.find(c => c.id_clasificacion_poliza == tipo.clasificacion_id);
+                html += `
+            <tr>
+                <td style="color:var(--text-light);font-size:0.78rem;">#${tipo.id_tipo_poliza}</td>
+                <td style="font-weight:500;">${tipo.nombre}</td>
+                <td><span class="cp-badge cp-badge-blue">${categoria ? categoria.nombre : '—'}</span></td>
+                <td><span class="cp-badge cp-badge-slate">${clasificacion ? clasificacion.nombre : '—'}</span></td>
+                <td style="color:var(--text-light);font-size:0.8rem;">${tipo.descripcion || '<em>—</em>'}</td>
+                <td class="text-center">
+                    <span class="cp-badge ${tipo.activo ? 'cp-badge-green' : 'cp-badge-red'}">
+                        <i class="fa-solid ${tipo.activo ? 'fa-check' : 'fa-times'} fa-xs"></i>
+                        ${tipo.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-cp-ghost btn-sm btn-editar-tipo"
+                            data-tipo='${JSON.stringify(tipo)}' title="Editar">
+                        <i class="fa-solid fa-pen fa-xs"></i>
+                    </button>
+                </td>
+            </tr>`;
+            });
+        }
+
+        html += `</tbody></table></div>`;
+        modalContent.innerHTML = html;
+
+        document.getElementById('btnNuevoTipo').addEventListener('click', () => {
+            limpiarFormularioTipoPoliza();
+            document.getElementById('tituloFormularioTipo').textContent = 'Nuevo tipo de póliza';
+            window.tipoPolizaEditando = null;
+            mostrarFormularioTipoPoliza(true);
+        });
+
+        document.getElementById('btnCancelarFormTipo').addEventListener('click', () => {
+            mostrarFormularioTipoPoliza(false);
+            limpiarFormularioTipoPoliza();
+            window.tipoPolizaEditando = null;
+        });
+
+        document.getElementById('btnGuardarTipoPolizaForm').addEventListener('click', () => guardarTipoPoliza());
+
+        document.querySelectorAll('.btn-editar-tipo').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const tipo = JSON.parse(this.dataset.tipo);
+                window.tipoPolizaEditando = tipo;
+                document.getElementById('tipo_nombre').value = tipo.nombre;
+                document.getElementById('tipo_categoria').value = tipo.id_categoria;
+                document.getElementById('tipo_clasificacion').value = tipo.clasificacion_id;
+                document.getElementById('tipo_descripcion').value = tipo.descripcion || '';
+                document.getElementById('tipo_activo').checked = tipo.activo;
+                document.getElementById('tituloFormularioTipo').textContent = `Editar: ${tipo.nombre}`;
+                mostrarFormularioTipoPoliza(true);
+            });
+        });
+
+        modalTipoPoliza.show();
+    }
+
+    function mostrarFormularioTipoPoliza(mostrar) {
+        const f = document.getElementById('formularioTipoPoliza');
+        if (mostrar) {
+            f.style.display = 'block';
+            f.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        } else f.style.display = 'none';
+    }
+
+    function limpiarFormularioTipoPoliza() {
+        ['tipo_nombre', 'tipo_descripcion'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('tipo_categoria').value = '';
+        document.getElementById('tipo_clasificacion').value = '';
+        document.getElementById('tipo_activo').checked = true;
+    }
+
+    async function guardarTipoPoliza() {
+        const nombre = document.getElementById('tipo_nombre').value.trim();
+        const categoriaId = document.getElementById('tipo_categoria').value;
+        const clasificacionId = document.getElementById('tipo_clasificacion').value;
+        const descripcion = document.getElementById('tipo_descripcion').value.trim();
+        const activo = document.getElementById('tipo_activo').checked;
+
+        if (!nombre) {
+            mostrarAlerta('error', 'El nombre es obligatorio');
+            document.getElementById('tipo_nombre').focus();
+            return;
+        }
+        if (!categoriaId) {
+            mostrarAlerta('error', 'La categoría es obligatoria');
+            return;
+        }
+        if (!clasificacionId) {
+            mostrarAlerta('error', 'La clasificación es obligatoria');
+            return;
+        }
+
+        const datos = {
+            nombre,
+            id_categoria: categoriaId,
+            clasificacion_id: clasificacionId,
+            descripcion,
+            activo
+        };
+        if (window.tipoPolizaEditando) datos.id_tipo_poliza = window.tipoPolizaEditando.id_tipo_poliza;
+
+        Swal.fire({
+            title: 'Guardando...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+        await GetData({
+            path: '/ConfiguracionPolizas/GuardarTipoPoliza',
+            data: datos,
+            swalResponse: true,
+            swalType: 'modal',
+            swalPath: '/Contabilidad/ConfiguracionPolizas'
+        });
+    }
+
+    /* ═══════════════════════════════════════════════
+        CATEGORÍAS
+    ═══════════════════════════════════════════════ */
+    let categoriaEditando = null;
+
+    async function agregarCategoria() {
+        const modalCategoria = new bootstrap.Modal(document.getElementById('modalCategoria'));
+        const modalContent = document.getElementById('modalContentCat');
+        const categorias = await GetData({
+            path: '/ConfiguracionPolizas/GetCategorias'
+        });
+
+        let html = `
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <p class="mb-0" style="font-size:0.85rem;font-weight:600;color:var(--text-dark);">Categorías de pólizas</p>
+        <button type="button" class="btn btn-cp-success btn-sm" id="btnNuevaCategoria">
+            <i class="fa-solid fa-plus fa-xs me-1"></i> Nueva
+        </button>
+    </div>
+
+    <!-- Formulario oculto -->
+    <div id="formularioCategoria" style="display:none;" class="mb-3">
+        <div class="cp-edit-form">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="cp-section-title mb-0"><span class="dot"></span><span id="tituloFormulario">Nueva categoría</span></span>
+                <button type="button" class="btn btn-cp-ghost btn-sm" id="btnCancelarForm"><i class="fa-solid fa-times fa-xs"></i></button>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" id="cat_nombre" placeholder="Ej: Ventas, Compras...">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="cat_activo" checked>
+                        <label class="form-check-label" for="cat_activo" style="font-size:0.82rem;color:var(--text-light);">Activa</label>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Descripción</label>
+                    <textarea class="form-control form-control-sm" id="cat_descripcion" rows="2" placeholder="Opcional"></textarea>
+                </div>
+                <div class="col-md-12 text-end">
+                    <button type="button" class="btn btn-cp-primary btn-sm" id="btnGuardarCategoriaForm">
+                        <i class="fa-solid fa-check fa-xs me-1"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cp-table-wrap">
+        <table class="cp-table">
+            <thead>
+                <tr>
+                    <th style="width:60px;">ID</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th class="text-center" style="width:90px;">Estado</th>
+                    <th class="text-center" style="width:70px;"></th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        if (!categorias || categorias.length === 0) {
+            html += `<tr><td colspan="5" class="text-center py-4" style="color:var(--text-light);font-size:0.82rem;">
+            <i class="fa-solid fa-inbox mb-2 d-block" style="font-size:1.4rem;"></i>Sin categorías</td></tr>`;
+        } else {
+            categorias.forEach(cat => {
+                html += `
+            <tr>
+                <td style="color:var(--text-light);font-size:0.78rem;">#${cat.id_categoria}</td>
+                <td style="font-weight:500;">${cat.nombre}</td>
+                <td style="color:var(--text-light);font-size:0.8rem;">${cat.descripcion || '<em>—</em>'}</td>
+                <td class="text-center">
+                    <span class="cp-badge ${cat.activo ? 'cp-badge-green' : 'cp-badge-red'}">
+                        <i class="fa-solid ${cat.activo ? 'fa-check' : 'fa-times'} fa-xs"></i>
+                        ${cat.activo ? 'Activa' : 'Inactiva'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-cp-ghost btn-sm btn-editar-cat"
+                            data-id="${cat.id_categoria}" data-nombre="${cat.nombre}"
+                            data-descripcion="${cat.descripcion || ''}" data-activo="${cat.activo}">
+                        <i class="fa-solid fa-pen fa-xs"></i>
+                    </button>
+                </td>
+            </tr>`;
+            });
+        }
+
+        html += `</tbody></table></div>`;
+        modalContent.innerHTML = html;
+
+        document.getElementById('btnNuevaCategoria').addEventListener('click', () => {
+            categoriaEditando = null;
+            limpiarFormularioCategoria();
+            document.getElementById('tituloFormulario').textContent = 'Nueva categoría';
+            mostrarFormularioCategoria(true);
+        });
+
+        document.getElementById('btnCancelarForm').addEventListener('click', () => {
+            mostrarFormularioCategoria(false);
+            limpiarFormularioCategoria();
+            categoriaEditando = null;
+        });
+
+        document.getElementById('btnGuardarCategoriaForm').addEventListener('click', () => guardarCategoria());
+
+        document.querySelectorAll('.btn-editar-cat').forEach(btn => {
+            btn.addEventListener('click', function () {
+                categoriaEditando = {
+                    id: this.dataset.id,
+                    nombre: this.dataset.nombre,
+                    descripcion: this.dataset.descripcion,
+                    activo: this.dataset.activo === 'true'
+                };
+                document.getElementById('cat_nombre').value = categoriaEditando.nombre;
+                document.getElementById('cat_descripcion').value = categoriaEditando.descripcion;
+                document.getElementById('cat_activo').checked = categoriaEditando.activo;
+                document.getElementById('tituloFormulario').textContent = `Editar: ${categoriaEditando.nombre}`;
+                mostrarFormularioCategoria(true);
+            });
+        });
+
+        modalCategoria.show();
+    }
+
+    function mostrarFormularioCategoria(mostrar) {
+        const f = document.getElementById('formularioCategoria');
+        if (mostrar) {
+            f.style.display = 'block';
+            f.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        } else f.style.display = 'none';
+    }
+
+    function limpiarFormularioCategoria() {
+        document.getElementById('cat_nombre').value = '';
+        document.getElementById('cat_descripcion').value = '';
+        document.getElementById('cat_activo').checked = true;
+    }
+
+    async function guardarCategoria() {
+        const nombre = document.getElementById('cat_nombre').value.trim();
+        const descripcion = document.getElementById('cat_descripcion').value.trim();
+        const activo = document.getElementById('cat_activo').checked;
+
+        if (!nombre) {
+            mostrarAlerta('error', 'El nombre es obligatorio');
+            document.getElementById('cat_nombre').focus();
+            return;
+        }
+
+        const datos = {
+            nombre,
+            descripcion,
+            activo
+        };
+        if (categoriaEditando) datos.id_categoria = categoriaEditando.id;
+
+        Swal.fire({
+            title: 'Guardando...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+        await GetData({
+            path: '/ConfiguracionPolizas/GuardarCategoria',
+            data: datos,
+            swalResponse: true,
+            swalType: 'modal',
+            swalPath: '/Contabilidad/ConfiguracionPolizas'
+        });
+    }
+
+    /* ═══════════════════════════════════════════════
+       VISTA PREVIA
+    ═══════════════════════════════════════════════ */
+    async function vistaPrevia(e) {
+        const polizaConfig = await GetData({
+            path: '/ConfiguracionPolizas/GetPolizaConfig',
+            data: {
+                id_tipo_poliza: e.id_tipo_poliza
+            }
+        });
+        const partidas = polizaConfig.partidas;
+        const general = polizaConfig.general[0];
+        const modalContent = document.getElementById('modalContent');
+
+        const catalogos = await getCatalogosPoliza();
+        const tiposCuentaPorClave = indexarPorClave(catalogos.tiposCuenta);
+
+        /* Montos de ejemplo por origen: columna monto_ejemplo del catálogo */
+        const montosFicticios = Object.fromEntries(
+            catalogos.origenesMonto.map(o => [o.clave, Number(o.monto_ejemplo) || 0])
+        );
+        const leyendaMontos = catalogos.origenesMonto
+            .filter(o => Number(o.monto_ejemplo) > 0)
+            .map(o => `${o.clave} $${Number(o.monto_ejemplo).toLocaleString('es-MX')}`)
+            .join(' · ');
+
+        const calcularMonto = p => ((montosFicticios[p.origen_monto] || 0) * 1).toFixed(2);
+        const logoPath = `../Content/img/${general.empresa}/logo.png`;
+
+        let html = `
+    <div class="vp-header">
+        <div class="vp-logo-box">
+            <img src="${logoPath}" alt="Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div style="display:none; align-items:center; justify-content:center; width:100%; height:100%; color:var(--text-light); font-size:1.4rem;">
+                <i class="fa-solid fa-building"></i>
+            </div>
+        </div>
+        <div class="vp-meta">
+            <h6>${general.descripcion}</h6>
+            <small>
+                <span class="cp-badge cp-badge-blue me-1">${general.categoria}</span>
+                <span class="cp-badge cp-badge-slate me-1">${general.clasificacion.toUpperCase()}</span>
+                <span class="cp-badge ${general.activo ? 'cp-badge-green' : 'cp-badge-red'}">
+                    ${general.activo ? 'Activa' : 'Inactiva'}
+                </span>
+            </small>
+        </div>
+        <div class="vp-stats">
+            <small style="color:var(--text-light);">${general.empresa}</small>
+        </div>
+    </div>
+
+    <div class="vp-example-bar">
+        <i class="fa-solid fa-flask fa-xs me-1"></i>
+        <strong>Datos ficticios:</strong> ${leyendaMontos || 'sin montos de ejemplo configurados'}
+    </div>
+
+    <div class="cp-table-wrap cp-scroll" style="max-height:500px; overflow-y:auto;">
+        <table class="cp-table">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width:50px;">#</th>
+                    <th style="width:110px;">Tipo</th>
+                    <th style="width:140px;">Cuenta</th>
+                    <th>Descripción</th>
+                    <th class="text-end" style="width:110px;">Debe</th>
+                    <th class="text-end" style="width:110px;">Haber</th>
+                    <th class="text-center" style="width:90px;">Origen</th>
+                    <th class="text-center" style="width:70px;">IVA</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        let totalDebe = 0,
+            totalHaber = 0;
+
+        if (!partidas || partidas.length === 0) {
+            html += `<tr><td colspan="8" class="text-center py-4" style="color:var(--text-light);font-size:0.82rem;">Sin partidas configuradas</td></tr>`;
+        } else {
+            partidas.forEach(p => {
+                /* Sin cuenta fija capturada, el motor la resuelve en automático:
+                   el texto a mostrar sale de etiqueta_cuenta del catálogo. */
+                const etiquetaAutomatica = tiposCuentaPorClave[p.tipo_cuenta]?.etiqueta_cuenta;
+                const cuentaDisplay = p.cuenta_contable ||
+                    (etiquetaAutomatica ?
+                        `<em style="color:var(--text-light);font-size:0.78rem;">${etiquetaAutomatica}</em>` :
+                        '<em style="color:var(--text-light);">—</em>');
+
+                const monto = calcularMonto(p);
+                const isDebe = p.lado === 'DEBE';
+                const isHaber = p.lado === 'HABER';
+                if (isDebe) totalDebe += parseFloat(monto);
+                if (isHaber) totalHaber += parseFloat(monto);
+
+                html += `
+            <tr>
+                <td class="text-center" style="color:var(--text-light);font-size:0.78rem;">${p.orden}</td>
+                <td><span class="cp-badge cp-badge-blue" style="font-size:0.68rem;">${p.tipo_cuenta}</span></td>
+                <td style="font-size:0.8rem;">${cuentaDisplay}</td>
+                <td style="font-size:0.82rem;">${p.descripcion_template}</td>
+                <td class="text-end" style="font-size:0.82rem; font-weight:${isDebe ? '600' : '400'}; color:${isDebe ? 'var(--danger-color)' : 'var(--text-light)'};">
+                    ${isDebe ? '$' + parseFloat(monto).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}
+                </td>
+                <td class="text-end" style="font-size:0.82rem; font-weight:${isHaber ? '600' : '400'}; color:${isHaber ? 'var(--success-color)' : 'var(--text-light)'};">
+                    ${isHaber ? '$' + parseFloat(monto).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}
+                </td>
+                <td class="text-center">
+                    <span class="cp-badge cp-badge-purple" style="font-size:0.68rem;">${p.origen_monto}</span>
+                </td>
+                <td class="text-center">
+                    ${p.cve_impuesto ? `<span class="cp-badge cp-badge-amber" style="font-size:0.68rem;">${p.cve_impuesto}</span>` : '<span style="color:var(--text-light);">—</span>'}
+                </td>
+            </tr>`;
+            });
+
+            const cuadrada = Math.abs(totalDebe - totalHaber) < 0.01;
+            html += `
+        <tr class="totales-row">
+            <td colspan="4" class="text-end" style="color:var(--text-light);font-size:0.78rem;letter-spacing:0.04em;">TOTALES</td>
+            <td class="text-end" style="color:var(--danger-color);">$${totalDebe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+            <td class="text-end" style="color:var(--success-color);">$${totalHaber.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+            <td colspan="2" class="text-center">
+                <span class="cp-badge ${cuadrada ? 'cp-badge-green' : 'cp-badge-red'}">
+                    <i class="fa-solid ${cuadrada ? 'fa-check' : 'fa-times'} fa-xs"></i>
+                    ${cuadrada ? 'Cuadrada' : 'Descuadrada'}
+                </span>
+            </td>
+        </tr>`;
+        }
+
+        html += `</tbody></table></div>
+
+    <div class="d-flex gap-2 mt-3">
+        <div class="cp-info-box flex-fill" style="background:var(--bg-light); border-color:var(--border-light); color:var(--text-light);">
+            <i class="fa-solid fa-list-ol fa-xs me-1"></i> ${partidas?.length || 0} partidas
+        </div>
+        <div class="cp-info-box flex-fill ${Math.abs(totalDebe - totalHaber) < 0.01 ? '' : 'bg-danger-subtle'}">
+            Diferencia: $${Math.abs(totalDebe - totalHaber).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+        </div>
+    </div>`;
+
+        modalContent.innerHTML = html;
+        new bootstrap.Modal(document.getElementById('modalVistaPrevia')).show();
+    }
+
+    /* ═══════════════════════════════════════════════
+       EDITAR PÓLIZA
+    ═══════════════════════════════════════════════ */
+    let tomSelectInstances = [];
+
+    async function editarPoliza(e) {
+        const modalContent = document.getElementById('modalContentEdit');
+
+        const actualConfig = await GetData({
+            path: '/ConfiguracionPolizas/GetPolizaConfig',
+            data: {
+                id_tipo_poliza: e.id_tipo_poliza
+            }
+        });
+        window.currentPolizaId = e.id_tipo_poliza;
+        window.currentEmpresaId = e.empresaid;
+
+        const partidas = actualConfig.partidas;
+        const general = actualConfig.general[0];
+        const documentosPoliza = actualConfig.documentosPoliza;
+        const documentos = actualConfig.documentos;
+
+        const datosComplementarios = await GetData({
+            path: '/ConfiguracionPolizas/GetDatosComplementarios',
+            data: {
+                empresa_id: e.empresaid
+            }
+        });
+        const empresas = datosComplementarios.empresas;
+        const cuentas = datosComplementarios.cuentas;
+        const impuestos = datosComplementarios.impuestos;
+        const categorias = datosComplementarios.categorias;
+        const clasificaciones = datosComplementarios.clasificaciones;
+
+        /* Catálogos desde la BD (tablas poliza_cat_*), ya no listas fijas aquí */
+        const catalogos = await getCatalogosPoliza();
+        const tiposCuenta = catalogos.tiposCuenta;
+        const lados = catalogos.lados;
+        const origenesMontos = catalogos.origenesMonto;
+        const tiposProceso = catalogos.tiposProceso;
+
+        /* El selector de tipo de proceso pasa de 14 a más de 45 opciones,
+           así que se agrupa por módulo para que siga siendo navegable. */
+        const opcionesTipoProceso = (() => {
+            const grupos = new Map();
+            tiposProceso.forEach(tp => {
+                const modulo = tp.modulo || 'Otros';
+                if (!grupos.has(modulo)) grupos.set(modulo, []);
+                grupos.get(modulo).push(tp);
+            });
+            return [...grupos.entries()].map(([modulo, items]) => `
+                <optgroup label="${modulo}">
+                    ${items.map(tp => `<option value="${tp.clave}">${tp.descripcion}</option>`).join('')}
+                </optgroup>`).join('');
+        })();
+
+        /* Reglas de captura por tipo de cuenta, también del catálogo */
+        const tiposQueExigenCuenta = tiposCuenta.filter(t => t.requiere_cuenta).map(t => t.clave);
+        const tiposQueExigenImpuesto = tiposCuenta.filter(t => t.requiere_impuesto).map(t => t.clave);
+        const reglasValidacion = [
+            'Todos los campos marcados con * son obligatorios',
+            tiposQueExigenCuenta.length ? `La cuenta es obligatoria si el tipo es ${tiposQueExigenCuenta.join(' o ')}` : '',
+            tiposQueExigenImpuesto.length ? `El impuesto es obligatorio si el tipo es ${tiposQueExigenImpuesto.join(' o ')}` : '',
+            ...tiposCuenta
+                .filter(t => t.origen_monto_forzado)
+                .map(t => `Si el tipo es ${t.clave}, el origen se fija en ${t.origen_monto_forzado}`)
+        ].filter(Boolean);
+
+        let html = `
+    <!-- Configuración general -->
+    <div class="cp-section">
+        <p class="cp-section-title"><span class="dot"></span>Configuración general</p>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Empresa <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="edit_empresa">
+                    ${empresas.map(emp => `<option value="${emp.empresaid}" ${general.empresaid == emp.empresaid ? 'selected' : ''}>${emp.nombre}</option>`).join('')}
+                </select>
+                <small class="field-hint"><i class="fa-solid fa-triangle-exclamation fa-xs me-1"></i>Cambiar empresa recargará las cuentas</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" id="edit_descripcion_general" value="${general.descripcion}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Categoría <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="edit_categoria">
+                    <option value="">Selecciona...</option>
+                    ${categorias.map(cat => `<option value="${cat.id_categoria}" ${general.id_categoria == cat.id_categoria ? 'selected' : ''}>${cat.nombre}</option>`).join('')}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Clasificación <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="edit_clasificacion">
+                    <option value="">Selecciona...</option>
+                    ${clasificaciones.map(c => `<option value="${c.id_clasificacion_poliza}" ${general.id_clasificacion_poliza == c.id_clasificacion_poliza ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+                </select>
+            </div>
+            <div class="col-md-12">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="edit_activo" ${general.activo ? 'checked' : ''}>
+                    <label class="form-check-label" for="edit_activo" style="font-size:0.82rem; color:var(--text-light);">Póliza activa</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentos -->
+    <div class="cp-section">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <p class="cp-section-title mb-0"><span class="dot" style="background:var(--success-color);"></span>Documentos que generan esta póliza</p>
+            <button type="button" class="btn btn-cp-success btn-sm" id="btnAgregarDocumento">
+                <i class="fa-solid fa-plus fa-xs me-1"></i> Agregar
+            </button>
+        </div>
+
+        <div class="doc-chips" id="docChips">
+            <!-- chips se renderizan aquí -->
+        </div>
+
+        <!-- Formulario inline para agregar doc -->
+        <div id="nuevoDocumentoContainer" style="display:none;" class="add-doc-form mt-2">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label" style="font-size:0.75rem; color:var(--text-light); font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">
+                        Documento <span class="text-danger">*</span>
+                    </label>
+                    <select id="selectNuevoDocumento"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" style="font-size:0.75rem; color:var(--text-light); font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">
+                        Tipo proceso <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select form-select-sm" id="selectTipoProceso">
+                        <option value="">Selecciona...</option>
+                        ${opcionesTipoProceso}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-1">
+                    <button type="button" class="btn btn-cp-primary btn-sm flex-fill" id="btnConfirmarDocumento">
+                        <i class="fa-solid fa-check fa-xs me-1"></i> Agregar
+                    </button>
+                    <button type="button" class="btn btn-cp-ghost btn-sm" id="btnCancelarDocumento">
+                        <i class="fa-solid fa-times fa-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partidas -->
+    <div class="cp-section" style="padding-bottom:0.75rem;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <p class="cp-section-title mb-0"><span class="dot"></span>Partidas</p>
+            <button type="button" class="btn btn-cp-success btn-sm" id="btnAgregarPartida">
+                <i class="fa-solid fa-plus fa-xs me-1"></i> Agregar
+            </button>
+        </div>
+
+        <div class="cp-table-wrap cp-scroll" style="max-height:480px; overflow:auto;">
+            <table id="tablaPartidas">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width:52px;">#</th>
+                        <th style="min-width:160px;">Tipo cuenta <span style="color:var(--warning-color);">*</span></th>
+                        <th style="min-width:220px;">Cuenta contable</th>
+                        <th style="min-width:100px;">Lado <span style="color:var(--warning-color);">*</span></th>
+                        <th style="min-width:140px;">Origen monto <span style="color:var(--warning-color);">*</span></th>
+                        <th style="min-width:180px;">Descripción <span style="color:var(--warning-color);">*</span></th>
+                        <th style="min-width:180px;">Impuesto</th>
+                        <th style="width:50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="partidasBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="cp-info-box">
+        <i class="fa-solid fa-circle-info fa-xs me-1"></i>
+        <strong>Validaciones:</strong> ${reglasValidacion.join(' · ')}
+    </div>`;
+
+        modalContent.innerHTML = html;
+
+        /* ── Documentos (chips) ── */
+        let tomSelectDocumento = null;
+
+        function inicializarTomSelectDocumento() {
+            if (tomSelectDocumento) {
+                tomSelectDocumento.destroy();
+                tomSelectDocumento = null;
+            }
+            tomSelectDocumento = new TomSelect('#selectNuevoDocumento', {
+                placeholder: 'Busca un documento...',
+                dropdownParent: 'body',
+                allowEmptyOption: true,
+                create: false,
+                options: [],
+                render: {
+                    option: (data, escape) => `<div style="padding:5px;">
+                    <span style="color:black;font-weight:600;">${escape(data.clave)}</span>
+                    <span style="color:var(--accent-blue);"> — ${escape(data.text)}</span></div>`,
+                    item: (data, escape) => `<div>${escape(data.clave)} — ${escape(data.text)}</div>`
+                }
+            });
+        }
+
+        window.documentosPolizaActuales = documentosPoliza.map(d => ({
+            idtpdoc: d.idtpdoc,
+            abreviaturatpdoc: d.abreviaturatpdoc,
+            tpdoc: d.tpdoc,
+            tipo_proceso: d.tipo_proceso || null,
+            id_poliza_documento: d.id_poliza_documento,
+            esNuevo: false
+        }));
+
+        renderizarDocumentos();
+
+        document.getElementById('btnAgregarDocumento').addEventListener('click', () => {
+            document.getElementById('nuevoDocumentoContainer').style.display = 'block';
+            inicializarTomSelectDocumento();
+            actualizarSelectDocumentos();
+        });
+
+        document.getElementById('btnConfirmarDocumento').addEventListener('click', () => {
+            const idtpdoc = tomSelectDocumento.getValue();
+            const tipoProceso = document.getElementById('selectTipoProceso').value;
+            if (!idtpdoc) {
+                mostrarAlerta('warning', 'Selecciona un documento.');
+                return;
+            }
+            if (!tipoProceso) {
+                mostrarAlerta('warning', 'Selecciona el tipo de proceso.');
+                return;
+            }
+
+            const doc = documentos.find(d => d.idtpdoc == idtpdoc);
+            window.documentosPolizaActuales.push({
+                idtpdoc: doc.idtpdoc,
+                abreviaturatpdoc: doc.abreviaturatpdoc,
+                tpdoc: doc.tpdoc,
+                tipo_proceso: tipoProceso,
+                id_poliza_documento: null,
+                esNuevo: true
+            });
+            renderizarDocumentos();
+            document.getElementById('nuevoDocumentoContainer').style.display = 'none';
+            document.getElementById('selectTipoProceso').value = '';
+            tomSelectDocumento.clear();
+        });
+
+        document.getElementById('btnCancelarDocumento').addEventListener('click', () => {
+            document.getElementById('nuevoDocumentoContainer').style.display = 'none';
+            if (tomSelectDocumento) tomSelectDocumento.clear();
+        });
+
+        /* ── Partidas ── */
+        partidas.forEach((partida, index) => {
+            agregarFilaPartida(partida, index + 1, {
+                cuentas,
+                impuestos,
+                tiposCuenta,
+                lados,
+                origenesMontos
+            });
+        });
+
+        document.getElementById('btnAgregarPartida').addEventListener('click', () => {
+            const nuevoOrden = document.getElementById('partidasBody').children.length + 1;
+            agregarFilaPartida(null, nuevoOrden, {
+                cuentas,
+                impuestos,
+                tiposCuenta,
+                lados,
+                origenesMontos
+            });
+        });
+
+        /* ── Cambio de empresa ── */
+        document.getElementById('edit_empresa').addEventListener('change', async function () {
+            const nuevaEmpresaId = this.value;
+            const confirmar = await Swal.fire({
+                title: '¿Cambiar empresa?',
+                html: 'Se perderán las cuentas seleccionadas en las partidas.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cambiar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!confirmar.isConfirmed) {
+                this.value = window.currentEmpresaId;
+                return;
+            }
+            window.currentEmpresaId = nuevaEmpresaId;
+            Swal.fire({
+                title: 'Cargando...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            const nuevosDatos = await GetData({
+                path: '/ConfiguracionPolizas/GetDatosComplementarios',
+                data: {
+                    empresa_id: nuevaEmpresaId
+                }
+            });
+            await recargarPartidas(nuevosDatos.cuentas, nuevosDatos.impuestos, {
+                tiposCuenta,
+                lados,
+                origenesMontos
+            });
+            Swal.close();
+            mostrarAlerta('success', 'Datos actualizados');
+        });
+
+        new bootstrap.Modal(document.getElementById('modalEdicion')).show();
+
+        /* ── Funciones auxiliares (documentos) ── */
+        function renderizarDocumentos() {
+            const chips = document.getElementById('docChips');
+            chips.innerHTML = '';
+            if (window.documentosPolizaActuales.length === 0) {
+                chips.innerHTML = `<span class="doc-chip-empty"><i class="fa-solid fa-inbox fa-xs me-1"></i>Sin documentos asociados</span>`;
+                return;
+            }
+            const procesosPorClave = indexarPorClave(tiposProceso);
+
+            window.documentosPolizaActuales.forEach((doc, index) => {
+                /* El chip muestra la descripción del catálogo; si la clave ya no
+                   está activa se cae a la clave cruda para no ocultar el dato. */
+                const etiquetaProceso = procesosPorClave[doc.tipo_proceso]?.descripcion || doc.tipo_proceso;
+                const chip = document.createElement('div');
+                chip.className = 'doc-chip';
+                chip.innerHTML = `
+                <span class="chip-clave">${doc.abreviaturatpdoc}</span>
+                <span>${doc.tpdoc}</span>
+                ${doc.tipo_proceso ? `<span class="chip-proceso" title="${doc.tipo_proceso}">${etiquetaProceso}</span>` : ''}
+                <button class="chip-remove" onclick="eliminarDocumento(${index})" title="Quitar">
+                    <i class="fa-solid fa-times"></i>
+                </button>`;
+                chips.appendChild(chip);
+            });
+        }
+
+        function actualizarSelectDocumentos() {
+            const idsYa = window.documentosPolizaActuales.map(d => d.idtpdoc);
+            const disponibles = documentos.filter(d => !idsYa.includes(d.idtpdoc));
+            tomSelectDocumento.clearOptions();
+            tomSelectDocumento.addOptions(disponibles.map(doc => ({
+                value: doc.idtpdoc,
+                text: doc.tpdoc,
+                clave: doc.abreviaturatpdoc
+            })));
+            tomSelectDocumento.clear();
+        }
+
+        window.eliminarDocumento = function (index) {
+            window.documentosPolizaActuales.splice(index, 1);
+            renderizarDocumentos();
+        };
+    }
+
+    /* ── Recargar partidas al cambiar empresa ── */
+    async function recargarPartidas(nuevasCuentas, nuevosImpuestos, opciones) {
+        const tbody = document.getElementById('partidasBody');
+        const filas = tbody.querySelectorAll('tr');
+        const actuales = [];
+
+        filas.forEach(fila => {
+            actuales.push({
+                tipo_cuenta: fila.querySelector('.tipo-cuenta-select').value,
+                lado: fila.querySelector('.lado-select').value,
+                origen_monto: fila.querySelector('.origen-select').value,
+                factor: 1,
+                descripcion_template: fila.querySelector('.descripcion-input').value
+            });
+        });
+
+        tomSelectInstances.forEach(i => {
+            if (i?.destroy) i.destroy();
+        });
+        tomSelectInstances = [];
+        tbody.innerHTML = '';
+
+        actuales.forEach((p, index) => {
+            agregarFilaPartida(p, index + 1, {
+                cuentas: nuevasCuentas,
+                impuestos: nuevosImpuestos,
+                ...opciones
+            });
+        });
+    }
+
+    /* ── Agregar fila de partida ── */
+    function agregarFilaPartida(partida, orden, opciones) {
+        const {
+            cuentas,
+            impuestos,
+            tiposCuenta,
+            lados,
+            origenesMontos
+        } = opciones;
+        const tbody = document.getElementById('partidasBody');
+        const rowId = `partida_${Date.now()}_${orden}`;
+        const tr = document.createElement('tr');
+        tr.id = rowId;
+
+        const descTipoCuenta = (() => {
+            const m = tiposCuenta.find(t => t.clave === partida?.tipo_cuenta);
+            return m ? m.descripcion : '';
+        })();
+        const descOrigen = (() => {
+            const m = origenesMontos.find(o => o.clave === partida?.origen_monto);
+            return m ? m.descripcion : '';
+        })();
+
+        tr.innerHTML = `
+        <td class="text-center">
+            <input type="number" class="form-control form-control-sm orden-input" value="${orden}" min="1" readonly style="width:48px;">
+        </td>
+        <td>
+            <select class="form-select form-select-sm tipo-cuenta-select" required>
+                <option value="">—</option>
+                ${tiposCuenta.map(t => `
+                    <option value="${t.clave}" data-desc="${t.descripcion}" ${partida?.tipo_cuenta === t.clave ? 'selected' : ''}>
+                        ${t.clave}
+                    </option>`).join('')}
+            </select>
+            <div class="field-hint tipo-cuenta-desc">${descTipoCuenta}</div>
+        </td>
+        <td><select class="cuenta-select" style="width:100%;"></select></td>
+        <td>
+            <select class="form-select form-select-sm lado-select" required>
+                <option value="">—</option>
+                ${lados.map(l => `<option value="${l.clave}" title="${l.descripcion}" ${partida?.lado === l.clave ? 'selected' : ''}>${l.clave}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <select class="form-select form-select-sm origen-select" required>
+                <option value="">—</option>
+                ${origenesMontos.map(o => `
+                    <option value="${o.clave}" data-desc="${o.descripcion}" ${partida?.origen_monto === o.clave ? 'selected' : ''}>
+                        ${o.clave}
+                    </option>`).join('')}
+            </select>
+            <div class="field-hint origen-desc">${descOrigen}</div>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm descripcion-input"
+                value="${partida?.descripcion_template || ''}" required placeholder="Descripción..." style="min-width:150px;">
+        </td>
+        <td><select class="impuesto-select" style="width:100%;"></select></td>
+        <td class="text-center">
+            <button type="button" class="btn btn-cp-danger" onclick="eliminarPartida('${rowId}')" title="Eliminar">
+                <i class="fa-solid fa-trash fa-xs"></i>
+            </button>
+        </td>`;
+
+        tbody.appendChild(tr);
+
+        /* Hints de descripción */
+        const tipoCuentaSelect = tr.querySelector('.tipo-cuenta-select');
+        const tipoCuentaDesc = tr.querySelector('.tipo-cuenta-desc');
+        const origenSelect = tr.querySelector('.origen-select');
+        const origenDesc = tr.querySelector('.origen-desc');
+
+        const actualizarDesc = (sel, el) => {
+            const o = sel.options[sel.selectedIndex];
+            el.textContent = o?.dataset.desc || '';
+        };
+
+        /* TomSelect cuenta */
+        const cuentaEl = tr.querySelector('.cuenta-select');
+        const tomSelectCuenta = new TomSelect(cuentaEl, {
+            dropdownParent: tr.closest('.cp-section'),
+            allowEmptyOption: true,
+            create: false,
+            maxOptions: 500,
+            placeholder: 'Cuenta...',
+            onDropdownOpen() {
+                const wrap = document.querySelector('#tablaPartidas').closest('.cp-section');
+                const sl = wrap.scrollLeft;
+
+                requestAnimationFrame(() => {
+                    wrap.scrollLeft = sl;
+                });
+
+                this.positionDropdown(); // 🔥 clave
+            },
+            onChange() {
+                const wrap = document.querySelector('#tablaPartidas').closest('.cp-section');
+                const sl = wrap.scrollLeft;
+
+                requestAnimationFrame(() => {
+                    wrap.scrollLeft = sl;
+                });
+
+                this.positionDropdown(); // 🔥 otra vez
+            },
+            options: cuentas.map(c => ({
+                value: c.id_cuenta_contable,
+                text: `${c.codigo} - ${c.nombre}`,
+                codigo: c.codigo,
+                nombre: c.nombre
+            })),
+            render: {
+        option: (d, esc) => `<div style="padding:4px 8px;"><span style="color:black;font-weight:600;">${esc(d.codigo)} </span> <span style="color:var(--accent-blue);"> — ${esc(d.nombre)}</span></div>`,
+        item: (d, esc) => `<div style="padding:4px 8px;"><span style="color:black;font-weight:600;">${esc(d.codigo)} </span> <span style="color:var(--accent-blue);"> — ${esc(d.nombre)}</span></div>`
+            }
+        });
+
+        tomSelectInstances.push(tomSelectCuenta);
+        if (partida?.id_cuenta_contable && cuentas.find(c => c.id_cuenta_contable == partida.id_cuenta_contable)) {
+            tomSelectCuenta.setValue(partida.id_cuenta_contable);
+        }
+
+        /* TomSelect impuesto */
+        const impuestoEl = tr.querySelector('.impuesto-select');
+        const tomSelectImpuesto = new TomSelect(impuestoEl, {
+            dropdownParent: document.querySelector('.cp-section'),
+            allowEmptyOption: true,
+            create: false,
+            placeholder: 'Impuesto...',
+            onDropdownOpen() {
+                const wrap = document.querySelector('#tablaPartidas').closest('.cp-section');
+                const sl = wrap.scrollLeft;
+
+                requestAnimationFrame(() => {
+                    wrap.scrollLeft = sl;
+                });
+
+                this.positionDropdown(); // 🔥 clave
+            },
+            onChange() {
+                const wrap = document.querySelector('#tablaPartidas').closest('.cp-section');
+                const sl = wrap.scrollLeft;
+
+                requestAnimationFrame(() => {
+                    wrap.scrollLeft = sl;
+                });
+
+                this.positionDropdown(); // 🔥 otra vez
+            },
+            options: impuestos.map(i => ({
+                value: i.id_impuesto,
+                text: `${i.cve_impuesto} - ${i.desc}`,
+                cve: i.cve_impuesto,
+                descripcion: i.desc
+            })),
+            render: {
+                option: (d, esc) => `<div style="padding:4px 8px;"><span style="color:black;font-weight:600;">${esc(d.cve)} </span> <span style="color:var(--accent-blue);"> — ${esc(d.descripcion)}</span></div>`,
+    item: (d, esc) => `<div style="padding:4px 8px;"><span style="color:black;font-weight:600;">${esc(d.cve)} </span> <span style="color:var(--accent-blue);"> — ${esc(d.descripcion)}</span></div>`
+            }
+        });
+
+        tomSelectInstances.push(tomSelectImpuesto);
+        if (partida?.id_impuesto && impuestos.find(i => i.id_impuesto == partida.id_impuesto)) {
+            tomSelectImpuesto.setValue(partida.id_impuesto);
+        }
+
+        /* Eventos */
+        tipoCuentaSelect.addEventListener('change', () => {
+            actualizarDesc(tipoCuentaSelect, tipoCuentaDesc);
+            validarPartida(tr, tomSelectCuenta, tomSelectImpuesto, tiposCuenta);
+        });
+        origenSelect.addEventListener('change', () => {
+            actualizarDesc(origenSelect, origenDesc);
+            validarPartida(tr, tomSelectCuenta, tomSelectImpuesto, tiposCuenta);
+        });
+        actualizarDesc(tipoCuentaSelect, tipoCuentaDesc);
+        actualizarDesc(origenSelect, origenDesc);
+    }
+
+    /* ── Validación de partida ──
+       Las reglas ya no están escritas aquí: salen de las columnas
+       requiere_cuenta / requiere_impuesto / origen_monto_forzado del catálogo
+       poliza_cat_tipo_cuenta. */
+    function validarPartida(tr, tomSelectCuenta, tomSelectImpuesto, tiposCuenta) {
+        const tipoCuenta = tr.querySelector('.tipo-cuenta-select').value;
+        const origenSelect = tr.querySelector('.origen-select');
+        const origenMonto = origenSelect.value;
+        const cuentaWrap = tomSelectCuenta.wrapper.parentElement;
+        const impuestoWrap = tomSelectImpuesto.wrapper.parentElement;
+        const regla = (tiposCuenta || []).find(t => t.clave === tipoCuenta);
+
+        cuentaWrap.classList.remove('border', 'border-danger', 'rounded');
+        impuestoWrap.classList.remove('border', 'border-danger', 'rounded');
+
+        if (!regla) return;
+
+        if (regla.requiere_cuenta && !tomSelectCuenta.getValue())
+            cuentaWrap.classList.add('border', 'border-danger', 'rounded');
+
+        if (regla.requiere_impuesto && !tomSelectImpuesto.getValue())
+            impuestoWrap.classList.add('border', 'border-danger', 'rounded');
+
+        if (regla.origen_monto_forzado && origenMonto !== regla.origen_monto_forzado) {
+            origenSelect.value = regla.origen_monto_forzado;
+            origenSelect.dispatchEvent(new Event('change'));
+            mostrarAlerta('warning', `Origen debe ser ${regla.origen_monto_forzado} cuando el tipo es ${tipoCuenta}`);
+        }
+    }
+
+    /* ── Eliminar / reordenar ── */
+    function eliminarPartida(rowId) {
+        Swal.fire({
+            title: '¿Eliminar partida?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(r => {
+            if (r.isConfirmed) {
+                document.getElementById(rowId).remove();
+                reordenarPartidas();
+                mostrarAlerta('success', 'Partida eliminada');
+            }
+        });
+    }
+
+    function reordenarPartidas() {
+        document.querySelectorAll('#partidasBody tr').forEach((fila, i) => {
+            fila.querySelector('.orden-input').value = i + 1;
+        });
+    }
+
+    /* ── Alertas ── */
+    function mostrarAlerta(tipo, mensaje) {
+        toastMixin.fire({
+            icon: tipo,
+            title: mensaje
+        });
+    }
+
+    /* ── Guardar edición ── */
+    document.getElementById('btnGuardarEdicion').addEventListener('click', async function () {
+        const filas = document.querySelectorAll('#partidasBody tr');
+        if (filas.length === 0) {
+            mostrarAlerta('error', 'Agrega al menos una partida');
+            return;
+        }
+
+        const { tiposCuenta } = await getCatalogosPoliza();
+        const reglasPorTipo = indexarPorClave(tiposCuenta);
+
+        const partidas = [];
+        let hayErrores = false;
+
+        filas.forEach((fila, index) => {
+            const tipoCuenta = fila.querySelector('.tipo-cuenta-select').value;
+            const lado = fila.querySelector('.lado-select').value;
+            const origenMonto = fila.querySelector('.origen-select').value;
+            const factor = 1;
+            const descripcion = fila.querySelector('.descripcion-input').value;
+            const idCuenta = fila.querySelector('.cuenta-select').tomselect?.getValue() || null;
+            const idImpuesto = fila.querySelector('.impuesto-select').tomselect?.getValue() || null;
+
+            if (!tipoCuenta || !lado || !origenMonto || !factor || !descripcion) {
+                mostrarAlerta('error', `Partida ${index + 1}: campos obligatorios vacíos`);
+                hayErrores = true;
+                return;
+            }
+            /* Mismas reglas que valida la captura, leídas del catálogo */
+            const regla = reglasPorTipo[tipoCuenta];
+            if (!regla) {
+                mostrarAlerta('error', `Partida ${index + 1}: el tipo de cuenta ${tipoCuenta} ya no está disponible`);
+                hayErrores = true;
+                return;
+            }
+            if (regla.requiere_cuenta && !idCuenta) {
+                mostrarAlerta('error', `Partida ${index + 1}: la cuenta es obligatoria para tipo ${tipoCuenta}`);
+                hayErrores = true;
+                return;
+            }
+            if (regla.requiere_impuesto && !idImpuesto) {
+                mostrarAlerta('error', `Partida ${index + 1}: el impuesto es obligatorio`);
+                hayErrores = true;
+                return;
+            }
+            if (regla.origen_monto_forzado && origenMonto !== regla.origen_monto_forzado) {
+                mostrarAlerta('error', `Partida ${index + 1}: origen debe ser ${regla.origen_monto_forzado}`);
+                hayErrores = true;
+                return;
+            }
+            partidas.push({
+                orden: index + 1,
+                tipo_cuenta: tipoCuenta,
+                id_cuenta_contable: idCuenta,
+                lado,
+                origen_monto: origenMonto,
+                factor: parseFloat(factor),
+                descripcion_template: descripcion,
+                id_impuesto: idImpuesto
+            });
+        });
+
+        if (hayErrores) return;
+
+        const datosGenerales = {
+            id_categoria: document.getElementById('edit_categoria').value,
+            id_clasificacion: document.getElementById('edit_clasificacion').value,
+            descripcion: document.getElementById('edit_descripcion_general').value,
+            activo: document.getElementById('edit_activo').checked,
+        };
+
+        if (!datosGenerales.id_categoria || !datosGenerales.id_clasificacion || !datosGenerales.descripcion) {
+            mostrarAlerta('error', 'Completa los campos de configuración general');
+            return;
+        }
+
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:auto;">
+        <style>.flip{animation:spinY 2s linear infinite;transform-origin:center;}@@keyframes spinY{0%{transform:rotateY(0deg);}100%{transform:rotateY(360deg);}}</style>
+        <g class="flip">
+            <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+            <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="32" cy="48" r="3" fill="#000"/>
+        </g></svg>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: 'Guardar póliza',
+            html: '¿La póliza es correcta? Puede editarse en cualquier momento.',
+            customClass: {
+                icon: 'p-0 bg-transparent border-0 shadow-none'
+            },
+            preConfirm: () => {
+                Swal.fire({
+                    title: 'Registrando póliza...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                GetData({
+                    path: '/ConfiguracionPolizas/RegistrarPoliza',
+                    data: {
+                        tipo_poliza: currentPolizaId,
+                        general: JSON.stringify(datosGenerales),
+                        partidas: JSON.stringify(partidas),
+                        documentos: JSON.stringify(documentosPolizaActuales),
+                    },
+                    swalResponse: true,
+                    swalType: 'modal',
+                    swalPath: '/Contabilidad/ConfiguracionPolizas'
+                });
+            }
+        });
+    });
+
+    /* ═══════════════════════════════════════════════
+        INIT
+    ═══════════════════════════════════════════════ */
+    document.addEventListener('DOMContentLoaded', () => {
+        createTable({
+            selector: '#tablaTiposPoliza',
+            path: '/ConfiguracionPolizas/GetPolizas',
+            searchPlaceholder: 'Buscar tipo de póliza...',
+            columns: [{
+                title: 'Categoría',
+                data: 'categoria'
+            },
+            {
+                title: 'Descripción',
+                data: 'descripcion'
+            },
+            {
+                title: 'Clasificación',
+                data: 'clasificacion'
+            },
+            {
+                title: 'Empresa',
+                data: 'empresa'
+            },
+            ],
+            actions: [{
+                icon: 'fa-eye',
+                color: 'cyan-500',
+                title: 'Vista previa',
+                onClick: row => vistaPrevia(row)
+            },
+            {
+                icon: 'fa-pen-to-square',
+                color: 'green-500',
+                title: 'Editar',
+                onClick: row => editarPoliza(row)
+            },
+            ],
+        });
+    });
+</script>

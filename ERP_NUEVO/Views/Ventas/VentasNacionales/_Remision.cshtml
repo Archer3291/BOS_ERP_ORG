@@ -1,0 +1,1285 @@
+﻿@using BOS_ERP.Controllers
+@model BOS_ERP.Models.FolioInfo
+
+@*<style>
+
+/* ===== LAYOUT DE PÁGINA ===== */
+    .vn-page {
+        background: var(--vn-gray-100);
+        min-height: 100vh;
+        padding: 2rem 0 4rem;
+    }
+
+    /* ===== TARJETA PRINCIPAL ===== */
+    .vn-card {
+        background: var(--bg-light, #fff);
+        border-radius: var(--vn-radius-lg);
+        border: 1px solid var(--vn-gray-200);
+        box-shadow: var(--vn-shadow-md);
+        overflow: hidden;
+    }
+
+    /* ===== CABECERA DE SECCIÓN ===== */
+    .vn-section-header {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding-bottom: .75rem;
+        border-bottom: 2px solid var(--vn-blue-50);
+        margin-bottom: 1.25rem;
+    }
+
+    .vn-section-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 10px;
+        background: var(--vn-blue-600);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .vn-section-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--vn-gray-800);
+        margin: 0;
+    }
+
+    /* ===== CAMPOS DE FORMULARIO ===== */
+    .vn-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--vn-gray-600);
+        margin-bottom: .3rem;
+        display: block;
+    }
+
+        .vn-label i {
+            color: #3b82f6;
+            margin-right: .3rem;
+        }
+
+    .vn-control {
+        border: 1.5px solid var(--vn-gray-200);
+        border-radius: var(--vn-radius);
+        padding: .65rem 1rem;
+        font-size: .9rem;
+        background: var(--vn-gray-50);
+        color: var(--vn-gray-800);
+        width: 100%;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .vn-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            outline: none;
+            background: var(--bg-light, #fff);
+        }
+
+        .vn-control[readonly] {
+            background: var(--vn-gray-100);
+            cursor: default;
+        }
+
+    /* ===== TOGGLE TIPO PAGO (3 estados) — mantenido de vn-rem ===== */
+    .vn-pay-toggle {
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        background: var(--vn-gray-100);
+        border: 1px solid var(--vn-gray-200);
+        border-radius: var(--vn-radius);
+        padding: 4px;
+    }
+
+    .vn-pay-btn {
+        position: relative;
+        border: none;
+        border-radius: 7px;
+        padding: .55rem 1.25rem;
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--vn-gray-600);
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+        white-space: nowrap;
+        transition: color .18s;
+    }
+
+        .vn-pay-btn .vn-pay-pill {
+            position: absolute;
+            inset: 0;
+            border-radius: 7px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .22s, background .22s;
+        }
+
+        .vn-pay-btn.active {
+            color: var(--vn-blue-600);
+        }
+
+            .vn-pay-btn.active .vn-pay-pill {
+                opacity: 1;
+                background: var(--vn-blue-50);
+            }
+
+        .vn-pay-btn[data-val="credito"].active {
+            color: var(--vn-green-700);
+        }
+
+            .vn-pay-btn[data-val="credito"].active .vn-pay-pill {
+                background: var(--vn-green-50);
+            }
+
+        .vn-pay-btn[data-val="anticipo"].active {
+            color: var(--vn-amber-600);
+        }
+
+            .vn-pay-btn[data-val="anticipo"].active .vn-pay-pill {
+                background: var(--vn-amber-50);
+            }
+
+        .vn-pay-btn i, .vn-pay-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+    /* ===== TABLA PRODUCTOS ===== */
+    .vn-table-wrap {
+        border-radius: var(--vn-radius);
+        border: 1px solid var(--vn-gray-200);
+        overflow: hidden;
+        overflow-x: auto;
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+    .vn-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1100px;
+        font-size: .82rem;
+    }
+
+        .vn-table thead {
+            background: var(--vn-blue-600);
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .vn-table th {
+            padding: .65rem .6rem;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .vn-table td {
+            padding: .65rem .6rem;
+            border-bottom: 1px solid var(--vn-gray-200);
+            vertical-align: middle;
+            color: var(--vn-gray-800);
+        }
+
+        .vn-table tbody tr:hover {
+            background: var(--vn-blue-50);
+        }
+
+    .vn-table-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--vn-gray-400);
+    }
+
+        .vn-table-empty i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: .75rem;
+            opacity: .35;
+        }
+
+    /* ===== BOTONES ===== */
+    .vn-btn {
+        border: none;
+        border-radius: var(--vn-radius);
+        padding: .6rem 1.25rem;
+        font-weight: 600;
+        font-size: .85rem;
+        cursor: pointer;
+        transition: transform .2s, box-shadow .2s, background .2s;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+    }
+
+        .vn-btn:hover {
+            transform: translateY(-1px);
+        }
+
+    .vn-btn-primary {
+        background: var(--vn-blue-600);
+        color: #fff;
+    }
+
+        .vn-btn-primary:hover {
+            background: var(--vn-blue-700);
+            box-shadow: 0 4px 14px rgba(30,58,95,.3);
+        }
+
+    .vn-btn-success {
+        background: var(--vn-green-600);
+        color: #fff;
+    }
+
+        .vn-btn-success:hover {
+            background: var(--vn-green-700);
+            box-shadow: 0 4px 14px rgba(5,150,105,.3);
+        }
+
+    .vn-btn-danger {
+        background: var(--vn-red-600);
+        color: #fff;
+        padding: .35rem .75rem;
+        font-size: .8rem;
+    }
+
+        .vn-btn-danger:hover {
+            background: #b91c1c;
+        }
+
+    .vn-btn-outline {
+        background: transparent;
+        color: #3b82f6;
+        border: 1.5px solid #3b82f6;
+    }
+
+        .vn-btn-outline:hover {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+    .vn-btn-ghost {
+        background: transparent;
+        color: var(--vn-red-600);
+        border: 1.5px solid var(--vn-red-600);
+    }
+
+        .vn-btn-ghost:hover {
+            background: var(--vn-red-600);
+            color: #fff;
+        }
+
+    /* ===== TICKET / RESUMEN ===== */
+    .vn-ticket {
+        border: 1px solid var(--vn-gray-200);
+        border-radius: var(--vn-radius-lg);
+        overflow: hidden;
+        box-shadow: var(--vn-shadow);
+    }
+
+    .vn-ticket-head {
+        background: var(--vn-blue-600);
+        color: #fff;
+        padding: 1.1rem 1.4rem;
+        text-align: center;
+    }
+
+    .vn-ticket-head-icon {
+        font-size: 1.5rem;
+        opacity: .9;
+        display: block;
+        margin-bottom: .2rem;
+    }
+
+    .vn-ticket-head-label {
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+    }
+
+    .vn-ticket-body {
+        padding: 1.1rem 1.4rem;
+        background: var(--bg-light, #fff);
+    }
+
+    .vn-ticket-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: .55rem 0;
+        border-bottom: 1px dashed var(--vn-gray-200);
+        font-size: .85rem;
+        color: var(--vn-gray-800);
+    }
+
+        .vn-ticket-row:last-child {
+            border-bottom: none;
+        }
+
+    .vn-ticket-row-label {
+        color: var(--vn-gray-600);
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vn-ticket-row-val {
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+        color: var(--vn-gray-800);
+    }
+
+        .vn-ticket-row-val.vn-negative {
+            color: var(--vn-red-600);
+        }
+
+    .vn-ticket-footer {
+        background: var(--vn-blue-50);
+        border-top: 2px dashed var(--vn-blue-100);
+        padding: 1.1rem 1.4rem;
+    }
+
+    .vn-ticket-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .vn-ticket-total-label {
+        font-size: .85rem;
+        color: var(--vn-blue-600);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vn-ticket-total-val {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--vn-blue-600);
+        font-family: 'Courier New', monospace;
+    }
+
+    /* ===== TOGGLE SWITCH ===== */
+    .vn-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+
+    .vn-switch-track {
+        position: relative;
+        width: 52px;
+        height: 28px;
+        border-radius: 99px;
+        background: var(--vn-gray-200);
+        transition: background .3s;
+        flex-shrink: 0;
+    }
+
+        .vn-switch-track::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.2);
+            transition: transform .3s;
+        }
+
+    .vn-switch input {
+        display: none;
+    }
+
+        .vn-switch input:checked ~ .vn-switch-track {
+            background: var(--vn-green-600);
+        }
+
+            .vn-switch input:checked ~ .vn-switch-track::after {
+                transform: translateX(24px);
+            }
+
+    .vn-switch-label {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--vn-gray-600);
+        user-select: none;
+    }
+
+    /* ===== SEPARADOR ===== */
+    .vn-sep {
+        border: none;
+        border-top: 1px dashed var(--vn-gray-200);
+        margin: 1.25rem 0;
+    }
+
+    /* ===== MODAL ===== */
+    .vn-modal-header {
+        background: var(--vn-blue-600);
+        color: #fff;
+        border-radius: .5rem .5rem 0 0;
+    }
+
+        .vn-modal-header .btn-close {
+            filter: invert(1);
+        }
+
+    /* ===== SEARCH RESULT ITEM ===== */
+    .vn-search-item {
+        padding: .7rem 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--vn-gray-200);
+        margin-bottom: .5rem;
+        cursor: pointer;
+        transition: border-color .2s, background .2s, transform .15s;
+        background: var(--bg-light, #fff);
+        color: var(--vn-gray-800);
+    }
+
+        .vn-search-item:hover {
+            border-color: #3b82f6;
+            background: var(--vn-blue-50);
+            transform: translateX(3px);
+        }
+
+    /* ===== UTILIDADES ===== */
+    .vn-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: .2rem .6rem;
+        border-radius: 99px;
+    }
+
+    .vn-badge-blue {
+        background: var(--vn-blue-50);
+        color: var(--vn-blue-600);
+    }
+
+    .vn-badge-green {
+        background: var(--vn-green-50);
+        color: var(--vn-green-600);
+    }
+
+    /* ===== BOTÓN FLOTANTE ===== */
+    .vn-floating-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--vn-blue-600);
+        color: #fff;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        box-shadow: 0 8px 25px rgba(30,58,95,.4);
+        transition: transform .3s, box-shadow .3s;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .vn-floating-btn:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 35px rgba(30,58,95,.5);
+        }
+
+    .vn-floating-tooltip {
+        position: fixed;
+        bottom: 38px;
+        right: 96px;
+        background: var(--vn-gray-800);
+        color: #fff;
+        padding: .4rem .9rem;
+        border-radius: 8px;
+        font-size: .8rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .3s;
+        z-index: 999;
+    }
+
+    .vn-floating-btn:hover + .vn-floating-tooltip {
+        opacity: 1;
+    }
+
+    /* ===== DOCUMENT BADGE ===== */
+    .document-badge {
+        display: inline-block;
+        padding: .2rem .7rem;
+        border-radius: 99px;
+        font-size: .7rem;
+        font-weight: 700;
+    }
+
+    .badge-pending {
+        background: var(--vn-amber-50);
+        color: var(--vn-amber-600);
+    }
+
+    .badge-approved {
+        background: var(--vn-green-50);
+        color: var(--vn-green-600);
+    }
+
+    .badge-cancelled {
+        background: var(--vn-red-50);
+        color: var(--vn-red-600);
+    }
+
+    /* ===== PRODUCT INPUT ===== */
+    .vn-rem-product-input {
+        width: 100%;
+        min-width: 70px;
+        border: 1.5px solid var(--vn-gray-200);
+        border-radius: 7px;
+        padding: .35rem .6rem;
+        font-size: .82rem;
+        background: var(--vn-gray-50);
+        color: var(--vn-gray-800);
+        transition: border-color .2s;
+    }
+
+        .vn-rem-product-input:focus {
+            border-color: #3b82f6;
+            outline: none;
+            background: var(--bg-light, #fff);
+        }
+
+    /* ===== DELETE BTN ===== */
+    .vn-rem-btn-delete {
+        background: var(--vn-red-600);
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        padding: .35rem .75rem;
+        font-size: .8rem;
+        cursor: pointer;
+        transition: background .2s, transform .15s;
+    }
+
+        .vn-rem-btn-delete:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+
+        .vn-rem-btn-delete:active {
+            transform: scale(.96);
+        }
+
+        .vn-rem-btn-delete:disabled {
+            background: #bdbdbd;
+            cursor: not-allowed;
+            opacity: .7;
+        }
+</style>*@
+
+@{
+    var role = Utilities.GetUserRole(User.Identity.Name, "ERP_SRS");
+}
+
+<div class="vn-page">
+    <div class="container-xl">
+
+        <!-- Encabezado de página -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="vn-section-icon" style="width:2.75rem;height:2.75rem;border-radius:12px;">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div>
+                <h1 class="h4 mb-0 fw-bold" style="color:var(--vn-gray-800)">Nueva Remisión</h1>
+                <p class="mb-0 small" style="color:var(--vn-gray-600)">Complete los datos para generar la remisión</p>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <form id="vn-rem-formCotizacion" class="vn-rem-formCotizacion" method="post">
+
+            <div class="row g-4">
+
+                <!-- ========== COLUMNA IZQUIERDA ========== -->
+                <div class="col-12 col-xl-12">
+
+                    <!-- TARJETA: Tipo de Pago -->
+                    <div class="vn-card p-4 mb-4">
+                        <div class="vn-section-header">
+                            <div class="vn-section-icon"><i class="fas fa-credit-card"></i></div>
+                            <h2 class="vn-section-title">Tipo de Pago</h2>
+                        </div>
+
+                        <!-- Toggle 3 estados — IDs originales intactos -->
+                        <div class="vn-pay-toggle" id="vn-rem-toggle-pago" data-state="contado"
+                             style="grid-template-columns: 1fr 1fr;">
+                            <button type="button" class="vn-pay-btn active" data-val="contado"
+                                    onclick="setTipoPagoRemision('contado')">
+                                <div class="vn-pay-pill"></div>
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Contado</span>
+                            </button>
+                            <button type="button" class="vn-pay-btn" data-val="credito"
+                                    onclick="setTipoPagoRemision('credito')">
+                                <div class="vn-pay-pill"></div>
+                                <i class="fas fa-credit-card"></i>
+                                <span>Crédito</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Información General -->
+                    <div class="vn-card p-4 mb-4">
+                        <div class="vn-section-header">
+                            <div class="vn-section-icon"><i class="fas fa-info-circle"></i></div>
+                            <h2 class="vn-section-title">Información General</h2>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-4">
+                                <label class="vn-label"><i class="fas fa-hashtag"></i>Folio</label>
+                                <input type="text" id="vn-rem-folio" value="@Model.Folio" name="folio"
+                                       class="vn-control" readonly autocomplete="off">
+                            </div>
+                            <!-- Sucursal / Almacén — ocultos, IDs intactos -->
+                            <div class="col-12 col-sm-4 d-none">
+                                <label class="vn-label"><i class="fas fa-building"></i>Sucursal</label>
+                                <select class="vn-control form-select" id="vn-rem-sucursal" name="sucursal">
+                                    <option selected>CEDIS</option>
+                                    <option>Sucursal Centro</option>
+                                    <option>Sucursal Norte</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4 d-none">
+                                <label class="vn-label"><i class="fas fa-warehouse"></i>Almacén</label>
+                                <select class="vn-control form-select" id="vn-rem-almacen" name="almacen">
+                                    <option selected>ALMACÉN GENERAL</option>
+                                    <option>ALMACÉN A</option>
+                                    <option>ALMACÉN B</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Información del Cliente -->
+                    <div class="vn-card p-4 mb-4">
+                        <div class="vn-section-header">
+                            <div class="vn-section-icon"><i class="fas fa-user"></i></div>
+                            <h2 class="vn-section-title">Información del Cliente</h2>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Buscador cliente -->
+                            <div class="col-12">
+                                <label class="vn-label"><i class="fas fa-search"></i>Cliente</label>
+                                <div class="input-group" style="flex-wrap:nowrap">
+                                    <button class="vn-btn vn-btn-primary" type="button"
+                                            data-bs-toggle="modal" data-bs-target="#vn-rem-modalBuscarCliente">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                    <input type="text" name="cliente" class="vn-control" id="vn-rem-cliente"
+                                           placeholder="Seleccione un cliente…"
+                                           style="border-radius:0 var(--vn-radius) var(--vn-radius) 0; border-left:none;">
+                                </div>
+                            </div>
+
+                            <!-- RFC -->
+                            <div class="col-12 col-sm-6">
+                                <label class="vn-label"><i class="fas fa-id-card"></i>RFC</label>
+                                <input type="text" name="rfc" id="vn-rem-rfc" class="vn-control" autocomplete="off">
+                            </div>
+
+                            <!-- Banner crédito (solo se muestra en ventas a crédito) -->
+                            <div class="col-12">
+                                <div id="vn-rem-credit-banner" style="display:none;" class="vn-credit-banner">
+                                    <div id="vn-rem-credit-icon" style="font-size:18px;flex-shrink:0;margin-top:2px;"></div>
+                                    <div style="flex:1">
+                                        <div id="vn-rem-credit-title" style="font-weight:600;font-size:.8rem;margin-bottom:2px;"></div>
+                                        <div id="vn-rem-credit-sub" style="font-size:.75rem;opacity:.85;"></div>
+                                        <div class="vn-banner-bar-wrap" id="vn-rem-credit-bar-wrap">
+                                            <div class="vn-banner-bar-fill" id="vn-rem-credit-bar" style="width:0%;"></div>
+                                        </div>
+                                    </div>
+                                    <div id="vn-rem-credit-pct" style="font-size:.8rem;font-weight:600;flex-shrink:0;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Info adicional -->
+                            <div class="col-12">
+                                <label class="vn-label"><i class="fas fa-info-circle"></i>Información del Cliente</label>
+                                <textarea class="vn-control" id="vn-rem-info-proveedor" rows="3" readonly autocomplete="off"></textarea>
+                            </div>
+
+                            <!-- Vendedor + Moneda + Paridad -->
+                            <div class="col-12 col-sm-4">
+                                <label class="vn-label"><i class="fas fa-user-tie"></i>Vendedor</label>
+                                <select class="vn-control form-select" name="vendedor" id="vn-rem-vendedor">
+                                    <option selected disabled>Seleccionar vendedor</option>
+                                    <option value="1">Carlos Mendoza</option>
+                                    <option value="2">Ana García</option>
+                                    <option value="3">Luis Fernández</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="vn-label"><i class="fas fa-dollar-sign"></i>Moneda</label>
+                                <select class="vn-control form-select" name="moneda" id="vn-rem-moneda">
+                                    <option selected disabled>Seleccione una moneda</option>
+                                    <option>PESOS</option>
+                                    <option>DOLARES</option>
+                                    <option>EUROS</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="vn-label"><i class="fas fa-exchange-alt"></i>Paridad</label>
+                                <input type="text" id="vn-rem-paridad" name="paridad" class="vn-control" value="1" autocomplete="off">
+                            </div>
+
+                            <!-- Referencia -->
+                            <div class="col-12">
+                                <label class="vn-label"><i class="fas fa-comment"></i>Referencia</label>
+                                <input type="text" id="vn-rem-concepto" name="concepto" class="vn-control" autocomplete="off">
+                            </div>
+
+                            <!-- Incoterm — oculto, ID intacto -->
+                            <div class="col-12 d-none">
+                                <label class="vn-label"><i class="fas fa-shipping-fast"></i>Incoterm</label>
+                                <select class="vn-control form-select" name="incoterm" id="vn-rem-incoterm">
+                                    <option selected disabled>Seleccionar Incoterm</option>
+                                    <option value="EXW">EXW – En fábrica</option>
+                                    <option value="FOB">FOB – Libre a bordo</option>
+                                    <option value="CFR">CFR – Costo y flete</option>
+                                    <option value="CIF">CIF – Costo, seguro y flete</option>
+                                    <option value="DAP">DAP – Entregado en lugar</option>
+                                    <option value="DDP">DDP – Entregado con derechos pagados</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div><!-- /tarjeta cliente -->
+                    <!-- TARJETA: Artículos -->
+                    <div class="vn-card p-4 mb-4" id="vn-rem-seccion-productos">
+                        <div class="vn-section-header">
+                            <div class="vn-section-icon"><i class="fas fa-box-open"></i></div>
+                            <h2 class="vn-section-title">Artículos y Productos</h2>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="vn-badge vn-badge-blue">
+                                <i class="fas fa-list"></i> Lista de productos
+                            </span>
+                            <div class="d-flex gap-2">
+                                <!-- Verificación por escáner. Cuando el setting
+                                     `escaneo_remision_obligatorio` está activo, el guardado abre
+                                     este mismo modal por su cuenta; el botón sirve para usarlo
+                                     también cuando la verificación es opcional. -->
+                                <button type="button" class="vn-btn vn-btn-outline" id="vn-rem-esc-abrir">
+                                    <i class="fas fa-barcode"></i> Verificar con escáner
+                                </button>
+                                <button type="button" class="vn-btn vn-btn-success"
+                                        data-bs-toggle="modal" data-bs-target="#vn-rem-modalBuscarProducto">
+                                    <i class="fas fa-plus"></i> Agregar producto
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="vn-table-wrap">
+                            <table class="vn-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Artículo</th>
+                                        <th>Descripción</th>
+                                        <th>Existencia</th>
+                                        <th>Cantidad</th>
+                                        <th>Unidad</th>
+                                        <th class="d-none">Precio</th>
+                                        <th class="d-none">Desc %</th>
+                                        <th class="d-none">Importe</th>
+                                        <th>Comentario</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vn-rem-productosTable">
+                                    <tr>
+                                        <td colspan="11" class="vn-table-empty">
+                                            <i class="fas fa-box-open"></i>
+                                            <div class="fw-semibold mb-1">Sin productos</div>
+                                            <small style="color:var(--vn-gray-400)">Haz clic en "Agregar producto" para comenzar</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr class="vn-sep">
+
+                        <!-- Flete — oculto en remisión (no se muestran precios). Los inputs
+                             quedan en el DOM para no romper el JS que los referencia. -->
+                        <div class="d-none align-items-center gap-3 mb-3">
+                            <label class="vn-switch" for="vn-rem-flete">
+                                <input type="checkbox" id="vn-rem-flete">
+                                <span class="vn-switch-track"></span>
+                                <span class="vn-switch-label"><i class="fas fa-truck me-1"></i>Con Flete</span>
+                            </label>
+                            <input type="number" class="vn-control d-none" name="flete"
+                                   id="vn-rem-flete-val" placeholder="Costo de flete" style="max-width:180px;">
+                        </div>
+
+                        <!-- Orden de Compra — IDs originales intactos -->
+                        <div class="d-flex align-items-center gap-3">
+                            <label class="vn-switch" for="vn-rem-orden-compra-check">
+                                <input type="checkbox" id="vn-rem-orden-compra-check">
+                                <span class="vn-switch-track"></span>
+                                <span class="vn-switch-label"><i class="fas fa-file-alt me-1"></i>Con Orden de Compra</span>
+                            </label>
+                            <input type="text" class="vn-control d-none" name="ordenCompra"
+                                   id="vn-rem-orden-compra-val" placeholder="Número de orden de compra"
+                                   autocomplete="off" style="max-width:220px;">
+                        </div>
+                        <!-- Botones de acción -->
+                        <div class="d-grid gap-2">
+                            <button type="button" class="vn-btn vn-btn-success vn-rem-btn-submit"
+                                    style="width:100%;justify-content:center;padding:.85rem;">
+                                <i class="fas fa-paper-plane"></i> Generar Remisión
+                            </button>
+                        </div>
+                    </div><!-- /tarjeta artículos -->
+                    <!-- TARJETA: Condiciones de Pago -->
+                    <div class="vn-card p-4 mb-4 d-none">
+                        <div class="vn-section-header">
+                            <div class="vn-section-icon"><i class="fas fa-file-invoice"></i></div>
+                            <h2 class="vn-section-title">Condiciones de Pago</h2>
+                        </div>
+
+                        <!-- Campos crédito — IDs originales intactos -->
+                        <div id="vn-rem-campos-credito">
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-6">
+                                    <label class="vn-label"><i class="fas fa-credit-card"></i>Límite de Crédito</label>
+                                    <input type="number" id="vn-rem-limite-credito" name="limite-credito"
+                                           value="0.00" readonly class="vn-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vn-label"><i class="fas fa-credit-card"></i>Crédito Disponible</label>
+                                    <input type="number" id="vn-rem-limite-disponible" name="limite-disponible"
+                                           value="0.00" readonly class="vn-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vn-label"><i class="fas fa-calendar-day"></i>Plazo (días)</label>
+                                    <input type="number" id="vn-rem-plazo" name="plazo" class="vn-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vn-label"><i class="fas fa-calendar"></i>Fecha de Pago</label>
+                                    <input type="date" id="vn-rem-fecha-pago" name="fecha-pago" class="vn-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos anticipo — IDs originales intactos -->
+                        <div id="vn-rem-campos-anticipo" style="display:none;">
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-6 d-none">
+                                    <label class="vn-label"><i class="fas fa-percent"></i>Porcentaje de Anticipo (%)</label>
+                                    <input type="number" id="vn-rem-porcentaje-anticipo" name="porcentaje-anticipo"
+                                           class="vn-control" placeholder="Ej: 50" min="0" max="100"
+                                           oninput="calcularAnticipoRemision()" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vn-label"><i class="fas fa-dollar-sign"></i>Monto Anticipo</label>
+                                    <input type="number" id="vn-rem-monto-anticipo" name="monto-anticipo"
+                                           class="vn-control" placeholder="0.00" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 d-none">
+                                    <label class="vn-label"><i class="fas fa-dollar-sign"></i>Saldo Pendiente</label>
+                                    <input type="number" id="vn-rem-saldo-pendiente" name="saldo-pendiente"
+                                           class="vn-control" placeholder="0.00" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vn-label"><i class="fas fa-calendar"></i>Fecha de Anticipo</label>
+                                    <input type="date" id="vn-rem-fecha-anticipo" name="fecha-anticipo"
+                                           class="vn-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 d-none">
+                                    <label class="vn-label"><i class="fas fa-calendar-alt"></i>Fecha Pago Final</label>
+                                    <input type="date" id="vn-rem-fecha-pago-final" name="fecha-pago-final"
+                                           class="vn-control" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Método / Forma / CFDI — IDs originales intactos -->
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="vn-label"><i class="fas fa-money-bill"></i>Método de Pago</label>
+                                <select class="vn-control form-select" id="vn-rem-metodo-pago" name="metodo-pago" required>
+                                    <option value="" selected disabled>Seleccione un método de pago</option>
+                                    <option value="PUE">PUE - Pago en una sola exhibición</option>
+                                    <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="vn-label"><i class="fas fa-money-bill"></i>Forma de Pago</label>
+                                <select class="vn-control form-select" id="vn-rem-forma-pago" name="forma-pago">
+                                    <option selected>Efectivo</option>
+                                    <option value="01">01 - Efectivo</option>
+                                    <option value="02">02 - Cheque nominativo</option>
+                                    <option value="03">03 - Transferencia electrónica</option>
+                                    <option value="04">04 - Tarjeta de crédito</option>
+                                    <option value="28">28 - Tarjeta de débito</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="vn-label"><i class="fas fa-file-invoice"></i>Uso CFDI</label>
+                                <select class="vn-control form-select" id="vn-rem-uso-cfdi" name="uso-cfdi">
+                                    <option selected>G03 - Gastos en general</option>
+                                    <option value="D01">D01 - Honorarios médicos</option>
+                                    <option value="D02">D02 - Gastos médicos por incapacidad</option>
+                                    <option value="P01">P01 - Por definir</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Vista previa -->
+                        <div class="d-grid mt-3">
+                            <button type="button" class="vn-btn vn-btn-outline d-none"
+                                    data-bs-toggle="modal" data-bs-target="#vn-rem-modalVistaPrevia"
+                                    onclick="actualizarVistaPreviaRemision()"
+                                    style="justify-content:center;">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                        </div>
+
+                        <!-- Comentarios — ID original intacto -->
+                        <div class="mt-3" style="display:none;">
+                            <label class="vn-label"><i class="fas fa-comment-dots"></i>Comentarios Adicionales</label>
+                            <textarea class="vn-control" id="vn-rem-comentarios" name="comentarios" rows="3"></textarea>
+                        </div>
+                    </div><!-- /tarjeta condiciones pago -->
+
+                </div><!-- /col izquierda -->
+                <!-- ========== COLUMNA DERECHA: RESUMEN ========== -->
+                <div class="col-12 col-xl-4 d-none">
+                    <div class="sticky-top" style="top:5rem; z-index:0;">
+
+                        <!-- Ticket resumen -->
+                        <div class="vn-ticket mb-3">
+                            <div class="vn-ticket-head">
+                                <i class="fas fa-calculator vn-ticket-head-icon"></i>
+                                <div class="vn-ticket-head-label">Resumen de Remisión</div>
+                            </div>
+                            <div class="vn-ticket-body">
+                                <div class="vn-ticket-row">
+                                    <span class="vn-ticket-row-label">Subtotal 1</span>
+                                    <span class="vn-ticket-row-val" id="vn-rem-total-subtotal1-display">$0.00</span>
+                                </div>
+                                <div class="vn-ticket-row">
+                                    <span class="vn-ticket-row-label">Descuento</span>
+                                    <span class="vn-ticket-row-val vn-negative" id="vn-rem-total-descuento-display">-$0.00</span>
+                                </div>
+                                <div class="vn-ticket-row">
+                                    <span class="vn-ticket-row-label">Flete</span>
+                                    <span class="vn-ticket-row-val" id="vn-rem-total-flete-display">$0.00</span>
+                                </div>
+                                <div class="vn-ticket-row" style="margin-top:.5rem;padding-top:.75rem;border-top:1px solid var(--vn-gray-200);border-bottom:none;">
+                                    <span class="vn-ticket-row-label">Subtotal 2</span>
+                                    <span class="vn-ticket-row-val" id="vn-rem-total-subtotal2-display">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="vn-ticket-footer">
+                                <div class="vn-ticket-total-row">
+                                    <span class="vn-ticket-total-label"><i class="fas fa-coins me-1"></i>Total</span>
+                                    <strong class="vn-ticket-total-val" id="vn-rem-importe-display">$0.00</strong>
+                                </div>
+                            </div>
+
+                            <!-- Hidden inputs — todos intactos -->
+                            <input type="hidden" id="vn-rem-total-subtotal1" name="total-subtotal1" value="0.00">
+                            <input type="hidden" id="vn-rem-total-descuento" name="total-descuento" value="0.00">
+                            <input type="hidden" id="vn-rem-total-flete" name="total-flete" value="0.00">
+                            <input type="hidden" id="vn-rem-total-subtotal2" name="total-subtotal2" value="0.00">
+                            <input type="hidden" id="vn-rem-importe" name="importe" value="0.00">
+                            <input type="hidden" id="vn-rem-documentid" name="documentid">
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="d-grid gap-2">
+                            <button type="button" class="vn-btn vn-btn-success vn-rem-btn-submit"
+                                    style="width:100%;justify-content:center;padding:.85rem;">
+                                <i class="fas fa-paper-plane"></i> Generar Remisión
+                            </button>
+                        </div>
+
+                    </div>
+                </div><!-- /col derecha -->
+
+            </div><!-- /row -->
+        </form>
+    </div><!-- /container -->
+</div><!-- /vn-page -->
+<!-- ===== BOTÓN FLOTANTE ===== -->
+<button type="button" class="vn-floating-btn"
+        data-bs-toggle="modal" data-bs-target="#vn-rem-modalBuscarDocumentos">
+    <i class="fas fa-file-alt"></i>
+</button>
+<div class="vn-floating-tooltip">Buscar Documentos</div>
+
+<!-- ===== MODAL: BUSCAR DOCUMENTOS ===== -->
+<div class="modal fade" id="vn-rem-modalBuscarDocumentos" tabindex="-1"
+     aria-labelledby="vn-rem-modalBuscarDocumentosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vn-modal-header">
+                <h5 class="modal-title" id="vn-rem-modalBuscarDocumentosLabel">
+                    <i class="fas fa-file-alt me-2"></i>Buscar Documentos Previos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="vn-rem-inputBuscarDocumento" class="form-control"
+                                   placeholder="Folio o Cliente">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-warning w-100" id="vn-rem-btnLimpiarDocumentos">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+                <ul class="list-unstyled" id="vn-rem-listaResultadosDocumentos"
+                    style="max-height:500px;overflow-y:auto;">
+                    <div class="vn-search-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold mb-1">
+                                    <i class="fas fa-file-invoice text-primary me-1"></i>
+                                    <strong>Folio:</strong> REM-2024-001
+                                </div>
+                                <div class="small" style="color:var(--vn-gray-600)">
+                                    <i class="fas fa-user me-1"></i> Empresa Demo S.A. de C.V.
+                                </div>
+                                <div class="d-flex gap-3 mt-1" style="font-size:.75rem;color:var(--vn-gray-400)">
+                                    <span><i class="fas fa-calendar me-1"></i>15/09/2024</span>
+                                    <span><i class="fas fa-money-bill-wave me-1"></i>$125,450.00</span>
+                                    <span><i class="fas fa-user-tie me-1"></i>Carlos Mendoza</span>
+                                </div>
+                            </div>
+                            <span class="document-badge badge-cancelled">Cancelado</span>
+                        </div>
+                    </div>
+                </ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vn-rem-recordsFromDocumentos">1</strong> a
+                        <strong id="vn-rem-recordsToDocumentos">3</strong> de
+                        <strong id="vn-rem-totalRecordsDocumentos">3</strong> registros
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vn-rem-pageSizeDocumentos" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25 / pág</option>
+                            <option value="50" selected>50 / pág</option>
+                            <option value="100">100 / pág</option>
+                        </select>
+                        <div id="vn-rem-spinnerDocumentos" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vn-rem-paginationDocumentos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: BUSCAR CLIENTE ===== -->
+<div class="modal fade" id="vn-rem-modalBuscarCliente" tabindex="-1"
+     aria-labelledby="vn-rem-modalBuscarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vn-modal-header">
+                <h5 class="modal-title" id="vn-rem-modalBuscarClienteLabel">
+                    <i class="fas fa-search me-2"></i>Buscar Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vn-rem-inputBuscarCliente" class="form-control"
+                           placeholder="Nombre o RFC…">
+                    <button type="button" class="btn btn-outline-secondary" id="vn-rem-btnLimpiarClientes">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-unstyled" id="vn-rem-listaResultadosClientes"
+                    style="max-height:400px;overflow-y:auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vn-rem-recordsFromClientes">0</strong> a
+                        <strong id="vn-rem-recordsToClientes">0</strong> de
+                        <strong id="vn-rem-totalRecordsClientes">0</strong> registros
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vn-rem-pageSizeClientes" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25 / pág</option>
+                            <option value="50" selected>50 / pág</option>
+                            <option value="100">100 / pág</option>
+                        </select>
+                        <div id="vn-rem-spinnerClientes" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vn-rem-paginationClientes"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: BUSCAR PRODUCTO ===== -->
+<div class="modal fade" id="vn-rem-modalBuscarProducto" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vn-modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-box-open me-2"></i>Buscar Producto
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vn-rem-inputBuscarProducto" class="form-control"
+                           placeholder="Código o descripción…">
+                    <button type="button" class="btn btn-outline-secondary" id="vn-rem-btnLimpiarProductos">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-unstyled" id="vn-rem-listaResultadosProductos"
+                    style="max-height:380px;overflow-y:auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vn-rem-recordsFromProductos">0</strong> a
+                        <strong id="vn-rem-recordsToProductos">0</strong> de
+                        <strong id="vn-rem-totalRecordsProductos">0</strong>
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vn-rem-pageSizeProductos" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <div id="vn-rem-spinnerProductos" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vn-rem-paginationProductos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== JS: toggle de 3 estados (lógica original intacta) ===== -->
+<script>
+    let paymentStates2 = ['contado', 'credito', 'anticipo'];
+    let currentStateIndex2 = 0;
+
+    // REEMPLAZA todo el bloque de toggle (incluyendo limpiarCampos* y calcularAnticipo*)
+    // por esto:
+
+    function setTipoPagoRemision(nuevoEstado) {
+        const toggle = document.getElementById('vn-rem-toggle-pago');
+        const camposCredito = document.getElementById('vn-rem-campos-credito');
+        const seccionProductos = document.getElementById('vn-rem-seccion-productos');
+
+        toggle.setAttribute('data-state', nuevoEstado);
+
+        document.querySelectorAll('#vn-rem-toggle-pago .vn-pay-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.val === nuevoEstado);
+        });
+
+        if (nuevoEstado === 'contado') {
+            camposCredito.style.display = 'none';
+            seccionProductos.style.display = '';
+            limpiarCamposCreditoRemision();
+        } else if (nuevoEstado === 'credito') {
+            camposCredito.style.display = 'block';
+            seccionProductos.style.display = '';
+        }
+
+        // El crédito solo se valida en ventas a crédito.
+        window.CreditoVentas?.evaluar('vn-rem');
+    }
+
+    // Mantén estas dos funciones auxiliares que siguen siendo usadas:
+    function limpiarCamposCreditoRemision() {
+        document.getElementById('vn-rem-limite-credito').value = '0.00';
+        document.getElementById('vn-rem-plazo').value = '';
+        document.getElementById('vn-rem-fecha-pago').value = '';
+    }
+
+    function limpiarCamposRemision() {
+        limpiarCamposCreditoRemision();
+    }
+
+    function limpiarCamposAnticipoRemision() {
+        document.getElementById('vn-rem-porcentaje-anticipo').value = '';
+        document.getElementById('vn-rem-monto-anticipo').value = '';
+        document.getElementById('vn-rem-saldo-pendiente').value = '';
+        document.getElementById('vn-rem-fecha-anticipo').value = '';
+        document.getElementById('vn-rem-fecha-pago-final').value = '';
+    }
+
+    function calcularAnticipoRemision() {
+        const porcentaje = parseFloat(document.getElementById('vn-rem-porcentaje-anticipo').value) || 0;
+        const totalVenta = parseFloat(document.getElementById('vn-rem-importe').value) || 0;
+        const montoAnticipo = (totalVenta * porcentaje) / 100;
+        const saldoPendiente = totalVenta - montoAnticipo;
+        document.getElementById('vn-rem-monto-anticipo').value = montoAnticipo.toFixed(2);
+        document.getElementById('vn-rem-saldo-pendiente').value = saldoPendiente.toFixed(2);
+    }
+</script>
+
+<script>
+    /* ===== TOGGLE FLETE — lógica original intacta ===== */
+    document.getElementById('vn-rem-flete').addEventListener('change', function () {
+        const inp = document.getElementById('vn-rem-flete-val');
+        inp.classList.toggle('d-none', !this.checked);
+        if (!this.checked) inp.value = '';
+    });
+
+    /* ===== TOGGLE ORDEN DE COMPRA — lógica original intacta ===== */
+    document.getElementById('vn-rem-orden-compra-check').addEventListener('change', function () {
+        const inp = document.getElementById('vn-rem-orden-compra-val');
+        inp.classList.toggle('d-none', !this.checked);
+        if (!this.checked) inp.value = '';
+    });
+</script>

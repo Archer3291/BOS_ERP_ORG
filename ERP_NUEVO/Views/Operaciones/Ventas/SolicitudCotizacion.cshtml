@@ -1,0 +1,361 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Solicitud de Cotización</title>
+
+    <!-- MDB5 CSS -->
+
+
+    <style>
+        .form-outline .form-control:focus ~ .form-label {
+            color: #0d6efd;
+        }
+
+        th, td {
+            vertical-align: middle !important;
+        }
+
+        /* Estilo para fila seleccionada */
+        tr.fila-seleccionada {
+            background-color: #d1ecf1 !important;
+        }
+
+        .form-outline .form-control:disabled,
+        .form-outline .form-control.disabled,
+        .form-outline .form-control[readonly] {
+            background-color: transparent !important;
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="container p-4 shadow-3 rounded">
+        <!-- Encabezado -->
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-primary">📝 Solicitud de Cotización</h2>
+            <p class="text-muted">Por favor, llene el siguiente formulario con la información requerida.</p>
+            <hr />
+        </div>
+
+
+        <!-- Leyenda de instrucciones -->
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Instrucciones:</strong> Llenar debidamente el formato, indicando lo siguiente: <br>
+            Cantidad, número de parte, descripción del producto, marca, modelo, serie del mismo, y si se tienen, fotografías.
+        </div>
+
+
+        <!-- Datos del cliente y vendedor -->
+        <div class="row mb-3">
+            <div class="col-md-4 mb-3">
+                <div class="form-outline">
+                    <input type="text" id="cliente" class="form-control" value="calidad y EHS" />
+                    <label class="form-label" for="cliente"><i class="bi bi-person-circle me-1"></i>Cliente</label>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="form-outline">
+                    <input type="text" id="vendedor" class="form-control" />
+                    <label class="form-label" for="vendedor"><i class="bi bi-person-badge me-1"></i>Vendedor</label>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="form-outline">
+                    <input type="date" id="fecha" class="form-control" value="2024-06-24" />
+                    <label class="form-label" for="fecha"><i class="bi bi-calendar-event me-1"></i>Fecha</label>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="form-outline">
+                    <input type="time" id="hora" class="form-control" />
+                    <label class="form-label" for="hora"><i class="bi bi-clock me-1"></i>Hora</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="d-flex justify-content-end gap-2 mb-3">
+            <button id="agregar-fila" class="btn btn-outline-primary">
+                <i class="bi bi-plus-lg"></i> Agregar fila
+            </button>
+            <button id="eliminar-fila" class="btn btn-outline-danger">
+                <i class="bi bi-trash3"></i> Eliminar seleccionada
+            </button>
+        </div>
+
+        <!-- Tabla de productos -->
+        <div class="table-responsive mb-4">
+            <table id="tabla-productos" class="table table-hover table-bordered align-middle">
+                <thead class="table-primary text-center">
+                    <tr class="text-center">
+                        <th><i class="bi bi-check-square"></i></th>
+                        <th>#</th>
+                        <th><i class="bi bi-stack"></i> Cantidad</th>
+                        <th><i class="bi bi-upc-scan"></i> Código</th>
+                        <th><i class="bi bi-card-text"></i> Descripción</th>
+                        <th><i class="bi bi-currency-dollar"></i> Costo Proveedor</th>
+                        <th><i class="bi bi-tag-fill"></i> P. Unitario Cliente</th>
+                        <th><i class="bi bi-cash-coin"></i> Total</th>
+                        <th><i class="bi bi-image"></i> Imagen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center"><input type="checkbox" class="seleccionar-fila" /></td>
+                        <td>1</td>
+                        <td contenteditable="true">1</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true">Dictamen estructural</td>
+                        <td contenteditable="true">0</td>
+                        <td contenteditable="true">0</td>
+                        <td class="total-fila">$ 0.00</td>
+                        <td>
+                            <input type="file" class="form-control form-control-sm imagen-input" accept="image/*" />
+                            <img class="vista-previa mt-2" src="" alt="Vista previa" style="max-height: 60px; display: none;" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="row justify-content-end mb-4">
+            <div class="col-md-4">
+                <div class="form-outline mb-3">
+                    <input type="number" id="subtotal" class="form-control" value="0" readonly />
+                    <label class="form-label" for="subtotal"><i class="bi bi-cash-stack me-1"></i>Sub Total</label>
+                </div>
+                <div class="form-outline mb-3">
+                    <input type="number" id="iva" class="form-control" value="0" readonly />
+                    <label class="form-label" for="iva"><i class="bi bi-percent me-1"></i>IVA (16%)</label>
+                </div>
+                <div class="form-outline mb-3">
+                    <input type="number" id="total" class="form-control" value="0" readonly />
+                    <label class="form-label" for="total"><i class="bi bi-calculator me-1"></i>Total</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nota -->
+        <div class="form-outline mb-5">
+            <textarea id="nota" class="form-control" rows="3"></textarea>
+            <label class="form-label" for="nota"><i class="bi bi-pencil-square me-1"></i>Nota</label>
+        </div>
+
+        <!-- Opciones -->
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="form-outline">
+                    <input type="text" id="opcion1" class="form-control" />
+                    <label class="form-label" for="opcion1">Opción 1</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-outline">
+                    <input type="text" id="opcion2" class="form-control" />
+                    <label class="form-label" for="opcion2">Opción 2</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-outline">
+                    <input type="text" id="opcion3" class="form-control" />
+                    <label class="form-label" for="opcion3">Opción 3</label>
+                </div>
+            </div>
+        </div>
+        <!-- Botón Enviar -->
+        <div class="text-end mt-4">
+            <button id="btn-enviar" class="btn btn-success">
+                <i class="bi bi-send-fill"></i> Enviar Solicitud
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mdb-ui-kit@6.4.2/js/mdb.min.js"></script>
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tabla = $('#tabla-productos').DataTable({
+                responsive: false,
+                paging: false,
+                searching: false,
+                info: false
+            });
+
+            function actualizarTotales() {
+                let subtotal = 0;
+                $('#tabla-productos tbody tr').each(function () {
+                    const cantidad = parseFloat($(this).find('td:eq(2)').text()) || 0;
+                    const precio = parseFloat($(this).find('td:eq(6)').text()) || 0;
+                    const total = cantidad * precio;
+                    $(this).find('td:eq(7)').text(`$ ${total.toFixed(2)}`);
+                    subtotal += total;
+                });
+                const iva = subtotal * 0.16;
+                const total = subtotal + iva;
+
+                $('#subtotal').val(subtotal.toFixed(2));
+                $('#iva').val(iva.toFixed(2));
+                $('#total').val(total.toFixed(2));
+            }
+
+            $('#tabla-productos tbody').on('input', 'td[contenteditable="true"]', actualizarTotales);
+
+            $('#agregar-fila').on('click', function () {
+                const rowCount = tabla.rows().count() + 1;
+                const nuevaFila = $(`
+<tr>
+                <td class="text-center"><input type="checkbox" class="seleccionar-fila" /></td>
+                <td>${rowCount}</td>
+                <td contenteditable="true">1</td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true">0</td>
+                <td contenteditable="true">0</td>
+                <td class="total-fila">$ 0.00</td>
+                <td>
+                    <input type="file" class="form-control form-control-sm imagen-input" accept="image/*" />
+                    <img class="vista-previa mt-2" src="" alt="Vista previa" style="max-height: 60px; display: none;" />
+                </td>
+</tr>
+`);
+
+                tabla.row.add(nuevaFila).draw();
+            });
+
+            $('#eliminar-fila').on('click', function () {
+                $('#tabla-productos tbody tr').each(function () {
+                    if ($(this).find('.seleccionar-fila').is(':checked')) {
+                        tabla.row(this).remove().draw();
+                    }
+                });
+                actualizarTotales();
+            });
+
+            $('#tabla-productos tbody').on('change', '.seleccionar-fila', function () {
+                const fila = $(this).closest('tr');
+                if ($(this).is(':checked')) {
+                    fila.addClass('fila-seleccionada');
+                } else {
+                    fila.removeClass('fila-seleccionada');
+                }
+            });
+            $('#tabla-productos tbody').on('change', '.imagen-input', function (event) {
+                const input = this;
+                const file = input.files[0];
+                const previewImg = $(this).siblings('.vista-previa')[0];
+
+                if (file && previewImg) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImg.src = e.target.result;
+                        previewImg.style.display = 'block';
+                        $(input).closest('td').addClass('border-success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            actualizarTotales();
+        });
+    </script>
+
+    <script>
+        document.getElementById("btn-enviar").addEventListener("click", function () {
+            const formData = new FormData();
+
+            // Datos generales
+            formData.append("cliente", document.getElementById("cliente").value);
+            formData.append("vendedor", document.getElementById("vendedor").value);
+            formData.append("fecha", document.getElementById("fecha").value);
+            formData.append("hora", document.getElementById("hora").value);
+            formData.append("nota", document.getElementById("nota").value);
+            formData.append("opcion1", document.getElementById("opcion1").value);
+            formData.append("opcion2", document.getElementById("opcion2").value);
+            formData.append("opcion3", document.getElementById("opcion3").value);
+            formData.append("subtotal", document.getElementById("subtotal").value);
+            formData.append("iva", document.getElementById("iva").value);
+            formData.append("total", document.getElementById("total").value);
+
+            // Filas
+            const filas = [];
+            $('#tabla-productos tbody tr').each(function (index) {
+                const fila = {
+                    cantidad: $(this).find('td:eq(2)').text().trim(),
+                    codigo: $(this).find('td:eq(3)').text().trim(),
+                    descripcion: $(this).find('td:eq(4)').text().trim(),
+                    costoProveedor: $(this).find('td:eq(5)').text().trim(),
+                    precioUnitario: $(this).find('td:eq(6)').text().trim(),
+                    total: $(this).find('td:eq(7)').text().trim()
+                };
+
+                // Agrega fila al array
+                filas.push(fila);
+
+                // Captura imagen si existe
+                const fileInput = $(this).find('.imagen-input')[0];
+                if (fileInput && fileInput.files.length > 0) {
+                    formData.append(`imagen_${index}`, fileInput.files[0]);
+                }
+            });
+
+            formData.append("productos", JSON.stringify(filas));
+
+            fetch("/SolicitudCotizacion/GuardarSolicitudCotizacion", {
+                method: "POST",
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error("Error en el servidor");
+                    return response.json(); // o response.text() si el backend no retorna JSON
+                })
+                .then(data => {
+                    if (data.success) {
+                        toastMixin.fire({
+                            icon: "success",
+                            title: "Solicitud enviada correctamente."
+                        });
+                    } else {
+                        toastMixin.fire({
+                            icon: "error",
+                            title: data.message || "Ocurrió un error al enviar la solicitud."
+                        });
+                    }
+                })
+                .catch(error => {
+                    toastMixin.fire({
+                        icon: "error",
+                        title: "Error inesperado: " + error.message
+                    });
+                });
+        });
+
+
+        function actualizarVistaPreviaImagen(input) {
+            const contenedorPreview = $(input).siblings('.imagen-preview');
+            contenedorPreview.empty(); // limpia previa existente
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = $('<img>')
+                        .attr('src', e.target.result)
+                        .css({ width: '80px', height: 'auto', borderRadius: '5px' });
+                    contenedorPreview.append(img);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        $('#tabla-productos tbody').on('change', '.imagen-input', function () {
+            actualizarVistaPreviaImagen(this);
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,2354 @@
+﻿@using BOS_ERP.Controllers
+@using BOS_ERP.Models
+@{
+    ViewData["Title"] = "Perfil";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@functions {
+    public static string ObtenerTiempoRelativo(DateTime fecha)
+    {
+        var ahora = DateTime.Now;
+        var diferencia = ahora - fecha;
+        if (diferencia.TotalMinutes < 1) return "Hace unos segundos";
+        if (diferencia.TotalMinutes < 60) return $"Hace {Math.Floor(diferencia.TotalMinutes)} minuto(s)";
+        if (diferencia.TotalHours < 24) return $"Hace {Math.Floor(diferencia.TotalHours)} hora(s)";
+        if (diferencia.TotalDays < 2) return $"Ayer a las {fecha:hh:mm tt}";
+        return $"Hace {Math.Floor(diferencia.TotalDays)} día(s)";
+    }
+}
+
+@section styles {
+    <style>
+        /* ── Contenedor principal ─────────────────────────────────────────── */
+        .perfil-page {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem;
+        }
+
+        /* ── Hero ─────────────────────────────────────────────────────────── */
+        .perfil-hero {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            margin-bottom: 0;
+            display: flex;
+            gap: 1.25rem;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        .perfil-avatar {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            border: 2px solid var(--border-light);
+        }
+
+        .perfil-hero-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .perfil-hero-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 3px;
+        }
+
+        .perfil-hero-role {
+            font-size: 0.82rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 0.85rem;
+        }
+
+        .perfil-stats {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .perfil-stat {
+            background: var(--bg-gray);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            padding: 7px 14px;
+            text-align: center;
+            min-width: 88px;
+        }
+
+        .perfil-stat-n {
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1;
+        }
+
+        .perfil-stat-l {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        .perfil-hero-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-shrink: 0;
+        }
+
+        .perfil-icon-btn {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border-light);
+            border-radius: 0.6rem;
+            background: var(--bg-light);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.15s, color 0.15s;
+        }
+
+            .perfil-icon-btn:hover {
+                background: var(--bg-gray);
+                color: var(--text-dark);
+            }
+
+        /* ── Tabs ─────────────────────────────────────────────────────────── */
+        .perfil-tabs-wrap {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-top: none;
+            border-radius: 0 0 1.25rem 1.25rem;
+            overflow: hidden;
+        }
+
+        .perfil-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            padding: 0 1.25rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+            .perfil-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+        .perfil-tab {
+            padding: 0.75rem 1rem;
+            font-size: 0.82rem;
+            color: var(--text-light);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            transition: color 0.15s;
+            font-weight: 500;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+
+            .perfil-tab.active {
+                color: var(--primary-blue);
+                border-bottom-color: var(--primary-blue);
+            }
+
+            .perfil-tab:hover:not(.active) {
+                color: var(--text-dark);
+            }
+
+        .perfil-panel {
+            display: none;
+            padding: 1.25rem;
+        }
+
+            .perfil-panel.active {
+                display: block;
+            }
+
+        /* ── Grid 2 columnas ──────────────────────────────────────────────── */
+        .perfil-grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .perfil-grid2-full {
+            grid-column: 1 / -1;
+        }
+
+        @@media (max-width: 680px) {
+            .perfil-grid2 {
+                grid-template-columns: 1fr;
+            }
+
+            .perfil-grid2-full {
+                grid-column: auto;
+            }
+
+            .perfil-hero {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .perfil-hero-actions {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+            }
+        }
+
+        /* ── Card interna ─────────────────────────────────────────────────── */
+        .pi-card {
+            background: var(--bg-gray);
+            border: 1px solid var(--border-light);
+            border-radius: 1rem;
+            padding: 1.1rem;
+        }
+
+        .pi-card-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* ── Filas de campo ───────────────────────────────────────────────── */
+        .pi-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.82rem;
+        }
+
+            .pi-field:last-child {
+                border-bottom: none;
+            }
+
+        .pi-field-label {
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pi-field-val {
+            font-weight: 600;
+            color: var(--text-dark);
+            text-align: right;
+            max-width: 55%;
+        }
+
+        /* ── Badges ───────────────────────────────────────────────────────── */
+        .pi-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .pi-badge-success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .pi-badge-warn {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .pi-badge-info {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .pi-badge-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        /* ── Sesiones ─────────────────────────────────────────────────────── */
+        .pi-session {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+            .pi-session:last-child {
+                border-bottom: none;
+            }
+
+        .pi-session-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 0.6rem;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            flex-shrink: 0;
+        }
+
+        .pi-session-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pi-session-device {
+            font-size: 0.78rem;
+            font-weight: 600;
+            font-family: monospace;
+            color: var(--text-dark);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pi-session-time {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            margin-top: 1px;
+        }
+
+        /* ── Actividad ────────────────────────────────────────────────────── */
+        .pi-act {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+            .pi-act:last-child {
+                border-bottom: none;
+            }
+
+        .pi-act-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .pi-act-text {
+            font-size: 0.82rem;
+            color: var(--text-dark);
+            line-height: 1.45;
+        }
+
+        .pi-act-time {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        /* ── Documentos ───────────────────────────────────────────────────── */
+        .pi-doc {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+            .pi-doc:last-child {
+                border-bottom: none;
+            }
+
+        .pi-doc-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 0.5rem;
+            background: #fef9c3;
+            color: #854d0e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .pi-doc-id {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        .pi-doc-date {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            margin-top: 1px;
+        }
+
+        .pi-doc-link {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border-light);
+            border-radius: 0.5rem;
+            background: var(--bg-light);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82rem;
+            text-decoration: none;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+
+            .pi-doc-link:hover {
+                background: var(--bg-gray);
+                color: var(--primary-blue);
+            }
+
+        /* ── Gráfica de barras ────────────────────────────────────────────── */
+        .pi-chart-wrap {
+            position: relative;
+            height: 200px;
+            margin-top: 0.5rem;
+        }
+
+        /* ── Contraseña ───────────────────────────────────────────────────── */
+        .pi-pass-group {
+            margin-bottom: 0.9rem;
+        }
+
+        .pi-pass-label {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* ── Tema / Color pickers ─────────────────────────────────────────── */
+        .pi-color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.1rem;
+        }
+
+        .pi-color-field label {
+            font-size: 0.72rem;
+            color: var(--text-light);
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+        }
+
+        .pi-color-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+            .pi-color-row input[type="color"] {
+                width: 32px;
+                height: 30px;
+                border: 1px solid var(--border-light);
+                border-radius: 0.4rem;
+                cursor: pointer;
+                background: none;
+                padding: 2px;
+                flex-shrink: 0;
+            }
+
+            .pi-color-row input[type="text"] {
+                flex: 1;
+                min-width: 0;
+                border: 1px solid var(--border-light);
+                border-radius: 0.4rem;
+                padding: 5px 8px;
+                font-size: 0.75rem;
+                font-family: monospace;
+                background: var(--bg-light);
+                color: var(--text-dark);
+                outline: none;
+            }
+
+                .pi-color-row input[type="text"]:focus {
+                    border-color: var(--accent-blue);
+                }
+
+        .pi-presets {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .pi-preset-btn {
+            padding: 5px 14px;
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            background: var(--bg-light);
+            color: var(--text-light);
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+            .pi-preset-btn:hover,
+            .pi-preset-btn.active {
+                background: var(--primary-blue);
+                color: #fff;
+                border-color: var(--primary-blue);
+            }
+
+        /* ── Botones de acción ────────────────────────────────────────────── */
+        .pi-btn-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.9rem;
+            flex-wrap: wrap;
+        }
+
+        .pi-btn {
+            padding: 7px 16px;
+            border: 1px solid var(--border-light);
+            border-radius: 0.6rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            transition: background 0.15s;
+        }
+
+            .pi-btn:hover {
+                background: var(--bg-gray);
+            }
+
+        .pi-btn-primary {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+        }
+
+            .pi-btn-primary:hover {
+                background: var(--primary-blue-dark);
+            }
+
+        .pi-btn-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fca5a5;
+        }
+
+            .pi-btn-danger:hover {
+                background: #fecaca;
+            }
+
+        /* ── Separador de sección ─────────────────────────────────────────── */
+        .pi-section-divider {
+            border: none;
+            border-top: 1px solid var(--border-light);
+            margin: 1rem 0;
+        }
+
+        /* ── Animación de entrada ─────────────────────────────────────────── */
+        @@keyframes pi-fadein {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .perfil-panel.active {
+            animation: pi-fadein 0.25s ease-out;
+        }
+
+        /* ── Sub-tabs internos ──────────────────────────────────────────── */
+        .pi-subtabs {
+            display: flex;
+            gap: .4rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: .75rem;
+        }
+
+        .pi-subtab {
+            padding: 6px 14px;
+            border-radius: 0.6rem;
+            border: 1px solid var(--border-light);
+            background: var(--bg-light);
+            color: var(--text-light);
+            font-size: .8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .15s;
+        }
+
+            .pi-subtab.active {
+                background: var(--primary-blue);
+                color: #fff;
+                border-color: var(--primary-blue);
+            }
+
+            .pi-subtab:hover:not(.active) {
+                background: var(--bg-gray);
+            }
+
+        .pi-subpanel {
+            display: none;
+        }
+
+            .pi-subpanel.active {
+                display: block;
+                animation: pi-fadein .2s ease-out;
+            }
+
+        /* ── Texto de ayuda ─────────────────────────────────────────────── */
+        .pi-help-text {
+            font-size: .8rem;
+            color: var(--text-light);
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        /* ── Grid de presets como tarjetas ──────────────────────────────── */
+        .pi-preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: .75rem;
+            margin-bottom: 1rem;
+        }
+
+        .pi-preset-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 1rem .5rem;
+            border: 2px solid var(--border-light);
+            border-radius: 1rem;
+            background: var(--bg-gray);
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+            .pi-preset-card:hover {
+                border-color: var(--accent-blue);
+                transform: translateY(-2px);
+            }
+
+            .pi-preset-card.active {
+                border-color: var(--primary-blue);
+                background: var(--light-blue);
+            }
+
+        .pi-preset-emoji {
+            font-size: 1.8rem;
+        }
+
+        .pi-preset-name {
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .pi-preset-check {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .6rem;
+        }
+
+        /* ── Switch modo claro/oscuro ───────────────────────────────────── */
+        .pi-mode-switch {
+            display: flex;
+            gap: .5rem;
+            margin-bottom: 1rem;
+        }
+
+        .pi-mode-btn {
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-light);
+            color: var(--text-light);
+            font-size: .8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+            .pi-mode-btn.active {
+                background: var(--primary-blue);
+                color: #fff;
+                border-color: var(--primary-blue);
+            }
+
+        .pi-color-mode-panel {
+            display: none;
+        }
+
+            .pi-color-mode-panel.active {
+                display: block;
+            }
+
+        /* ── Color grid simplificado (esenciales) ───────────────────────── */
+        .pi-color-grid-simple {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: .85rem;
+            margin-bottom: 1rem;
+        }
+
+        .pi-color-field-simple {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: .6rem;
+            border: 1px solid var(--border-light);
+            border-radius: .75rem;
+            background: var(--bg-gray);
+        }
+
+            .pi-color-field-simple input[type="color"] {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                border: 2px solid var(--border-light);
+                padding: 0;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+
+        .pi-color-field-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+            .pi-color-field-info label {
+                display: block;
+                font-size: .72rem;
+                color: var(--text-light);
+                font-weight: 600;
+                margin-bottom: 2px;
+            }
+
+            .pi-color-field-info input[type="text"] {
+                width: 100%;
+                border: 1px solid var(--border-light);
+                border-radius: .4rem;
+                padding: 3px 6px;
+                font-size: .72rem;
+                font-family: monospace;
+                background: var(--bg-light);
+                color: var(--text-dark);
+            }
+
+        /* ── Sección avanzada colapsable ────────────────────────────────── */
+        .pi-advanced {
+            margin-top: .5rem;
+            border: 1px solid var(--border-light);
+            border-radius: .75rem;
+            padding: .25rem .75rem;
+        }
+
+            .pi-advanced summary {
+                cursor: pointer;
+                font-size: .8rem;
+                font-weight: 600;
+                color: var(--text-light);
+                padding: .6rem 0;
+                list-style: none;
+            }
+
+                .pi-advanced summary::-webkit-details-marker {
+                    display: none;
+                }
+
+            .pi-advanced[open] summary {
+                color: var(--primary-blue);
+            }
+
+            .pi-advanced .pi-color-grid {
+                padding-bottom: .75rem;
+            }
+
+        /* ── Toggle switch ───────────────────────────────────────────────── */
+        .pi-toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.2rem;
+        }
+
+        .pi-toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+            .pi-toggle-switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+        .pi-toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-light);
+            border-radius: 24px;
+            transition: .2s;
+        }
+
+            .pi-toggle-slider::before {
+                content: "";
+                position: absolute;
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: #fff;
+                border-radius: 50%;
+                transition: .2s;
+            }
+
+        .pi-toggle-switch input:checked + .pi-toggle-slider {
+            background-color: var(--primary-blue);
+        }
+
+            .pi-toggle-switch input:checked + .pi-toggle-slider::before {
+                transform: translateX(20px);
+            }
+
+        .pi-toggle-label {
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+    </style>
+}
+
+@{
+    string nombreCompleto = Context.Session.GetString("NombreCompleto") ?? "";
+    string[] partes = nombreCompleto.Split(' ');
+    string iniciales = partes.Length >= 2
+        ? $"{partes[0][0]}{partes[1][0]}".ToUpper()
+        : nombreCompleto.Length > 0 ? nombreCompleto[0].ToString().ToUpper() : "?";
+
+    var tema = ViewBag.TemaUsuario as UsuarioTema;
+    var presets = TemaPresets.Presets;
+
+    var camposLight = new[] {
+    ("primary_blue",       "Azul primario",         tema?.PrimaryBlue      ?? "#1e3a5f"),
+    ("primary_blue_hover", "Hover / active",         tema?.PrimaryBlueHover ?? "#0f1729"),
+    ("secondary_blue",     "Azul secundario",        tema?.SecondaryBlue    ?? "#475569"),
+    ("light_blue",         "Azul claro",             tema?.LightBlue        ?? "#e1e7ef"),
+    ("very_light_blue",    "Azul muy claro",         tema?.VeryLightBlue    ?? "#f8fafc"),
+    ("dark_blue_light",    "Azul oscuro",            tema?.DarkBlueLight    ?? "#0f1729"),
+    ("accent_blue",        "Acento",                 tema?.AccentBlue       ?? "#3b82f6"),
+    ("bg_light",           "Fondo",                  tema?.BgLight          ?? "#ffffff"),
+    ("bg_gray",            "Fondo gris",             tema?.BgGray           ?? "#f8fafc"),
+    ("text_dark",          "Texto oscuro",           tema?.TextDark         ?? "#0f172a"),
+    ("text_light",         "Texto claro",            tema?.TextLight        ?? "#64748b"),
+    ("border_light",       "Bordes",                 tema?.BorderLight      ?? "#e2e8f0"),
+};
+
+    var camposDark = new[] {
+    ("dark_primary_blue",   "Azul primario",         tema?.DarkPrimaryBlue   ?? "#475569"),
+    ("dark_blue_hover",     "Hover / active",         tema?.DarkBlueHover     ?? "#334155"),
+    ("dark_secondary_blue", "Azul secundario",        tema?.DarkSecondaryBlue ?? "#64748b"),
+    ("dark_light_blue",     "Azul claro",             tema?.DarkLightBlue     ?? "#334155"),
+    ("dark_very_light_blue","Azul muy claro",         tema?.DarkVeryLightBlue ?? "#8191a7"),
+    ("dark_dark_blue",      "Azul oscuro",            tema?.DarkDarkBlue      ?? "#cbd5e1"),
+    ("dark_accent_blue",    "Acento",                 tema?.DarkAccentBlue    ?? "#60a5fa"),
+    ("dark_bg_light",       "Fondo",                  tema?.DarkBgLight       ?? "#0f172a"),
+    ("dark_bg_gray",        "Fondo gris",             tema?.DarkBgGray        ?? "#1e293b"),
+    ("dark_text_dark",      "Texto oscuro",           tema?.DarkTextDark      ?? "#f1f5f9"),
+    ("dark_text_light",     "Texto claro",            tema?.DarkTextLight     ?? "#cbd5e1"),
+    ("dark_border_light",   "Bordes",                 tema?.DarkBorderLight   ?? "#475569"),
+};
+}
+
+<div class="perfil-page">
+
+
+    @* ═══ HERO ═══*@
+
+    <div class="perfil-hero">
+
+        <div class="perfil-avatar d-none">@iniciales</div>
+        <img translate="no" class="perfil-avatar" src="https://ui-avatars.com/api/?name=@Context.Session.GetString("NombreCompleto")&background=1e3a8a&color=fff&rounded=true&size=48&format=svg&bold=true" alt="@Context.Session.GetString("NombreCompleto")" />
+
+        <div class="perfil-hero-info">
+            <div class="perfil-hero-name">@Context.Session.GetString("NombreCompleto")</div>
+            <div class="perfil-hero-role">
+                <i class="fas fa-briefcase"></i>
+                @Utilities.GetAreaName(User.Identity.Name)
+            </div>
+            <div class="perfil-stats">
+                <div class="perfil-stat">
+                    <span class="perfil-stat-n">@ViewBag.Completados</span>
+                    <span class="perfil-stat-l">Completados</span>
+                </div>
+                <div class="perfil-stat">
+                    <span class="perfil-stat-n">@ViewBag.Pendientes</span>
+                    <span class="perfil-stat-l">Pendientes</span>
+                </div>
+                @if (ViewBag.Sesiones != null)
+                {
+                    <div class="perfil-stat">
+                        <span class="perfil-stat-n">@ViewBag.Sesiones.Count</span>
+                        <span class="perfil-stat-l">Sesiones</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="perfil-hero-actions">
+            <button class="perfil-icon-btn" onclick="changeSignature()" title="Firma digital">
+                <i class="fa-solid fa-signature"></i>
+            </button>
+            <button class="perfil-icon-btn" onclick="switchTab('seguridad')" title="Cambiar contraseña">
+                <i class="fas fa-lock"></i>
+            </button>
+            <button class="perfil-icon-btn" onclick="switchTab('tema')" title="Personalizar tema">
+                <i class="fas fa-palette"></i>
+            </button>
+        </div>
+    </div>
+    <br />
+
+    @* ═══ TABS ═══*@
+
+    <div class="perfil-tabs-wrap">
+        <div class="perfil-tabs" role="tablist">
+            <button class="perfil-tab active" data-tab="info" onclick="switchTab('info')" role="tab">
+                <i class="fas fa-user"></i> Información
+            </button>
+            <button class="perfil-tab" data-tab="actividad" onclick="switchTab('actividad')" role="tab">
+                <i class="fas fa-history"></i> Actividad
+            </button>
+            <button class="perfil-tab" data-tab="documentos" onclick="switchTab('documentos')" role="tab">
+                <i class="fas fa-file-invoice"></i> Documentos
+            </button>
+            <button class="perfil-tab" data-tab="seguridad" onclick="switchTab('seguridad')" role="tab">
+                <i class="fas fa-shield-alt"></i> Seguridad
+            </button>
+            <button class="perfil-tab" data-tab="tema" onclick="switchTab('tema')" role="tab">
+                <i class="fas fa-palette"></i> Tema
+            </button>
+        </div>
+
+
+        @* ─── Panel: Información ───*@
+
+        <div class="perfil-panel active" id="panel-info" role="tabpanel">
+            <div class="perfil-grid2">
+
+                <div class="pi-card">
+                    <div class="pi-card-title"><i class="fas fa-id-badge"></i> Datos personales</div>
+                    <div class="pi-field">
+                        <span class="pi-field-label"><i class="fas fa-envelope"></i> Email</span>
+                        <span class="pi-field-val">@Context.Session.GetString("Correo")</span>
+                    </div>
+                    <div class="pi-field">
+                        <span class="pi-field-label"><i class="fas fa-users"></i> Área</span>
+                        <span class="pi-field-val">@Utilities.GetAreaName(User.Identity.Name)</span>
+                    </div>
+                    <div class="pi-field">
+                        <span class="pi-field-label"><i class="fas fa-user-shield"></i> Rol</span>
+                        <span class="pi-field-val">@Context.Session.GetInt32("Rol")</span>
+                    </div>
+                    <div class="pi-field">
+                        <span class="pi-field-label"><i class="fas fa-building"></i> Empresa</span>
+                        <span class="pi-field-val">@Context.Session.GetString("EmpresaFactura")</span>
+                    </div>
+                    <div class="pi-field">
+                        <span class="pi-field-label"><i class="fas fa-circle"></i> Estado</span>
+                        <span class="pi-field-val">
+                            <span class="pi-badge pi-badge-success">
+                                <i class="fas fa-check" style="font-size:.65rem"></i> Activo
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="pi-card">
+                    <div class="pi-card-title"><i class="fas fa-laptop"></i> Sesiones activas</div>
+                    @if (ViewBag.Sesiones != null && ViewBag.Sesiones.Count > 0)
+                    {
+                        string cookieActual = Context.Request.Cookies["DeviceIdentifier"] ?? "";
+                        foreach (var s in ViewBag.Sesiones)
+                        {
+                            string deviceId = s["deviceidentifier"]?.ToString() ?? "Desconocido";
+                            string lastAct = ((DateTime)s["lastactivity"]).ToString("dd/MM/yyyy HH:mm");
+                            bool esCurrent = deviceId == cookieActual;
+                            string deviceShort = deviceId.Length > 16
+                                ? deviceId.Substring(0, 8) + "…" + deviceId.Substring(deviceId.Length - 8)
+                                : deviceId;
+                            <div class="pi-session">
+                                <div class="pi-session-icon">
+                                    <i class="fas fa-desktop"></i>
+                                </div>
+                                <div class="pi-session-meta">
+                                    <div class="pi-session-device">@deviceShort</div>
+                                    <div class="pi-session-time">
+                                        <i class="fas fa-clock" style="font-size:.65rem"></i> @lastAct
+                                    </div>
+                                </div>
+                                @if (esCurrent)
+                                {
+                                    <span class="pi-badge pi-badge-success" style="font-size:.7rem">
+                                        <i class="fas fa-circle" style="font-size:.5rem"></i> Este dispositivo
+                                    </span>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mt-3" style="font-size:.82rem">
+                            No hay sesiones activas registradas.
+                        </p>
+                    }
+                </div>
+
+            </div>
+        </div>
+
+
+        @* ─── Panel: Actividad ───*@
+
+        <div class="perfil-panel" id="panel-actividad" role="tabpanel">
+            <div class="perfil-grid2">
+
+                <div class="pi-card perfil-grid2-full">
+                    <div class="pi-card-title"><i class="fas fa-chart-bar"></i> Mi actividad — últimos 14 días</div>
+                    <div class="pi-chart-wrap">
+                        <canvas id="chartActividad"></canvas>
+                    </div>
+                </div>
+
+                <div class="pi-card perfil-grid2-full">
+                    <div class="pi-card-title"><i class="fas fa-history"></i> Actividad reciente</div>
+                    @if (ViewBag.Movimientos != null && ViewBag.Movimientos.Count > 0)
+                    {
+                        foreach (var mov in ViewBag.Movimientos)
+                        {
+                            <div class="pi-act">
+                                <div class="pi-act-dot">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <div>
+                                    <div class="pi-act-text">
+                                        @Html.Encode(mov["accion"]) en <strong>@Html.Encode(mov["modulo"])</strong>
+                                    </div>
+                                    <div class="pi-act-time">
+                                        <i class="fas fa-clock" style="font-size:.65rem"></i>
+                                        @Html.Encode(ObtenerTiempoRelativo((DateTime)mov["fecha"]))
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center" style="font-size:.82rem; padding:1rem 0">
+                            No hay actividades recientes.
+                        </p>
+                    }
+                </div>
+
+            </div>
+        </div>
+
+
+        @* ─── Panel: Documentos ───*@
+
+        <div class="perfil-panel" id="panel-documentos" role="tabpanel">
+            <div class="pi-card">
+                <div class="pi-card-title"><i class="fas fa-file-invoice"></i> Documentos pendientes</div>
+                @if (ViewBag.Documentos != null && ViewBag.Documentos.Count > 0)
+                {
+                    foreach (var doc in ViewBag.Documentos)
+                    {
+                        string docId = doc["id_encabezado"]?.ToString() ?? "-";
+                        string fecha = ((DateTime)doc["fch"]).ToString("dd/MM/yyyy");
+                        string estatusId = doc["estatus_id"]?.ToString() ?? "-";
+
+                        <div class="pi-doc">
+                            <div class="pi-doc-icon">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div style="flex:1; min-width:0">
+                                <div class="pi-doc-id">#@docId</div>
+                                <div class="pi-doc-date">
+                                    <i class="fas fa-calendar-alt" style="font-size:.65rem"></i> @fecha
+                                </div>
+                            </div>
+                            <span class="pi-badge pi-badge-warn">Estatus @estatusId</span>
+                            <a href="/Documentos/Ver/@docId" class="pi-doc-link" title="Ver documento">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted text-center" style="font-size:.82rem; padding:1rem 0">
+                        <i class="fas fa-check-circle text-success me-1"></i>
+                        No tienes documentos pendientes.
+                    </p>
+                }
+            </div>
+        </div>
+
+
+        @* ─── Panel: Seguridad ───*@
+
+        <div class="perfil-panel" id="panel-seguridad" role="tabpanel">
+            <div class="perfil-grid2">
+
+
+                @* Cambiar contraseña*@
+
+                <div class="pi-card">
+                    <div class="pi-card-title"><i class="fas fa-lock"></i> Cambiar contraseña</div>
+
+                    <div class="pi-pass-group">
+                        <div class="pi-pass-label"><i class="fas fa-key"></i> Contraseña actual</div>
+                        <div class="input-group">
+                            <input type="password" id="contrasenaActual" class="form-control form-control-sm"
+                                   placeholder="Ingresa tu contraseña actual" />
+                            <button class="btn btn-outline-secondary btn-sm toggle-pass"
+                                    type="button" data-target="contrasenaActual">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pi-pass-group">
+                        <div class="pi-pass-label"><i class="fas fa-lock"></i> Nueva contraseña</div>
+                        <div class="input-group">
+                            <input type="password" id="nuevaContrasena" class="form-control form-control-sm"
+                                   placeholder="Mínimo 6 caracteres" />
+                            <button class="btn btn-outline-secondary btn-sm toggle-pass"
+                                    type="button" data-target="nuevaContrasena">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pi-pass-group">
+                        <div class="pi-pass-label"><i class="fas fa-check-circle"></i> Confirmar contraseña</div>
+                        <div class="input-group">
+                            <input type="password" id="confirmarContrasena" class="form-control form-control-sm"
+                                   placeholder="Repite la nueva contraseña" />
+                            <button class="btn btn-outline-secondary btn-sm toggle-pass"
+                                    type="button" data-target="confirmarContrasena">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pi-btn-row">
+                        <button class="pi-btn pi-btn-primary" onclick="guardarNuevaContrasena()">
+                            <i class="fas fa-save me-1"></i> Guardar contraseña
+                        </button>
+                    </div>
+                </div>
+
+
+                @* Gestión de sesiones*@
+
+                <div class="pi-card">
+                    <div class="pi-card-title"><i class="fas fa-shield-alt"></i> Gestión de sesiones</div>
+
+                    @if (ViewBag.Sesiones != null && ViewBag.Sesiones.Count > 0)
+                    {
+                        string cookieActual2 = Context.Request.Cookies["DeviceIdentifier"] ?? "";
+                        bool hayOtras = false;
+                        foreach (var s in ViewBag.Sesiones)
+                        {
+                            string deviceId2 = s["deviceidentifier"]?.ToString() ?? "Desconocido";
+                            string lastAct2 = ((DateTime)s["lastactivity"]).ToString("dd/MM/yyyy HH:mm");
+                            bool esCurrent2 = deviceId2 == cookieActual2;
+                            string deviceShort2 = deviceId2.Length > 16
+                                ? deviceId2.Substring(0, 8) + "…" + deviceId2.Substring(deviceId2.Length - 8)
+                                : deviceId2;
+
+                            if (!esCurrent2) { hayOtras = true; }
+
+                            <div class="pi-session">
+                                <div class="pi-session-icon">
+                                    <i class="fas fa-desktop"></i>
+                                </div>
+                                <div class="pi-session-meta">
+                                    <div class="pi-session-device">@deviceShort2</div>
+                                    <div class="pi-session-time">
+                                        <i class="fas fa-clock" style="font-size:.65rem"></i> @lastAct2
+                                    </div>
+                                </div>
+                                @if (esCurrent2)
+                                {
+                                    <span class="pi-badge pi-badge-success" style="font-size:.7rem">Actual</span>
+                                }
+                                else
+                                {
+                                    <button class="pi-btn pi-btn-danger"
+                                            style="padding:3px 10px; font-size:.72rem"
+                                            onclick="cerrarSesion('@deviceId2')">
+                                        Cerrar
+                                    </button>
+                                }
+                            </div>
+                        }
+                        if (hayOtras)
+                        {
+                            <div class="pi-btn-row">
+                                <button class="pi-btn pi-btn-danger" onclick="cerrarTodasSesiones()">
+                                    <i class="fas fa-sign-out-alt me-1"></i> Cerrar todas las otras sesiones
+                                </button>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center" style="font-size:.82rem; padding:1rem 0">
+                            No hay otras sesiones activas.
+                        </p>
+                    }
+                </div>
+
+            </div>
+        </div>
+
+        @* ─── Panel: Apariencia (Tema + Sidebar fusionados) ───*@
+        <div class="perfil-panel" id="panel-tema" role="tabpanel">
+
+            @* Sub-tabs internos *@
+            <div class="pi-subtabs" role="tablist">
+                <button class="pi-subtab active" data-subtab="rapido" onclick="switchSubTab('rapido')">
+                    <i class="fas fa-bolt"></i> Estilo rápido
+                </button>
+                <button class="pi-subtab" data-subtab="colores" onclick="switchSubTab('colores')">
+                    <i class="fas fa-droplet"></i> Colores
+                </button>
+                <button class="pi-subtab" data-subtab="efectos" onclick="switchSubTab('efectos')">
+                    <i class="fas fa-sparkles"></i> Efectos
+                </button>
+                <button class="pi-subtab" data-subtab="sidebar" onclick="switchSubTab('sidebar')">
+                    <i class="fas fa-table-columns"></i> Barra lateral
+                </button>
+            </div>
+
+            @* ═══ SUB-TAB: ESTILO RÁPIDO ═══ *@
+            <div class="pi-subpanel active" id="subtema-rapido">
+                <div class="pi-card">
+                    <div class="pi-card-title"><i class="fas fa-magic"></i> Elige un estilo predefinido</div>
+                    <p class="pi-help-text">Aplica una combinación completa de colores con un clic. Puedes ajustarla después en "Colores".</p>
+
+                    <div class="pi-preset-grid">
+                        @foreach (var preset in presets)
+                        {
+                            string iconoPreset = preset.Key switch
+                            {
+                                "navidad" => "🎄",
+                                "verano" => "☀️",
+                                "aurora" => "🌌",
+                                "bosque" => "🌿",
+                                "amanecer" => "🌄",
+                                "oceano" => "🌊",
+                                "anochecer" => "🔮",
+                                "carbon" => "🖤",
+                                _ => "🔵"
+                            };
+                            string activeClass = tema?.PresetNombre == preset.Key ? "active" : "";
+                            <button class="pi-preset-card @activeClass" onclick="aplicarPreset('@preset.Key')">
+                                <span class="pi-preset-emoji">@iconoPreset</span>
+                                <span class="pi-preset-name">@System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(preset.Key)</span>
+                                @if (activeClass == "active")
+                                {
+                                    <span class="pi-preset-check"><i class="fas fa-check"></i></span>
+                                }
+                            </button>
+                        }
+                    </div>
+
+                    <div class="pi-btn-row">
+                        <button class="pi-btn pi-btn-danger" onclick="aplicarPreset('default')">
+                            <i class="fas fa-undo me-1"></i> Restaurar valores por defecto
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @* ═══ SUB-TAB: COLORES ═══ *@
+            <div class="pi-subpanel" id="subtema-colores">
+                <div class="pi-card">
+                    <div class="pi-card-title"><i class="fas fa-droplet"></i> Personalizar colores</div>
+                    <p class="pi-help-text">Estos son los colores más visibles de tu interfaz. Haz clic en el círculo para elegir un color nuevo.</p>
+
+                    @* Modo claro / oscuro como sub-sub-tabs simples *@
+                    <div class="pi-mode-switch">
+                        <button class="pi-mode-btn active" data-mode="light" onclick="switchColorMode('light')">
+                            <i class="fas fa-sun"></i> Modo claro
+                        </button>
+                        <button class="pi-mode-btn" data-mode="dark" onclick="switchColorMode('dark')">
+                            <i class="fas fa-moon"></i> Modo oscuro
+                        </button>
+                    </div>
+
+                    @* ── Colores esenciales (modo claro) ── *@
+                    <div class="pi-color-mode-panel active" id="colormode-light">
+                        <div class="pi-color-grid-simple">
+                            @{
+                                var esencialesLight = camposLight.Where(c =>
+                                    c.Item1 == "primary_blue" || c.Item1 == "accent_blue" ||
+                                    c.Item1 == "bg_light" || c.Item1 == "text_dark");
+                            }
+                            @foreach (var (campo, label, valor) in esencialesLight)
+                            {
+                                <div class="pi-color-field-simple">
+                                    <input type="color" class="color-picker" id="cp_@campo"
+                                           value="@valor" data-campo="@campo" />
+                                    <div class="pi-color-field-info">
+                                        <label>@label</label>
+                                        <input type="text" class="color-hex" id="hex_@campo"
+                                               value="@valor" maxlength="7" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <details class="pi-advanced">
+                            <summary><i class="fas fa-sliders"></i> Más opciones de color (avanzado)</summary>
+                            <div class="pi-color-grid">
+                                @{
+                                    var avanzadosLight = camposLight.Where(c =>
+                                        c.Item1 != "primary_blue" && c.Item1 != "accent_blue" &&
+                                        c.Item1 != "bg_light" && c.Item1 != "text_dark");
+                                }
+                                @foreach (var (campo, label, valor) in avanzadosLight)
+                                {
+                                    <div class="pi-color-field">
+                                        <label>@label</label>
+                                        <div class="pi-color-row">
+                                            <input type="color" class="color-picker" id="cp_@campo"
+                                                   value="@valor" data-campo="@campo" />
+                                            <input type="text" class="color-hex" id="hex_@campo"
+                                                   value="@valor" maxlength="7" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </details>
+                    </div>
+
+                    @* ── Colores (modo oscuro) ── *@
+                    <div class="pi-color-mode-panel" id="colormode-dark">
+                        <div class="pi-color-grid-simple">
+                            @{
+                                var esencialesDark = camposDark.Where(c =>
+                                    c.Item1 == "dark_primary_blue" || c.Item1 == "dark_accent_blue" ||
+                                    c.Item1 == "dark_bg_light" || c.Item1 == "dark_text_dark");
+                            }
+                            @foreach (var (campo, label, valor) in esencialesDark)
+                            {
+                                <div class="pi-color-field-simple">
+                                    <input type="color" class="color-picker" id="cp_@campo"
+                                           value="@valor" data-campo="@campo" />
+                                    <div class="pi-color-field-info">
+                                        <label>@label</label>
+                                        <input type="text" class="color-hex" id="hex_@campo"
+                                               value="@valor" maxlength="7" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <details class="pi-advanced">
+                            <summary><i class="fas fa-sliders"></i> Más opciones de color (avanzado)</summary>
+                            <div class="pi-color-grid">
+                                @{
+                                    var avanzadosDark = camposDark.Where(c =>
+                                        c.Item1 != "dark_primary_blue" && c.Item1 != "dark_accent_blue" &&
+                                        c.Item1 != "dark_bg_light" && c.Item1 != "dark_text_dark");
+                                }
+                                @foreach (var (campo, label, valor) in avanzadosDark)
+                                {
+                                    <div class="pi-color-field">
+                                        <label>@label</label>
+                                        <div class="pi-color-row">
+                                            <input type="color" class="color-picker" id="cp_@campo"
+                                                   value="@valor" data-campo="@campo" />
+                                            <input type="text" class="color-hex" id="hex_@campo"
+                                                   value="@valor" maxlength="7" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="pi-btn-row">
+                        <button class="pi-btn pi-btn-primary" onclick="guardarTema()">
+                            <i class="fas fa-save me-1"></i> Guardar colores
+                        </button>
+                        <button class="pi-btn" onclick="previsualizarTema()">
+                            <i class="fas fa-eye me-1"></i> Previsualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @* ═══ SUB-TAB: EFECTOS (Partículas) ═══ *@
+            <div class="pi-subpanel" id="subtema-efectos">
+                <div class="pi-card">
+                    <div class="pi-card-title"><i class="fas fa-sparkles"></i> Partículas de fondo</div>
+                    <p class="pi-help-text">Agrega un efecto visual animado de fondo en toda la plataforma.</p>
+
+                    <div class="pi-toggle-row">
+                        <label class="pi-toggle-switch">
+                            <input type="checkbox" id="part_activas"
+                            @(tema?.ParticulasActivas == true ? "checked" : "")
+                                   onchange="previewParticulas()" />
+                            <span class="pi-toggle-slider"></span>
+                        </label>
+                        <span class="pi-toggle-label">Activar partículas</span>
+                    </div>
+
+                    <div id="part_opciones" style="@(tema?.ParticulasActivas == true ? "" : "opacity:.4;pointer-events:none;")">
+
+                        <div class="pi-pass-group">
+                            <div class="pi-pass-label">
+                                <i class="fas fa-sort-amount-up"></i> Cantidad
+                                <span id="part_cantidad_val" style="margin-left:6px;font-weight:700;color:var(--accent-blue)">
+                                    @(tema?.ParticulasCantidad ?? 200)
+                                </span>
+                            </div>
+                            <input type="range" id="part_cantidad" min="50" max="500" step="10"
+                                   value="@(tema?.ParticulasCantidad ?? 200)"
+                                   style="width:100%;accent-color:var(--accent-blue)"
+                                   oninput="document.getElementById('part_cantidad_val').textContent=this.value" />
+                        </div>
+
+                        <div class="pi-pass-group">
+                            <div class="pi-pass-label"><i class="fas fa-shapes"></i> Forma</div>
+                            <div style="display:flex;gap:.5rem;flex-wrap:wrap;" id="part_formas">
+                                @foreach (var f in new[] {
+                            ("circle","Círculo","fa-circle"),
+                            ("star","Estrella","fa-star"),
+                            ("triangle","Triángulo","fa-play"),
+                            ("square","Cuadrado","fa-square"),
+                            ("plus","Cruz","fa-plus"),
+                        })
+                                {
+                                    <button type="button"
+                                            class="pi-preset-btn @(tema?.ParticulasForma == f.Item1 ? "active" : "")"
+                                            data-forma="@f.Item1"
+                                            onclick="selectForma(this)">
+                                        <i class="fas @f.Item3"></i> @f.Item2
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="pi-pass-group">
+                            <div class="pi-pass-label"><i class="fas fa-palette"></i> Color de partículas</div>
+                            <div style="display:flex;gap:.5rem;flex-wrap:wrap;" id="part_presets">
+                                @foreach (var p in new[] {
+                            ("theme","🎨 Tema actual"),
+                            ("snow","❄️ Nieve"),
+                            ("fire","🔥 Fuego"),
+                            ("matrix","💚 Matrix"),
+                            ("rainbow","🌈 Arcoíris"),
+                            ("mono","⬜ Monocromático"),
+                        })
+                                {
+                                    <button type="button"
+                                            class="pi-preset-btn @(tema?.ParticulasPreset == p.Item1 ? "active" : "")"
+                                            data-ppreset="@p.Item1"
+                                            onclick="selectPartPreset(this)">
+                                        @p.Item2
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pi-btn-row">
+                        <button class="pi-btn pi-btn-primary" onclick="guardarTema()">
+                            <i class="fas fa-save me-1"></i> Guardar efectos
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @* ═══ SUB-TAB: SIDEBAR ═══ *@
+            @{
+                var sb = tema;
+            }
+            <div class="pi-subpanel" id="subtema-sidebar">
+                <div class="pi-card">
+                    <div class="pi-card-title"><i class="fas fa-table-columns"></i> Barra lateral</div>
+                    <p class="pi-help-text">Ajusta cómo se ve y se comporta el menú lateral.</p>
+
+                    <div class="pi-pass-group" style="margin-bottom:.9rem">
+                        <div class="pi-pass-label"><i class="fas fa-table-cells-large"></i> Tipo de layout</div>
+                        <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="sb_layout_wrap">
+                            @foreach (var lay in new[] {
+                                ("sidebar", "fa-table-columns",   "Barra lateral"),
+                                ("hybrid",  "fa-window-restore",  "Híbrido (header + lateral)"),
+                                ("compact", "fa-ellipsis-vertical","Compacto (iconos)"),
+                                ("topbar",  "fa-window-maximize", "Barra superior")
+                            })
+                            {
+                                <button type="button"
+                                        class="pi-preset-btn @((sb?.LayoutTipo ?? "sidebar") == lay.Item1 ? "active" : "")"
+                                        data-layout="@lay.Item1" onclick="selectLayout(this)">
+                                    <i class="fa-solid @lay.Item2" style="font-size:.9rem"></i> @lay.Item3
+                                </button>
+                            }
+                        </div>
+                        <p class="pi-help-text" style="margin-top:.4rem">
+                            El cambio de layout se aplica al <strong>guardar</strong> (la página se recarga).
+                        </p>
+                    </div>
+
+                    <div class="pi-color-grid">
+                        <div class="pi-color-field">
+                            <label><i class="fas fa-arrows-left-right"></i> Posición</label>
+                            <div style="display:flex;gap:.5rem" id="sb_posicion_wrap">
+                                @foreach (var pos in new[] { ("left", "← Izquierda"), ("right", "Derecha →") })
+                                {
+                                    <button type="button"
+                                            class="pi-preset-btn @(sb?.SidebarPosicion == pos.Item1 ? "active" : "")"
+                                            data-sbpos="@pos.Item1" onclick="selectSbPos(this)">
+                                        @pos.Item2
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="pi-color-field">
+                            <label><i class="fas fa-list"></i> Modo de visualización</label>
+                            <div style="display:flex;gap:.5rem" id="sb_modo_wrap">
+                                @foreach (var m in new[] { ("normal", "📋 Normal"), ("iconos", "🔲 Solo iconos") })
+                                {
+                                    <button type="button"
+                                            class="pi-preset-btn @(sb?.SidebarModo == m.Item1 ? "active" : "")"
+                                            data-sbmodo="@m.Item1" onclick="selectSbModo(this)">
+                                        @m.Item2
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pi-pass-group" style="margin-top:.9rem">
+                        <div class="pi-pass-label">
+                            <i class="fas fa-ruler-horizontal"></i> Ancho
+                            <span id="sb_ancho_val" style="margin-left:6px;font-weight:700;color:var(--accent-blue)">
+                                @(sb?.SidebarAncho ?? "285")px
+                            </span>
+                        </div>
+                        <input type="range" id="sb_ancho" min="220" max="400" step="5" value="@(sb?.SidebarAncho ?? "285")" style="width:100%;accent-color:var(--accent-blue)" oninput="document.getElementById('sb_ancho_val').textContent=this.value+'px'; previewSb()" />
+                    </div>
+
+                    <details class="pi-advanced">
+                        <summary><i class="fas fa-sliders"></i> Iconos, animaciones y colores (avanzado)</summary>
+
+                        <div class="pi-pass-group" style="margin-top:.9rem">
+                            <div class="pi-pass-label"><i class="fas fa-icons"></i> Estilo de íconos</div>
+                            <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="sb_icon_wrap">
+                                @foreach (var est in new[] {
+                            ("duotone","fa-duotone","Duotone"),
+                            ("solid","fa-solid","Solid"),
+                            ("regular","fa-regular","Regular"),
+                            ("light","fa-light","Light")
+                        })
+                                {
+                                    <button type="button"
+                                            class="pi-preset-btn @(sb?.SidebarIconStyle == est.Item1 ? "active" : "")"
+                                            data-sbicon="@est.Item1" onclick="selectSbIcon(this)">
+                                        <i class="@est.Item2 fa-house" style="font-size:.9rem"></i> @est.Item3
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="pi-pass-group" style="margin-top:.9rem">
+                            <div class="pi-pass-label"><i class="fas fa-wand-magic-sparkles"></i> Efecto hover</div>
+                            <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="sb_hover_wrap">
+                                @foreach (var ef in new[] {
+                            ("slide","↔ Slide"),
+                            ("glow","✨ Glow"),
+                            ("fill","▣ Fill"),
+                            ("none","— Ninguno")
+                        })
+                                {
+                                    <button type="button"
+                                            class="pi-preset-btn @(sb?.SidebarHoverEfecto == ef.Item1 ? "active" : "")"
+                                            data-sbhover="@ef.Item1" onclick="selectSbHover(this)">
+                                        @ef.Item2
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="pi-color-grid" style="margin-top:.9rem">
+                            @foreach (var (campo, label, valor) in new[] {
+                        ("sb_bg_color",          "Fondo",              sb?.SidebarBgColor         ?? "#ffffff"),
+                        ("sb_link_color",        "Links",              sb?.SidebarLinkColor       ?? "#64748b"),
+                        ("sb_active_color",      "Fondo activo",       sb?.SidebarActiveColor     ?? "#e1e7ef"),
+                        ("sb_active_link_color", "Texto activo",       sb?.SidebarActiveLinkColor ?? "#0f1729"),
+                        ("sb_header_bg",         "Header (color base)",sb?.SidebarHeaderBg        ?? "#1e3a5f"),
+                    })
+                            {
+                                <div class="pi-color-field">
+                                    <label>@label</label>
+                                    <div class="pi-color-row">
+                                        <input type="color" class="color-picker-sb" id="cp_@campo" value="@valor" data-campo="@campo" />
+                                        <input type="text" class="color-hex-sb" id="hex_@campo" value="@valor" maxlength="7" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </details>
+
+                    <div class="pi-btn-row">
+                        <button class="pi-btn pi-btn-primary" onclick="guardarSidebar()">
+                            <i class="fas fa-save me-1"></i> Guardar barra lateral
+                        </button>
+                        <button class="pi-btn" onclick="previewSb()">
+                            <i class="fas fa-eye me-1"></i> Previsualizar
+                        </button>
+                        <button class="pi-btn pi-btn-danger" onclick="resetSidebar()">
+                            <i class="fas fa-undo me-1"></i> Restaurar defecto
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    @* /perfil-tabs-wrap*@
+
+
+
+    @* Modal acciones rápidas (sin cambios)*@
+
+    @{
+        var accionesDisponibles = ViewBag.AccionesDisponibles as List<AccionRapida>;
+        var accionesUsuario = ViewBag.AccionesUsuario as List<AccionRapida>;
+    }
+    <div class="modal fade" id="modalAcciones" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form method="post" action="/Account/GuardarAcciones">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Selecciona tus acciones rápidas</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="acciones-grid">
+                            @foreach (var accion in accionesDisponibles)
+                            {
+                                var isChecked = accionesUsuario.Any(a => a.Id == accion.Id);
+                                <div class="accion-card @(isChecked ? "selected" : "")" onclick="toggleAccion(this)">
+                                    <div class="accion-card-content">
+                                        <div class="accion-icon"><i class="@accion.Icono"></i></div>
+                                        <div class="accion-title">@accion.Nombre</div>
+                                        <div class="accion-description">@accion.Descripcion</div>
+                                        <div class="form-check">
+                                            <label class="form-check-label" for="accion_@accion.Id">Seleccionar acción</label>
+                                            <input class="form-check-input" type="checkbox" name="accionesSeleccionadas" value="@accion.Id" id="accion_@accion.Id" @(isChecked ? "checked" : "") />
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Guardar Selección
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+@* /perfil-page*@
+
+
+@section scripts {
+    <script src="~/lib/signature_pad/signature_pad.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        /* ── Tabs ───────────────────────────────────────────────────────── */
+        function switchTab(name) {
+            document.querySelectorAll('.perfil-tab').forEach(t =>
+                t.classList.toggle('active', t.dataset.tab === name));
+            document.querySelectorAll('.perfil-panel').forEach(p =>
+                p.classList.toggle('active', p.id === 'panel-' + name));
+        }
+
+        /* ── Toggle password ────────────────────────────────────────────── */
+        document.querySelectorAll('.toggle-pass').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const input = document.getElementById(this.getAttribute('data-target'));
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.replace('fa-eye', 'fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.replace('fa-eye-slash', 'fa-eye');
+                }
+            });
+        });
+
+        /* ── Gráfica de actividad ───────────────────────────────────────── */
+        (function buildChart() {
+            const rawData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.ActividadGrafica));
+
+            if (!rawData || rawData.length === 0) {
+                const wrap = document.querySelector('.pi-chart-wrap');
+                if (wrap) wrap.innerHTML =
+                    '<p class="text-muted text-center mt-4" style="font-size:.82rem">Sin actividad registrada en los últimos 14 días.</p>';
+                return;
+            }
+
+            const totalesPorDia = {};
+            rawData.forEach(r => {
+                const dia = r.dia ? r.dia.substring(0, 10) : '?';
+                totalesPorDia[dia] = (totalesPorDia[dia] || 0) + parseInt(r.total || 0);
+            });
+
+            const labels = Object.keys(totalesPorDia).sort();
+            const valores = labels.map(d => totalesPorDia[d]);
+            const labelsX = labels.map(d => { const [, m, day] = d.split('-'); return `${day}/${m}`; });
+
+            const ctx = document.getElementById('chartActividad').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labelsX,
+                    datasets: [{
+                        label: 'Acciones',
+                        data: valores,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 0.85)',
+                        borderWidth: 1.5,
+                        borderRadius: 5,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: items => `Día: ${items[0].label}`,
+                                label: item => ` ${item.raw} acciones`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0, font: { size: 11 } },
+                            grid: { color: 'rgba(0,0,0,0.04)' }
+                        }
+                    }
+                }
+            });
+        })();
+
+        /* ── Cambiar contraseña ─────────────────────────────────────────── */
+        function guardarNuevaContrasena() {
+            const contrasenaActual = document.getElementById('contrasenaActual').value;
+            const nuevaContrasena = document.getElementById('nuevaContrasena').value;
+            const confirmarContrasena = document.getElementById('confirmarContrasena').value;
+
+            if (!contrasenaActual || !nuevaContrasena || !confirmarContrasena) {
+                _Swal.fire({
+                    icon: 'warning', title: 'Campos incompletos',
+                    text: 'Por favor completa todos los campos antes de continuar.'
+                });
+                return;
+            }
+            if (nuevaContrasena.length < 6) {
+                _Swal.fire({
+                    icon: 'warning', title: 'Contraseña muy corta',
+                    text: 'La nueva contraseña debe tener al menos 6 caracteres.'
+                });
+                return;
+            }
+            if (nuevaContrasena !== confirmarContrasena) {
+                _Swal.fire({
+                    icon: 'error', title: 'Las contraseñas no coinciden',
+                    text: 'Verifica que la nueva contraseña y su confirmación sean iguales.'
+                });
+                return;
+            }
+            if (contrasenaActual === nuevaContrasena) {
+                _Swal.fire({
+                    icon: 'info', title: 'Contraseña idéntica',
+                    text: 'La nueva contraseña no puede ser igual a la actual.'
+                });
+                return;
+            }
+
+            _Swal.fire({
+                icon: 'question', title: '¿Cambiar contraseña?',
+                text: 'Estás a punto de actualizar tu contraseña.',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-lock me-1"></i> Sí, cambiar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33'
+            }).then(result => {
+                if (!result.isConfirmed) return;
+
+                _Swal.fire({
+                    title: 'Actualizando...', allowOutsideClick: false,
+                    allowEscapeKey: false, showConfirmButton: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                GetData({
+                    path: '/Perfil/CambiarContrasena',
+                    data: { contrasenaActual, nuevaContrasena, confirmarContrasena }
+                })
+                    .then(res => {
+                        if (res.success) {
+                            ['contrasenaActual', 'nuevaContrasena', 'confirmarContrasena']
+                                .forEach(id => document.getElementById(id).value = '');
+                            _Swal.fire({
+                                icon: 'success', title: '¡Contraseña actualizada!',
+                                timer: 3000, timerProgressBar: true
+                            });
+                        } else {
+                            _Swal.fire({
+                                icon: 'error', title: 'No se pudo actualizar',
+                                text: res.message || 'Ocurrió un error, intenta nuevamente.'
+                            });
+                        }
+                    }).catch(() => {
+                        _Swal.fire({
+                            icon: 'error', title: 'Error inesperado',
+                            text: 'No se pudo conectar con el servidor.'
+                        });
+                    });
+            });
+        }
+
+        /* ── Cerrar sesión individual ───────────────────────────────────── */
+        function cerrarSesion(deviceId) {
+            _Swal.fire({
+                icon: 'warning', title: 'Cerrar sesión',
+                text: '¿Deseas cerrar esta sesión remota?',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cerrar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc2626'
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                GetData({ path: '/Account/CerrarSesion', data: { deviceId } })
+                    .then(res => {
+                        if (res.success) toastMixinReload({ icon: 'success', title: 'Sesión cerrada' });
+                        else _Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                    });
+            });
+        }
+
+        /* ── Cerrar todas las otras sesiones ────────────────────────────── */
+        function cerrarTodasSesiones() {
+            _Swal.fire({
+                icon: 'warning', title: 'Cerrar todas las otras sesiones',
+                text: 'Se cerrarán todas las sesiones excepto la actual.',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cerrar todas',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc2626'
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                GetData({ path: '/Account/CerrarTodasSesiones', data: {} })
+                    .then(res => {
+                        if (res.success) toastMixinReload({ icon: 'success', title: 'Sesiones cerradas' });
+                        else _Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                    });
+            });
+        }
+
+        /* ── Firma digital ──────────────────────────────────────────────── */
+        function changeSignature() {
+            const firma = '@Context.Session.GetString("Firma")';
+
+            if (!firma || firma === 'null' || firma.trim() === '') {
+                _Swal.fire({
+                    icon: 'warning', title: 'Sin firma registrada',
+                    text: 'No se encontró una firma registrada.',
+                    confirmButtonText: 'Agregar firma',
+                    showCancelButton: true, cancelButtonText: 'Cancelar'
+                }).then(r => { if (r.isConfirmed) abrirFirma(); });
+            } else {
+                _Swal.fire({
+                    title: 'Tu firma actual',
+                    html: `<img src="${firma}" alt="Firma" style="max-width:100%;border:1px solid #e2e8f0;border-radius:.5rem" />`,
+                    confirmButtonText: 'Actualizar firma',
+                    showCancelButton: true, cancelButtonText: 'Cancelar'
+                }).then(r => { if (r.isConfirmed) abrirFirma(); });
+            }
+
+            function abrirFirma() {
+                _Swal.fire({
+                    title: 'Dibuja tu firma',
+                    html: `<canvas id="signature-pad" width="400" height="200"
+                        style="border:1px solid #e2e8f0;border-radius:.5rem;touch-action:none"></canvas>
+                        <div style="margin-top:10px">
+                        <button id="clearBtn" class="btn btn-sm btn-outline-secondary">Limpiar</button>
+                        </div>`,
+                    confirmButtonText: 'Guardar firma',
+                    showCancelButton: true, cancelButtonText: 'Cancelar',
+                    didOpen: () => {
+                        const canvas = document.getElementById('signature-pad');
+                        const sp = new SignaturePad(canvas, {
+                            penColor: 'rgb(0,0,0)', minWidth: 0.5, maxWidth: 1.0
+                        });
+                        document.getElementById('clearBtn').addEventListener('click', () => sp.clear());
+                        Swal.__signaturePad = sp;
+                    },
+                    preConfirm: () => {
+                        const sp = Swal.__signaturePad;
+                        if (sp.isEmpty()) {
+                            Swal.showValidationMessage('Por favor dibuja tu firma.');
+                            return false;
+                        }
+                        return sp.toDataURL('image/png', 0.5);
+                    }
+                }).then(result => {
+                    if (!result.isConfirmed || !result.value) return;
+                    _Swal.fire({
+                        title: 'Guardando firma...', allowOutsideClick: false,
+                        showConfirmButton: false, didOpen: () => Swal.showLoading()
+                    });
+                    GetData({ path: '/Account/ActualizarFirma', data: { firma: result.value } })
+                        .then(res => {
+                            if (res.success) toastMixinReload({ icon: 'success', title: 'Firma actualizada' });
+                            else _Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                        });
+                });
+            }
+        }
+
+        /* ── Color pickers (tema) ───────────────────────────────────────── */
+        const campoACssVar = {
+            primary_blue: '--primary-blue',
+            primary_blue_hover: '--primary-blue-dark',
+            secondary_blue: '--secondary-blue',
+            light_blue: '--light-blue',
+            very_light_blue: '--very-light-blue',
+            dark_blue_light: '--dark-blue',
+            accent_blue: '--accent-blue',
+            bg_light: '--bg-light',
+            bg_gray: '--bg-gray',
+            text_dark: '--text-dark',
+            text_light: '--text-light',
+            border_light: '--border-light',
+        };
+
+        const campoDarkACssVar = {
+            dark_primary_blue: '--primary-blue',
+            dark_blue_hover: '--primary-blue-dark',
+            dark_secondary_blue: '--secondary-blue',
+            dark_light_blue: '--light-blue',
+            dark_very_light_blue: '--very-light-blue',
+            dark_dark_blue: '--dark-blue',
+            dark_accent_blue: '--accent-blue',
+            dark_bg_light: '--bg-light',
+            dark_bg_gray: '--bg-gray',
+            dark_text_dark: '--text-dark',
+            dark_text_light: '--text-light',
+            dark_border_light: '--border-light',
+        };
+
+        document.querySelectorAll('.color-picker').forEach(picker => {
+            const hexInput = document.getElementById('hex_' + picker.dataset.campo);
+            picker.addEventListener('input', () => {
+                hexInput.value = picker.value;
+                previsualizarColor(picker.dataset.campo, picker.value);
+            });
+            hexInput.addEventListener('input', () => {
+                if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+                    picker.value = hexInput.value;
+                    previsualizarColor(picker.dataset.campo, hexInput.value);
+                }
+            });
+        });
+
+        function previsualizarColor(campo, valor) {
+            const isDark = campo.startsWith('dark_');
+            if (!isDark) {
+                const cssVar = campoACssVar[campo];
+                if (cssVar) document.documentElement.style.setProperty(cssVar, valor);
+            } else {
+                const cssVar = campoDarkACssVar[campo];
+                if (cssVar && document.documentElement.getAttribute('data-theme') === 'dark')
+                    document.documentElement.style.setProperty(cssVar, valor);
+            }
+        }
+
+        function previsualizarTema() {
+            document.querySelectorAll('.color-picker').forEach(p =>
+                previsualizarColor(p.dataset.campo, p.value));
+            toastMixin.fire({ icon: 'info', title: 'Previsualización activa — guarda para conservar los cambios' });
+        }
+
+        function recolectarTema() {
+            return {
+                modo: document.documentElement.getAttribute('data-theme') || 'light',
+                // Light
+                primaryBlue: document.getElementById('hex_primary_blue').value,
+                primaryBlueHover: document.getElementById('hex_primary_blue_hover').value,
+                secondaryBlue: document.getElementById('hex_secondary_blue').value,
+                lightBlue: document.getElementById('hex_light_blue').value,
+                veryLightBlue: document.getElementById('hex_very_light_blue').value,
+                darkBlueLight: document.getElementById('hex_dark_blue_light').value,
+                accentBlue: document.getElementById('hex_accent_blue').value,
+                bgLight: document.getElementById('hex_bg_light').value,
+                bgGray: document.getElementById('hex_bg_gray').value,
+                textDark: document.getElementById('hex_text_dark').value,
+                textLight: document.getElementById('hex_text_light').value,
+                borderLight: document.getElementById('hex_border_light').value,
+                // Dark
+                darkPrimaryBlue: document.getElementById('hex_dark_primary_blue').value,
+                darkBlueHover: document.getElementById('hex_dark_blue_hover').value,
+                darkSecondaryBlue: document.getElementById('hex_dark_secondary_blue').value,
+                darkLightBlue: document.getElementById('hex_dark_light_blue').value,
+                darkVeryLightBlue: document.getElementById('hex_dark_very_light_blue').value,
+                darkDarkBlue: document.getElementById('hex_dark_dark_blue').value,
+                darkAccentBlue: document.getElementById('hex_dark_accent_blue').value,
+                darkBgLight: document.getElementById('hex_dark_bg_light').value,
+                darkBgGray: document.getElementById('hex_dark_bg_gray').value,
+                darkTextDark: document.getElementById('hex_dark_text_dark').value,
+                darkTextLight: document.getElementById('hex_dark_text_light').value,
+                darkBorderLight: document.getElementById('hex_dark_border_light').value,
+
+                particulasActivas: document.getElementById('part_activas').checked,
+                particulasCantidad: parseInt(document.getElementById('part_cantidad').value),
+                particulasForma: document.querySelector('#part_formas .active')?.dataset.forma ?? 'circle',
+                particulasPreset: document.querySelector('#part_presets .active')?.dataset.ppreset ?? 'theme',
+                presetNombre: null
+            };
+        }
+        function selectForma(btn) {
+            document.querySelectorAll('#part_formas .pi-preset-btn')
+                .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function selectPartPreset(btn) {
+            document.querySelectorAll('#part_presets .pi-preset-btn')
+                .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        function guardarTema() {
+            const tema = recolectarTema();
+
+            // Solo validar las propiedades que son colores hex
+            const camposColor = [
+                'primaryBlue', 'primaryBlueHover', 'secondaryBlue', 'lightBlue', 'veryLightBlue',
+                'darkBlueLight', 'accentBlue', 'bgLight', 'bgGray', 'textDark', 'textLight', 'borderLight',
+                'darkPrimaryBlue', 'darkBlueHover', 'darkSecondaryBlue', 'darkLightBlue', 'darkVeryLightBlue',
+                'darkDarkBlue', 'darkAccentBlue', 'darkBgLight', 'darkBgGray', 'darkTextDark', 'darkTextLight', 'darkBorderLight'
+            ];
+
+            const invalidos = camposColor.filter(k => {
+                const v = tema[k];
+                return v && !/^#[0-9A-Fa-f]{6}$/.test(v);
+            });
+
+            if (invalidos.length > 0) {
+                _Swal.fire({
+                    icon: 'warning', title: 'Color inválido',
+                    text: 'Todos los colores deben estar en formato #RRGGBB'
+                });
+                return;
+            }
+            GetData({ path: '/Account/GuardarTema', data: tema })
+                .then(res => {
+                    if (res.success) toastMixinReload({ icon: 'success', title: 'Tema guardado correctamente' });
+                    else _Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                });
+        }
+
+        function aplicarPreset(nombre) {
+            _Swal.fire({
+                icon: 'question', title: `¿Aplicar tema "${nombre}"?`,
+                showCancelButton: true, confirmButtonText: 'Sí, aplicar'
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                GetData({ path: '/Account/AplicarPreset', data: { preset: nombre } })
+                    .then(res => {
+                        if (res.success) toastMixinReload({ icon: 'success', title: 'Tema aplicado' });
+                        else _Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                    });
+            });
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+        SIDEBAR PERSONALIZACIÓN
+        ══════════════════════════════════════════════════════════════ */
+
+        // Color pickers sidebar
+        document.querySelectorAll('.color-picker-sb').forEach(picker => {
+            const hexInput = document.getElementById('hex_' + picker.dataset.campo);
+            picker.addEventListener('input', () => {
+                hexInput.value = picker.value;
+                previewSb();
+            });
+            hexInput.addEventListener('input', () => {
+                if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+                    picker.value = hexInput.value;
+                    previewSb();
+                }
+            });
+        });
+
+        function selectSbPos(btn) {
+            document.querySelectorAll('#sb_posicion_wrap .pi-preset-btn')
+                .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            previewSb();
+        }
+
+        function selectSbIcon(btn) {
+            document.querySelectorAll('#sb_icon_wrap .pi-preset-btn')
+                .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            previewSb();
+        }
+
+        function selectSbHover(btn) {
+            document.querySelectorAll('#sb_hover_wrap .pi-preset-btn')
+                .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            previewSb();
+        }
+
+        function selectLayout(btn) {
+            document.querySelectorAll('#sb_layout_wrap .pi-preset-btn')
+                .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // El layout no se previsualiza en vivo: se aplica al guardar (recarga).
+        }
+
+        function recolectarSidebar() {
+            return {
+                layoutTipo: document.querySelector('#sb_layout_wrap .active')?.dataset.layout ?? 'sidebar',
+                sidebarPosicion: document.querySelector('#sb_posicion_wrap .active')?.dataset.sbpos ?? 'left',
+                sidebarAncho: document.getElementById('sb_ancho').value,
+                sidebarIconStyle: document.querySelector('#sb_icon_wrap .active')?.dataset.sbicon ?? 'duotone',
+                sidebarHoverEfecto: document.querySelector('#sb_hover_wrap .active')?.dataset.sbhover ?? 'slide',
+                sidebarModo: document.querySelector('#sb_modo_wrap .active')?.dataset.sbmodo ?? 'normal',
+                sidebarBgColor: document.getElementById('hex_sb_bg_color').value,
+                sidebarLinkColor: document.getElementById('hex_sb_link_color').value,
+                sidebarActiveColor: document.getElementById('hex_sb_active_color').value,
+                sidebarActiveLinkColor: document.getElementById('hex_sb_active_link_color').value,
+                sidebarHeaderBg: document.getElementById('hex_sb_header_bg').value,
+            };
+        }
+
+        function previewSb() {
+            const sb = recolectarSidebar();
+            const root = document.documentElement;
+            const sidebarEl = document.getElementById('sidebar');
+            sidebarEl.classList.toggle('icon-mode', sb.sidebarModo === 'iconos');
+            document.body.classList.toggle('sb-icon-mode', sb.sidebarModo === 'iconos');
+            // Ancho
+            root.style.setProperty('--sb-width', sb.sidebarAncho + 'px');
+
+            // Colores
+            if (/^#[0-9A-Fa-f]{6}$/.test(sb.sidebarBgColor))
+                root.style.setProperty('--sb-bg', sb.sidebarBgColor);
+            if (/^#[0-9A-Fa-f]{6}$/.test(sb.sidebarLinkColor))
+                root.style.setProperty('--sb-link-color', sb.sidebarLinkColor);
+            if (/^#[0-9A-Fa-f]{6}$/.test(sb.sidebarActiveColor))
+                root.style.setProperty('--sb-active-bg', sb.sidebarActiveColor);
+            if (/^#[0-9A-Fa-f]{6}$/.test(sb.sidebarActiveLinkColor))
+                root.style.setProperty('--sb-active-color', sb.sidebarActiveLinkColor);
+            if (/^#[0-9A-Fa-f]{6}$/.test(sb.sidebarHeaderBg))
+                root.style.setProperty('--sb-header-bg', sb.sidebarHeaderBg);
+
+            // Posición
+            const isRight = sb.sidebarPosicion === 'right';
+            sidebarEl.classList.toggle('sb-right', isRight);
+            document.body.classList.toggle('sb-right-mode', isRight);
+
+            // 👇 esto es lo que faltaba — resincronizar el layout del header/main
+            if (typeof applyLayout === 'function') {
+                applyLayout(sidebarEl.classList.contains('collapsed'));
+            }
+
+
+            // Hover effect: quita clases anteriores, añade la nueva
+            ['sb-hover-slide', 'sb-hover-glow', 'sb-hover-fill', 'sb-hover-none'].forEach(c =>
+                sidebar.classList.remove(c));
+            sidebar.classList.add('sb-hover-' + sb.sidebarHoverEfecto);
+
+            // Estilo de íconos: reemplaza fa-duotone/fa-solid/etc en todos los íconos del sidebar
+            sidebar.querySelectorAll('i[class*="fa-"]').forEach(ico => {
+                ['fa-duotone', 'fa-solid', 'fa-regular', 'fa-light'].forEach(s => ico.classList.remove(s));
+                ico.classList.add('fa-' + sb.sidebarIconStyle);
+            });
+        }
+
+        function guardarSidebar() {
+            const data = { ...recolectarSidebar(), ...recolectarTema() }; // manda todo junto
+            GetData({ path: '/Account/GuardarTema', data })
+                .then(res => {
+                    if (res.success) toastMixinReload({ icon: 'success', title: 'Sidebar guardado' });
+                    else _Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                });
+        }
+
+        function selectSbModo(btn) {
+            document.querySelectorAll('#sb_modo_wrap .pi-preset-btn')
+                .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            previewSb();
+        }
+
+        function resetSidebar() {
+            _Swal.fire({
+                icon: 'question', title: '¿Restaurar sidebar por defecto?',
+                showCancelButton: true, confirmButtonText: 'Sí, restaurar'
+            }).then(r => {
+                if (!r.isConfirmed) return;
+                // Devuelve a defaults
+                document.getElementById('sb_ancho').value = '285';
+                document.getElementById('sb_ancho_val').textContent = '285px';
+                document.getElementById('hex_sb_bg_color').value = '#ffffff';
+                document.getElementById('cp_sb_bg_color').value = '#ffffff';
+                document.getElementById('hex_sb_link_color').value = '#64748b';
+                document.getElementById('cp_sb_link_color').value = '#64748b';
+                document.getElementById('hex_sb_active_color').value = '#e1e7ef';
+                document.getElementById('cp_sb_active_color').value = '#e1e7ef';
+                document.getElementById('hex_sb_active_link_color').value = '#0f1729';
+                document.getElementById('cp_sb_active_link_color').value = '#0f1729';
+                document.getElementById('hex_sb_header_bg').value = '#1e3a5f';
+                document.getElementById('cp_sb_header_bg').value = '#1e3a5f';
+
+                document.querySelector('[data-sbpos="left"]')?.classList.add('active');
+                document.querySelector('[data-sbpos="right"]')?.classList.remove('active');
+                document.querySelector('[data-sbicon="duotone"]')?.classList.add('active');
+                document.querySelector('[data-sbhover="slide"]')?.classList.add('active');
+
+                previewSb();
+                guardarSidebar();
+            });
+        }
+
+        /* ── Sub-tabs de Apariencia ─────────────────────────────────────── */
+        function switchSubTab(name) {
+            document.querySelectorAll('.pi-subtab').forEach(t =>
+                t.classList.toggle('active', t.dataset.subtab === name));
+            document.querySelectorAll('.pi-subpanel').forEach(p =>
+                p.classList.toggle('active', p.id === 'subtema-' + name));
+        }
+
+        /* ── Switch modo claro/oscuro dentro de Colores ────────────────── */
+        function switchColorMode(mode) {
+            document.querySelectorAll('.pi-mode-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.mode === mode));
+            document.querySelectorAll('.pi-color-mode-panel').forEach(p =>
+                p.classList.toggle('active', p.id === 'colormode-' + mode));
+        }
+
+        /* ── Habilitar/deshabilitar opciones de partículas según switch ── */
+        document.getElementById('part_activas')?.addEventListener('change', function () {
+            const opciones = document.getElementById('part_opciones');
+            opciones.style.opacity = this.checked ? '1' : '.4';
+            opciones.style.pointerEvents = this.checked ? 'auto' : 'none';
+        });
+
+    </script>
+}

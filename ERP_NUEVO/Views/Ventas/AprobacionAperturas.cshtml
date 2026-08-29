@@ -1,0 +1,669 @@
+﻿@{
+    ViewBag.Title = "Aprobación de Aperturas de Caja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <style>
+    .approval-header {
+        background: linear-gradient(135deg, var(--warning-color) 0%, #b45309 100%);
+        color: white;
+        padding: 28px 32px;
+        border-radius: 14px;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        box-shadow: 0 4px 24px rgba(217,119,6,0.25);
+    }
+    .approval-header h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .approval-header p { margin: 4px 0 0; opacity: .85; font-size: .95rem; }
+
+    .badge-count {
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        border-radius: 50px;
+        padding: 8px 20px;
+        font-size: 1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .badge-count .dot {
+        width: 10px; height: 10px;
+        background: #fff;
+        border-radius: 50%;
+        animation: pulse-dot 1.4s infinite;
+    }
+    @@keyframes pulse-dot {
+        0%,100% { opacity:1; transform:scale(1); }
+        50%      { opacity:.4; transform:scale(.7); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 72px 24px;
+        background: var(--bg-light);
+        border-radius: 16px;
+        border: 2px dashed var(--border-light);
+    }
+    .empty-state .icon-wrap {
+        width: 80px; height: 80px;
+        background: #d1fae5;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: var(--success-color);
+        margin-bottom: 20px;
+    }
+    .empty-state h5 { color: var(--text-dark); font-weight: 700; margin-bottom: 8px; }
+    .empty-state p  { color: var(--text-light); margin: 0; }
+
+    .solicitud-card {
+        background: var(--bg-light);
+        border-radius: 16px;
+        border: 2px solid var(--border-light);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        margin-bottom: 24px;
+        transition: box-shadow .2s, border-color .2s;
+        animation: slideIn .35s cubic-bezier(.4,0,.2,1) both;
+    }
+    .solicitud-card:hover {
+        box-shadow: var(--shadow-lg);
+        border-color: var(--warning-color);
+    }
+    @@keyframes slideIn {
+        from { opacity:0; transform:translateY(18px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+
+    .card-strip {
+        background: linear-gradient(90deg, #fef3c7 0%, #fffbeb 100%);
+        border-bottom: 2px solid #fde68a;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    [data-theme="dark"] .card-strip {
+        background: linear-gradient(90deg, #451a03 0%, #292524 100%);
+        border-bottom-color: #78350f;
+    }
+    .strip-icon {
+        width: 42px; height: 42px;
+        background: linear-gradient(135deg, var(--warning-color), #b45309);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(217,119,6,.3);
+    }
+    .strip-title {
+        flex: 1;
+        min-width: 160px;
+    }
+    .strip-title h5 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+    .strip-title span {
+        font-size: .8rem;
+        color: var(--text-light);
+    }
+    .strip-badge {
+        background: linear-gradient(135deg, var(--warning-color), #b45309);
+        color: white;
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: .5px;
+        white-space: nowrap;
+    }
+
+    .card-body-custom { padding: 20px 24px; }
+
+    .info-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .chip {
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 140px;
+    }
+    .chip-icon {
+        width: 34px; height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .9rem;
+        flex-shrink: 0;
+    }
+    .chip-icon.blue  { background: #dbeafe; color: var(--accent-blue); }
+    .chip-icon.green { background: #d1fae5; color: var(--success-color); }
+    .chip-icon.amber { background: #fef3c7; color: var(--warning-color); }
+    [data-theme="dark"] .chip-icon.blue  { background: #1e3a5f; color: #93c5fd; }
+    [data-theme="dark"] .chip-icon.green { background: #064e3b; color: #6ee7b7; }
+    [data-theme="dark"] .chip-icon.amber { background: #451a03; color: #fcd34d; }
+    .chip-label { font-size: .72rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .chip-value { font-size: .95rem; font-weight: 700; color: var(--text-dark); margin-top: 1px; }
+
+    .desglose-toggle {
+        background: none;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 9px 16px;
+        width: 100%;
+        text-align: left;
+        color: var(--text-dark);
+        font-weight: 600;
+        font-size: .88rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: background .15s, border-color .15s;
+        margin-bottom: 0;
+    }
+    .desglose-toggle:hover {
+        background: var(--bg-gray);
+        border-color: var(--accent-blue);
+    }
+    .desglose-toggle .chevron {
+        transition: transform .2s;
+        color: var(--text-light);
+    }
+    .desglose-toggle.open .chevron { transform: rotate(180deg); }
+    .desglose-body {
+        display: none;
+        border: 1px solid var(--border-light);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        overflow: hidden;
+        margin-bottom: 16px;
+    }
+    .desglose-body.open { display: block; }
+    .desglose-body table { margin: 0; }
+    .desglose-body thead th {
+        background: var(--bg-gray);
+        color: var(--text-light);
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        border-bottom: 1px solid var(--border-light);
+        padding: 8px 12px;
+    }
+    .desglose-body tbody td { padding: 8px 12px; font-size: .88rem; color: var(--text-dark); }
+    .desglose-body tfoot td {
+        background: #f0fdf4;
+        font-weight: 700;
+        font-size: .9rem;
+        padding: 9px 12px;
+        border-top: 2px solid #bbf7d0;
+        color: var(--success-color);
+    }
+    [data-theme="dark"] .desglose-body tfoot td { background: #064e3b; border-top-color: #065f46; }
+
+    .card-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        padding: 16px 24px;
+        border-top: 1px solid var(--border-light);
+        background: var(--bg-gray);
+    }
+    .btn-aprobar {
+        background: linear-gradient(135deg, var(--success-color), #047857);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 10px 28px;
+        font-weight: 700;
+        font-size: .88rem;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform .18s, box-shadow .18s;
+        cursor: pointer;
+    }
+    .btn-aprobar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(5,150,105,.35);
+    }
+    .btn-rechazar {
+        background: white;
+        color: var(--danger-color);
+        border: 2px solid var(--danger-color);
+        border-radius: 50px;
+        padding: 10px 28px;
+        font-weight: 700;
+        font-size: .88rem;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background .18s, color .18s, transform .18s;
+        cursor: pointer;
+    }
+    .btn-rechazar:hover {
+        background: var(--danger-color);
+        color: white;
+        transform: translateY(-2px);
+    }
+    [data-theme="dark"] .btn-rechazar { background: transparent; }
+
+    .card-resolved {
+        position: relative;
+        overflow: hidden;
+    }
+    .card-resolved::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(255,255,255,.6);
+        backdrop-filter: blur(2px);
+        border-radius: 14px;
+        z-index: 5;
+        pointer-events: none;
+    }
+    [data-theme="dark"] .card-resolved::after { background: rgba(15,23,42,.6); }
+
+    .modal-content {
+        border-radius: 16px;
+        border: none;
+        box-shadow: var(--shadow-lg);
+        background: var(--bg-light);
+    }
+    .modal-header {
+        background: linear-gradient(90deg, #fef3c7, #fffbeb);
+        border-bottom: 1px solid #fde68a;
+        border-radius: 16px 16px 0 0;
+        padding: 18px 24px;
+    }
+    [data-theme="dark"] .modal-header { background: #1e293b; border-bottom-color: #334155; }
+    .modal-title { font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 10px; }
+    .modal-body  { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border-light); }
+    .modal-textarea {
+        width: 100%;
+        border: 2px solid var(--border-light);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: .95rem;
+        color: var(--text-dark);
+        background: var(--bg-gray);
+        resize: vertical;
+        min-height: 100px;
+        transition: border-color .15s;
+    }
+    .modal-textarea:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+
+    .last-updated {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .78rem;
+        color: var(--text-light);
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 20px;
+        padding: 4px 12px;
+        margin-bottom: 16px;
+    }
+    .last-updated .spinner-grow {
+        width: 8px; height: 8px;
+        color: var(--success-color);
+    }
+    </style>
+}
+
+<div class="approval-header">
+    <div>
+        <h1><i class="fas fa-shield-alt"></i> Aprobación de Aperturas</h1>
+        <p>Solicitudes de 3ª apertura pendientes del día</p>
+    </div>
+    <div class="badge-count" id="counterBadge">
+        <span class="dot"></span>
+        <span id="counterText">Cargando…</span>
+    </div>
+</div>
+
+<div class="last-updated">
+    <span class="spinner-grow spinner-grow-sm" role="status"></span>
+    Actualización automática cada 15 s &nbsp;|&nbsp; Última: <strong id="lastUpdate">—</strong>
+</div>
+
+<div id="listaSolicitudes"></div>
+
+<div class="modal fade" id="modalRechazo" tabindex="-1" aria-labelledby="modalRechazoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalRechazoLabel">
+                    <i class="fas fa-times-circle" style="color:var(--danger-color);"></i>
+                    Rechazar Apertura
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3" style="font-size:.9rem;">
+                    El cajero verá este motivo en pantalla. Sea claro y breve.
+                </p>
+                <label class="form-label fw-semibold" style="color:var(--text-dark);">
+                    <i class="fas fa-comment-alt me-1" style="color:var(--accent-blue);"></i>
+                    Motivo del rechazo
+                </label>
+                <textarea class="modal-textarea" id="motivoRechazo" rows="3"
+                          placeholder="Ej: Exceso de efectivo no justificado…"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-4"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button class="btn-rechazar" onclick="confirmarRechazo()">
+                    <i class="fas fa-times"></i> Confirmar rechazo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="formToken">@Html.AntiForgeryToken()</form>
+
+<script>
+    let solicitudActualId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarSolicitudes();
+        setInterval(cargarSolicitudes, 15000);
+    });
+
+    async function cargarSolicitudes() {
+        try {
+            const r = await fetch('/PuntoVentaAdministracion/ObtenerSolicitudesPendientes');
+            const data = await r.json();
+            renderizarSolicitudes(data.solicitudes || []);
+            actualizarTimestamp();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function actualizarTimestamp() {
+        document.getElementById('lastUpdate').textContent =
+            new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function renderizarSolicitudes(solicitudes) {
+        const container = document.getElementById('listaSolicitudes');
+        const counter = document.getElementById('counterText');
+
+        // Actualizar badge
+        counter.textContent = solicitudes.length === 0
+            ? 'Sin pendientes'
+            : `${solicitudes.length} pendiente${solicitudes.length > 1 ? 's' : ''}`;
+
+        if (solicitudes.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon-wrap"><i class="fas fa-check-circle"></i></div>
+                    <h5>Todo al día</h5>
+                    <p>No hay solicitudes de apertura esperando aprobación.</p>
+                </div>`;
+            return;
+        }
+
+        const cards = solicitudes.map((s, i) => {
+            // ── Denominaciones ──────────────────────────────────────
+            let denomRows = '';
+            let totalDenom = parseFloat(s.monto_inicial) || 0;
+            try {
+                const denoms = typeof s.denominaciones === 'string'
+                    ? JSON.parse(s.denominaciones) : (s.denominaciones || []);
+
+                const billetes = denoms.filter(d => parseFloat(d.valor) >= 20);
+                const monedas = denoms.filter(d => parseFloat(d.valor) < 20);
+
+                const buildFilas = (items) => items.map(d => `
+                    <tr>
+                        <td>$${parseFloat(d.valor).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                        <td class="text-center">${d.cantidad}</td>
+                        <td class="text-end">$${parseFloat(d.subtotal).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                    </tr>`).join('');
+
+                if (billetes.length) denomRows += `
+                    <tr style="background:var(--bg-gray);">
+                        <td colspan="3" style="font-size:.78rem;font-weight:700;color:var(--text-light);
+                            text-transform:uppercase;letter-spacing:.5px;padding:6px 12px;">
+                            💵 Billetes
+                        </td>
+                    </tr>` + buildFilas(billetes);
+
+                if (monedas.length) denomRows += `
+                    <tr style="background:var(--bg-gray);">
+                        <td colspan="3" style="font-size:.78rem;font-weight:700;color:var(--text-light);
+                            text-transform:uppercase;letter-spacing:.5px;padding:6px 12px;">
+                            🪙 Monedas
+                        </td>
+                    </tr>` + buildFilas(monedas);
+
+            } catch {
+                denomRows = `<tr><td colspan="3" class="text-muted text-center" style="padding:12px;">Sin desglose disponible</td></tr>`;
+            }
+
+            const hora = new Date(s.fecha_solicitud).toLocaleTimeString('es-MX',
+                { hour: '2-digit', minute: '2-digit' });
+
+            const montoFmt = parseFloat(s.monto_inicial).toLocaleString('es-MX',
+                { style: 'currency', currency: 'MXN' });
+
+            const uid = `dg-${s.id}`;
+
+            return `
+            <div class="solicitud-card" id="card-${s.id}" style="animation-delay:${i * 0.08}s">
+
+                <!-- Strip superior -->
+                <div class="card-strip">
+                    <div class="strip-icon"><i class="fas fa-store"></i></div>
+                    <div class="strip-title">
+                        <h5>${s.nombre_sucursal}</h5>
+                        <span><i class="fas fa-calendar-day me-1"></i>3ª apertura del día</span>
+                    </div>
+                    <span class="strip-badge"><i class="fas fa-exclamation me-1"></i>Pendiente</span>
+                </div>
+
+                <!-- Cuerpo -->
+                <div class="card-body-custom">
+
+                    <!-- Chips de info -->
+                    <div class="info-chips">
+                        <div class="chip">
+                            <div class="chip-icon blue"><i class="fas fa-user"></i></div>
+                            <div>
+                                <div class="chip-label">Cajero</div>
+                                <div class="chip-value">${s.cajero_usuario}</div>
+                            </div>
+                        </div>
+                        <div class="chip">
+                            <div class="chip-icon green"><i class="fas fa-dollar-sign"></i></div>
+                            <div>
+                                <div class="chip-label">Monto inicial</div>
+                                <div class="chip-value">${montoFmt}</div>
+                            </div>
+                        </div>
+                        <div class="chip">
+                            <div class="chip-icon amber"><i class="fas fa-clock"></i></div>
+                            <div>
+                                <div class="chip-label">Hora solicitud</div>
+                                <div class="chip-value">${dateFormatter(s.fecha_solicitud)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desglose colapsable -->
+                    <button class="desglose-toggle" id="btn-${uid}"
+                            onclick="toggleDesglose('${uid}')">
+                        <span><i class="fas fa-money-bill-wave me-2" style="color:var(--accent-blue);"></i>Ver desglose de denominaciones</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </button>
+                    <div class="desglose-body" id="${uid}">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Denominación</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>${denomRows}</tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2">Total</td>
+                                    <td class="text-end">${montoFmt}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                </div>
+
+                <!-- Acciones -->
+                <div class="card-actions">
+                    <button class="btn-rechazar" onclick="abrirModalRechazo(${s.id})">
+                        <i class="fas fa-times"></i> Rechazar
+                    </button>
+                    <button class="btn-aprobar" onclick="aprobar(${s.id})">
+                        <i class="fas fa-check"></i> Aprobar apertura
+                    </button>
+                </div>
+
+            </div>`;
+        }).join('');
+
+        container.innerHTML = cards;
+    }
+
+    function toggleDesglose(uid) {
+        const body = document.getElementById(uid);
+        const btn = document.getElementById(`btn-${uid}`);
+        const open = body.classList.toggle('open');
+        btn.classList.toggle('open', open);
+    }
+
+    async function aprobar(id) {
+        const ok = await Swal.fire({
+            title: '¿Aprobar esta apertura?',
+            html: 'Se registrará la <strong>3ª apertura de caja</strong> y el cajero será notificado.',
+            icon: 'question',
+            iconColor: '#059669',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check me-1"></i> Sí, aprobar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#6b7280',
+        });
+        if (!ok.isConfirmed) return;
+        await resolver(id, 'aprobar', '');
+    }
+
+    function abrirModalRechazo(id) {
+        solicitudActualId = id;
+        document.getElementById('motivoRechazo').value = '';
+        new bootstrap.Modal(document.getElementById('modalRechazo')).show();
+    }
+
+    async function confirmarRechazo() {
+        const motivo = document.getElementById('motivoRechazo').value.trim();
+        bootstrap.Modal.getInstance(document.getElementById('modalRechazo')).hide();
+        await resolver(solicitudActualId, 'rechazar', motivo);
+    }
+
+    async function resolver(id, accion, motivo) {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const formData = new FormData();
+        formData.append('__RequestVerificationToken', token);
+        formData.append('solicitudId', id);
+        formData.append('accion', accion);
+        formData.append('motivo', motivo);
+
+        // Efecto de resolución en la card
+        const card = document.getElementById(`card-${id}`);
+        if (card) card.classList.add('card-resolved');
+
+        try {
+            const r = await fetch('/PuntoVentaAdministracion/ResolverSolicitudApertura',
+                { method: 'POST', body: formData });
+            const data = await r.json();
+
+            if (data.success) {
+                await Swal.fire({
+                    icon: accion === 'aprobar' ? 'success' : 'info',
+                    title: accion === 'aprobar' ? '¡Apertura aprobada!' : 'Solicitud rechazada',
+                    html: data.folio
+                        ? `Folio generado: <strong>${data.folio}</strong>`
+                        : 'El cajero ha sido notificado.',
+                    timer: 3500,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    iconColor: accion === 'aprobar' ? '#059669' : '#3b82f6'
+                });
+                // Animar salida y quitar card
+                if (card) {
+                    card.style.transition = 'opacity .4s, transform .4s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateX(40px)';
+                    setTimeout(() => { card.remove(); cargarSolicitudes(); }, 420);
+                } else {
+                    cargarSolicitudes();
+                }
+            } else {
+                if (card) card.classList.remove('card-resolved');
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message });
+            }
+        } catch (e) {
+            if (card) card.classList.remove('card-resolved');
+            Swal.fire({ icon: 'error', title: 'Error inesperado', text: String(e) });
+        }
+    }
+</script>

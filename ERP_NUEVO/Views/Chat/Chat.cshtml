@@ -1,0 +1,738 @@
+﻿@{
+    ViewData["Title"] = "Asistente IA";
+    Layout = "_Layout";
+    var conversaciones = ViewBag.Conversaciones as List<BOS_ERP.Models.Conversacion> ?? new();
+    var nombreUsuario = ViewBag.NombreUsuario as string ?? "Usuario";
+}
+
+<div class="ia-app">
+    <button class="ia-sidebar-toggle d-md-none" id="iaSidebarToggle" title="Conversaciones">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <aside class="ia-sidebar" id="iaSidebar">
+        <button class="ia-new-chat-btn" id="iaNewChatBtn">
+            <i class="fa-solid fa-plus"></i> Nueva conversación
+        </button>
+
+        <div class="ia-conv-list" id="iaConvList">
+            @foreach (var conv in conversaciones)
+            {
+                <div class="ia-conv-item" data-conversacion-id="@conv.ConversacionId">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <div class="ia-conv-meta">
+                        <span class="ia-conv-title">@(conv.Titulo ?? "Conversación sin título")</span>
+                        <span class="ia-conv-date">@conv.FechaUltimaActividad.ToString("dd MMM, HH:mm")</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </aside>
+
+    <div class="ia-sidebar-backdrop d-md-none" id="iaSidebarBackdrop"></div>
+
+    <main class="ia-main">
+        <header class="ia-header">
+            <div class="ia-header-title">
+                <span class="ia-status-dot" id="iaStatusDot" title="Estado del servicio"></span>
+                <div>
+                    <h4>Asistente IA</h4>
+                    <span class="ia-model-tag">gemma4:12b</span>
+                </div>
+            </div>
+            <div class="ia-header-user d-none d-sm-flex">
+                <i class="fa-solid fa-circle-user"></i>
+                <span>@nombreUsuario</span>
+            </div>
+        </header>
+
+        <div class="ia-messages" id="iaMessages">
+            <div class="ia-empty-state" id="iaEmptyState">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <p>¿En qué puedo ayudarte hoy?</p>
+                <span>Tus conversaciones quedan registradas para fines de auditoría.</span>
+            </div>
+        </div>
+
+        <div class="ia-typing d-none" id="iaTyping">
+            <div class="ia-avatar ia-avatar-bot"><i class="fa-solid fa-robot"></i></div>
+            <div class="ia-bubble ia-bubble-bot ia-bubble-typing">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+
+        <div class="ia-input-bar">
+            <textarea id="iaInput" placeholder="Escribe tu mensaje..." rows="1"></textarea>
+            <button id="iaSendBtn" title="Enviar">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+        <p class="ia-disclaimer">Este chat es monitoreado. Evita compartir información confidencial de clientes.</p>
+    </main>
+</div>
+
+@section Styles {
+    <style>
+        .ia-app {
+            --ia-radius: var(--table-radius);
+            position: relative;
+            display: flex;
+            height: calc(100vh - 100px);
+            background: var(--bg-gray);
+            border: 1px solid var(--border-light);
+            border-radius: var(--ia-radius);
+            overflow: hidden;
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        /* Sidebar toggle (mobile) */
+        .ia-sidebar-toggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 20;
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--row-radius);
+            background: var(--bg-light);
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ia-sidebar-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 41, .45);
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-med);
+        }
+
+            .ia-sidebar-backdrop.show {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+        /* Sidebar */
+        .ia-sidebar {
+            width: var(--sb-width, 260px);
+            max-width: 260px;
+            flex-shrink: 0;
+            background: var(--bg-light);
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        .ia-new-chat-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            padding: 10px 14px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--sb-radius);
+            background: transparent;
+            color: var(--text-dark);
+            font-weight: 500;
+            cursor: pointer;
+            transition: background var(--transition-fast), color var(--transition-fast);
+            margin-bottom: 16px;
+        }
+
+            .ia-new-chat-btn:hover {
+                background: var(--sb-hover-bg);
+                color: var(--sb-hover-color);
+            }
+
+        .ia-conv-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .ia-conv-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            border-radius: var(--row-radius);
+            cursor: pointer;
+            transition: background var(--transition-fast), color var(--transition-fast);
+            color: var(--text-light);
+        }
+
+            .ia-conv-item:hover {
+                background: var(--sb-hover-bg);
+                color: var(--sb-hover-color);
+            }
+
+            .ia-conv-item.active {
+                background: var(--sb-active-bg);
+                color: var(--sb-active-color);
+            }
+
+            .ia-conv-item i {
+                margin-top: 2px;
+                font-size: 13px;
+                width: 14px;
+                text-align: center;
+            }
+
+        .ia-conv-meta {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .ia-conv-title {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ia-conv-date {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+
+        /* Main */
+        .ia-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .ia-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 22px;
+            background: var(--bg-light);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .ia-header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-left: 34px; /* deja espacio al botón de toggle en móvil */
+        }
+
+            .ia-header-title h4 {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 600;
+                color: var(--text-dark);
+            }
+
+        .ia-model-tag {
+            font-size: 11px;
+            color: var(--text-light);
+            background: var(--bg-gray);
+            border: 1px solid var(--border-light);
+            padding: 1px 8px;
+            border-radius: var(--badge-radius);
+        }
+
+        .ia-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--icon-color);
+            flex-shrink: 0;
+        }
+
+            .ia-status-dot.online {
+                background: var(--success-color);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--success-color) 20%, transparent);
+            }
+
+            .ia-status-dot.offline {
+                background: var(--danger-color);
+            }
+
+        .ia-header-user {
+            align-items: center;
+            gap: 6px;
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
+            .ia-header-user i {
+                font-size: 20px;
+                color: var(--icon-color);
+            }
+
+        /* Messages */
+        .ia-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ia-empty-state {
+            margin: auto;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+            .ia-empty-state i {
+                font-size: 32px;
+                color: var(--accent-purple);
+            }
+
+            .ia-empty-state p {
+                font-size: 16px;
+                font-weight: 500;
+                color: var(--text-dark);
+                margin: 10px 0 4px;
+            }
+
+            .ia-empty-state span {
+                font-size: 12.5px;
+            }
+
+        .ia-msg-row {
+            display: flex;
+            gap: 10px;
+            max-width: 78%;
+        }
+
+            .ia-msg-row.user {
+                align-self: flex-end;
+                flex-direction: row-reverse;
+            }
+
+            .ia-msg-row.bot {
+                align-self: flex-start;
+            }
+
+        .ia-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .ia-avatar-user {
+            background: var(--primary-blue);
+            color: #fff;
+        }
+
+        .ia-avatar-bot {
+            background: var(--accent-purple-light);
+            color: var(--accent-purple);
+        }
+
+        .ia-bubble-col {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .ia-msg-row.user .ia-bubble-col {
+            align-items: flex-end;
+        }
+
+        .ia-bubble {
+            padding: 10px 14px;
+            border-radius: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .ia-msg-row.user .ia-bubble {
+            background: var(--primary-blue);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ia-msg-row.bot .ia-bubble {
+            background: var(--very-light-blue);
+            color: var(--text-dark);
+            border-bottom-left-radius: 4px;
+        }
+
+        .ia-msg-time {
+            font-size: 10.5px;
+            color: var(--text-light);
+            padding: 0 4px;
+        }
+
+        /* Typing */
+        .ia-typing {
+            display: flex;
+            gap: 10px;
+            padding: 0 22px 12px;
+            align-items: flex-end;
+        }
+
+        .ia-bubble-typing {
+            display: inline-flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+
+            .ia-bubble-typing span {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--text-light);
+                animation: ia-bounce 1.2s infinite ease-in-out;
+            }
+
+                .ia-bubble-typing span:nth-child(2) {
+                    animation-delay: .15s;
+                }
+
+                .ia-bubble-typing span:nth-child(3) {
+                    animation-delay: .3s;
+                }
+
+        @@keyframes ia-bounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: .4;
+            }
+
+            30% {
+                transform: translateY(-4px);
+                opacity: 1;
+            }
+        }
+
+        /* Input */
+        .ia-input-bar {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            padding: 14px 22px;
+            background: var(--bg-light);
+            border-top: 1px solid var(--border-light);
+        }
+
+            .ia-input-bar textarea {
+                flex: 1;
+                resize: none;
+                max-height: 120px;
+                border: 1px solid var(--border-light);
+                border-radius: var(--row-radius);
+                padding: 10px 14px;
+                font-size: 14px;
+                background: var(--bg-gray);
+                color: var(--text-dark);
+                outline: none;
+                transition: border-color var(--transition-fast);
+            }
+
+                .ia-input-bar textarea:focus {
+                    border-color: var(--accent-blue);
+                }
+
+            .ia-input-bar button {
+                width: 38px;
+                height: 38px;
+                border-radius: var(--row-radius);
+                border: none;
+                background: var(--primary-blue);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: background var(--transition-fast);
+                flex-shrink: 0;
+            }
+
+                .ia-input-bar button:hover {
+                    background: var(--primary-blue-dark);
+                }
+
+                .ia-input-bar button:disabled {
+                    background: var(--disabled-color);
+                    cursor: not-allowed;
+                }
+
+        .ia-disclaimer {
+            font-size: 11px;
+            color: var(--text-light);
+            text-align: center;
+            padding: 0 22px 12px;
+            margin: 0;
+        }
+
+        /* Responsividad (Bootstrap breakpoint md = 768px) */
+        @@media (max-width: 767.98px) {
+            .ia-sidebar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 16;
+                transform: translateX(-100%);
+                transition: transform var(--transition-med);
+                box-shadow: var(--shadow-lg);
+            }
+
+                .ia-sidebar.show {
+                    transform: translateX(0);
+                }
+
+            .ia-msg-row {
+                max-width: 90%;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            const messagesBox = document.getElementById('iaMessages');
+            const emptyState = document.getElementById('iaEmptyState');
+            const input = document.getElementById('iaInput');
+            const sendBtn = document.getElementById('iaSendBtn');
+            const newChatBtn = document.getElementById('iaNewChatBtn');
+            const typing = document.getElementById('iaTyping');
+            const statusDot = document.getElementById('iaStatusDot');
+            const convList = document.getElementById('iaConvList');
+            const sidebar = document.getElementById('iaSidebar');
+            const sidebarToggle = document.getElementById('iaSidebarToggle');
+            const sidebarBackdrop = document.getElementById('iaSidebarBackdrop');
+
+            let conversacionId = null;
+
+            checkHealth();
+
+            async function checkHealth() {
+                try {
+                    const res = await fetch('/api/gemma/health');
+                    const data = await res.json();
+                    statusDot.classList.add(data.online ? 'online' : 'offline');
+                } catch {
+                    statusDot.classList.add('offline');
+                }
+            }
+
+            function formatTime(date) {
+                return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function appendMessage(text, sender) {
+                emptyState.style.display = 'none';
+
+                const row = document.createElement('div');
+                row.className = `ia-msg-row ${sender}`;
+
+                const avatar = document.createElement('div');
+                avatar.className = `ia-avatar ia-avatar-${sender === 'user' ? 'user' : 'bot'}`;
+                avatar.innerHTML = sender === 'user' ? '<i class="fa-solid fa-user"></i>' : '<i class="fa-solid fa-robot"></i>';
+
+                const col = document.createElement('div');
+                col.className = 'ia-bubble-col';
+
+                const bubble = document.createElement('div');
+                bubble.className = `ia-bubble ia-bubble-${sender === 'user' ? 'user' : 'bot'}`;
+                bubble.textContent = text;
+
+                const time = document.createElement('span');
+                time.className = 'ia-msg-time';
+                time.textContent = formatTime(new Date());
+
+                col.appendChild(bubble);
+                col.appendChild(time);
+                row.appendChild(avatar);
+                row.appendChild(col);
+                messagesBox.appendChild(row);
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            }
+
+            async function cargarHistorial(id) {
+                messagesBox.innerHTML = '';
+                emptyState.style.display = 'flex';
+
+                try {
+                    const res = await fetch(`/api/gemma/historial/${id}`);
+                    if (!res.ok) return;
+                    const mensajes = await res.json();
+                    mensajes.forEach(m => appendMessage(m.contenido, m.rol === 'user' ? 'user' : 'bot'));
+                } catch (err) {
+                    console.error('Error cargando historial:', err);
+                }
+            }
+
+            convList.addEventListener('click', (e) => {
+                const item = e.target.closest('.ia-conv-item');
+                if (!item) return;
+
+                document.querySelectorAll('.ia-conv-item').forEach(el => el.classList.remove('active'));
+                item.classList.add('active');
+
+                conversacionId = parseInt(item.dataset.conversacionId, 10);
+                cargarHistorial(conversacionId);
+                closeSidebarMobile();
+            });
+
+            newChatBtn.addEventListener('click', () => {
+                conversacionId = null;
+                messagesBox.innerHTML = '';
+                emptyState.style.display = 'flex';
+                document.querySelectorAll('.ia-conv-item').forEach(el => el.classList.remove('active'));
+                closeSidebarMobile();
+            });
+
+            function openSidebarMobile() {
+                sidebar.classList.add('show');
+                sidebarBackdrop.classList.add('show');
+            }
+
+            function closeSidebarMobile() {
+                sidebar.classList.remove('show');
+                sidebarBackdrop.classList.remove('show');
+            }
+
+            sidebarToggle?.addEventListener('click', openSidebarMobile);
+            sidebarBackdrop?.addEventListener('click', closeSidebarMobile);
+
+            function autoResize() {
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+            }
+
+            input.addEventListener('input', autoResize);
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            sendBtn.addEventListener('click', sendMessage);
+
+            async function sendMessage() {
+                const pregunta = input.value.trim();
+                if (!pregunta) return;
+
+                appendMessage(pregunta, 'user');
+                input.value = '';
+                autoResize();
+                sendBtn.disabled = true;
+                typing.classList.remove('d-none');
+
+                // Creamos la burbuja del bot vacía, la iremos llenando con cada fragmento
+                const botBubble = appendEmptyBotMessage();
+                let respuestaAcumulada = '';
+
+                try {
+                    const res = await fetch('/api/gemma/chat/stream', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pregunta, conversacionId })
+                    });
+
+                    if (!res.ok || !res.body) throw new Error('Error en la respuesta del servidor');
+
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let primerFragmento = true;
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const eventos = buffer.split('\n\n');
+                        buffer = eventos.pop();
+
+                        for (const evento of eventos) {
+                            if (!evento.trim()) continue;
+                            const lineas = evento.split('\n');
+                            const tipo = lineas.find(l => l.startsWith('event:'))?.slice(6).trim() ?? 'message';
+                            const dataLine = lineas.find(l => l.startsWith('data:'))?.slice(5).trim();
+                            if (!dataLine) continue;
+
+                            if (tipo === 'conversacion') {
+                                conversacionId = parseInt(dataLine, 10);
+                            } else if (tipo === 'error') {
+                                const { error } = JSON.parse(dataLine);
+                                throw new Error(error);
+                            } else if (tipo === 'done') {
+                                // stream terminado, no hace falta hacer nada extra
+                            } else {
+                                if (primerFragmento) {
+                                    typing.classList.add('d-none');
+                                    primerFragmento = false;
+                                }
+                                const { texto } = JSON.parse(dataLine);
+                                respuestaAcumulada += texto;
+                                botBubble.textContent = respuestaAcumulada;
+                                messagesBox.scrollTop = messagesBox.scrollHeight;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                    botBubble.textContent = 'No se pudo obtener respuesta: ' + err.message;
+                } finally {
+                    typing.classList.add('d-none');
+                    sendBtn.disabled = false;
+                    input.focus();
+                }
+            }
+
+            // Crea la fila/burbuja del bot vacía y regresa el elemento de la burbuja para irlo llenando
+            function appendEmptyBotMessage() {
+                emptyState.style.display = 'none';
+
+                const row = document.createElement('div');
+                row.className = 'ia-msg-row bot';
+
+                const avatar = document.createElement('div');
+                avatar.className = 'ia-avatar ia-avatar-bot';
+                avatar.innerHTML = '<i class="fa-solid fa-robot"></i>';
+
+                const col = document.createElement('div');
+                col.className = 'ia-bubble-col';
+
+                const bubble = document.createElement('div');
+                bubble.className = 'ia-bubble ia-bubble-bot';
+
+                const time = document.createElement('span');
+                time.className = 'ia-msg-time';
+                time.textContent = formatTime(new Date());
+
+                col.appendChild(bubble);
+                col.appendChild(time);
+                row.appendChild(avatar);
+                row.appendChild(col);
+                messagesBox.appendChild(row);
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+
+                return bubble;
+            }
+        })();
+    </script>
+}

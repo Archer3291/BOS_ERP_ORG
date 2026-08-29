@@ -1,0 +1,928 @@
+﻿@model BOS_ERP.Models.Factura
+@using System.Data
+@using System.Linq
+
+    @* @using ModulaService; *@
+    @using BOS_ERP.Models;
+    @using System;
+    @using System.Collections.Generic;
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+    @using System.Data;
+    @using System.Data.SqlClient;
+    @using System.IO;
+    @using System.Linq;
+    @using System.Net;
+    @using System.Net.Mail;
+    @using System.Threading.Tasks;
+    @using Microsoft.AspNetCore.Mvc;
+    @using System.Windows;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Factura @Model.UUID</title>
+    <style>
+        @@page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        thead {
+            display: table-header-group;
+            background-color: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            line-height: 1.3; /* bajar de 1.6 a 1.3 */
+            letter-spacing: 0.3px;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            color: #d32f2f;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th {
+            background-color: #1976d2;
+            color: white;
+            padding: 6px 8px; /* antes era 6px 8px */
+            text-align: left;
+            font-size: 10px;
+            letter-spacing: 0.4px;
+        }
+
+        td {
+            padding: 4px 8px; /* antes era 4px 8px - más espacio vertical */
+            vertical-align: top;
+        }
+
+        .section-title {
+            font-size: 13px;
+            color: #d32f2f;
+            margin-top: 15px; /* antes era 15px */
+            margin-bottom: 8px; /* antes era 8px */
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px; /* antes era 3px */
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .productos th, .productos td {
+            border: 1px solid #bbb;
+            font-size: 10px;
+            padding: 5px 6px;
+            line-height: 1.3; /* bajar de 1.5 a 1.3 */
+        }
+
+        .productos tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+
+        .productos td.descripcion {
+            font-weight: 500;
+        }
+
+        .productos td.numero {
+            text-align: center;
+            width: 8%;
+        }
+
+        .productos td.cantidad,
+        .productos td.precio,
+        .productos td.importe {
+            text-align: right;
+        }
+
+        .totales {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 12px;
+        }
+
+            .totales span {
+                font-weight: bold;
+                color: #1976d2;
+            }
+
+        .sello {
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            background-color: #f9f9f9;
+            border: 1px dashed #aaa;
+            padding: 6px;
+            margin-bottom: 8px;
+        }
+
+        .qr {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+            .qr img {
+                width: 150px;
+                height: 150px;
+            }
+
+        .info-box {
+            border: 1px solid #ccc;
+            padding: 6px;
+            margin-top: 3px;
+            background-color: #fafafa;
+            line-height: 1.3; /* bajar de 1.8 a 1.3 */
+        }
+
+            .info-box strong {
+                color: #333;
+            }
+
+        .productos thead {
+            margin-top: 15px;
+        }
+
+        .productos {
+            page-break-inside: auto;
+        }
+
+            .productos thead {
+                display: table-header-group;
+            }
+
+            .productos tfoot {
+                display: table-footer-group;
+            }
+
+            .productos tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+        .observaciones-box {
+            background-color: #fff8e1;
+            border-left: 3px solid #ffc107;
+            padding: 6px;
+            margin: 12px 0;
+            font-size: 10px;
+        }
+
+        .totales-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+            .totales-table td {
+                vertical-align: top;
+            }
+
+        .total-letra {
+            width: 60%;
+            padding-right: 20px;
+            font-size: 11px;
+        }
+
+        .total-numeros {
+            width: 40%;
+        }
+
+            .total-numeros table {
+                width: 100%;
+                border: 1px solid #ccc;
+                background-color: #fafafa;
+            }
+
+            .total-numeros td {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .total-numeros .final-row {
+                border-top: 2px solid #1976d2;
+                background-color: #e3f2fd;
+            }
+
+                .total-numeros .final-row td {
+                    font-weight: bold;
+                    color: #d32f2f;
+                    font-size: 13px;
+                }
+
+        .flete-row {
+            background-color: #e8f5e9 !important;
+            font-style: italic;
+        }
+
+        .header-empresa {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1976d2;
+        }
+
+            .header-empresa h1 {
+                margin: 0;
+                font-size: 18px;
+                color: #1976d2;
+            }
+
+            .header-empresa p {
+                margin: 3px 0;
+                font-size: 10px;
+                color: #666;
+            }
+
+        /* ESTILOS PARA SECCIÓN DE COMERCIO EXTERIOR */
+
+        /* ============================================
+   COMERCIO EXTERIOR - DISEÑO LIMPIO Y PROFESIONAL
+   ============================================ */
+
+        .comercio-exterior-box {
+            background: #ffffff;
+            border: 3px solid #1976d2;
+            border-radius: 6px;
+            padding: 0;
+            margin: 20px 0;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        /* Header del complemento */
+        .comercio-exterior-title {
+            font-size: 14px;
+            color: #0d47a1;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            margin: 0;
+            padding: 12px 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 4px solid #1976d2;
+            border-top: 2px solid #1976d2;
+        }
+
+            .comercio-exterior-title::before {
+                margin-right: 8px;
+                font-size: 16px;
+            }
+
+        /* Contenedor de datos generales */
+        .ce-datos-generales {
+            padding: 15px;
+            background-color: #fafafa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+            .ce-datos-generales table {
+                width: 100%;
+                font-size: 10px;
+                border-collapse: collapse;
+            }
+
+            .ce-datos-generales tr {
+                background-color: white;
+            }
+
+            .ce-datos-generales td {
+                padding: 5px 10px; /* bajar de 8px a 5px */
+                border: 1px solid #e0e0e0;
+            }
+
+                .ce-datos-generales td:nth-child(odd) {
+                    background-color: #e3f2fd;
+                    font-weight: 700;
+                    color: #0d47a1;
+                    width: 25%;
+                }
+
+                .ce-datos-generales td:nth-child(even) {
+                    width: 25%;
+                    color: #1a1a1a;
+                }
+
+            .ce-datos-generales strong {
+                color: #0d47a1;
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                display: block;
+            }
+
+        /* Subsecciones */
+        .ce-subsection {
+            margin: 0;
+            padding: 15px;
+            background-color: #fafafa;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .ce-subsection-title {
+            font-weight: bold;
+            color: #0d47a1;
+            background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
+            margin: -15px -15px 15px -15px;
+            padding: 10px 15px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-left: 5px solid #1976d2;
+            border-bottom: 2px solid #1976d2;
+        }
+
+            .ce-subsection-title::before {
+                margin-right: 6px;
+                font-size: 14px;
+                color: #1976d2;
+            }
+
+        /* Tablas dentro de subsecciones */
+        .ce-subsection table {
+            width: 100%;
+            font-size: 10px;
+            border-collapse: collapse;
+            background-color: white;
+        }
+
+        .ce-subsection tr {
+            background-color: white;
+        }
+
+        .ce-subsection td {
+            padding: 5px 10px; /* bajar de 8px a 5px */
+            border: 1px solid #e0e0e0;
+            color: #1a1a1a;
+        }
+
+            .ce-subsection td:nth-child(odd) {
+                background-color: #e3f2fd;
+                font-weight: 700;
+                color: #0d47a1;
+                width: 20%;
+            }
+
+            .ce-subsection td:nth-child(even) {
+                width: 30%;
+            }
+
+        .ce-subsection strong {
+            color: #0d47a1;
+            font-size: 9px;
+            text-transform: uppercase;
+            display: block;
+        }
+
+        /* Tabla de mercancías estilizada */
+        .ce-subsection .productos {
+            margin-top: 10px;
+            border: 2px solid #1976d2;
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+            .ce-subsection .productos thead {
+                background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            }
+
+            .ce-subsection .productos th {
+                background: #0d47a1;
+                color: #ffffff;
+                padding: 8px 10px;
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                font-weight: bold;
+                border: none;
+            }
+
+            .ce-subsection .productos tbody tr {
+                background-color: white;
+            }
+
+                .ce-subsection .productos tbody tr:nth-child(even) {
+                    background-color: #f5f5f5;
+                }
+
+            .ce-subsection .productos td {
+                font-size: 9px;
+                padding: 7px 10px;
+                border: 1px solid #e0e0e0;
+                border-left: none;
+                border-right: none;
+                color: #1a1a1a;
+            }
+
+        /* Valores destacados */
+        .ce-valor-destacado {
+            color: #0d47a1;
+            font-weight: bold;
+            font-size: 10px;
+            background-color: #e3f2fd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border-left: 3px solid #1976d2;
+            display: inline-block;
+        }
+
+        /* Badge para moneda */
+        .ce-badge-moneda {
+            display: inline-block;
+            background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+            color: #ffffff;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 4px;
+            box-shadow: 0 1px 3px rgba(67, 160, 71, 0.3);
+        }
+
+        /* Info boxes */
+        .ce-info-box {
+            background-color: #fff8e1;
+            border-left: 5px solid #ffa726;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-size: 10px;
+            color: #1a1a1a;
+        }
+
+            .ce-info-box strong {
+                color: #e65100;
+            }
+
+        /* Iconos decorativos */
+        .ce-icon-moneda::before {
+            margin-right: 5px;
+        }
+
+        /* Responsive para impresión */
+        @@media print {
+            .comercio-exterior-box {
+                page-break-inside: avoid;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .ce-subsection {
+                page-break-inside: avoid;
+            }
+
+            /* Asegurar que los colores se impriman correctamente */
+            .comercio-exterior-title {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .ce-subsection-title {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .ce-subsection .productos th {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- DATOS COMPROBANTE -->
+    <div class="section-title">Datos del Comprobante</div>
+    <table>
+        <tr>
+            <td style="width: 18%;"><strong>Fecha de Emisión:</strong></td>
+            <td style="width: 32%;">@DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")</td>
+            <td style="width: 18%;"><strong>Tipo de Comprobante:</strong></td>
+            <td style="width: 32%;">@Model.TipoDeComprobante</td>
+        </tr>
+        <tr>
+            <td><strong>Forma de Pago:</strong></td>
+            <td>@Model.IdTipoPago -- @Model.formaPagoTexto</td>
+            <td><strong>Método de Pago:</strong></td>
+            <td>@Model.metodoPagoTexto -- @Model.MdpFactura</td>
+        </tr>
+        <tr>
+            <td><strong>Moneda:</strong></td>
+            <td>@Model.Moneda</td>
+            <td><strong>Tipo de Cambio:</strong></td>
+            <td>@Model.TipoCambio</td>
+        </tr>
+    </table>
+
+
+    <!-- CFDIs RELACIONADOS (sustitución por refacturación) -->
+    @if (!string.IsNullOrWhiteSpace(Model.UUIDsRelacionados))
+    {
+        var descRel = Model.TipoRelacion switch
+        {
+            "01" => "Nota de crédito de los documentos relacionados",
+            "02" => "Nota de débito de los documentos relacionados",
+            "03" => "Devolución de mercancía sobre facturas o traslados previos",
+            "04" => "Sustitución de los CFDI previos",
+            "05" => "Traslados de mercancías facturados previamente",
+            "06" => "Factura generada por los traslados previos",
+            "07" => "CFDI por aplicación de anticipo",
+            _ => ""
+        };
+        <div class="section-title">CFDI(s) Relacionado(s)</div>
+        <div class="info-box">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="width: 18%;"><strong>Tipo de relación:</strong></td>
+                    <td colspan="3">@Model.TipoRelacion@(string.IsNullOrEmpty(descRel) ? "" : " - " + descRel)</td>
+                </tr>
+                @foreach (var uuidRel in Model.UUIDsRelacionados.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    <tr>
+                        <td><strong>UUID relacionado:</strong></td>
+                        <td colspan="3" style="font-family: 'Consolas', monospace; font-size: 9px;">@uuidRel.Trim()</td>
+                    </tr>
+                }
+            </table>
+        </div>
+    }
+
+    <!-- RECEPTOR -->
+    <div class="section-title">Receptor</div>
+    <div class="info-box">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 18%;"><strong>RFC:</strong></td>
+                <td style="width: 32%;">@Model.RfcCliente</td>
+                <td style="width: 18%;"><strong>Régimen Fiscal:</strong></td>
+                <td style="width: 32%;">@Model.Regc</td>
+            </tr>
+            <tr>
+                <td><strong>Razón Social:</strong></td>
+                <td colspan="3">@Model.RsoCliente</td>
+            </tr>
+            <tr>
+                <td><strong>Uso CFDI:</strong></td>
+                <td>@Model.IdUsoCFDI -- @Model.CFDIText</td>
+                <td><strong>Domicilio Fiscal (C.P.):</strong></td>
+                <td>@Model.CpR</td>
+            </tr>
+            <tr>
+                <td style="vertical-align:top;"><strong>Dirección:</strong></td>
+                <td colspan="3" style="white-space: pre-line;">@Model.DireccionReceptor</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- CONCEPTOS -->
+    <div class="section-title">Conceptos</div>
+    <table class="productos">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 8%;">No. Identificación</th>
+                <th style="width: 34%;">Descripción</th>
+                <th style="width: 8%;">Cantidad</th>
+                <th style="width: 8%;">Unidad</th>
+                <th style="width: 12%;">Precio Unitario</th>
+                <th style="width: 8%;">Desc %</th>
+                <th style="width: 12%;">Descuento</th>
+                <th style="width: 10%;">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (System.Data.DataRow row in Model.Tproductos.Rows)
+            {
+                <tr>
+                    <td class="numero">@row["numero"]</td>
+                    <td class="descripcion">
+                        <strong>@row["descripcion"]</strong>
+                        <br><small style="color: #888;">Clave Prod/Serv: @row["claveProdServ"] | Clave Unidad: @row["claveUnidad"] | Objeto Imp: @row["objetoImp"]</small>
+
+                        @if (row.Table.Columns.Contains("comentario") && !string.IsNullOrWhiteSpace(row["comentario"]?.ToString()))
+                        {
+                            <br><small style="color: #555; font-style: italic; background-color: #fffacd; padding: 2px 4px; border-left: 2px solid #ffc107;">
+                                @row["comentario"]
+                            </small>
+                        }
+
+                        @* 👇 PEDIMENTOS *@
+                        @if (row.Table.Columns.Contains("pedimentos"))
+                        {
+                            var pedimentosRaw = row["pedimentos"]?.ToString();
+                            if (!string.IsNullOrWhiteSpace(pedimentosRaw) && pedimentosRaw != "[]")
+                            {
+                                try
+                                {
+                                    var pedimentos = Newtonsoft.Json.JsonConvert.DeserializeObject<List<dynamic>>(pedimentosRaw);
+                                    var pedimentosValidos = pedimentos
+                                                .Where(p => p.pedimento != null &&
+                                                            !string.IsNullOrWhiteSpace(p.pedimento.ToString()) &&
+                                                            p.pedimento.ToString().ToLower() != "null")
+                                                .ToList();
+
+                                    if (pedimentosValidos.Count > 0)
+                                    {
+                                        <br>
+                                        <div style="margin-top: 3px;">
+                                            <small style="color: #888; font-size: 8px; display: block; margin-bottom: 2px;">Pedimentos:</small>
+                                            @foreach (var ped in pedimentosValidos)
+                                            {
+                                                <span style="
+                                display: inline-block;
+                                background: #eff6ff;
+                                border: 1px solid #bfdbfe;
+                                border-radius: 3px;
+                                padding: 1px 5px;
+                                font-size: 8px;
+                                color: #1d4ed8;
+                                margin: 1px 2px 1px 0;
+                                white-space: nowrap;
+                            ">
+                                                    ✈ @ped.pedimento ×@ped.cantidad
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                }
+                                catch { /* JSON inválido, ignorar */ }
+                            }
+                        }
+                    </td>
+                    <td class="cantidad">@string.Format("{0:N2}", row["cantidad"])</td>
+                    <td class="numero">@row["unidad"]</td>
+                    <td class="precio">@string.Format("{0:C2}", row["precioUnit"])</td>
+                    <td class="numero">
+                        @{
+                            double descPct = row.Table.Columns.Contains("descuento")
+                                ? Convert.ToDouble(row["descuento"])
+                                : 0;
+                        }
+                        @(descPct > 0 ? descPct.ToString("0.##") + "%" : "-")
+                    </td>
+                    <td class="precio" style="color: #c62828;">
+                        @{
+                            double cantRow = Convert.ToDouble(row["cantidad"]);
+                            double precioRow = Convert.ToDouble(row["precioUnit"]);
+                            double montoDesc = Math.Round(cantRow * precioRow * (descPct / 100.0), 2);
+                        }
+                        @(descPct > 0 ? string.Format("{0:C2}", montoDesc) : "-")
+                    </td>
+                    <td class="importe">@string.Format("{0:C2}", row["importe"])</td>
+                </tr>
+            }
+
+            @* Flete si existe *@
+            @if (Model.Flete > 0)
+            {
+                <tr class="flete-row">
+                    <td class="numero">FLETE</td>
+                    <td class="descripcion">
+                        <strong>Servicio de flete</strong>
+                        <br><small style="color: #888;">Clave Prod/Serv: 78101800 | Clave Unidad: E48 | Objeto Imp: 02</small>
+                    </td>
+                    <td class="cantidad">1.00</td>
+                    <td class="numero">Servicio</td>
+                    <td class="precio">@string.Format("{0:C2}", Model.Flete)</td>
+                    <td class="importe">@string.Format("{0:C2}", Model.Flete)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- ANTICIPOS RELACIONADOS -->
+    @if (Model.TAnticipos != null && Model.TAnticipos.Rows.Count > 0)
+    {
+        <div class="section-title">CFDIs Relacionados (Anticipos Aplicados)</div>
+        <table class="productos">
+            <thead>
+                <tr>
+                    <th>UUID del CFDI</th>
+                    <th>Fecha de Aplicación</th>
+                    <th>Saldo Antes</th>
+                    <th>Monto Aplicado</th>
+                    <th>Saldo Después</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (System.Data.DataRow row in Model.TAnticipos.Rows)
+                {
+                    <tr style="background-color:#f0f8ff;">
+                        <td>@row["uuid"]</td>
+                        <td>@Convert.ToDateTime(row["fecha"]).ToString("dd/MM/yyyy HH:mm")</td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", row["saldo_antes"])</td>
+                        <td style="text-align:right; color:#2e7d32; font-weight:bold;">@string.Format("{0:C2}", row["monto_aplicado"])</td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", row["saldo_despues"])</td>
+                    </tr>
+                }
+
+                <!-- Total de anticipos -->
+                <tr style="background-color:#e3f2fd; font-weight:bold;">
+                    <td colspan="3" style="text-align:right;">TOTAL ANTICIPOS APLICADOS:</td>
+                    <td colspan="2" style="text-align:right; color:#d32f2f;">
+                        @string.Format("{0:C2}", Model.TAnticipos.AsEnumerable().Sum(r => Convert.ToDecimal(r["monto_aplicado"])))
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    }
+
+
+    <!-- OBSERVACIONES -->
+    @if (!string.IsNullOrEmpty(Model.Observaciones))
+    {
+        <div class="observaciones-box">
+            <strong>Observaciones:</strong> @Model.Observaciones
+        </div>
+    }
+
+    @{
+        decimal totalAnticipos = 0;
+        if (Model.TAnticipos != null && Model.TAnticipos.Rows.Count > 0)
+        {
+            totalAnticipos = Model.TAnticipos.AsEnumerable().Sum(r => Convert.ToDecimal(r["monto_aplicado"]));
+        }
+        decimal totalNeto = Model.Total - totalAnticipos;
+    }
+
+    <!-- TOTALES MEJORADOS -->
+    @{
+        decimal totalAnticiposPDF = 0;
+        if (Model.TAnticipos != null && Model.TAnticipos.Rows.Count > 0)
+        {
+            totalAnticiposPDF = Model.TAnticipos.AsEnumerable()
+                .Sum(r => Convert.ToDecimal(r["monto_aplicado"]));
+        }
+
+        // Recalcular descuento desde productos (solo para mostrarlo, NO afecta el total)
+        decimal totalDescuentoPDF = 0;
+        if (Model.Tproductos != null && Model.Tproductos.Columns.Contains("descuento"))
+        {
+            foreach (DataRow dr in Model.Tproductos.Rows)
+            {
+                double c = Convert.ToDouble(dr["cantidad"]);
+                double p = Convert.ToDouble(dr["precioUnit"]);
+                double d = Convert.ToDouble(dr["descuento"]);
+                totalDescuentoPDF += (decimal)Math.Round(c * p * (d / 100.0), 2);
+            }
+        }
+    }
+
+    <table class="totales-table" style="width:100%; margin-top:20px; border-collapse:collapse;">
+        <tr>
+            <td style="width:60%; vertical-align:top; padding-right:20px;">
+                <strong>Total con Letra:</strong><br>
+                @Model.TotalTexto @Model.Moneda
+            </td>
+            <td style="width:40%; vertical-align:top;">
+                <table style="width:100%; border-collapse:collapse;">
+
+                @* Subtotal neto = lo que viene del modelo (ya con descuento restado) *@
+                <tr>
+                    <td style="text-align:right;"><strong>Subtotal:</strong></td>
+                    <td style="text-align:right;">
+                        @string.Format("{0:C2}", Model.Subtotal)
+                    </td>
+                </tr>
+
+                    @* Subtotal bruto (antes de descuento) — solo informativo *@
+                    @if (totalDescuentoPDF > 0)
+                    {
+@*                         <tr>
+                            <td style="text-align:right; width:60%;"><strong>Subtotal bruto:</strong></td>
+                            <td style="text-align:right; width:40%;">
+                                @string.Format("{0:C2}", Model.Subtotal + totalDescuentoPDF)
+                            </td>
+                        </tr> *@
+                        <tr>
+                            <td style="text-align:right; color:#c62828;"><strong>Descuento:</strong></td>
+                            <td style="text-align:right; color:#c62828;">
+                                -@string.Format("{0:C2}", totalDescuentoPDF)
+                            </td>
+                        </tr>
+                    }
+
+       
+
+                    @if (Model.Flete > 0)
+                    {
+                        <tr>
+                            <td style="text-align:right;"><strong>Flete:</strong></td>
+                            <td style="text-align:right;">@string.Format("{0:C2}", Model.Flete)</td>
+                        </tr>
+                    }
+
+                    @* IVA viene del modelo — NO recalcular para evitar diferencias de redondeo *@
+                    <tr>
+                        <td style="text-align:right;"><strong>IVA (16%):</strong></td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", Model.IVA)</td>
+                    </tr>
+
+                    @if (totalAnticiposPDF > 0)
+                    {
+                        <tr>
+                            <td style="text-align:right; color:#2e7d32;">
+                                <strong>Anticipos aplicados:</strong>
+                            </td>
+                            <td style="text-align:right; color:#2e7d32;">
+                                -@string.Format("{0:C2}", totalAnticiposPDF)
+                            </td>
+                        </tr>
+                    }
+
+                    @* TOTAL — viene del modelo, igual al XML timbrado *@
+                    <tr style="border-top:2px solid #1976d2; background:#e3f2fd;">
+                        <td style="text-align:right; font-size:1.1em; padding:6px 10px;">
+                            <strong>TOTAL:</strong>
+                        </td>
+                        <td style="text-align:right; font-size:1.1em; color:#d32f2f; padding:6px 10px;">
+                            <strong>@string.Format("{0:C2}", Model.Total)</strong>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- PAGARÉ -->
+    @{
+        string perfil = HttpContextAccessor.HttpContext.Session.GetString("EmpresaFactura");
+        string razonSocial = Configuration[$"Emisores:{perfil}:RazonSocial"] ?? "";
+
+        <div style="margin-top: 20px;">
+            <p style="font-size: 9px; color: #666; font-style: italic; margin-bottom: 10px;">
+                Las diferencias de centavos que se puedan presentar, son producto del redondeo en los importes.
+            </p>
+
+            <div style="border: 2px solid #333; padding: 15px; background-color: #fafafa; margin-top: 10px;">
+                <p style="font-size: 10px; line-height: 1.6; text-align: justify; margin: 0;">
+                    Debo(emos) y pagaremos en forma incondicional a la orden de <strong>@razonSocial</strong>
+                    en la ciudad de San Luis Potosí, San Luis Potosí, el importe que ampara el total de esta factura recibida a nuestra
+                    satisfacción el día _______ de _________ de _______. En caso de demora en el pago, causara un interés del
+                    _____%, este pagare es mercantil y esta regido por la Ley General de Títulos y operaciones en su articulo 170.
+                </p>
+
+                <div style="margin-top: 30px; text-align: center;">
+                    <div style="border-top: 1px solid #333; width: 200px; margin: 0 auto;"></div>
+                    <p style="margin: 5px 0 0 0; font-size: 10px;"><strong>ACEPTO</strong></p>
+                </div>
+            </div>
+        </div>
+    }
+    <!-- SELLOS Y QR EN COLUMNAS -->
+    <div class="section-title" style="margin-top: 25px;">Sellos y Cadena Original</div>
+    <table>
+        <tr>
+            <!-- Columna Sellos -->
+            <td style="width: 75%; vertical-align: top;">
+                <p style="margin: 5px 0 3px 0;"><strong>No. de Serie del Certificado del SAT:</strong></p>
+                <div class="sello">@Model.NoCertificadoSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>No de Serie del CSD del Emisor:</strong></p>
+                <div class="sello">@Model.NoCertificado</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Sello CFDI:</strong></p>
+                <div class="sello">@Model.SelloCFDI</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Sello SAT:</strong></p>
+                <div class="sello">@Model.SelloSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Cadena Original:</strong></p>
+                <div class="sello">@Model.CadenaOriginal</div>
+            </td>
+
+            <!-- Columna QR -->
+            @if (!string.IsNullOrEmpty(Model.RutaQr))
+            {
+                <td style="width: 25%; text-align: center; vertical-align: top; padding-left: 10px;">
+                    <strong style="display: block; margin-bottom: 8px;">Código QR</strong>
+                    <img src="@Url.Content(Model.RutaQr)" alt="QR CFDI" style="width: 150px; height: 150px; border: 1px solid #ccc; padding: 5px; background: white;" />
+                    <br><small style="color: #666;">Verificación SAT</small>
+                </td>
+            }
+        </tr>
+    </table>
+
+    <!-- Footer simple -->
+    <div style="text-align: center; margin-top: 25px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 10px; color: #666;">
+        <strong>Este documento es una representación impresa de un CFDI</strong><br>
+        Generado el @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
+    </div>
+
+</body>
+</html>

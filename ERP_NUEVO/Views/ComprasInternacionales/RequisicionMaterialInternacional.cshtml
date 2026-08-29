@@ -1,0 +1,1982 @@
+﻿@using BOS_ERP.Controllers;
+﻿@{
+    ViewBag.Title = "Orden de compra internacional";
+    ViewBag.PageTitle = "Orden de compra internacional";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+}
+<link href="~/content/Site.css" rel="stylesheet" />
+<style>
+    :root {
+        /* Wizard colors adaptados a tu paleta */
+        --sw-border-color: var(--border-light);
+        --sw-toolbar-btn-color: var(--bg-light);
+        --sw-toolbar-btn-background-color: var(--primary-blue);
+        --sw-anchor-default-primary-color: var(--very-light-blue);
+        --sw-anchor-default-secondary-color: var(--text-light);
+        --sw-anchor-active-primary-color: var(--primary-blue);
+        --sw-anchor-active-secondary-color: var(--bg-light);
+        --sw-anchor-done-primary-color: var(--light-blue);
+        --sw-anchor-done-secondary-color: var(--bg-light);
+        --sw-anchor-disabled-primary-color: var(--very-light-blue);
+        --sw-anchor-disabled-secondary-color: var(--border-light);
+        --sw-anchor-error-primary-color: #dc3545; /* Mantengo el rojo original para errores */
+        --sw-anchor-error-secondary-color: var(--bg-light);
+        --sw-anchor-warning-primary-color: #ffc107; /* Mantengo el amarillo original para warnings */
+        --sw-anchor-warning-secondary-color: var(--bg-light);
+        --sw-progress-color: var(--primary-blue);
+        --sw-progress-background-color: var(--very-light-blue);
+        --sw-loader-color: var(--primary-blue);
+        --sw-loader-background-color: var(--very-light-blue);
+        --sw-loader-background-wrapper-color: rgba(255, 255, 255, 0.7);
+    }
+
+    [data-theme="dark"] {
+        /* Wizard colors para tema oscuro */
+        --sw-border-color: var(--border-light);
+        --sw-toolbar-btn-color: var(--bg-light);
+        --sw-toolbar-btn-background-color: var(--primary-blue);
+        --sw-anchor-default-primary-color: var(--very-light-blue);
+        --sw-anchor-default-secondary-color: var(--text-light);
+        --sw-anchor-active-primary-color: var(--primary-blue);
+        --sw-anchor-active-secondary-color: var(--bg-light);
+        --sw-anchor-done-primary-color: var(--light-blue);
+        --sw-anchor-done-secondary-color: var(--bg-light);
+        --sw-anchor-disabled-primary-color: var(--very-light-blue);
+        --sw-anchor-disabled-secondary-color: var(--border-light);
+        --sw-anchor-error-primary-color: #ef4444; /* Rojo más suave para tema oscuro */
+        --sw-anchor-error-secondary-color: var(--bg-light);
+        --sw-anchor-warning-primary-color: #f59e0b; /* Amarillo más suave para tema oscuro */
+        --sw-anchor-warning-secondary-color: var(--bg-light);
+        --sw-progress-color: var(--primary-blue);
+        --sw-progress-background-color: var(--very-light-blue);
+        --sw-loader-color: var(--primary-blue);
+        --sw-loader-background-color: var(--very-light-blue);
+        --sw-loader-background-wrapper-color: rgba(17, 24, 39, 0.7); /* Ajustado para tema oscuro */
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+        .form-header h4 {
+            color: var(--primary-blue);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+    .purchase-mode-toggle {
+        background: linear-gradient(135deg, var(--very-light-blue), var(--light-blue));
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-light);
+    }
+
+    .modern-switch {
+        width: 60px;
+        height: 24px;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+        .modern-switch:checked {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+
+    .form-switch .form-check-input {
+        width: 3em;
+    }
+
+    .switch-label {
+        font-weight: 500;
+        color: var(--text-dark);
+        cursor: pointer;
+    }
+
+    .switch-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+    }
+
+    .product-card {
+        background: var(--bg-light);
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .product-card:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-card.selected {
+            border-color: var(--primary-blue);
+            background: linear-gradient(135deg, var(--very-light-blue), var(--light-blue));
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .product-card.selected::before {
+            opacity: 1;
+        }
+
+        .product-card.selected .product-icon {
+            color: var(--primary-blue-dark);
+        }
+
+    .product-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .product-description {
+        color: var(--text-light);
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .product-features {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        color: var(--text-light);
+        font-size: 0.85rem;
+    }
+
+        .feature-item i {
+            color: var(--primary-blue);
+            margin-right: 0.5rem;
+            width: 16px;
+        }
+
+    .btn-check {
+        position: absolute;
+        clip: rect(0, 0, 0, 0);
+        pointer-events: none;
+    }
+
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: #dc3545;
+    }
+
+    .form-actions {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-light);
+    }
+
+    @@media (max-width: 768px) {
+        .form-container {
+            margin: 1rem;
+            padding: 1.5rem;
+        }
+
+        .product-card {
+            padding: 1rem;
+        }
+    }
+
+    .info-panel {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+        .info-panel .info-title {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-panel .info-text {
+            color: #92400e;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+    .card-resumen {
+        background-color: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow);
+        padding: 1.25rem 1.5rem;
+        transition: background 0.3s ease;
+    }
+
+        .card-resumen h6 {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-resumen p {
+            color: var(--text-dark);
+            font-size: 1rem;
+        }
+
+    .badge-tag {
+        background-color: var(--light-blue);
+        color: var(--primary-blue);
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .table-resumen {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+        .table-resumen th {
+            background-color: var(--very-light-blue);
+            color: var(--dark-blue);
+            text-align: left;
+            padding: 0.6rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .table-resumen td {
+            padding: 0.6rem;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .table-resumen tbody tr:nth-child(even) {
+            background-color: var(--bg-gray);
+        }
+
+    .alert-info-resumen {
+        background-color: var(--light-blue);
+        color: var(--dark-blue);
+        border: 1px solid var(--accent-blue);
+        border-radius: 0.75rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+        box-shadow: var(--shadow);
+    }
+
+    .main-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+        .main-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+    .upload-zone {
+        border: 3px dashed #007bff;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            transition: left 0.5s;
+        }
+
+        .upload-zone:hover {
+            border-color: #0056b3;
+            transform: scale(1.02);
+        }
+
+            .upload-zone:hover::before {
+                left: 100%;
+            }
+
+        .upload-zone.dragover {
+            border-color: #28a745;
+            background: linear-gradient(145deg, #e8f5e8 0%, #c8e6c9 100%);
+            transform: scale(1.05);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0; /* shorthand para top: 0; right: 0; bottom: 0; left: 0 */
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+    .file-input {
+        opacity: 0;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .upload-content {
+        pointer-events: none;
+        z-index: 1;
+        position: relative;
+    }
+
+    .upload-icon {
+        font-size: 3rem;
+        color: #007bff;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .upload-zone:hover .upload-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .btn-modern {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+        border-radius: 5px;
+        padding: 12px 30px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 123, 255, 0.3);
+        }
+
+            .btn-modern:hover::before {
+                left: 100%;
+            }
+
+    .btn-outline-modern {
+        background: transparent;
+        border: 2px solid #007bff;
+        color: #007bff;
+        border-radius: 5px;
+        padding: 10px 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+        .btn-outline-modern:hover {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.2);
+        }
+
+    .btn-danger-modern {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+        .btn-danger-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3);
+        }
+
+    .title-section {
+        background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+        margin-bottom: 2rem;
+    }
+
+    .feature-card {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 5px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0, 123, 255, 0.1);
+    }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateX(10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+
+    @@keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .floating-elements {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .floating-element {
+        position: absolute;
+        opacity: 0.1;
+        animation: float 20s infinite linear;
+    }
+
+    @@keyframes float {
+        0% {
+            transform: translateY(100vh) rotate(0deg);
+        }
+
+        100% {
+            transform: translateY(-100px) rotate(360deg);
+        }
+    }
+
+    .progress-bar-modern {
+        height: 8px;
+        border-radius: 10px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #007bff, #28a745);
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+
+    #totalpesos {
+        font-weight: bold;
+        text-align: right;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem; /* igual que Bootstrap */
+        padding: 0.375rem 0.75rem;
+        margin: 0;
+    }
+</style>
+
+<link href="~/lib/smartwizard/dist/css/smart_wizard_all.min.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<!-- SmartWizard html -->
+<div id="smartwizard">
+    <ul class="nav nav-progress">
+        <li class="nav-item">
+            <a class="nav-link" style="background:transparent;" href="#step-1">
+                <div class="num">1</div>
+                Tipo de proveedor
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" style="background:transparent;" href="#step-2">
+                <span class="num">2</span>
+                Seleccionar productos
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" style="background:transparent;" href="#step-3">
+                <span class="num">3</span>
+                Resumen
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content" style="overflow:auto;">
+        <div id="step-1" class="tab-pane" style="overflow:auto; height:auto !important;" role="tabpanel" aria-labelledby="step-1">
+            <form id="form-1" novalidate>
+                <!-- Form Header -->
+                <div class="form-header">
+                    <h4>Selecciona el tipo de proveedor </h4>
+                    <p>Elige la opción que mejor describa el propósito de tu producto </p>
+                </div>
+
+
+                <!-- Opciones de Proveedor -->
+                <fieldset class="row g-3" aria-required="true">
+                    <legend class="visually-hidden">Tipo de Proveedor</legend>
+
+                    <!-- Proveedor con pago en una sola exhibición -->
+                    <div class="col-sm-12 col-md-6">
+                        <div class="product-card" data-option="exhibicion">
+                            @{
+                                @*if (Utilities.GetAreaName(User.Identity.Name) == "Taller")
+                                    {
+                                        <input type="radio" value="SCTZT" class="btn-check" name="tpnom" id="exhibicion" autocomplete="off" required>
+                                    }
+                                    else if (Utilities.GetAreaName(User.Identity.Name) == "Ventas Industriales")
+                                    {
+                                        <input type="radio" value="SCTZI" class="btn-check" name="tpnom" id="exhibicion" autocomplete="off" required>
+                                    }
+                                    else
+                                    {
+
+                                    }*@
+                                <input type="radio" value="OCDI" class="btn-check" name="tpnom" id="exhibicion" autocomplete="off" required>
+                            }
+                            <label for="exhibicion" class="w-100 h-100 d-block">
+                                <div class="product-title">Proveedor con pago en una sola exhibición</div>
+                                <div class="product-description">
+                                    Se utiliza para proveedores que requieren el pago completo al momento de la entrega o factura.
+                                </div>
+                                <div class="product-features">
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Pago inmediato</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Uso común para compras de productos listos</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Sin gestión de crédito</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Proveedor con pago en parcialidades -->
+                    <div class="col-sm-12 col-md-6">
+                        <div class="product-card" data-option="parcialidades">
+                            @{
+                                @*if (Utilities.GetAreaName(User.Identity.Name) == "Taller")
+                                    {
+                                        <input type="radio" value="SCTZT" class="btn-check" name="tpnom" id="parcialidades" autocomplete="off" required>
+                                    }
+                                    else if (Utilities.GetAreaName(User.Identity.Name) == "Ventas Industriales")
+                                    {
+                                        <input type="radio" value="SCTZI" class="btn-check" name="tpnom" id="parcialidades" autocomplete="off" required>
+                                    }
+                                    else
+                                    {
+                                        <input type="radio" value="SCTZ" class="btn-check" name="tpnom" id="parcialidades" autocomplete="off" required>
+                                    }*@
+                                <input type="radio" value="PI" class="btn-check" name="tpnom" id="parcialidades" autocomplete="off" required>
+                            }
+                            <label for="parcialidades" class="w-100 h-100 d-block">
+                                <div class="product-title">Proveedor con pago en parcialidades o diferido</div>
+                                <div class="product-description">
+                                    Se utiliza para proveedores con acuerdos de crédito, pagos programados o financiamiento.
+                                </div>
+                                <div class="product-features">
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Acuerdo de crédito o financiamiento</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Pagos a plazos o diferidos</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Seguimiento de pagos programados</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+        <div id="step-2" class="tab-pane" style="overflow:auto; height:auto !important;" role="tabpanel" aria-labelledby="step-2">
+            <!-- Campos compartidos que aparecen en ambos casos -->
+            <div class="container py-4">
+                <div class="card main-card rounded-4 border-0 shadow-sm" style="z-index:2;">
+                    <div class="card-body p-4">
+                        <!-- Divisas y tipo de cambio - COMPARTIDOS -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select class="form-select" id="divisa"
+                                            data-usd="@ViewBag.TasaUSD"
+                                            data-eur="@ViewBag.TasaEUR"
+                                            data-mxn="@ViewBag.TasaMXN">
+                                        <option value="PESOS" selected>MXN</option>
+                                        <option value="DLLS">USD</option>
+                                        <option value="EURO">EUR</option>
+                                    </select>
+                                    <label for="divisa">Divisa</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control" id="tipoCambio" step="0.0001" min="0" value="1" placeholder="Tipo de cambio">
+                                    <label for="tipoCambio">Tipo de cambio</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Incoterm y proveedor - COMPARTIDOS -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select class="form-select" id="incoterm" name="incoterm">
+                                        <option value="" disabled selected>Selecciona un incoterm</option>
+                                        @foreach (var item in ViewBag.Incoterms as List<Dictionary<string, object>>)
+                                        {
+                                            if (item.ContainsKey("activo") && Convert.ToBoolean(item["activo"]))
+                                            {
+                                                <option value="@item["codigo"]">@item["descripcion"]</option>
+                                            }
+                                        }
+                                    </select>
+                                    <label for="incoterm">Incoterm</label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="proveedorSelect" class="form-label fw-semibold text-dark mb-2">
+                                    <i class="fas fa-truck me-2"></i> Seleccionar proveedor:
+                                </label>
+                                <select id="proveedorSelect" placeholder="Buscar o agregar proveedor..." class="form-select"></select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido específico para exhibición (tabla de materiales) -->
+            <div id="tabla-materiales-wrapper">
+                <div class="container py-5">
+                    <div class="card main-card rounded-4 border-0 shadow-sm" style="z-index: 1;">
+                        <div class="card-body p-4">
+                            <!-- Título -->
+                            <div class="text-center mb-4">
+                                <h2 class="title-section mb-2">
+                                    <i class="fas fa-cloud-upload-alt me-2"></i> Cargar productos
+                                </h2>
+                                <p class="text-muted">Sube, edita y gestiona tus datos fácilmente</p>
+                            </div>
+
+                            <div class="row g-4">
+                                <!-- Columna izquierda: acordeones -->
+                                <div class="col-lg-6">
+                                    <div class="accordion" id="accordionCsvUpload">
+                                        <!-- Acordeón CSV -->
+                                        <div class="accordion-item border rounded-4 mb-3">
+                                            <h2 class="accordion-header" id="headingCsv">
+                                                <button class="accordion-button collapsed fw-semibold text-primary" type="button"
+                                                        data-bs-toggle="collapse" data-bs-target="#collapseCsv"
+                                                        aria-expanded="false" aria-controls="collapseCsv" style="border-radius: 15px;">
+                                                    <i class="fas fa-file-csv me-2"></i> Subir archivo CSV
+                                                </button>
+                                            </h2>
+                                            <div id="collapseCsv" class="accordion-collapse collapse" aria-labelledby="headingCsv"
+                                                 data-bs-parent="#accordionCsvUpload">
+                                                <div class="accordion-body p-3">
+                                                    <form id="form-subir-csv" enctype="multipart/form-data">
+                                                        <div class="upload-zone text-center p-3 position-relative border rounded bg-light-subtle">
+                                                            <input type="file" name="archivoCsv" id="archivoCsv"
+                                                                   class="file-input" accept=".csv" required />
+                                                            <div class="upload-content">
+                                                                <i class="fas fa-cloud-upload-alt upload-icon pulse-animation text-primary"></i>
+                                                                <h6 class="fw-bold mb-1">Arrastra tu archivo aquí</h6>
+                                                                <p class="text-muted small mb-0">o haz clic para seleccionar</p>
+                                                                <small class="text-muted">Formatos: .csv | máx. 10MB</small>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="progress-bar-modern d-none mt-3">
+                                                            <div class="progress-fill" style="width: 0%"></div>
+                                                        </div>
+
+                                                        <div class="text-center mt-3">
+                                                            <button type="submit" class="btn btn-modern btn-sm shadow-sm">
+                                                                <i class="fas fa-rocket me-1"></i> Procesar
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Acordeón documento -->
+                                        <div class="accordion-item border rounded-4">
+                                            <h2 class="accordion-header" id="headingDocument">
+                                                <button class="accordion-button collapsed fw-semibold text-primary" type="button"
+                                                        data-bs-toggle="collapse" data-bs-target="#collapseDocument"
+                                                        aria-expanded="false" aria-controls="collapseDocument" style="border-radius: 15px;">
+                                                    <i class="fas fa-file-alt me-2"></i> Cargar desde documento
+                                                </button>
+                                            </h2>
+                                            <div id="collapseDocument" class="accordion-collapse collapse" aria-labelledby="headingDocument"
+                                                 data-bs-parent="#accordionCsvUpload">
+                                                <div class="accordion-body p-3">
+                                                    <div class="mb-3">
+                                                        <label for="documentSelect" class="form-label fw-semibold text-dark mb-2">
+                                                            <i class="fas fa-folder-open me-2"></i> Seleccionar documento:
+                                                        </label>
+                                                        <select id="documentSelect" class="form-select">
+                                                            <option value="" selected>-- Selecciona un documento --</option>
+                                                            <option value="plantilla-productos">Plantilla de productos</option>
+                                                            <option value="inventario-actual">Inventario actual</option>
+                                                            <option value="catalogo-proveedores">Catálogo de proveedores</option>
+                                                            <option value="precios-actualizados">Lista de precios actualizados</option>
+                                                            <option value="productos-temporada">Productos de temporada</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="text-center mt-3">
+                                                        <button type="button" id="btnCargarDocumento" class="btn btn-modern btn-sm shadow-sm">
+                                                            <i class="fas fa-download me-1"></i> Cargar documento
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Columna derecha: acciones -->
+                                <div class="col-lg-6 d-flex flex-column gap-3">
+                                    <button id="btnAgregarFila" type="button"
+                                            class="btn btn-outline-modern w-100 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                                        <i class="fas fa-plus-circle"></i> <span>Agregar Nueva Fila</span>
+                                    </button>
+                                    <button id="btnEliminarSeleccionados" type="button"
+                                            class="btn btn-danger-modern w-100 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                                        <i class="fas fa-trash-alt"></i> <span>Eliminar Seleccionadas</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div> <!-- .card-body -->
+                    </div> <!-- .card -->
+                </div>
+
+                <div class="table-responsive mb-4">
+                    <div class="info-panel">
+                        <div class="info-title">
+                            <i class="fas fa-info-circle"></i>
+                            Información Importante
+                        </div>
+                        <p class="info-text">
+                            <i class="fas fa-asterisk me-1"></i>
+                            Los campos marcados con * son obligatorios
+                        </p>
+                    </div>
+
+                    <table class="table align-middle table-hover" id="tabla-materiales">
+                        <thead class="text-center" style="background-color: var(--very-light-blue); color: var(--text-dark);">
+                            <tr>
+                                <th class="text-start"><i class="bi bi-check-square"></i></th>
+                                <th class="text-start">#</th>
+                                <th class="text-start">Cantidad *</th>
+                                <th class="text-start">Código *</th>
+                                <th class="text-start">Descripcion *</th>
+                                <th class="text-start">Unidad *</th>
+                                <th class="text-start">Costo Unitario *</th>
+                                <th class="text-start">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-floating mb-4">
+                    <textarea class="form-control" id="observaciones" rows="3"></textarea>
+                    <label class="form-label" for="observaciones"><i class="bi bi-journal-text"></i> Observaciones</label>
+                </div>
+
+                <div class="row">
+                    <div class="col-4">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="total" class="form-control fw-bold" readonly />
+                            <label class="form-label" for="total"><i class="bi bi-calculator me-1"></i>Total</label>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <p id="totalpesos"
+                           class="form-control fw-bold text-end border rounded py-2 px-3 m-0">
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido específico para parcialidades (PDF) -->
+            <div id="contenido-parcialidades">
+                <div class="container py-4">
+                    <div class="card shadow-sm rounded-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">
+                                <i class="fas fa-file-pdf me-2 text-danger"></i> Subir archivo PDF
+                            </h5>
+                            <form id="form-subir-pdf" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="archivoPdf" class="form-label">Selecciona tu archivo .pdf</label>
+                                    <input type="file" name="archivoPdf" id="archivoPdf" class="form-control" accept=".pdf" required />
+                                </div>
+
+                                <div class="form-floating mb-4">
+                                    <textarea class="form-control" id="observaciones2" rows="3"></textarea>
+                                    <label class="form-label" for="observaciones2"><i class="bi bi-journal-text"></i> Observaciones</label>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="step-3" class="tab-pane" role="tabpanel" aria-labelledby="step-3">
+            <h3>Resumen</h3>
+            <div class="mt-5">
+                <div id="resumen" class="table-responsive"></div>
+                <div class="text-end mt-4">
+                    <button id="btn-enviar" class="btn btn-success">
+                        <i class="bi bi-send-fill"></i> Enviar solicitud
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="progress">
+    <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+</div>
+
+
+<script src="~/lib/jquery/jquery.min.js"></script>
+<script src="~/lib/smartwizard/dist/js/jquery.smartWizard.min.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+
+
+<script>
+
+    let tsProveedor;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await cargarProveedores();
+        tsProveedor = new TomSelect('#proveedorSelect', {
+            persist: false,
+            createOnBlur: true,
+            create: true,
+            options: proveedoresList,
+            valueField: "id",
+            labelField: "nombre",
+            searchField: ["clave", "nombre"],
+            render: {
+                option: (data, escape) => `<div style="color: var(--text-dark)">${escape(data.nombre)}</div>`,
+                item: (data, escape) => `<div style="color: var(--text-dark)">${escape(data.nombre)}</div>`
+            }
+        });
+    });
+
+    $('#smartwizard').smartWizard({
+        selected: 0,
+        theme: 'basic',
+        justified: true,
+        autoAdjustHeight: true,
+        backButtonSupport: true,
+        enableUrlHash: true,
+        enableFormValidation: true,
+        transition: {
+            animation: 'slideHorizontal',
+            speed: '400',
+        },
+        toolbar: {
+            position: 'both',
+            showNextButton: true,
+            showPreviousButton: true,
+        },
+        anchor: {
+            enableNavigation: true,
+            enableNavigationAlways: false,
+            enableDoneState: true,
+            markPreviousStepsAsDone: true,
+            unDoneOnBackNavigation: false,
+            enableDoneStateNavigation: true
+        },
+        lang: {
+            next: 'Siguiente',
+            previous: 'Anterior'
+        }
+    });
+
+    // Validación manual con clases
+    $("#smartwizard").on("leaveStep", function (e, anchorObject, currentStepIdx, nextStepIdx, stepDirection) {
+        if (stepDirection === 'forward') {
+            const form = document.getElementById('form-' + (currentStepIdx + 1));
+            const navItem = document.querySelector(`.nav-link[href="#step-${currentStepIdx + 1}"]`);
+
+            const tabla = document.getElementById('tabla-materiales');
+
+            if (form && !form.checkValidity()) {
+                form.classList.add('was-validated');
+                if ((currentStepIdx + 1) === 2) {
+                    navItem?.classList.add('error');
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Debes seleccionar un usuario.'
+                    })
+                    return false;
+                }
+
+                // Marca el paso como inválido visualmente
+                navItem?.classList.add('error');
+
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Debes seleccionar el tipo de producto.'
+                })
+
+                return false;
+            }
+
+            // Quita el estilo de error si ya es válido
+            if ((currentStepIdx + 1) === 2) {
+                var validate = validarDatos();
+                if (!validate) {
+                    navItem?.classList.add('error');
+                    return false;
+                }
+
+                generarResumen();
+                navItem?.classList.remove('error');
+            }
+
+            navItem?.classList.remove('error');
+        }
+    });
+
+
+    $('#smartwizard').smartWizard("reset");
+
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.addEventListener('click', function () {
+            // Remover selección anterior
+            document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+
+            // Seleccionar la tarjeta actual
+            this.classList.add('selected');
+
+            // Marcar el radio button
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+        });
+    });
+    const limpiarNumero = (str) => str.replace(/[^\d.]/g, '');
+    document.getElementById("divisa").addEventListener("change", function () {
+        const selected = this.value;
+        const tasaCambioInput = document.getElementById("tipoCambio");
+
+        const tasa = {
+            PESOS: parseFloat(this.dataset.mxn),
+            DLLS: parseFloat(this.dataset.usd),
+            EURO: parseFloat(this.dataset.eur)
+        }[selected] || 1;
+
+        tasaCambioInput.value = tasa.toFixed(4);
+
+        // Recalcula los totales ajustados al tipo de cambio
+        calcularTotales();
+    });
+
+    function calcularTotales() {
+        if (typeof Currency === 'undefined' || typeof CurrencyUSD === 'undefined' || typeof CurrencyEUR === 'undefined') {
+            console.warn("Los formateadores de moneda aún no están definidos.");
+            return; // Salir de la función para evitar errores
+        }
+
+        let subtotal = 0;
+        const filas = document.querySelectorAll("#tabla-materiales tbody tr");
+        const tipoCambio = parseFloat(document.getElementById("tipoCambio")?.value) || 1;
+        const divisa = document.getElementById("divisa")?.value || 'PESOS';
+
+        filas.forEach((row, i) => {
+            row.cells[1].innerText = i + 1;
+            const cantidad = limpiarNumero(row.cells[2].innerText);
+            const costoUnitario = limpiarNumero(row.cells[6].innerText);
+            const total = cantidad * costoUnitario;
+            row.querySelector(".total-fila").innerText = total ? `$ ${total.toFixed(2)}` : "$ 0.00";
+            subtotal += total;
+        });
+
+        const formatters = {
+            'PESOS': Currency,
+            'DLLS': CurrencyUSD,
+            'EURO': CurrencyEUR
+        };
+
+        const totalFinalPesos = subtotal * tipoCambio;
+
+        document.getElementById("total").value = formatters[divisa]?.format(subtotal) || Currency.format(subtotal);
+
+        const pesos = document.getElementById("totalpesos");
+        pesos.innerHTML = (divisa !== 'PESOS') ? `Total: ${Currency.format(totalFinalPesos)} MXN` : '';
+    }
+
+    // Escuchar cambios en celdas iniciales
+    document.querySelectorAll("#tabla-materiales tbody td[contenteditable='true']").forEach(cell => {
+        cell.addEventListener("input", calcularTotales);
+    });
+
+    calcularTotales();
+
+
+
+    document.getElementById("btn-enviar").addEventListener("click", async function () {
+        const radioExhibicion = document.getElementById('exhibicion');
+        const radioParcialidades = document.getElementById('parcialidades');
+        const esExhibicion = radioExhibicion?.checked;
+        const esParcialidades = radioParcialidades?.checked;
+        const esVenta = document.getElementById("venta")?.checked === true;
+
+        const observaciones = document.getElementById("observaciones")?.value.trim();
+        const observaciones2 = document.getElementById("observaciones2")?.value.trim();        
+        const divisa = document.getElementById("divisa")?.value;
+        const total = limpiarNumero(document.getElementById("total")?.value.trim(),divisa);
+        const incoterm = document.getElementById("incoterm")?.value;
+        const padre = document.getElementById("documentSelect")?.value;
+
+        const tipoSeleccionado = document.querySelector('input[name="tpnom"]:checked')?.value;
+        const archivoPdf = document.getElementById("archivoPdf")?.files?.[0];
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+        const datosEnviar = {
+            observaciones,
+            observaciones2,
+            total,
+            tpnom: tipoSeleccionado,
+            tipo_producto: esVenta ? 'directo' : 'indirecto',
+            divisaSeleccionado: divisa || null,
+            incotermSeleccionado: incoterm || null,
+            padre: padre || null,
+            proveedor: document.getElementById("proveedorSelect")?.value.trim() || '—' || null,
+        };
+
+        // FLUJO PARCIALIDADES (PDF)
+        if (esParcialidades) {
+            if (!archivoPdf) {
+                Swal.fire('Error', 'Debes subir un archivo PDF.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                formData.append("__RequestVerificationToken", token.value);
+            }
+            formData.append('archivoPdf', archivoPdf);
+            formData.append('observaciones', observaciones);
+            formData.append('observaciones2', observaciones2);
+            formData.append('tpnom', tipoSeleccionado);
+            formData.append('tipo_producto', datosEnviar.tipo_producto);
+            formData.append('total', total);
+            formData.append('divisa', divisa);
+            formData.append('incoterm', incoterm);
+            formData.append('proveedor', document.getElementById("proveedorSelect")?.value.trim() || '—' || null);
+
+            Swal.fire({
+                title: 'Enviando solicitud con PDF',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const response = await fetch('/RequisicionInternacional/CreateParcialidades', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const res = await response.json();
+                Swal.close();
+
+                if (res.success) {
+                    _SwalReload({
+                        icon: 'success',
+                        title: 'Solicitud enviada con PDF',
+                        html: `<p>${res.message}</p><p><strong>Folio:</strong> ${res.folio_generado}</p>`,
+                        showCancelButton: false,
+                    });
+                } else {
+                    Swal.fire('Error', res.message || 'Error al enviar solicitud.', 'error');
+                }
+            } catch (err) {
+                Swal.close();
+                Swal.fire('Error', 'Ocurrió un error al enviar el PDF.', 'error');
+            }
+
+            return;
+        }
+
+        // FLUJO EXHIBICIÓN (tabla de materiales)
+        const filasMateriales = [];
+        let errorFila = false;
+
+        document.querySelectorAll("#tabla-materiales tbody tr").forEach((fila) => {
+            const cantidad = limpiarNumero(fila.cells[2]?.innerText.trim());
+            const codigo = fila.cells[3]?.innerText.trim();
+            const descripcion = fila.cells[4]?.innerText.trim();
+            const unidad = fila.cells[5]?.innerText.trim();
+            const costoUnitario = limpiarNumero(fila.cells[6]?.innerText.trim());
+
+            let totalFila, precioVenta;
+            let filaValida = cantidad && cantidad !== "0" && codigo && unidad && costoUnitario && costoUnitario !== "0.00";
+
+
+            totalFila = limpiarNumero(fila.cells[7]?.innerText.trim());
+
+
+            if (filaValida) {
+                filasMateriales.push({
+                    cantidad,
+                    codigo,
+                    descripcion,
+                    unidad,
+                    costoUnitario,
+                    total: totalFila
+                });
+            } else {
+                errorFila = true;
+            }
+        });
+
+        if (filasMateriales.length === 0 || errorFila) {
+            Swal.fire('Error', 'Hay filas incompletas o vacías en la tabla.', 'error');
+            return;
+        }
+
+        if (!total || total === "0.00") {
+            Swal.fire('Error', 'El total es obligatorio y debe ser mayor a 0.', 'error');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Enviando solicitud',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            const res = await GetData({
+                path: '/RequisicionInternacional/OrdenDeCompraInternacional',
+                data: {
+                    ...datosEnviar,
+                    materiales: JSON.stringify(filasMateriales)
+                }
+            });
+
+            Swal.close();
+
+            if (res.success) {
+                _SwalReload({
+                    icon: 'success',
+                    title: 'Solicitud creada',
+                    html: `<p>${res.message}</p><p><strong>Folio:</strong> ${res.folio_generado}</p>`,
+                    showCancelButton: false,
+                });
+            } else {
+                Swal.fire('Error', res.message || 'No se pudo completar el proceso.', 'error');
+            }
+        } catch (err) {
+            Swal.close();
+            Swal.fire('Error', 'Ocurrió un error al enviar la solicitud.', 'error');
+        }
+    });
+
+
+    // Validar datos de la tabla
+    function validarDatos() {
+        const radioExhibicion = document.getElementById('exhibicion');
+        const radioParcialidades = document.getElementById('parcialidades');
+        const esExhibicion = radioExhibicion?.checked;
+        const esParcialidades = radioParcialidades?.checked;
+
+        const observaciones = document.getElementById("observaciones")?.value.trim();
+        const total = limpiarNumero(document.getElementById("total")?.value.trim());
+
+        // Validación cuando es proveedor con pago en parcialidades (solo PDF)
+        if (esParcialidades) {
+            const archivoPdf = document.getElementById("archivoPdf");
+
+            if (!archivoPdf || archivoPdf.files.length === 0) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Debes subir un archivo PDF.'
+                });
+                return false;
+            }
+
+            return true;
+        }
+
+        // Validación para proveedor con pago en una sola exhibición (usa tabla)
+        const filasMateriales = [];
+        let errorFila = false;
+
+        document.querySelectorAll("#tabla-materiales tbody tr").forEach((fila) => {
+            const cantidad = limpiarNumero(fila.cells[2]?.innerText.trim());
+            const codigo = fila.cells[3]?.innerText.trim();
+            const descripcion = fila.cells[4]?.innerText.trim();
+            const unidad = fila.cells[5]?.innerText.trim();
+            const costoUnitario = limpiarNumero(fila.cells[6]?.innerText.trim());
+
+
+            let filaValida = cantidad && cantidad !== "0" && codigo && unidad && costoUnitario && costoUnitario !== "0.00";
+
+            if (filaValida) {
+                filasMateriales.push({ cantidad, codigo, unidad, costoUnitario });
+            } else {
+                errorFila = true;
+            }
+        });
+
+        if (filasMateriales.length === 0 || errorFila) {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Hay filas incompletas o vacías. Revisa que todos los campos obligatorios estén llenos.'
+            });
+            return false;
+        }
+
+        if (!total || total === "0.00") {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'El total es obligatorio y debe ser mayor a 0.'
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+
+    // Formatear campos numericos
+    const radios = document.querySelectorAll('input[name="tpnom"]');
+    const tabla = document.querySelector(`#tabla-materiales`);
+
+    tabla.addEventListener("blur", (e) => {
+        if (e.target.matches("td.precio-unitario") || e.target.matches("td.precio-venta")) {
+            const tr = e.target.closest("tr");
+            const tdPrecio = tr.querySelector(".precio-unitario");
+
+            const tdTotal = tr.querySelector(".total-fila");
+
+            // Sanitizar ambos
+            let precioStr = tdPrecio.innerText.replace(/[^0-9.,]/g, '').replace(',', '.');
+            let precio = parseFloat(precioStr);
+            if (isNaN(precio)) precio = 0;
+            tdPrecio.innerText = `$ ${precio.toFixed(2)}`;
+
+            const cantidad = parseFloat(tr.querySelector(".input-cantidad")?.innerText) || 0;
+            const total = precio * cantidad;
+            tdTotal.innerText = `$ ${total.toFixed(2)}`;
+            calcularTotales()
+        }
+    }, true);
+
+    // Limpieza visual al enfocar ambos campos
+    tabla.addEventListener("focusin", (e) => {
+        if (e.target.matches("td.precio-unitario") || e.target.matches("td.precio-venta")) {
+            const raw = e.target.innerText.replace(/[^0-9.,]/g, '').replace(',', '.');
+            e.target.innerText = raw ? parseFloat(raw) : '';
+        }
+    });
+    function limpiarNumerototal(valor, divisa) {
+        if (!valor) return 0;
+
+        let limpio = valor.trim();
+
+        // Quitar símbolos de moneda
+        limpio = limpio.replace(/[$€\s]/g, ''); // quitar espacios también
+
+        if (divisa === 'EURO') {
+            // Si hay punto y coma europeo
+            // "1.234,56" → "1234.56"
+            if (limpio.includes(',')) {
+                // quitar todos los puntos (separador de miles)
+                limpio = limpio.replace(/\./g, '');
+                // reemplazar la coma decimal por punto
+                limpio = limpio.replace(/,/g, '.');
+            }
+        } else {
+            // Formato normal: quitar comas de miles
+            limpio = limpio.replace(/,/g, '');
+        }
+
+                return Currency.format(limpio) || 0;
+
+
+    }
+
+    // Resumen para el tercer paso del wizard
+    function generarResumen() {
+        const resumenDiv = document.getElementById('resumen');
+        resumenDiv.innerHTML = '';
+
+        const esVenta = document.getElementById("venta")?.checked === true;
+        const esCompraDirecta = document.getElementById("modoCompraDirecta")?.checked === true;
+        const esExhibicion = document.getElementById("exhibicion")?.checked === true;
+
+        const observaciones = document.getElementById("observaciones")?.value.trim() || '—';
+        const observaciones2 = document.getElementById("observaciones2")?.value.trim() || '—';
+        const divisa = document.getElementById("divisa")?.value.trim() || '—';
+        const incoterm = document.getElementById("incoterm")?.value.trim() || '—';
+        const proveedor = tsProveedor.getItem(tsProveedor.getValue())?.textContent || '—';
+        const total = limpiarNumerototal(document.getElementById("total")?.value, divisa);
+        const totalPesos = document.getElementById("totalpesos");
+        const datos = [
+            { titulo: "Total", valor: `${total}`, badge: true },
+            { titulo: "Observaciones", valor: observaciones },
+            { titulo: "Divisa", valor: divisa },
+            { titulo: "incoterm", valor: incoterm },
+            { titulo: "proveedor", valor: proveedor },
+        ];
+
+        let cardsHtml = '';
+        let tipoMensaje = '';
+        if (esExhibicion) {
+            tipoMensaje = 'Estos productos fueron seleccionados para <strong>proveedores con pago en una sola exhibición</strong>.';
+        } else if (document.getElementById("parcialidades")?.checked) {
+            tipoMensaje = 'Estos productos fueron seleccionados para <strong>proveedores con pago en parcialidades o diferido</strong>.';
+        } else {
+            tipoMensaje = 'No se ha seleccionado el tipo de proveedor.';
+        }
+
+        let contenidoCentral = '';
+        const filasMateriales = document.querySelectorAll("#tabla-materiales tbody tr");
+        const tieneMateriales = filasMateriales.length > 0;
+        const archivoInput = document.getElementById('archivoPdf');
+        const archivo = archivoInput?.files?.[0];
+        const tienePdf = archivo && archivo.type === 'application/pdf';
+
+        if (esExhibicion && tieneMateriales) {
+
+            datos.forEach(d => {
+                const colClass = d.titulo === 'Observaciones' ? 'col-12' : 'col-md-4';
+                cardsHtml += `
+            <div class="${colClass}">
+                <div class="card-resumen mb-3">
+                    <h6>${d.titulo}</h6>
+                    <p>
+                        ${d.badge ? `<span class="badge-tag">${d.valor}</span>` : d.valor}
+                    </p>
+                </div>
+            </div>
+        `;
+            });
+            // Mostrar tabla
+            const materiales = [];
+            document.querySelectorAll("#tabla-materiales tbody tr").forEach((fila) => {
+                const cantidad = fila.cells[2].innerText.trim();
+                const codigo = fila.cells[3].innerText.trim();
+                const descripcion = fila.cells[4].innerText.trim();
+                const unidad = fila.cells[5].innerText.trim();
+                const costoUnitario = fila.cells[6].innerText.trim().replace('$', '').replace(',', '');
+                let total, precioVenta, proveedor = '';
+                total = fila.cells[7].innerText.trim().replace('$', '').replace(',', '');
+
+
+                if (esCompraDirecta) {
+                    const proveedorSelect = fila.querySelector("select.proveedorId");
+                    proveedor = proveedorSelect?.options[proveedorSelect.selectedIndex]?.text || '';
+                }
+
+                materiales.push({
+                    cantidad,
+                    codigo,
+                    unidad,
+                    costoUnitario,
+                    ...(esVenta && { precioVenta }),
+                    total,
+                    ...(esCompraDirecta && { proveedor })
+                });
+            });
+
+            contenidoCentral = `
+        <div class="col-12">
+            <div class="card-resumen">
+                <h6>Materiales</h6>
+                <div class="table-responsive">
+                    <table class="table-resumen">
+                        <thead>
+                            <tr>
+                                <th>Cantidad</th>
+                                <th>Código</th>
+                                <th>Unidad</th>
+                                <th>Costo Unitario</th>
+                                ${esVenta ? '<th>Precio Venta</th>' : ''}
+                                <th>Total</th>
+                                ${esCompraDirecta ? '<th>Proveedor</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${materiales.map(mat => `
+                                <tr>
+                                    <td>${mat.cantidad}</td>
+                                    <td>${mat.codigo}</td>
+                                    <td>${mat.unidad}</td>
+                                    <td>${Currency.format(mat.costoUnitario)}</td>
+                                    ${esVenta ? `<td>${Currency.format(mat.precioVenta)}</td>` : ''}
+                                    <td>${Currency.format(mat.total)}</td>
+                                    ${esCompraDirecta ? `<td>${mat.proveedor}</td>` : ''}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+        } else if (tienePdf) {
+            // Mostrar vista previa del PDF
+            const url = URL.createObjectURL(archivo);
+
+            cardsHtml += `
+        <div class="col-12">
+            <div class="card-resumen mb-3">
+                <h6>Observaciones adicionales</h6>
+                <p>${observaciones2}</p>
+            </div>
+            <div class="card-resumen mb-3">
+                <h6>Incoterm</h6>
+                <p>${incoterm}</p>
+            </div>
+            <div class="card-resumen mb-3">
+                <h6>Proveedor</h6>
+                <p>${proveedor}</p>
+            </div>
+        </div>
+    `;
+
+
+            contenidoCentral = `
+        <div class="col-12">
+            <div class="card-resumen">
+                <h6>Archivo PDF Adjunto</h6>
+                <p><strong>Nombre:</strong> ${archivo.name}</p>
+                <p><strong>Tamaño:</strong> ${(archivo.size / 1024).toFixed(2)} KB</p>
+                <a class="btn btn-outline-primary btn-sm mb-2" href="${url}" target="_blank">Ver o Descargar</a>
+                <div style="height: 500px; border: 1px solid #ccc;">
+                    <embed src="${url}" type="application/pdf" width="100%" height="100%">
+                </div>
+            </div>
+        </div>
+    `;
+        } else {
+            contenidoCentral = `
+        <div class="col-12">
+            <div class="alert alert-warning">
+                No se ha adjuntado un archivo PDF válido o no se ha seleccionado el tipo de proveedor.
+            </div>
+        </div>
+    `;
+        }
+
+        resumenDiv.innerHTML = `
+        <div class="alert-info-resumen mb-3">
+            ${tipoMensaje}
+        </div>
+        <div class="row">
+            ${cardsHtml}
+        </div>
+        <div class="row">
+            ${contenidoCentral}
+        </div>
+    `;
+        resumenDiv.appendChild(totalPesos.cloneNode(true));
+    }
+
+</script>
+<script>
+    document.getElementById('form-subir-csv').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const inputFile = document.getElementById('archivoCsv');
+        const archivo = inputFile.files[0];
+        if (!archivo) {
+            alert("Selecciona un archivo CSV.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("archivoCsv", archivo);
+
+        const progressBar = document.querySelector('.progress-bar-modern');
+        const progressFill = document.querySelector('.progress-fill');
+
+        // Mostrar barra
+        progressBar.classList.remove('d-none');
+        progressFill.style.width = '0%';
+
+        // Simular progreso mientras esperamos respuesta
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress >= 95) {
+                progress = 95; // Detenemos el avance aquí hasta que el servidor responda
+            }
+            progressFill.style.width = progress + '%';
+        }, 200);
+
+        fetch('/Planeador/ProcesarCsv', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(res => {
+                clearInterval(interval);
+                progressFill.style.width = '100%';
+
+                setTimeout(() => {
+                    progressBar.classList.add('d-none');
+                    progressFill.style.width = '0%';
+                }, 800);
+
+                if (res.success) {
+                    const tbody = document.querySelector('#tabla-materiales tbody');
+                    //tbody.innerHTML = ""; // limpiar
+
+                    res.data.forEach((fila, index) => {
+                        const tr = document.createElement('tr');
+
+                        tr.innerHTML = `
+                        <td><input type="checkbox" checked /></td>
+                        <td>${index + 1}</td>
+                        <td class="input-cantidad">${fila["Cantidad"] || 0}</td>
+                        <td>${fila["Clave Producto"] || ''}</td>
+                        <td>${fila["Unidad Medida"] || ''}</td>
+                        <td contenteditable="true" class="precio-unitario">$ ${fila["Precio Unitario"] || '0.00'}</td>
+                        <td class="total-fila">${(parseFloat(fila["Cantidad"]) * parseFloat(fila["Precio Unitario"])) || 0}</td>
+                    `;
+
+                        tbody.appendChild(tr);
+                    });
+                    calcularTotales();
+                } else {
+                    alert(res.message || "Error al procesar el archivo.");
+                }
+            })
+            .catch(err => {
+                clearInterval(interval);
+                progressBar.classList.add('d-none');
+                progressFill.style.width = '0%';
+                console.error(err);
+                alert("Error en la solicitud.");
+            });
+    });
+
+
+    document.getElementById('btnAgregarFila').addEventListener('click', async function () {
+        await cargarProveedores(); // ← Llenar proveedoresList antes de insertar cualquier fila
+
+        const tbody = document.querySelector('#tabla-materiales tbody');
+        const rowCount = tbody.rows.length;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="checkbox" checked /></td>
+            <td>${rowCount + 1}</td>
+            <td class="input-cantidad" contenteditable="true">0</td>
+            <td contenteditable="true"></td>
+            <td contenteditable="true"></td>
+            <td contenteditable="true"></td>
+            <td contenteditable="true" class="precio-unitario">$ 0.00</td>
+            <td class="total-fila">0</td>
+        `;
+
+
+        tbody.appendChild(tr);
+
+        calcularTotales(); // si quieres que se actualicen los totales inmediatamente
+    });
+
+
+    let proveedoresList = [];
+    async function cargarProveedores() {
+        const prov = await fetch('/Requisicion/getListaProveedores');
+        proveedoresList = await prov.json();
+    }
+    function inicializarTomSelectProveedor(select, valor = null) {
+        const ts = new TomSelect(select, {
+            persist: false,
+            createOnBlur: true,
+            create: true,
+            options: proveedoresList,
+            valueField: "id",
+            labelField: "nombre",
+            searchField: ["clave", "nombre"],
+            render: {
+                option: function (data, escape) {
+                    return `<div style="color: var(--text-dark)">${escape(data.nombre)}</div>`;
+                },
+                item: function (data, escape) {
+                    return `<div style="color: var(--text-dark)">${escape(data.nombre)}</div>`;
+                }
+            }
+        });
+
+        if (valor) ts.setValue(valor);
+    }
+
+    document.getElementById('btnEliminarSeleccionados').addEventListener('click', function () {
+        const tbody = document.querySelector('#tabla-materiales tbody');
+        const filas = tbody.querySelectorAll('tr');
+
+        filas.forEach(fila => {
+            const checkbox = fila.querySelector('input[type="checkbox"]');
+            if (checkbox && checkbox.checked) {
+                fila.remove();
+            }
+        });
+
+        reenumerarFilas();
+        calcularTotales();
+    });
+
+
+    function reenumerarFilas() {
+        const filas = document.querySelectorAll('#tabla-materiales tbody tr');
+        filas.forEach((tr, index) => {
+            tr.children[1].textContent = index + 1; // actualizar el número de fila
+        });
+    }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tablaWrapper = document.getElementById("tabla-materiales-wrapper");
+        const contenidoParcialidades = document.getElementById("contenido-parcialidades");
+
+        function toggleContenido() {
+            const radioExhibicion = document.getElementById("exhibicion");
+            const radioParcialidades = document.getElementById("parcialidades");
+
+            if (radioExhibicion?.checked) {
+                tablaWrapper?.classList.remove("d-none");
+                contenidoParcialidades?.classList.add("d-none");
+            } else if (radioParcialidades?.checked) {
+                tablaWrapper?.classList.add("d-none");
+                contenidoParcialidades?.classList.remove("d-none");
+            } else {
+                tablaWrapper?.classList.add("d-none");
+                contenidoParcialidades?.classList.add("d-none");
+            }
+        }
+
+        // Escuchar evento de cambio de paso
+        $('#smartwizard').on("showStep", function (e, anchorObject, stepIndex, stepDirection) {
+            if (stepIndex === 1) { // paso 2 (índice 1)
+                toggleContenido();
+            }
+        });
+
+        // También actualizar al hacer clic en tarjetas
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('click', function () {
+                document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+
+                // Ejecutar el toggle
+                toggleContenido();
+            });
+        });
+
+    });
+</script>
+<script>
+    // Funcionalidad de drag & drop
+    const uploadZone = document.querySelector('.upload-zone');
+    const fileInput = document.getElementById('archivoCsv');
+    const form = document.getElementById('form-subir-csv');
+    const progressBar = document.querySelector('.progress-bar-modern');
+    const progressFill = document.querySelector('.progress-fill');
+
+    // Prevenir comportamiento por defecto
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Highlighting de la zona de drop
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        uploadZone.classList.add('dragover');
+    }
+
+    function unhighlight(e) {
+        uploadZone.classList.remove('dragover');
+    }
+
+    // Manejo del drop
+    uploadZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length > 0) {
+            fileInput.files = files;
+            updateFileDisplay(files[0]);
+        }
+    }
+
+    // Actualizar display cuando se selecciona archivo
+    fileInput.addEventListener('change', function (e) {
+        if (e.target.files.length > 0) {
+            updateFileDisplay(e.target.files[0]);
+        }
+    });
+
+    function updateFileDisplay(file) {
+        const uploadContent = document.querySelector('.upload-content');
+        uploadContent.innerHTML = `
+                <i class="fas fa-file-csv upload-icon text-success"></i>
+                <h5 class="mb-3 text-success fw-bold">Archivo seleccionado</h5>
+                <p class="text-muted mb-0">${file.name}</p>
+                <small class="text-muted d-block mt-2">Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+            `;
+    }
+
+</script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const select = document.getElementById('documentSelect');
+        const btnCargar = document.getElementById('btnCargarDocumento');
+
+        if (!select || !btnCargar) {
+            console.error('Elementos no encontrados:', { select: !!select, btnCargar: !!btnCargar });
+            return;
+        }
+
+        // Cargar documentos
+        GetData({
+            path: '/RequisicionInternacional/GetDocumentos',
+            data: {}
+        }).then((_res) => {
+            if (_res.success) {
+                select.innerHTML = `<option value="" selected>-- Selecciona un documento --</option>`;
+                _res.result.forEach(doc => {
+                    const option = document.createElement('option');
+                    const value = doc.id_encabezado || doc.codigo;
+                    const text = doc.nombre || doc.descripcion;
+                    if (value) { // Solo agregar si tiene valor válido
+                        option.value = value;
+                        option.textContent = text;
+                        select.appendChild(option);
+                    }
+                });
+            } else {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: _res.message || 'Error al obtener documentos.'
+                });
+            }
+        }).catch(err => {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Ocurrió un error al cargar documentos.'
+            });
+        });
+
+        // Event listener para cargar documento
+        btnCargar.addEventListener('click', function () {
+            const selectedValue = select.value;
+            if (!selectedValue || selectedValue === '') {
+                alert('Por favor selecciona un documento');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('encabezado_id', selectedValue);
+
+            fetch('/RequisicionInternacional/GetDocumentosAndPartidasData', {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Llenar la tabla con los datos obtenidos
+                        llenarTablaMateriales(data.result || data.data || data);
+                        let divi = document.getElementById('divisa');
+                        divi.value = data.result[0]['ccy'];
+                        divi.dispatchEvent(new Event('change'));
+                        tsProveedor.setValue(data.result[0]['refe']);
+
+                        toastMixin.fire({
+                            icon: 'success',
+                            title: 'Documento cargado correctamente.'
+                        });
+                    } else {
+                        toastMixin.fire({
+                            icon: 'error',
+                            title: data.message || 'Error al cargar documento.'
+                        });
+                    }
+                })
+                .catch(err => {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Error en la comunicación con el servidor.'
+                    });
+                });
+        });
+
+        // Función para llenar la tabla de materiales
+        function llenarTablaMateriales(data) {
+            const tbody = document.querySelector('#tabla-materiales tbody');
+
+            // Limpiar tabla existente
+            tbody.innerHTML = "";
+
+            // Llenar tabla con los datos
+            data.forEach((fila, index) => {
+                const tr = document.createElement('tr');
+
+                // Calcular total de la fila
+                const cantidad = parseFloat(fila["cant_ud"] || 0);
+                const precioUnitario = parseFloat(fila["pv_prod"] || 0);
+                const total = (cantidad * precioUnitario).toFixed(2);
+
+                tr.innerHTML = `
+                <td><input type="checkbox" checked /></td>
+                <td>${index + 1}</td>
+                <td class="input-cantidad">${cantidad}</td>
+                <td>${fila["cve_prod"] || ''}</td>
+                <td>${fila["descr_prod"] || ''}</td>
+                <td>${fila["ud"] || ''}</td>
+                <td contenteditable="true" class="precio-unitario">$ ${precioUnitario.toFixed(2)}</td>
+                <td class="total-fila">$ ${total}</td>
+            `;
+
+                tbody.appendChild(tr);
+            });
+
+            // Calcular totales después de llenar la tabla
+            if (typeof calcularTotales === 'function') {
+                calcularTotales();
+            }
+        }
+
+        // Event listeners adicionales para actualizar totales cuando se editen precios
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('precio-unitario')) {
+                actualizarTotalFila(e.target);
+                if (typeof calcularTotales === 'function') {
+                    calcularTotales();
+                }
+            }
+        });
+
+        // Función para actualizar el total de una fila específica
+        function actualizarTotalFila(precioElement) {
+            const fila = precioElement.closest('tr');
+            const cantidadElement = fila.querySelector('.input-cantidad');
+            const totalElement = fila.querySelector('.total-fila');
+
+            if (cantidadElement && totalElement) {
+                const cantidad = parseFloat(cantidadElement.textContent || 0);
+                const precio = parseFloat(precioElement.textContent.replace('$', '').trim() || 0);
+                const total = (cantidad * precio).toFixed(2);
+
+                totalElement.textContent = `$ ${total}`;
+            }
+        }
+    });
+</script>

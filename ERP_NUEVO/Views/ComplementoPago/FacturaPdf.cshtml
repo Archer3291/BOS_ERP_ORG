@@ -1,0 +1,503 @@
+﻿@model BOS_ERP.Models.Factura
+@using System.Data
+@using System.Linq
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Complemento de Pago @Model.UUID</title>
+    <style>
+        @@page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        thead {
+            display: table-header-group;
+            background-color: #e0e0e0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            color: #d32f2f;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th {
+            background-color: #1976d2;
+            color: white;
+            padding: 6px 8px;
+            text-align: left;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 4px 8px;
+            vertical-align: top;
+        }
+
+        .section-title {
+            font-size: 13px;
+            color: #d32f2f;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .datos-table th, .datos-table td {
+            border: 1px solid #bbb;
+            font-size: 10px;
+            padding: 5px 6px;
+        }
+
+        .datos-table tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+
+        .datos-table td.descripcion {
+            font-weight: 500;
+        }
+
+        .datos-table td.numero {
+            text-align: center;
+        }
+
+        .datos-table td.cantidad,
+        .datos-table td.precio,
+        .datos-table td.importe {
+            text-align: right;
+        }
+
+        .totales {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 12px;
+        }
+
+            .totales span {
+                font-weight: bold;
+                color: #1976d2;
+            }
+
+        .sello {
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            background-color: #f9f9f9;
+            border: 1px dashed #aaa;
+            padding: 6px;
+            margin-bottom: 8px;
+        }
+
+        .qr {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+            .qr img {
+                width: 150px;
+                height: 150px;
+            }
+
+        .info-box {
+            border: 1px solid #ccc;
+            padding: 6px;
+            margin-top: 3px;
+            background-color: #fafafa;
+        }
+
+            .info-box strong {
+                color: #333;
+            }
+
+        .observaciones-box {
+            background-color: #fff8e1;
+            border-left: 3px solid #ffc107;
+            padding: 6px;
+            margin: 12px 0;
+            font-size: 10px;
+        }
+
+        .complemento-header {
+            background-color: #e8f5e9;
+            border: 2px solid #4caf50;
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+            .complemento-header h2 {
+                margin: 0;
+                color: #2e7d32;
+                font-size: 16px;
+            }
+
+            .complemento-header p {
+                margin: 3px 0;
+                font-size: 10px;
+                color: #555;
+            }
+
+        .pago-box {
+            background-color: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 8px;
+            margin: 10px 0;
+        }
+
+            .pago-box strong {
+                color: #1565c0;
+            }
+
+        .documento-relacionado {
+            background-color: #fff3e0;
+            border: 1px solid #ff9800;
+            margin: 8px 0;
+            padding: 6px;
+        }
+
+        .documento-relacionado-header {
+            background-color: #ff9800;
+            color: white;
+            padding: 4px 8px;
+            margin: -6px -6px 6px -6px;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .total-pago {
+            background-color: #c8e6c9;
+            border: 2px solid #4caf50;
+            padding: 10px;
+            margin-top: 15px;
+            text-align: right;
+        }
+
+            .total-pago .monto {
+                font-size: 18px;
+                font-weight: bold;
+                color: #2e7d32;
+            }
+
+        .header-empresa {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1976d2;
+        }
+
+            .header-empresa h1 {
+                margin: 0;
+                font-size: 18px;
+                color: #1976d2;
+            }
+
+            .header-empresa p {
+                margin: 3px 0;
+                font-size: 10px;
+                color: #666;
+            }
+
+        .badge-complemento {
+            display: inline-block;
+            background-color: #4caf50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER COMPLEMENTO DE PAGO -->
+    <div class="complemento-header">
+        <h2>
+            COMPLEMENTO DE PAGO - CFDI 4.0
+            <span class="badge-complemento">TIPO: P</span>
+        </h2>
+        <p><strong>Serie:</strong> @Model.Serie | <strong>Folio:</strong> @Model.Folio</p>
+        <p><strong>UUID:</strong> @Model.UUID</p>
+    </div>
+    <!-- DATOS DEL COMPROBANTE -->
+    <div class="section-title">Datos del Comprobante de Pago</div>
+    <table>
+        <tr>
+            <td style="width: 18%;"><strong>Fecha de Emisión:</strong></td>
+            <td style="width: 32%;">@DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")</td>
+            <td style="width: 18%;"><strong>Tipo de Comprobante:</strong></td>
+            <td style="width: 32%;">P - Pago</td>
+        </tr>
+        <tr>
+            <td><strong>Lugar de Expedición:</strong></td>
+            <td>@Model.LugarExpedicion</td>
+            <td><strong>Exportación:</strong></td>
+            <td>01 - No aplica</td>
+        </tr>
+        <tr>
+            <td><strong>Moneda:</strong></td>
+            <td>@Model.Moneda</td>
+            <td><strong>Tipo de Cambio:</strong></td>
+            <td>@Model.TipoCambio</td>
+        </tr>
+    </table>
+
+    <!-- EMISOR -->
+    <div class="section-title">Emisor</div>
+    <div class="info-box">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 18%;"><strong>RFC:</strong></td>
+                <td style="width: 32%;">@Model.RfcEmisor</td>
+                <td style="width: 18%;"><strong>Razón Social:</strong></td>
+                <td style="width: 32%;">@Model.RsoEmisor</td>
+            </tr>
+            <tr>
+                <td><strong>Régimen Fiscal:</strong></td>
+                <td colspan="3">@Model.Rege - @Model.regimenEText</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- RECEPTOR -->
+    <div class="section-title">Receptor</div>
+    <div class="info-box">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 18%;"><strong>RFC:</strong></td>
+                <td style="width: 32%;">@Model.RfcCliente</td>
+                <td style="width: 18%;"><strong>Régimen Fiscal:</strong></td>
+                <td style="width: 32%;">@Model.Regc</td>
+            </tr>
+            <tr>
+                <td><strong>Razón Social:</strong></td>
+                <td colspan="3">@Model.RsoCliente</td>
+            </tr>
+            <tr>
+                <td><strong>Domicilio Fiscal:</strong></td>
+                <td>@Model.CpR</td>
+                <td><strong>Uso CFDI:</strong></td>
+                <td>@Model.IdUsoCFDI - @Model.CFDIText</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- CONCEPTO DEL COMPROBANTE -->
+    <div class="section-title">Concepto</div>
+    <table class="datos-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Clave Prod/Serv</th>
+                <th style="width: 35%;">Descripción</th>
+                <th style="width: 10%;">Cantidad</th>
+                <th style="width: 15%;">Clave Unidad</th>
+                <th style="width: 12%;">Valor Unitario</th>
+                <th style="width: 13%;">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="numero">84111506</td>
+                <td class="descripcion">
+                    <strong>Pago</strong>
+                    <br><small style="color: #888;">Objeto Imp: 01 - No objeto de impuesto</small>
+                </td>
+                <td class="cantidad">1.00</td>
+                <td class="numero">ACT</td>
+                <td class="precio">$0.00</td>
+                <td class="importe">$0.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- DETALLE DE PAGOS -->
+    <div class="section-title">Detalle de Pagos (Complemento Pagos 2.0)</div>
+
+    @{
+        // Calcular el total de pagos desde Pagos DataTable si existe
+        decimal totalPagos = 0;
+        if (Model.Pagos != null && Model.Pagos.Rows.Count > 0)
+        {
+            foreach (DataRow pago in Model.Pagos.Rows)
+            {
+                if (pago["Monto"] != DBNull.Value)
+                {
+                    totalPagos += Convert.ToDecimal(pago["Monto"]);
+                }
+            }
+        }
+    }
+
+    @if (Model.Pagos != null && Model.Pagos.Rows.Count > 0)
+    {
+        int numeroPago = 1;
+        foreach (DataRow pago in Model.Pagos.Rows)
+        {
+            <div class="pago-box">
+                <strong>Pago #@numeroPago</strong>
+                <table style="width: 100%; margin-top: 5px;">
+                    <tr>
+                        <td style="width: 20%;"><strong>Fecha de Pago:</strong></td>
+                        <td style="width: 30%;">@Convert.ToDateTime(pago["FechaPago"]).ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td style="width: 20%;"><strong>Forma de Pago:</strong></td>
+                        <td style="width: 30%;">@pago["FormaPago"] - @Model.formaPagoTexto</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Moneda:</strong></td>
+                        <td>@pago["Moneda"]</td>
+                        <td><strong>Tipo de Cambio:</strong></td>
+                        <td>@string.Format("{0:0.000000}", pago["TipoCambio"])</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Monto del Pago:</strong></td>
+                        <td colspan="3" style="font-size: 14px; font-weight: bold; color: #2e7d32;">
+                            @string.Format("{0:C2}", pago["Monto"])
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- DOCUMENTOS RELACIONADOS -->
+                @if (pago.Table.Columns.Contains("Documentos"))
+                {
+                    var documentosJson = pago["Documentos"]?.ToString();
+                    if (!string.IsNullOrEmpty(documentosJson))
+                    {
+                        var documentos = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(documentosJson);
+                        if (documentos != null && documentos.Count > 0)
+                        {
+                            <div style="margin-top: 10px;">
+                                <strong>Documentos Relacionados:</strong>
+                                @foreach (var doc in documentos)
+                                {
+                                    <div class="documento-relacionado">
+                                        <div class="documento-relacionado-header">
+                                            CFDI Relacionado: @doc["IdDocumento"]
+                                        </div>
+                                        <table style="width: 100%; font-size: 10px;">
+                                            <tr>
+                                                <td style="width: 15%;"><strong>Serie:</strong></td>
+                                                <td style="width: 18%;">@doc["Serie"]</td>
+                                                <td style="width: 15%;"><strong>Folio:</strong></td>
+                                                <td style="width: 18%;">@doc["Folio"]</td>
+                                                <td style="width: 17%;"><strong>Moneda DR:</strong></td>
+                                                <td style="width: 17%;">@doc["MonedaDR"]</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Método Pago DR:</strong></td>
+                                                <td>@doc["MetodoPagoDR"]</td>
+                                                <td><strong>Núm. Parcialidad:</strong></td>
+                                                <td>1</td>
+                                                <td><strong>Objeto Imp DR:</strong></td>
+                                                <td>@doc["ObjetoImpDR"]</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6" style="padding-top: 8px;">
+                                                    <table style="width: 100%; border-top: 1px solid #ccc; padding-top: 5px;">
+                                                        <tr>
+                                                            <td style="text-align: right; width: 33%;"><strong>Saldo Anterior:</strong></td>
+                                                            <td style="text-align: right; width: 33%;">@string.Format("{0:C2}", doc["ImpSaldoAnt"])</td>
+                                                            <td style="width: 34%;"></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="text-align: right;"><strong>Importe Pagado:</strong></td>
+                                                            <td style="text-align: right; color: #2e7d32; font-weight: bold;">@string.Format("{0:C2}", doc["ImpPagado"])</td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr style="border-top: 1px solid #000;">
+                                                            <td style="text-align: right;"><strong>Saldo Insoluto:</strong></td>
+                                                            <td style="text-align: right; font-weight: bold;">@string.Format("{0:C2}", doc["ImpSaldoInsoluto"])</td>
+                                                            <td></td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                }
+            </div>
+            numeroPago++;
+        }
+    }
+
+    <!-- TOTAL DE PAGOS -->
+    <div class="total-pago">
+        <strong>TOTAL DE PAGOS:</strong>
+        <div class="monto">@string.Format("{0:C2}", totalPagos)</div>
+    </div>
+
+    <!-- OBSERVACIONES -->
+    @if (!string.IsNullOrEmpty(Model.Observaciones))
+    {
+        <div class="observaciones-box">
+            <strong>Observaciones:</strong> @Model.Observaciones
+        </div>
+    }
+
+    <!-- SELLOS Y QR EN COLUMNAS -->
+    <div class="section-title" style="margin-top: 25px;">Sellos y Cadena Original</div>
+    <table>
+        <tr>
+            <!-- Columna Sellos -->
+            <td style="width: 75%; vertical-align: top;">
+                <p style="margin: 5px 0 3px 0;"><strong>No. de Serie del Certificado del SAT:</strong></p>
+                <div class="sello">@Model.NoCertificadoSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>No de Serie del CSD del Emisor:</strong></p>
+                <div class="sello">@Model.NoCertificado</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Sello CFDI:</strong></p>
+                <div class="sello">@Model.SelloCFDI</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Sello SAT:</strong></p>
+                <div class="sello">@Model.SelloSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Cadena Original:</strong></p>
+                <div class="sello">@Model.CadenaOriginal</div>
+            </td>
+
+            <!-- Columna QR -->
+            @if (!string.IsNullOrEmpty(Model.RutaQr))
+            {
+                <td style="width: 25%; text-align: center; vertical-align: top; padding-left: 10px;">
+                    <strong style="display: block; margin-bottom: 8px;">Código QR</strong>
+                    <img src="@Url.Content(Model.RutaQr)" alt="QR CFDI" style="width: 150px; height: 150px; border: 1px solid #ccc; padding: 5px; background: white;" />
+                    <br><small style="color: #666;">Verificación SAT</small>
+                </td>
+            }
+        </tr>
+    </table>
+
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 25px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 10px; color: #666;">
+        <strong>Este documento es una representación impresa de un CFDI - Complemento de Pago</strong><br>
+        Generado el @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
+    </div>
+
+</body>
+</html>

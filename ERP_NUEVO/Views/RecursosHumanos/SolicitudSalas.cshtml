@@ -1,0 +1,1968 @@
+﻿@{
+    ViewBag.Title = "Solicitud de salas";
+    ViewBag.PageTitle = "Solicitud de salas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/tom-select-theme.css" rel="stylesheet" />
+
+<style>
+    .sal-page {
+        --sal-radius: 14px;
+        --sal-radius-sm: 10px;
+        --sal-border: 1px solid var(--border-light);
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
+    }
+
+    .sal-hero {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 1.1rem 1.35rem;
+        overflow: hidden;
+        background: var(--bg-light);
+        border: var(--sal-border);
+        border-radius: var(--sal-radius);
+        box-shadow: var(--shadow);
+    }
+
+        .sal-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--accent-blue), color-mix(in srgb, var(--accent-blue) 20%, transparent));
+        }
+
+    .sal-hero-icon {
+        flex: 0 0 auto;
+        width: 46px;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 13px;
+        font-size: 1.05rem;
+        color: var(--accent-blue);
+        background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--accent-blue) 22%, transparent);
+    }
+
+    .sal-eyebrow {
+        margin: 0;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+        color: var(--text-light);
+    }
+
+    .sal-title {
+        margin: .12rem 0 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.25;
+        color: var(--text-dark);
+    }
+
+    .sal-subtitle {
+        margin: .2rem 0 0;
+        font-size: .82rem;
+        color: var(--text-light);
+    }
+
+    .sal-hero-meta {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    .sal-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .3rem .7rem;
+        border-radius: 999px;
+        border: var(--sal-border);
+        background: var(--bg-gray);
+        color: var(--text-light);
+        font-size: .74rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .sal-icon-btn {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: var(--sal-border);
+        background: var(--bg-light);
+        color: var(--text-light);
+        cursor: pointer;
+        transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+    }
+
+        .sal-icon-btn:hover {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+        }
+
+        .sal-icon-btn.is-spinning i {
+            animation: salSpin .7s linear infinite;
+        }
+
+    @@keyframes salSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .btn-sal {
+        height: 38px;
+        padding: 0 1.05rem;
+        border-radius: var(--sal-radius-sm);
+        font-size: .84rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: opacity var(--transition-fast), background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .btn-sal-primary {
+        border: 1px solid var(--accent-blue);
+        background: var(--accent-blue);
+        color: #fff;
+        box-shadow: 0 2px 10px color-mix(in srgb, var(--accent-blue) 28%, transparent);
+    }
+
+        .btn-sal-primary:hover {
+            opacity: .9;
+        }
+
+    .btn-sal-ghost {
+        border: var(--sal-border);
+        background: transparent;
+        color: var(--text-light);
+    }
+
+        .btn-sal-ghost:hover {
+            background: var(--bg-gray);
+            color: var(--text-dark);
+        }
+
+    .btn-sal-danger {
+        border: 1px solid var(--danger-color);
+        background: var(--danger-color);
+        color: #fff;
+    }
+
+        .btn-sal-danger:hover {
+            opacity: .9;
+        }
+
+    .btn-sal-success {
+        border: 1px solid var(--success-color);
+        background: var(--success-color);
+        color: #fff;
+    }
+
+        .btn-sal-success:hover {
+            opacity: .9;
+        }
+
+    .sal-filters {
+        padding: 1rem 1.15rem 1.1rem;
+        background: var(--bg-light);
+        border: var(--sal-border);
+        border-radius: var(--sal-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .sal-filters-head {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        margin-bottom: .85rem;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--text-light);
+    }
+
+        .sal-filters-head i {
+            color: var(--accent-blue);
+            font-size: .8rem;
+        }
+
+    .sal-filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: .8rem;
+    }
+
+    .sal-field {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: .35rem;
+    }
+
+    .sal-label {
+        font-size: .74rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+        .sal-label span {
+            color: var(--danger-color);
+        }
+
+    .sal-control {
+        width: 100%;
+        height: 38px;
+        padding: 0 .75rem;
+        border: var(--sal-border);
+        border-radius: var(--sal-radius-sm);
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-size: .85rem;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    }
+
+    textarea.sal-control {
+        height: auto;
+        padding: .6rem .75rem;
+        resize: vertical;
+    }
+
+    .sal-control:focus {
+        outline: none;
+        background: var(--bg-light);
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 14%, transparent);
+    }
+
+    select.sal-control {
+        cursor: pointer;
+    }
+
+    .sal-control:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+
+    .sal-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        font-size: .8rem;
+        color: var(--text-light);
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .sal-switch input {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+    .sal-filters-actions {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+        margin-top: .9rem;
+        padding-top: .9rem;
+        border-top: var(--sal-border);
+    }
+
+    .sal-legend {
+        margin-right: auto;
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        flex-wrap: wrap;
+        min-width: 0;
+    }
+
+    .sal-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .22rem .65rem;
+        border-radius: 999px;
+        border: var(--sal-border);
+        background: var(--bg-gray);
+        font-size: .73rem;
+        font-weight: 600;
+        color: var(--text-light);
+    }
+
+    .sal-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+    }
+
+    .sal-card {
+        background: var(--bg-light);
+        border: var(--sal-border);
+        border-radius: var(--sal-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .sal-card-head {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        flex-wrap: wrap;
+        padding: .9rem 1.15rem;
+        border-bottom: var(--sal-border);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--accent-blue) 7%, transparent), transparent 65%);
+    }
+
+    .sal-card-icon {
+        flex: 0 0 auto;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        font-size: .85rem;
+        color: var(--accent-blue);
+        background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+    }
+
+    .sal-card-title {
+        margin: 0;
+        font-size: .9rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .sal-card-sub {
+        margin: .12rem 0 0;
+        font-size: .76rem;
+        color: var(--text-light);
+    }
+
+    .sal-card-tools {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    .sal-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .2rem .65rem;
+        border-radius: 999px;
+        border: var(--sal-border);
+        background: var(--bg-gray);
+        color: var(--text-light);
+        font-size: .72rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .sal-card-body {
+        padding: 1rem 1.15rem 1.15rem;
+    }
+
+    /* ─── FullCalendar sobre el tema del ERP ─────────────────────────── */
+    #calendarioSalas {
+        --fc-border-color: var(--border-light);
+        --fc-page-bg-color: transparent;
+        --fc-neutral-bg-color: var(--bg-gray);
+        --fc-today-bg-color: color-mix(in srgb, var(--accent-blue) 7%, transparent);
+        --fc-now-indicator-color: var(--danger-color);
+        --fc-non-business-color: color-mix(in srgb, var(--border-light) 45%, transparent);
+        font-size: .82rem;
+        color: var(--text-dark);
+    }
+
+        #calendarioSalas .fc .fc-toolbar-title {
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-transform: capitalize;
+        }
+
+        #calendarioSalas .fc .fc-button {
+            border-radius: var(--sal-radius-sm);
+            border: var(--sal-border);
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: .78rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            box-shadow: none;
+            padding: .38rem .8rem;
+        }
+
+            #calendarioSalas .fc .fc-button:hover {
+                background: color-mix(in srgb, var(--accent-blue) 10%, transparent);
+                color: var(--accent-blue);
+                border-color: var(--accent-blue);
+            }
+
+            #calendarioSalas .fc .fc-button:focus {
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 14%, transparent);
+            }
+
+            #calendarioSalas .fc .fc-button-primary:not(:disabled).fc-button-active,
+            #calendarioSalas .fc .fc-button-primary:not(:disabled):active {
+                background: var(--accent-blue);
+                border-color: var(--accent-blue);
+                color: #fff;
+            }
+
+            #calendarioSalas .fc .fc-button:disabled {
+                opacity: .45;
+            }
+
+        #calendarioSalas .fc .fc-col-header-cell-cushion,
+        #calendarioSalas .fc .fc-timegrid-axis-cushion,
+        #calendarioSalas .fc .fc-timegrid-slot-label-cushion {
+            color: var(--text-light);
+            font-weight: 600;
+            text-decoration: none;
+            text-transform: capitalize;
+        }
+
+        #calendarioSalas .fc .fc-timegrid-slot {
+            height: 2.3rem;
+        }
+
+        #calendarioSalas .fc-theme-standard td,
+        #calendarioSalas .fc-theme-standard th,
+        #calendarioSalas .fc-theme-standard .fc-scrollgrid {
+            border-color: var(--border-light);
+        }
+
+        #calendarioSalas .fc-event {
+            border: none;
+            border-left: 3px solid rgba(0,0,0,.22);
+            border-radius: 7px;
+            padding: 0;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        #calendarioSalas .fc-event.is-cancelada {
+            opacity: .55;
+        }
+
+        #calendarioSalas .fc-event.is-finalizada {
+            opacity: .7;
+        }
+
+        #calendarioSalas .fc-event.is-en-curso {
+            box-shadow: 0 0 0 2px color-mix(in srgb, #059669 45%, transparent);
+        }
+
+            #calendarioSalas .fc-event.is-cancelada .sal-ev-title {
+                text-decoration: line-through;
+            }
+
+        #calendarioSalas .fc-event.is-mia {
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,.55);
+        }
+
+    .sal-ev {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        padding: 3px 6px;
+        line-height: 1.25;
+        color: #fff;
+        overflow: hidden;
+    }
+
+    .sal-ev-time {
+        font-size: .68rem;
+        font-weight: 600;
+        opacity: .85;
+    }
+
+    .sal-ev-title {
+        font-size: .76rem;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sal-ev-meta {
+        font-size: .67rem;
+        opacity: .85;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sal-ev.is-compact {
+        flex-direction: row;
+        align-items: baseline;
+        gap: .35rem;
+        padding: 2px 6px;
+    }
+
+        .sal-ev.is-compact .sal-ev-time {
+            flex: 0 0 auto;
+        }
+
+    #calendarioSalas .fc-daygrid-event {
+        border-radius: 6px;
+        margin-top: 2px;
+    }
+
+    #calendarioSalas .fc .fc-daygrid-day-number,
+    #calendarioSalas .fc .fc-daygrid-more-link {
+        color: var(--text-light);
+        font-size: .75rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    #calendarioSalas .fc .fc-daygrid-more-link:hover {
+        color: var(--accent-blue);
+    }
+
+    #calendarioSalas .fc .fc-day-today .fc-daygrid-day-number {
+        color: var(--accent-blue);
+        font-weight: 700;
+    }
+
+    #calendarioSalas .fc .fc-popover {
+        border: var(--sal-border);
+        border-radius: var(--sal-radius-sm);
+        background: var(--bg-light);
+        box-shadow: var(--shadow-lg);
+        z-index: 1050;
+    }
+
+    #calendarioSalas .fc .fc-popover-header {
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-size: .78rem;
+        font-weight: 700;
+    }
+
+    .sal-icon-danger {
+        color: var(--danger-color) !important;
+        background: color-mix(in srgb, var(--danger-color) 12%, transparent) !important;
+        border-color: color-mix(in srgb, var(--danger-color) 22%, transparent) !important;
+    }
+
+    .sal-empty {
+        padding: 2.2rem 1rem;
+        text-align: center;
+        color: var(--text-light);
+        font-size: .85rem;
+    }
+
+    /* ─── Modales ────────────────────────────────────────────────────── */
+    .sal-modal .modal-content {
+        border: var(--sal-border);
+        border-radius: var(--sal-radius);
+        background: var(--bg-light);
+        color: var(--text-dark);
+        overflow: hidden;
+    }
+
+    .sal-modal .modal-header {
+        display: flex;
+        align-items: center;
+        gap: .8rem;
+        padding: 1rem 1.25rem;
+        border-bottom: var(--sal-border);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--accent-blue) 8%, transparent), transparent 65%);
+    }
+
+    .sal-modal .modal-title {
+        margin: 0;
+        font-size: .95rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .sal-modal-sub {
+        display: block;
+        margin-top: .1rem;
+        font-size: .76rem;
+        color: var(--text-light);
+    }
+
+    .sal-modal .modal-body {
+        padding: 1.15rem 1.25rem;
+    }
+
+    .sal-modal .modal-footer {
+        gap: .5rem;
+        padding: .9rem 1.25rem;
+        border-top: var(--sal-border);
+        background: var(--bg-gray);
+    }
+
+    .sal-modal .btn-close {
+        margin-left: auto;
+        filter: var(--sal-close-filter, none);
+    }
+
+    [data-theme="dark"] .sal-modal .btn-close {
+        filter: invert(1) grayscale(1) brightness(1.6);
+    }
+
+    .sal-form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: .85rem;
+    }
+
+    .sal-col-full {
+        grid-column: 1 / -1;
+    }
+
+    .sal-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        margin-top: .1rem;
+        font-size: .72rem;
+        color: var(--text-light);
+    }
+
+    /* ─── Detalle ────────────────────────────────────────────────────── */
+    .sal-detail-head {
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        padding-bottom: .9rem;
+        margin-bottom: .9rem;
+        border-bottom: var(--sal-border);
+    }
+
+    .sal-detail-tone {
+        width: 6px;
+        align-self: stretch;
+        border-radius: 999px;
+        flex: 0 0 auto;
+    }
+
+    .sal-detail-title {
+        margin: 0;
+        font-size: 1.02rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        word-break: break-word;
+    }
+
+    .sal-detail-rows {
+        display: grid;
+        gap: .7rem;
+    }
+
+    .sal-detail-row {
+        display: flex;
+        align-items: flex-start;
+        gap: .7rem;
+        font-size: .84rem;
+        color: var(--text-dark);
+    }
+
+        .sal-detail-row > i {
+            width: 18px;
+            flex: 0 0 auto;
+            margin-top: .15rem;
+            text-align: center;
+            color: var(--accent-blue);
+            font-size: .82rem;
+        }
+
+    .sal-detail-label {
+        display: block;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: .12rem;
+    }
+
+    .sal-people {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+        margin-top: .15rem;
+    }
+
+    .sal-person {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .18rem .6rem;
+        border-radius: 999px;
+        border: var(--sal-border);
+        background: var(--bg-gray);
+        font-size: .75rem;
+        color: var(--text-dark);
+    }
+
+        .sal-person.is-host {
+            border-color: color-mix(in srgb, var(--accent-blue) 40%, transparent);
+            background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .sal-person.is-asistira {
+            border-color: color-mix(in srgb, var(--success-color) 40%, transparent);
+            background: color-mix(in srgb, var(--success-color) 12%, transparent);
+            color: var(--success-color);
+        }
+
+        .sal-person.is-no_asistira {
+            border-color: color-mix(in srgb, var(--danger-color) 35%, transparent);
+            background: color-mix(in srgb, var(--danger-color) 10%, transparent);
+            color: var(--danger-color);
+            text-decoration: line-through;
+        }
+
+        .sal-person.is-pendiente {
+            color: var(--text-light);
+            border-style: dashed;
+        }
+
+    .sal-tally {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .4rem;
+        margin-top: .5rem;
+    }
+
+    .sal-tally-item {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        font-size: .72rem;
+        font-weight: 600;
+        color: var(--text-light);
+    }
+
+        .sal-tally-item i {
+            font-size: .7rem;
+        }
+
+        .sal-tally-item.is-si i {
+            color: var(--success-color);
+        }
+
+        .sal-tally-item.is-no i {
+            color: var(--danger-color);
+        }
+
+    .sal-mi-estado {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        flex-wrap: wrap;
+        margin-top: .9rem;
+        padding: .75rem .9rem;
+        border-radius: var(--sal-radius-sm);
+        border: 1px dashed color-mix(in srgb, var(--accent-blue) 35%, transparent);
+        background: color-mix(in srgb, var(--accent-blue) 6%, transparent);
+        font-size: .82rem;
+        color: var(--text-dark);
+    }
+
+        .sal-mi-estado i {
+            color: var(--accent-blue);
+        }
+
+    .sal-state {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .18rem .6rem;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+    }
+
+        .sal-state.is-activa {
+            color: var(--success-color);
+            background: color-mix(in srgb, var(--success-color) 14%, transparent);
+        }
+
+        .sal-state.is-cancelada {
+            color: var(--danger-color);
+            background: color-mix(in srgb, var(--danger-color) 14%, transparent);
+        }
+
+        .sal-state.is-curso {
+            color: var(--success-color);
+            background: color-mix(in srgb, var(--success-color) 16%, transparent);
+        }
+
+        .sal-state.is-finalizada {
+            color: var(--text-light);
+            background: color-mix(in srgb, var(--text-light) 16%, transparent);
+        }
+
+    .sal-note {
+        margin-top: .9rem;
+        padding: .7rem .85rem;
+        border-radius: var(--sal-radius-sm);
+        border-left: 3px solid var(--danger-color);
+        background: color-mix(in srgb, var(--danger-color) 9%, transparent);
+        font-size: .8rem;
+        color: var(--text-dark);
+    }
+
+    .sal-private {
+        margin-top: .9rem;
+        padding: .7rem .85rem;
+        border-radius: var(--sal-radius-sm);
+        border: 1px dashed var(--border-light);
+        background: var(--bg-gray);
+        font-size: .78rem;
+        color: var(--text-light);
+    }
+
+    .sal-ts-wrap .ts-control {
+        min-height: 38px;
+        border-radius: var(--sal-radius-sm);
+        border: var(--sal-border);
+        background: var(--bg-gray);
+        font-size: .85rem;
+    }
+
+    @@media (max-width: 767.98px) {
+        .sal-hero-meta,
+        .sal-card-tools {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .sal-filters-actions .btn-sal {
+            flex: 1;
+            justify-content: center;
+        }
+
+        #calendarioSalas .fc .fc-toolbar {
+            flex-direction: column;
+            gap: .6rem;
+        }
+    }
+</style>
+
+<form id="formSalasToken">
+    @Html.AntiForgeryToken()
+</form>
+<script>window.document.title = 'Solicitud de salas'</script>
+
+<div class="container-fluid px-3 px-md-4 py-4 sal-page">
+
+    <header class="sal-hero">
+        <div class="sal-hero-icon">
+            <i class="fa-solid fa-handshake"></i>
+        </div>
+        <div>
+            <p class="sal-eyebrow">Recursos Humanos</p>
+            <h1 class="sal-title">Solicitud de salas</h1>
+            <p class="sal-subtitle">Disponibilidad y reservación de las salas de juntas. Lunes a viernes de 9:00 a 18:00 y sábados de 9:00 a 14:00.</p>
+        </div>
+        <div class="sal-hero-meta">
+            <span class="sal-chip" id="sal-resumen"><i class="fa-solid fa-clock"></i> Cargando…</span>
+            <button type="button" class="sal-icon-btn" id="btn-refrescar" title="Volver a consultar" onclick="refrescarCalendario()">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </div>
+    </header>
+
+    <section class="sal-filters">
+        <div class="sal-filters-head">
+            <i class="fa-solid fa-sliders"></i> Filtros
+        </div>
+
+        <div class="sal-filters-grid">
+            <div class="sal-field">
+                <label class="sal-label" for="f-sala">Sala</label>
+                <select class="sal-control" id="f-sala" onchange="refrescarCalendario()">
+                    <option value="">Todas las salas</option>
+                </select>
+            </div>
+
+            <div class="sal-field">
+                <label class="sal-label" for="f-participacion">Mostrar</label>
+                <select class="sal-control" id="f-participacion" onchange="refrescarCalendario()">
+                    <option value="todas">Todas las reservaciones</option>
+                    <option value="mias">Solo donde participo</option>
+                    <option value="organizo">Solo las que yo organicé</option>
+                </select>
+            </div>
+
+            <div class="sal-field">
+                <label class="sal-label">Canceladas</label>
+                <label class="sal-switch">
+                    <input type="checkbox" id="f-canceladas" onchange="refrescarCalendario()" />
+                    Mostrar reservaciones canceladas
+                </label>
+            </div>
+        </div>
+
+        <div class="sal-filters-actions">
+            <div class="sal-legend" id="sal-leyenda"></div>
+            <button type="button" class="btn-sal btn-sal-ghost" id="btn-nueva-sala" style="display:none" onclick="abrirModalSala()">
+                <i class="fa-solid fa-door-open"></i> Nueva sala
+            </button>
+            <button type="button" class="btn-sal btn-sal-primary" onclick="abrirModalReservacion()">
+                <i class="fa-solid fa-calendar-plus"></i> Nueva reservación
+            </button>
+        </div>
+    </section>
+
+    <section class="sal-card">
+        <div class="sal-card-head">
+            <div class="sal-card-icon"><i class="fa-solid fa-calendar-days"></i></div>
+            <div>
+                <h2 class="sal-card-title">Calendario de salas</h2>
+                <p class="sal-card-sub">Haz clic en un espacio libre para reservar o en una reservación para ver el detalle.</p>
+            </div>
+            <div class="sal-card-tools">
+                <span class="sal-badge" id="sal-badge-eventos">Cargando…</span>
+            </div>
+        </div>
+        <div class="sal-card-body">
+            <div id="calendarioSalas"></div>
+        </div>
+    </section>
+</div>
+
+<!-- Reservación -->
+<div class="modal fade sal-modal" id="modalReservacion" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="sal-hero-icon" style="width:38px;height:38px;border-radius:11px">
+                    <i class="fa-solid fa-calendar-plus" id="icono-reservacion"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title" id="titulo-reservacion">Nueva reservación</h5>
+                    <span class="sal-modal-sub" id="subtitulo-reservacion">Los campos marcados con * son obligatorios.</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="r-id" value="0" />
+                <div class="sal-form-grid">
+                    <div class="sal-field sal-col-full">
+                        <label class="sal-label" for="r-asunto">Asunto <span>*</span></label>
+                        <input type="text" class="sal-control" id="r-asunto" maxlength="150" placeholder="Junta de seguimiento…" autocomplete="off" />
+                    </div>
+
+                    <div class="sal-field">
+                        <label class="sal-label" for="r-sala">Sala <span>*</span></label>
+                        <select class="sal-control" id="r-sala"></select>
+                    </div>
+
+                    <div class="sal-field">
+                        <label class="sal-label" for="r-fecha">Fecha <span>*</span></label>
+                        <input type="date" class="sal-control" id="r-fecha" onchange="onFechaChange()" />
+                        <span class="sal-hint" id="r-hint-dia"></span>
+                    </div>
+
+                    <div class="sal-field">
+                        <label class="sal-label" for="r-inicio">Hora de inicio <span>*</span></label>
+                        <select class="sal-control" id="r-inicio" onchange="onInicioChange()"></select>
+                    </div>
+
+                    <div class="sal-field">
+                        <label class="sal-label" for="r-fin">Hora de fin <span>*</span></label>
+                        <select class="sal-control" id="r-fin"></select>
+                    </div>
+
+                    <div class="sal-field sal-col-full sal-ts-wrap">
+                        <label class="sal-label" for="r-participantes">Participantes</label>
+                        <select id="r-participantes" multiple placeholder="Busca por nombre…"></select>
+                        <span class="sal-hint"><i class="fa-solid fa-circle-info"></i> Se les envía un correo con los datos de la reunión.</span>
+                    </div>
+
+                    <div class="sal-field sal-col-full">
+                        <label class="sal-label" for="r-comentarios">Descripción</label>
+                        <textarea class="sal-control" id="r-comentarios" rows="3" maxlength="500" placeholder="Agenda, material necesario, invitados externos…"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-sal btn-sal-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </button>
+                <button type="button" class="btn-sal btn-sal-primary" id="btn-guardar-reservacion" onclick="guardarReservacion()">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sala -->
+<div class="modal fade sal-modal" id="modalSala" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="sal-hero-icon" style="width:38px;height:38px;border-radius:11px">
+                    <i class="fa-solid fa-door-open"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title">Nueva sala</h5>
+                    <span class="sal-modal-sub">Queda disponible de inmediato para reservarse.</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="s-id" value="0" />
+                <div class="sal-form-grid">
+                    <div class="sal-field sal-col-full">
+                        <label class="sal-label" for="s-nombre">Nombre <span>*</span></label>
+                        <input type="text" class="sal-control" id="s-nombre" maxlength="80" placeholder="Sala de juntas Dirección" autocomplete="off" />
+                    </div>
+                    <div class="sal-field sal-col-full">
+                        <label class="sal-label" for="s-descripcion">Descripción</label>
+                        <textarea class="sal-control" id="s-descripcion" rows="3" maxlength="250" placeholder="Ubicación, capacidad, equipo disponible…"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-sal btn-sal-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </button>
+                <button type="button" class="btn-sal btn-sal-primary" onclick="guardarSala()">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar sala
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalle -->
+<div class="modal fade sal-modal" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="sal-hero-icon" style="width:38px;height:38px;border-radius:11px">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title">Detalle de la reservación</h5>
+                    <span class="sal-modal-sub" id="detalle-folio"></span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body" id="detalle-body"></div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-sal btn-sal-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cerrar
+                </button>
+                <button type="button" class="btn-sal btn-sal-ghost" id="btn-no-asistire" style="display:none" onclick="responderInvitacion('no_asistira')">
+                    <i class="fa-solid fa-user-xmark"></i> No asistiré
+                </button>
+                <button type="button" class="btn-sal btn-sal-success" id="btn-asistire" style="display:none" onclick="responderInvitacion('asistira')">
+                    <i class="fa-solid fa-user-check"></i> Asistiré
+                </button>
+                <button type="button" class="btn-sal btn-sal-danger" id="btn-cancelar-reservacion" style="display:none" onclick="cancelarReservacion()">
+                    <i class="fa-solid fa-ban"></i> Cancelar reservación
+                </button>
+                <button type="button" class="btn-sal btn-sal-primary" id="btn-editar-reservacion" style="display:none" onclick="editarReservacion()">
+                    <i class="fa-solid fa-pen"></i> Editar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancelación -->
+<div class="modal fade sal-modal" id="modalCancelar" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="sal-hero-icon sal-icon-danger" style="width:38px;height:38px;border-radius:11px">
+                    <i class="fa-solid fa-ban"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title">Cancelar reservación</h5>
+                    <span class="sal-modal-sub" id="c-folio"></span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="sal-note" style="margin-top:0" id="c-resumen"></div>
+
+                <div class="sal-field" style="margin-top:1rem">
+                    <label class="sal-label" for="c-motivo">Motivo de la cancelación <span>*</span></label>
+                    <textarea class="sal-control" id="c-motivo" rows="3" maxlength="300"
+                              placeholder="Explica brevemente por qué se cancela…"></textarea>
+                    <span class="sal-hint"><i class="fa-solid fa-envelope"></i> Se envía a todos los participantes junto con el motivo.</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-sal btn-sal-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-arrow-left"></i> Volver
+                </button>
+                <button type="button" class="btn-sal btn-sal-danger" id="btn-confirmar-cancelacion" onclick="confirmarCancelacion()">
+                    <i class="fa-solid fa-ban"></i> Cancelar reservación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/lib/fullcalendar/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/locales-all.global.min.js"></script>
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script>
+        const URLS = {
+            catalogos: '@Url.Action("GetCatalogosSalas", "RecursosHumanos")',
+            reservaciones: '@Url.Action("GetReservaciones", "RecursosHumanos")',
+            reservar: '@Url.Action("ReservarSala", "RecursosHumanos")',
+            editar: '@Url.Action("EditarReservacion", "RecursosHumanos")',
+            cancelar: '@Url.Action("CancelarReservacion", "RecursosHumanos")',
+            guardarSala: '@Url.Action("GuardarSala", "RecursosHumanos")',
+            agenda: '@Url.Action("GetAgendaDia", "RecursosHumanos")',
+            confirmar: '@Url.Action("ConfirmarAsistencia", "RecursosHumanos")'
+        };
+
+        const ESTADO_RESERVA = {
+            reservada:  { texto: 'Reservada',  icono: 'fa-circle-check',   clase: 'is-activa' },
+            confirmada: { texto: 'Confirmada', icono: 'fa-circle-check',   clase: 'is-activa' },
+            en_curso:   { texto: 'En curso',   icono: 'fa-play',           clase: 'is-curso' },
+            finalizada: { texto: 'Finalizada', icono: 'fa-flag-checkered', clase: 'is-finalizada' },
+            cancelada:  { texto: 'Cancelada',  icono: 'fa-ban',            clase: 'is-cancelada' }
+        };
+
+        const COLOR_ESTADO = {
+            en_curso: '#059669',
+            finalizada: '#94a3b8',
+            cancelada: '#dc2626'
+        };
+
+        const ASISTENCIA = {
+            asistira: { texto: 'Asistirá', icono: 'fa-circle-check' },
+            no_asistira: { texto: 'No asistirá', icono: 'fa-circle-xmark' },
+            pendiente: { texto: 'Pendiente', icono: 'fa-clock' },
+            cancelada: { texto: 'Cancelada', icono: 'fa-ban' }
+        };
+
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+            <style>
+                .flip {
+                    animation: spinY 2s linear infinite;
+                    transform-origin: center;
+                }
+                @@keyframes spinY {
+                    0%   { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                }
+            </style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g>
+        </svg>`;
+
+        const PALETA = [
+            '#3266ad', '#2a9d7a', '#c96a1a', '#9b59b6', '#e24b4a',
+            '#1d9e75', '#0891b2', '#7c3aed', '#d97706', '#0f766e'
+        ];
+
+        const HORARIO = { 1: [9, 18], 2: [9, 18], 3: [9, 18], 4: [9, 18], 5: [9, 18], 6: [9, 14], 0: null };
+        const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        const PASO = 30;
+
+        const Estado = {
+            salas: [],
+            usuarios: [],
+            usuarioId: 0,
+            esAdmin: false,
+            eventos: [],
+            volverAlDetalle: false,
+            detalle: null
+        };
+
+        let calendario = null;
+        let tsParticipantes = null;
+
+        const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+
+        const dosDigitos = n => String(n).padStart(2, '0');
+        const isoLocal = d => `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}T${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}:00`;
+        const isoFecha = d => `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`;
+        const isoHora = d => `${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}`;
+        const folio = id => 'SALA-' + String(id).padStart(6, '0');
+
+        const modal = id => bootstrap.Modal.getOrCreateInstance(document.getElementById(id));
+
+        function filaResumen(etiqueta, valor) {
+            return `<tr>
+                        <td style="padding:.28rem .6rem .28rem 0;text-align:right;white-space:nowrap;opacity:.7">${etiqueta}</td>
+                        <td style="padding:.28rem 0;text-align:left;font-weight:600">${valor}</td>
+                    </tr>`;
+        }
+
+        function tablaResumen(filas) {
+            return `<table style="margin:.6rem auto 0;font-size:.9rem;text-align:left">${filas.join('')}</table>`;
+        }
+
+        function confirmar(opciones) {
+            return _Swal.fire({
+                iconHtml: warningIcon,
+                customClass: { icon: 'p-0 bg-transparent border-0 shadow-none' },
+                title: opciones.titulo,
+                html: opciones.html,
+                footer: opciones.footer ?? '',
+                confirmButtonText: opciones.confirmar ?? 'Sí, continuar',
+                cancelButtonText: 'Volver',
+                confirmButtonColor: opciones.color ?? '#3085d6',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(r => r.isConfirmed);
+        }
+
+        async function enviar(path, data, mensaje) {
+            Swal.fire({
+                title: mensaje ?? 'Configurando reservacion, espere un momento...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const res = await GetData({ path, data });
+            if (!res) return null;
+
+            toastMixin.fire(res);
+
+            return res;
+        }
+
+        const colorSala = salaId => {
+            const i = Estado.salas.findIndex(s => Number(s.id_sala) === Number(salaId));
+            return PALETA[(i < 0 ? 0 : i) % PALETA.length];
+        };
+
+        const nombreSala = salaId => Estado.salas.find(s => Number(s.id_sala) === Number(salaId))?.nombre ?? 'Sala';
+
+        // El estado manda sobre el color de la sala: saber de un vistazo qué sigue
+        // vivo importa más que de qué sala es.
+        const colorEvento = r => COLOR_ESTADO[r.estado] ?? colorSala(r.salaId);
+
+        const infoEstado = estado => ESTADO_RESERVA[estado] ?? ESTADO_RESERVA.reservada;
+
+        function rangoDia(fechaStr) {
+            if (!fechaStr) return null;
+            const [a, m, d] = fechaStr.split('-').map(Number);
+            return HORARIO[new Date(a, m - 1, d).getDay()];
+        }
+
+        function minutosDe(hhmm) {
+            const [h, m] = hhmm.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function llenarHoras(selectId, rango, desdeMin, hastaMin, seleccion) {
+            const sel = document.getElementById(selectId);
+            sel.innerHTML = '';
+
+            if (!rango) {
+                sel.innerHTML = '<option value="">No laborable</option>';
+                sel.disabled = true;
+                return;
+            }
+
+            sel.disabled = false;
+
+            const inicio = desdeMin ?? rango[0] * 60;
+            const fin = hastaMin ?? rango[1] * 60;
+
+            for (let m = inicio; m <= fin; m += PASO) {
+                const opt = document.createElement('option');
+                opt.value = `${dosDigitos(Math.floor(m / 60))}:${dosDigitos(m % 60)}`;
+                opt.textContent = opt.value;
+                sel.appendChild(opt);
+            }
+
+            if (seleccion && [...sel.options].some(o => o.value === seleccion)) sel.value = seleccion;
+        }
+
+        function onFechaChange(horaInicio, horaFin) {
+            const fecha = document.getElementById('r-fecha').value;
+            const rango = rangoDia(fecha);
+            const hint = document.getElementById('r-hint-dia');
+
+            if (!fecha) {
+                hint.innerHTML = '';
+            } else if (!rango) {
+                hint.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--warning-color)"></i> Los domingos no son días laborales';
+            } else {
+                const [a, m, d] = fecha.split('-').map(Number);
+                hint.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${DIAS[new Date(a, m - 1, d).getDay()]}: ${dosDigitos(rango[0])}:00 a ${dosDigitos(rango[1])}:00`;
+            }
+
+            llenarHoras('r-inicio', rango, null, rango ? rango[1] * 60 - PASO : null, horaInicio);
+            onInicioChange(horaFin);
+        }
+
+        function onInicioChange(horaFin) {
+            const rango = rangoDia(document.getElementById('r-fecha').value);
+            const inicio = document.getElementById('r-inicio').value;
+            if (!rango || !inicio) { llenarHoras('r-fin', rango); return; }
+
+            llenarHoras('r-fin', rango, minutosDe(inicio) + PASO, rango[1] * 60, horaFin);
+
+            if (!horaFin) {
+                const sel = document.getElementById('r-fin');
+                const sugerida = `${dosDigitos(Math.floor((minutosDe(inicio) + 60) / 60))}:${dosDigitos((minutosDe(inicio) + 60) % 60)}`;
+                if ([...sel.options].some(o => o.value === sugerida)) sel.value = sugerida;
+            }
+        }
+
+        // ── Catálogos ──────────────────────────────────────────────────────
+        async function cargarCatalogos() {
+            const res = await GetData({ path: URLS.catalogos });
+            if (!res) return;
+
+            Estado.salas = res.salas ?? [];
+            Estado.usuarios = res.usuarios ?? [];
+            Estado.usuarioId = Number(res.usuarioId ?? 0);
+            Estado.esAdmin = !!res.esAdmin;
+
+            document.getElementById('btn-nueva-sala').style.display = Estado.esAdmin ? '' : 'none';
+
+            const filtro = document.getElementById('f-sala');
+            const form = document.getElementById('r-sala');
+            filtro.innerHTML = '<option value="">Todas las salas</option>';
+            form.innerHTML = '';
+
+            Estado.salas.forEach(s => {
+                filtro.insertAdjacentHTML('beforeend', `<option value="${s.id_sala}">${escapeHtml(s.nombre)}</option>`);
+                form.insertAdjacentHTML('beforeend', `<option value="${s.id_sala}">${escapeHtml(s.nombre)}</option>`);
+            });
+
+            const leyendaSalas = Estado.salas.length
+                ? Estado.salas.map(s => `<span class="sal-legend-item"><span class="sal-dot" style="background:${colorSala(s.id_sala)}"></span>${escapeHtml(s.nombre)}</span>`).join('')
+                : '<span class="sal-legend-item"><i class="fa-solid fa-triangle-exclamation"></i> Aún no hay salas registradas</span>';
+
+            const leyendaEstados = [
+                ['En curso', COLOR_ESTADO.en_curso],
+                ['Finalizada', COLOR_ESTADO.finalizada],
+                ['Cancelada', COLOR_ESTADO.cancelada]
+            ].map(([texto, color]) =>
+                `<span class="sal-legend-item"><span class="sal-dot" style="background:${color}"></span>${texto}</span>`).join('');
+
+            document.getElementById('sal-leyenda').innerHTML = leyendaSalas + leyendaEstados;
+        }
+
+        function montarParticipantes(seleccionados) {
+            if (tsParticipantes) tsParticipantes.destroy();
+
+            tsParticipantes = new TomSelect('#r-participantes', {
+                plugins: ['remove_button'],
+                maxItems: null,
+                create: true,
+                valueField: 'usuarioid',
+                labelField: 'nombre',
+                searchField: ['nombre', 'email'],
+                options: Estado.usuarios.filter(u => Number(u.usuarioid) !== Estado.usuarioId),
+                items: (seleccionados ?? []).map(String),
+                render: {
+                    option: (d, escape) => `<div><div>${escape(d.nombre)}</div><div style="font-size:.72rem;opacity:.7">${escape(d.email ?? '')}</div></div>`,
+                    item: (d, escape) => `<div>${escape(d.nombre)}</div>`
+                }
+            });
+        }
+
+        // ── Calendario ─────────────────────────────────────────────────────
+        function filtrarEventos(data) {
+            const modo = document.getElementById('f-participacion').value;
+            const verCanceladas = document.getElementById('f-canceladas').checked;
+
+            return data.filter(r => {
+                if (r.estado === 'cancelada' && !verCanceladas) return false;
+                if (modo === 'mias' && !r.esParticipante) return false;
+                if (modo === 'organizo' && !r.esOrganizador) return false;
+                return true;
+            });
+        }
+
+        async function traerEventos(info, exito, fallo) {
+            try {
+                const data = await GetData({
+                    path: URLS.reservaciones,
+                    data: {
+                        desde: isoLocal(info.start),
+                        hasta: isoLocal(info.end),
+                        sala_id: document.getElementById('f-sala').value || 0
+                    }
+                });
+
+                const filtradas = filtrarEventos(Array.isArray(data) ? data : []);
+                Estado.eventos = filtradas;
+
+                document.getElementById('sal-badge-eventos').textContent = filtradas.length
+                    ? `${filtradas.length} ${filtradas.length === 1 ? 'reservación' : 'reservaciones'}`
+                    : 'Sin reservaciones';
+
+                document.getElementById('sal-resumen').innerHTML =
+                    '<i class="fa-solid fa-clock"></i> Actualizado ' +
+                    new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+                exito(filtradas.map(r => ({
+                    id: String(r.id),
+                    title: r.verDetalle ? r.asunto : 'Reservado',
+                    start: r.inicio,
+                    end: r.fin,
+                    backgroundColor: colorEvento(r),
+                    borderColor: colorEvento(r),
+                    extendedProps: r
+                })));
+            } catch (e) {
+                fallo(e);
+            }
+        }
+
+        function initCalendario() {
+            calendario = new FullCalendar.Calendar(document.getElementById('calendarioSalas'), {
+                locale: 'es',
+                timeZone: 'local',
+                initialView: 'timeGridWeek',
+                height: 'auto',
+                nowIndicator: true,
+                allDaySlot: false,
+                hiddenDays: [0],
+                slotDuration: '00:30:00',
+                slotLabelInterval: '01:00',
+                slotMinTime: '09:00:00',
+                slotMaxTime: '18:00:00',
+                expandRows: true,
+                firstDay: 1,
+                selectable: true,
+                selectMirror: true,
+                selectConstraint: 'businessHours',
+                eventOverlap: true,
+                navLinks: true,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' },
+                views: {
+                    dayGridMonth: {
+                        eventDisplay: 'block',
+                        dayMaxEventRows: 4,
+                        moreLinkText: n => `+${n} más`,
+                        eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false }
+                    }
+                },
+                slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+                eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+                businessHours: [
+                    { daysOfWeek: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '18:00' },
+                    { daysOfWeek: [6], startTime: '09:00', endTime: '14:00' }
+                ],
+                events: traerEventos,
+                select: info => {
+                    if (!Estado.salas.length) {
+                        toastMixin.fire({ icon: 'warning', title: 'Primero registra una sala' });
+                        calendario.unselect();
+                        return;
+                    }
+                    abrirModalReservacion(null, info.start, info.end);
+                    calendario.unselect();
+                },
+                dateClick: info => {
+                    if (info.view.type === 'dayGridMonth') calendario.changeView('timeGridDay', info.date);
+                },
+                eventClick: info => abrirDetalle(info.event.extendedProps),
+                eventContent: arg => {
+                    const p = arg.event.extendedProps;
+                    const titulo = p.verDetalle ? p.asunto : 'Reservado';
+
+                    if (arg.view.type === 'dayGridMonth') {
+                        return {
+                            html: `<div class="sal-ev is-compact">
+                                     <span class="sal-ev-time">${arg.timeText}</span>
+                                     <span class="sal-ev-title">${escapeHtml(titulo)}</span>
+                                   </div>`
+                        };
+                    }
+
+                    return {
+                        html: `<div class="sal-ev">
+                                 <span class="sal-ev-time">${arg.timeText}</span>
+                                 <span class="sal-ev-title">${escapeHtml(titulo)}</span>
+                                 <span class="sal-ev-meta">${escapeHtml(nombreSala(p.salaId))} · ${escapeHtml(p.anfitrion)}</span>
+                               </div>`
+                    };
+                },
+                eventDidMount: info => {
+                    const p = info.event.extendedProps;
+                    if (p.estado === 'cancelada') info.el.classList.add('is-cancelada');
+                    if (p.estado === 'finalizada') info.el.classList.add('is-finalizada');
+                    if (p.estado === 'en_curso') info.el.classList.add('is-en-curso');
+                    if (p.esParticipante) info.el.classList.add('is-mia');
+                    info.el.title = p.verDetalle
+                        ? `${p.asunto} · ${nombreSala(p.salaId)} · ${p.anfitrion}`
+                        : `Reservado por ${p.anfitrion} · ${nombreSala(p.salaId)}`;
+                }
+            });
+
+            calendario.render();
+        }
+
+        function refrescarCalendario() {
+            const btn = document.getElementById('btn-refrescar');
+            btn.classList.add('is-spinning');
+            refrescarTodo();
+            setTimeout(() => btn.classList.remove('is-spinning'), 700);
+        }
+
+        function refrescarTodo() {
+            calendario?.refetchEvents();
+            if (typeof AgendaSalas !== 'undefined') AgendaSalas.cargar();
+        }
+
+        // La burbuja del layout delega aquí cuando ya estás en el calendario, para
+        // abrir el detalle en vez de recargar la página.
+        window.abrirDesdeAgenda = function (id, junta) {
+            const encontrada = Estado.eventos.find(e => e.id === id) ?? junta;
+            if (!encontrada) return;
+
+            calendario?.gotoDate(encontrada.inicio);
+            abrirDetalle(encontrada);
+        };
+
+        // Un aviso del hub sobre salas significa que alguien reservó, editó, canceló
+        // o confirmó: se repinta el calendario sin que el usuario recargue.
+        document.addEventListener('erp:salas-actualizadas', refrescarTodo);
+
+        // El paso a en_curso / finalizada lo hace el servidor en segundo plano.
+        setInterval(() => calendario?.refetchEvents(), 60000);
+
+        // ── Detalle ────────────────────────────────────────────────────────
+        function abrirDetalle(r) {
+            Estado.detalle = r;
+
+            const tono = colorSala(r.salaId);
+            const inicio = new Date(r.inicio);
+            const fin = new Date(r.fin);
+            const fecha = inicio.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const duracion = Math.round((fin - inicio) / 60000);
+
+            document.getElementById('detalle-folio').textContent = folio(r.id);
+
+            let html = `
+                <div class="sal-detail-head">
+                    <span class="sal-detail-tone" style="background:${tono}"></span>
+                    <div style="min-width:0">
+                        <h3 class="sal-detail-title">${escapeHtml(r.verDetalle ? r.asunto : 'Sala reservada')}</h3>
+                        <div style="margin-top:.35rem">
+                            <span class="sal-state ${infoEstado(r.estado).clase}">
+                                <i class="fa-solid ${infoEstado(r.estado).icono}"></i>
+                                ${infoEstado(r.estado).texto}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sal-detail-rows">
+                    <div class="sal-detail-row">
+                        <i class="fa-solid fa-door-open"></i>
+                        <div><span class="sal-detail-label">Sala</span>${escapeHtml(nombreSala(r.salaId))}</div>
+                    </div>
+                    <div class="sal-detail-row">
+                        <i class="fa-solid fa-calendar-day"></i>
+                        <div><span class="sal-detail-label">Fecha</span><span style="text-transform:capitalize">${escapeHtml(fecha)}</span></div>
+                    </div>
+                    <div class="sal-detail-row">
+                        <i class="fa-solid fa-clock"></i>
+                        <div><span class="sal-detail-label">Horario</span>${isoHora(inicio)} a ${isoHora(fin)} hrs <span style="opacity:.65">(${duracion} min)</span></div>
+                    </div>
+                    <div class="sal-detail-row">
+                        <i class="fa-solid fa-user-tie"></i>
+                        <div>
+                            <span class="sal-detail-label">Reservó</span>
+                            ${escapeHtml(r.anfitrion)}
+                            ${r.anfitrionEmail ? `<div style="font-size:.76rem;color:var(--text-light)">${escapeHtml(r.anfitrionEmail)}</div>` : ''}
+                        </div>
+                    </div>`;
+
+            if (r.verDetalle) {
+                html += `
+                    <div class="sal-detail-row">
+                        <i class="fa-solid fa-users"></i>
+                        <div style="min-width:0">
+                            <span class="sal-detail-label">Participantes (${r.totalParticipantes})</span>
+                            <div class="sal-people">
+                                ${(r.participantes ?? []).map(p => chipParticipante(p, r)).join('') || '<span style="color:var(--text-light)">Sin participantes</span>'}
+                            </div>
+                            <div class="sal-tally">
+                                <span class="sal-tally-item is-si"><i class="fa-solid fa-circle-check"></i> ${r.confirmados} confirmados</span>
+                                <span class="sal-tally-item is-no"><i class="fa-solid fa-circle-xmark"></i> ${r.rechazados} no asistirán</span>
+                                <span class="sal-tally-item"><i class="fa-solid fa-clock"></i> ${r.pendientes} sin responder</span>
+                            </div>
+                        </div>
+                    </div>`;
+
+                if (r.comentarios) {
+                    html += `
+                        <div class="sal-detail-row">
+                            <i class="fa-solid fa-align-left"></i>
+                            <div style="min-width:0"><span class="sal-detail-label">Descripción</span>${escapeHtml(r.comentarios)}</div>
+                        </div>`;
+                }
+            }
+
+            html += '</div>';
+
+            if (!r.verDetalle) {
+                html += `<div class="sal-private">
+                            <i class="fa-solid fa-lock"></i>
+                            No participas en esta reunión, por eso solo se muestra quién reservó la sala y el horario apartado.
+                            Son ${r.totalParticipantes} ${r.totalParticipantes === 1 ? 'participante' : 'participantes'}.
+                         </div>`;
+            }
+
+            if (r.estado === 'cancelada' && r.motivo) {
+                html += `<div class="sal-note"><strong>Motivo de cancelación:</strong> ${escapeHtml(r.motivo)}</div>`;
+            }
+
+            if (r.puedeConfirmar) {
+                const estado = ASISTENCIA[r.miEstado] ?? ASISTENCIA.pendiente;
+
+                html += `<div class="sal-mi-estado">
+                            <i class="fa-solid ${estado.icono}"></i>
+                            <span style="min-width:0">
+                                ${r.miEstado === 'pendiente'
+                                    ? 'Te invitaron a esta reunión y aún no respondes. Confirma abajo si podrás asistir.'
+                                    : `Tu respuesta actual es <strong>${estado.texto.toLowerCase()}</strong>. Puedes cambiarla mientras la reunión no empiece.`}
+                            </span>
+                         </div>`;
+            }
+
+            document.getElementById('detalle-body').innerHTML = html;
+            document.getElementById('btn-editar-reservacion').style.display = r.puedeEditar ? '' : 'none';
+            document.getElementById('btn-cancelar-reservacion').style.display = r.puedeCancelar ? '' : 'none';
+            document.getElementById('btn-asistire').style.display = r.puedeConfirmar && r.miEstado !== 'asistira' ? '' : 'none';
+            document.getElementById('btn-no-asistire').style.display = r.puedeConfirmar && r.miEstado !== 'no_asistira' ? '' : 'none';
+
+            modal('modalDetalle').show();
+        }
+
+        function chipParticipante(p, r) {
+            const esAnfitrion = p.id === r.apartadoPor;
+            const estado = ASISTENCIA[p.estado] ?? ASISTENCIA.pendiente;
+            const clase = esAnfitrion ? 'is-host' : `is-${p.estado}`;
+            const titulo = esAnfitrion ? 'Organiza la reunión' : estado.texto;
+            const icono = esAnfitrion ? 'fa-user-tie' : estado.icono;
+
+            return `<span class="sal-person ${clase}" title="${titulo}">
+                        <i class="fa-solid ${icono}"></i>${escapeHtml(p.nombre)}
+                    </span>`;
+        }
+
+        // ── Alta y edición ─────────────────────────────────────────────────
+        function abrirModalReservacion(reservacion, inicio, fin) {
+            if (!Estado.salas.length) {
+                toastMixin.fire({ icon: 'warning', title: 'Primero registra una sala' });
+                return;
+            }
+
+            const esEdicion = !!reservacion;
+            const arranque = inicio ?? (reservacion ? new Date(reservacion.inicio) : null);
+            const cierre = fin ?? (reservacion ? new Date(reservacion.fin) : null);
+
+            document.getElementById('titulo-reservacion').textContent = esEdicion ? 'Editar reservación' : 'Nueva reservación';
+            document.getElementById('subtitulo-reservacion').textContent = esEdicion
+                ? folio(reservacion.id) + ' · se notificará a los participantes de los cambios'
+                : 'Los campos marcados con * son obligatorios.';
+            document.getElementById('icono-reservacion').className = esEdicion ? 'fa-solid fa-pen' : 'fa-solid fa-calendar-plus';
+
+            document.getElementById('r-id').value = esEdicion ? reservacion.id : 0;
+            document.getElementById('r-asunto').value = esEdicion ? (reservacion.asunto ?? '') : '';
+            document.getElementById('r-comentarios').value = esEdicion ? (reservacion.comentarios ?? '') : '';
+            document.getElementById('r-sala').value = esEdicion ? reservacion.salaId : Estado.salas[0].id_sala;
+            document.getElementById('r-fecha').value = arranque ? isoFecha(arranque) : isoFecha(new Date());
+            document.getElementById('r-fecha').min = esEdicion ? '' : isoFecha(new Date());
+
+            onFechaChange(arranque ? isoHora(arranque) : '09:00', cierre ? isoHora(cierre) : null);
+
+            const modalEl = document.getElementById('modalReservacion');
+
+            modalEl.addEventListener('shown.bs.modal', () => {
+                montarParticipantes(esEdicion ? (reservacion.participantes ?? []).map(p => p.id) : []);
+            }, { once: true });
+
+            modal('modalReservacion').show();
+        }
+
+        function editarReservacion() {
+            const detalle = Estado.detalle;
+            const modalEl = document.getElementById('modalDetalle');
+
+            modalEl.addEventListener('hidden.bs.modal', () => abrirModalReservacion(detalle), { once: true });
+            modal('modalDetalle').hide();
+        }
+
+        async function guardarReservacion() {
+            const id = Number(document.getElementById('r-id').value);
+            const asunto = document.getElementById('r-asunto').value.trim();
+            const salaId = document.getElementById('r-sala').value;
+            const fecha = document.getElementById('r-fecha').value;
+            const inicio = document.getElementById('r-inicio').value;
+            const fin = document.getElementById('r-fin').value;
+
+            if (!asunto) return toastMixin.fire({ icon: 'warning', title: 'Escribe el asunto de la reunión' });
+            if (!salaId) return toastMixin.fire({ icon: 'warning', title: 'Selecciona una sala' });
+            if (!fecha || !inicio || !fin) return toastMixin.fire({ icon: 'warning', title: 'Selecciona fecha y horario' });
+            if (minutosDe(fin) <= minutosDe(inicio)) return toastMixin.fire({ icon: 'warning', title: 'La hora de fin debe ser posterior' });
+
+            const invitados = tsParticipantes ? tsParticipantes.getValue() : [];
+            const [a, m, d] = fecha.split('-').map(Number);
+            const legible = new Date(a, m - 1, d).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            const ok = await confirmar({
+                titulo: id > 0 ? 'Confirmar cambios' : 'Confirmar reservación',
+                html: `<p style="margin-bottom:.2rem">${id > 0
+                            ? '¿Guardar los cambios de esta reservación?'
+                            : '¿Reservar la sala con estos datos?'}</p>`
+                      + tablaResumen([
+                          filaResumen('Asunto', escapeHtml(asunto)),
+                          filaResumen('Sala', escapeHtml(nombreSala(salaId))),
+                          filaResumen('Fecha', escapeHtml(legible)),
+                          filaResumen('Horario', `${inicio} a ${fin} hrs`),
+                          filaResumen('Participantes', `${invitados.length + 1} (te incluye)`)
+                      ]),
+                footer: id > 0
+                    ? '<b style="color:#d97706">Se notificará a los participantes y deberán confirmar de nuevo si cambia sala u horario</b>'
+                    : '<b style="color:#d97706">Se enviará la invitación por correo a los participantes</b>',
+                confirmar: id > 0 ? 'Sí, guardar cambios' : 'Sí, reservar'
+            });
+
+            if (!ok) return;
+
+            const btn = document.getElementById('btn-guardar-reservacion');
+            btn.disabled = true;
+
+            const data = {
+                sala_id: salaId,
+                asunto,
+                comentarios: document.getElementById('r-comentarios').value.trim(),
+                inicio_apartado: `${fecha}T${inicio}:00`,
+                fin_apartado: `${fecha}T${fin}:00`,
+                participantes: invitados
+            };
+
+            if (id > 0) data.sala_reservada_id = id;
+
+            const res = await enviar(id > 0 ? URLS.editar : URLS.reservar, data);
+            btn.disabled = false;
+
+            if (res?.icon === 'success') {
+                modal('modalReservacion').hide();
+                refrescarTodo();
+            }
+        }
+
+        async function responderInvitacion(respuesta) {
+            const r = Estado.detalle;
+            if (!r) return;
+
+            const asiste = respuesta === 'asistira';
+            const inicio = new Date(r.inicio);
+
+            const ok = await confirmar({
+                titulo: asiste ? 'Confirmar asistencia' : 'Rechazar invitación',
+                html: `<p style="margin-bottom:.2rem">${asiste
+                            ? '¿Confirmas que asistirás a esta reunión?'
+                            : '¿Confirmas que no podrás asistir?'}</p>`
+                      + tablaResumen([
+                          filaResumen('Asunto', escapeHtml(r.asunto ?? '')),
+                          filaResumen('Sala', escapeHtml(nombreSala(r.salaId))),
+                          filaResumen('Fecha', escapeHtml(inicio.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }))),
+                          filaResumen('Horario', `${isoHora(inicio)} a ${isoHora(new Date(r.fin))} hrs`)
+                      ]),
+                footer: '<b style="color:#d97706">Se avisará al organizador de tu respuesta</b>',
+                confirmar: asiste ? 'Sí, asistiré' : 'No podré asistir',
+                color: asiste ? '#059669' : '#dc2626'
+            });
+
+            if (!ok) return;
+
+            const res = await enviar(URLS.confirmar, { sala_reservada_id: r.id, respuesta }, 'Registrando tu respuesta...');
+
+            if (res?.icon === 'success') {
+                modal('modalDetalle').hide();
+                refrescarTodo();
+            }
+        }
+
+        function cancelarReservacion() {
+            const r = Estado.detalle;
+            if (!r) return;
+
+            const inicio = new Date(r.inicio);
+            const fin = new Date(r.fin);
+
+            document.getElementById('c-folio').textContent = folio(r.id);
+            document.getElementById('c-motivo').value = '';
+            document.getElementById('c-resumen').innerHTML = `
+                <strong>${escapeHtml(r.verDetalle ? r.asunto : 'Sala reservada')}</strong><br>
+                Se liberará <strong>${escapeHtml(nombreSala(r.salaId))}</strong> el
+                ${escapeHtml(inicio.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }))}
+                de ${isoHora(inicio)} a ${isoHora(fin)} hrs.
+                ${r.totalParticipantes ? `Se notificará a ${r.totalParticipantes} ${r.totalParticipantes === 1 ? 'participante' : 'participantes'}.` : ''}`;
+
+            Estado.volverAlDetalle = true;
+
+            document.getElementById('modalCancelar').addEventListener('hidden.bs.modal', () => {
+                if (Estado.volverAlDetalle) abrirDetalle(r);
+            }, { once: true });
+
+            document.getElementById('modalDetalle').addEventListener('hidden.bs.modal', () => {
+                modal('modalCancelar').show();
+            }, { once: true });
+
+            modal('modalDetalle').hide();
+        }
+
+        async function confirmarCancelacion() {
+            const r = Estado.detalle;
+            const motivo = document.getElementById('c-motivo').value.trim();
+
+            if (!motivo) {
+                toastMixin.fire({ icon: 'warning', title: 'Indica el motivo de la cancelación' });
+                document.getElementById('c-motivo').focus();
+                return;
+            }
+
+            const inicio = new Date(r.inicio);
+
+            const ok = await confirmar({
+                titulo: 'Confirmar cancelación',
+                html: '<p style="margin-bottom:.2rem">¿Seguro que deseas cancelar esta reservación?</p>'
+                      + tablaResumen([
+                          filaResumen('Folio', folio(r.id)),
+                          filaResumen('Asunto', escapeHtml(r.verDetalle ? r.asunto : 'Sala reservada')),
+                          filaResumen('Sala', escapeHtml(nombreSala(r.salaId))),
+                          filaResumen('Fecha', escapeHtml(inicio.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }))),
+                          filaResumen('Horario', `${isoHora(inicio)} a ${isoHora(new Date(r.fin))} hrs`),
+                          filaResumen('Motivo', escapeHtml(motivo))
+                      ]),
+                footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+                confirmar: 'Sí, cancelar reservación',
+                color: '#dc2626'
+            });
+
+            if (!ok) return;
+
+            const btn = document.getElementById('btn-confirmar-cancelacion');
+            btn.disabled = true;
+
+            const res = await enviar(URLS.cancelar, { sala_reservada_id: r.id, motivo }, 'Cancelando la reservacion...');
+            btn.disabled = false;
+
+            if (res?.icon === 'success') {
+                Estado.volverAlDetalle = false;
+                modal('modalCancelar').hide();
+                refrescarTodo();
+            }
+        }
+
+        // ── Salas ──────────────────────────────────────────────────────────
+        function abrirModalSala() {
+            document.getElementById('s-id').value = 0;
+            document.getElementById('s-nombre').value = '';
+            document.getElementById('s-descripcion').value = '';
+            modal('modalSala').show();
+        }
+
+        async function guardarSala() {
+            const nombre = document.getElementById('s-nombre').value.trim();
+            if (!nombre) return toastMixin.fire({ icon: 'warning', title: 'Escribe el nombre de la sala' });
+
+            const res = await enviar(URLS.guardarSala, {
+                id_sala: document.getElementById('s-id').value,
+                nombre,
+                descripcion: document.getElementById('s-descripcion').value.trim()
+            });
+
+            if (res?.icon === 'success') {
+                modal('modalSala').hide();
+                await cargarCatalogos();
+                calendario.refetchEvents();
+            }
+        }
+
+        // ── Arranque ───────────────────────────────────────────────────────
+        (async () => {
+            await cargarCatalogos();
+            initCalendario();
+
+            const solicitada = Number(new URLSearchParams(location.search).get('reservacion') ?? 0);
+            if (!solicitada) return;
+
+            const data = await GetData({
+                path: URLS.reservaciones,
+                data: { desde: '2000-01-01T00:00:00', hasta: '2100-01-01T00:00:00', sala_id: 0 }
+            });
+
+            const r = (Array.isArray(data) ? data : []).find(x => Number(x.id) === solicitada);
+            if (!r) return;
+
+            calendario.gotoDate(r.inicio);
+            abrirDetalle(r);
+        })();
+    </script>
+}

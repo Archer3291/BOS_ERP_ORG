@@ -1,0 +1,437 @@
+﻿@using BOS_ERP.Controllers;
+
+@{
+    ViewBag.Title = "Requisision de Material";
+}
+<style>
+    div:where(.swal2-container) .swal2-select {
+        background: var(--bg-light) !important;
+    }
+
+    div:where(.swal2-container) #swal-clasificacion {
+        background: var(--bg-light) !important;
+        margin: 0 0 0 !important;
+    }
+</style>
+<link href="~/content/sidebar.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="mb-4 w-50">
+    <label for="selectorTabla" class="form-label">
+        <i class="fa-solid fa-table"></i> Mostrar tabla
+    </label>
+    <select id="selectorTabla" class="form-select">
+        <option value="tablaPendientesGerente">Documentos pendientes</option>
+        <option value="tablaCreadasGerente">Documentos creados</option>
+        <option value="tablaOpcionesCotizacionGerente">Documentos cotizados</option>
+    </select>
+</div>
+
+<div>
+    <div class="contenedor-tabla" id="contenedor-tablaPendientesGerente"><div id="tablaPendientesGerente"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaCreadasGerente"><div id="tablaCreadasGerente"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaOpcionesCotizacionGerente"><div id="tablaOpcionesCotizacionGerente"></div></div>
+</div>
+
+<div class="modal fade" id="modalAgregarOpcionesGerente" tabindex="-1" aria-labelledby="modalOpcionesLabelGerente" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabelGerente"><i class="bi bi-pencil-square"></i> Seleccionar opciones</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBodyGerente">
+                <div id="docs_content"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btn-generar-cotizacion" class="btn btn-success">
+                    <i class="bi bi-save-fill"></i> Guardar cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/signature_pad/signature_pad.umd.min.js"></script>
+<script src="~/scripts/TableBuilder.js"></script>
+<script src="~/scripts/compras-nacionales.js?v=@DateTime.Now.Ticks"></script>
+<script>
+    // ============================================
+    // TABLAS DEL GERENTE
+    // ============================================
+    const TABLAS_GERENTE = {
+        tablaPendientesGerente: {
+            url: '/Requisicion/GetRequisicionesGerente',
+            acciones: [
+                { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                { icon: 'fa-badge-check', color: 'green-500', title: 'Aceptar', onClick: row => aceptarRemision(row.id_encabezado, row.nuevo_codigo) },
+                { icon: 'fa-circle-xmark', color: 'red-500', title: 'Rechazar', onClick: row => rechazarRemision(row.id_encabezado, row.nuevo_codigo) },
+                { icon: 'fa-download', color: 'green-500', title: 'Descargar requisición', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+            ]
+        },
+        tablaCreadasGerente: {
+            url: '/Requisicion/GetRequisicionesAceptadasGerente',
+            acciones: [
+                { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                { icon: 'fa-download', color: 'green-500', title: 'Descargar solicitud', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+            ]
+        },
+        tablaOpcionesCotizacionGerente: {
+            url: '/Requisicion/GetRequisicionesConOpcionesGerente',
+            acciones: [
+                { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                { icon: 'fa-circle-check', color: 'btn-success', title: 'Seleccionar opciones', onClick: row => aceptarProducto(row) },
+                { icon: 'fa-download', color: 'sky-500', title: 'Descargar solicitud', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+            ]
+        }
+    };
+
+    const tablasGerente = {};
+    let encabezadoGerente = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const selector = document.getElementById("selectorTabla");
+
+        mostrarSoloTabla(selector.value);
+        selector.addEventListener("change", () => mostrarSoloTabla(selector.value));
+
+        const folio = folioDeLaUrl();
+
+        Object.entries(TABLAS_GERENTE).forEach(([id, config]) => {
+            tablasGerente[id] = createTable({
+                selector: `#${id}`,
+                path: config.url,
+                rowKey: 'id_encabezado',
+                searchPlaceholder: 'Buscar por folio, solicitante u observaciones...',
+                sortDir: 'desc',
+                data: () => ({ folio }),
+                columns: columnasDocumento(),
+                actions: config.acciones,
+                exports: ['excel'],
+            });
+        });
+    });
+
+    function mostrarSoloTabla(tablaId) {
+        document.querySelectorAll(".contenedor-tabla").forEach(contenedor => {
+            contenedor.style.display = contenedor.id === `contenedor-${tablaId}` ? "block" : "none";
+        });
+    }
+
+    function actualizarTabla() {
+        Object.values(tablasGerente).forEach(t => t.refreshPage());
+    }
+
+    // ============================================
+    // ACCIONES SOBRE LA SOLICITUD
+    // ============================================
+    function aceptarRemision(id_encabezado, fol_doc) {
+        _Swal.fire({
+            title: `¿Aceptar solicitud de cotizacion ${fol_doc}?`,
+            icon: 'question',
+            confirmButtonText: 'Sí, aceptar',
+            preConfirm: async () => {
+                Swal.showLoading();
+                const data = await GetData({
+                    path: '/Requisicion/AceptarRequisicion',
+                    data: { id_encabezado }
+                });
+
+                if (!data.success) {
+                    Swal.showValidationMessage(data.error || 'No se pudo aceptar la solicitud de cotizacion.');
+                    return false;
+                }
+                return data;
+            }
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            toastMixin.fire({ icon: 'success', title: `La solicitud ${fol_doc} fue aceptada correctamente.` });
+            actualizarTabla();
+        });
+    }
+
+    function rechazarRemision(id_encabezado, fol_doc) {
+        _Swal.fire({
+            title: `¿Rechazar solicitud de cotizacion ${fol_doc}?`,
+            input: 'textarea',
+            inputLabel: 'Motivo del rechazo',
+            inputPlaceholder: 'Escribe el motivo...',
+            confirmButtonText: 'Sí, rechazar',
+            preConfirm: async (comentario) => {
+                if (!comentario) {
+                    Swal.showValidationMessage('Debes ingresar un motivo');
+                    return false;
+                }
+
+                const data = await GetData({
+                    path: '/Requisicion/RechazarRequisicion',
+                    data: { id_encabezado, comentario }
+                });
+
+                if (!data.success) {
+                    Swal.showValidationMessage(data.error || 'No se pudo rechazar la solicitud de cotizacion.');
+                    return false;
+                }
+                return data;
+            }
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            toastMixin.fire({ icon: 'success', title: `La solicitud ${fol_doc} fue rechazada correctamente.` });
+            actualizarTabla();
+        });
+    }
+
+    // ============================================
+    // SELECCIÓN DE OPCIONES POR PARTIDA
+    // El descuento (dto1) es un PORCENTAJE por partida.
+    // ============================================
+    async function aceptarProducto(row) {
+        const _res = await GetData({
+            path: '/Requisicion/GetRequisicionDataAndOptions',
+            data: { id: row.id_encabezado }
+        });
+
+        encabezadoGerente = row.id_encabezado;
+
+        const body = document.getElementById('docs_content');
+        const tipoProducto = _res.requisicion.tipo_producto;
+        body.innerHTML = '';
+
+        const cardUsuario = document.createElement('div');
+        cardUsuario.className = 'card shadow-sm border-0 mb-4';
+        cardUsuario.style.cssText = 'background-color: var(--bg-gray); border-radius: 1rem; padding: 1.5rem;';
+        cardUsuario.innerHTML = `
+            <div class="mb-3">
+                <label for="usuarioFinanzas" class="form-label fw-semibold">Usuario de Finanzas</label>
+                <select class="form-select" id="usuarioFinanzas">
+                    <option selected disabled value="">Seleccione un usuario</option>
+                    ${(_res.finanzas || []).map(u => `<option value="${u.usuarioid}">${u.nombre_completo}</option>`).join('')}
+                </select>
+                <div class="form-floating mt-3">
+                    <textarea class="form-control" id="Comentario" name="Comentario"></textarea>
+                    <label for="Comentario">Comentario</label>
+                </div>
+            </div>`;
+        body.appendChild(cardUsuario);
+
+        const partidas = (_res.partidas?.length ? _res.partidas : _res.partidasPadre) || [];
+
+        partidas.forEach(partida => {
+            const tablaId = `tabla-materiales_${partida.id_partidas}`;
+            const div = document.createElement('div');
+            div.id = `card-partida-${partida.id_partidas}`;
+
+            div.innerHTML = `
+                <div class="card shadow-sm border-0 mb-4" style="background-color: var(--bg-gray); border-radius: 1rem; padding: 1.5rem;">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="mb-1 text-light" style="font-size: 0.9rem;">Clave:</p>
+                            <p class="mb-1 fw-bold">${partida.cve_prod}</p>
+                            <p class="mb-1 text-light" style="font-size: 0.9rem;">Descripción:</p>
+                            <p class="fw-bold">${partida.descr_prod}</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped-columns align-middle" id="${tablaId}" data-cantidad="${partida.cant_ud}">
+                            <thead class="text-center" style="background-color: var(--very-light-blue); border-bottom: 1px solid var(--border-light);">
+                                <tr class="text-dark">
+                                    <th class="text-start"><i class="bi bi-check-square"></i></th>
+                                    <th class="text-start">Proveedor *</th>
+                                    <th class="text-start">Producto *</th>
+                                    <th class="text-start">Descripción</th>
+                                    <th class="text-start">Unidad</th>
+                                    <th class="text-start">Costo Unitario</th>
+                                    <th class="text-start">Cantidad</th>
+                                    <th class="text-start">Subtotal</th>
+                                    <th class="text-start">Descuento %</th>
+                                    ${tipoProducto === 'directo' ? '<th class="text-start">Precio de venta</th>' : ''}
+                                    <th class="text-start">Total</th>
+                                    <th class="text-start">Adjunto</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>`;
+
+            body.appendChild(div);
+
+            const tbody = div.querySelector(`#${tablaId} tbody`);
+            const opciones = (_res.opciones || []).filter(op => op.partidas_id == partida.id_partidas);
+
+            opciones.forEach(op => {
+                const precio = parseFloat(op.precio) || 0;
+                const cantidad = parseFloat(op.cant_ud) || 0;
+                const dto1 = porcentajeDescuento(op.descuento);
+                const precioVenta = parseFloat(op.precio_venta) || 0;
+
+                const fila = document.createElement('tr');
+                fila.dataset.partida = op.partidas_id;
+                fila.dataset.proveedorId = op.prov_id ?? '';
+                fila.dataset.proveedorNombre = op.proveedor_nombre || '';
+                fila.dataset.producto = op.producto || '';
+                fila.dataset.descripcion = op.descripcion || '';
+                fila.dataset.unidad = op.unidad || '';
+                fila.dataset.costo = precio;
+                fila.dataset.cantidad = cantidad;
+                fila.dataset.descuento = dto1;
+                fila.dataset.precioVenta = precioVenta;
+
+                fila.innerHTML = `
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input opcion-checkbox" />
+                    </td>
+                    <td><span class="badge bg-secondary">${op.proveedor_nombre || op.prov_id}</span></td>
+                    <td><span class="text-primary fw-semibold">${op.producto || ''}</span></td>
+                    <td>${op.descripcion || '-'}</td>
+                    <td>${op.unidad || '-'}</td>
+                    <td>${Currency.format(precio)}</td>
+                    <td>${cantidad}</td>
+                    <td>${Currency.format(brutoPartida(cantidad, precio))}</td>
+                    <td><span class="badge bg-warning text-dark">${formatoPorcentaje(dto1)}</span></td>
+                    ${tipoProducto === 'directo' ? `<td class="precio-venta">${Currency.format(precioVenta)}</td>` : ''}
+                    <td class="fw-bold">${Currency.format(netoPartida(cantidad, precio, dto1))}</td>
+                    <td class="text-center">${enlaceAdjunto(op.ruta, op.nombre_original, op.extencion)}</td>`;
+
+                // Una sola opción por partida
+                fila.querySelector('.opcion-checkbox').addEventListener('change', function () {
+                    if (!this.checked) return;
+                    tbody.querySelectorAll('.opcion-checkbox').forEach(cb => { if (cb !== this) cb.checked = false; });
+                });
+
+                tbody.appendChild(fila);
+            });
+        });
+
+        document.getElementById('modalOpcionesLabelGerente').textContent = `Requisición No. ${_res.requisicion.nuevo_codigo}`;
+        new bootstrap.Modal(document.getElementById('modalAgregarOpcionesGerente')).show();
+    }
+
+    // ============================================
+    // GENERAR COTIZACIÓN
+    // ============================================
+    document.getElementById('btn-generar-cotizacion').addEventListener('click', function () {
+        const tablas = document.querySelectorAll('table[id^="tabla-materiales_"]');
+
+        for (const tabla of tablas) {
+            if (!tabla.querySelectorAll('.opcion-checkbox:checked').length) {
+                toastMixin.fire({ icon: 'warning', title: 'Debes seleccionar una opción por cada partida antes de continuar.' });
+                return;
+            }
+        }
+
+        const usuarioFinanzasId = document.getElementById('usuarioFinanzas')?.value;
+        if (!usuarioFinanzasId) {
+            toastMixin.fire({ icon: 'warning', title: 'Debes seleccionar un usuario de Finanzas.' });
+            return;
+        }
+
+        const partidas = [...document.querySelectorAll('.opcion-checkbox:checked')].map(checkbox => {
+            const fila = checkbox.closest('tr');
+            const d = fila.dataset;
+
+            return {
+                partida_id: d.partida,
+                proveedor_id: d.proveedorId || null,
+                proveedor_nombre: d.proveedorNombre,
+                producto_nombre: d.producto,
+                descripcion: d.descripcion,
+                unidad: d.unidad,
+                costo_unitario: parseFloat(d.costo) || 0,
+                cantidad: parseFloat(d.cantidad) || 0,
+                descuento: porcentajeDescuento(d.descuento),
+                precio_venta: parseFloat(d.precioVenta) || 0,
+                total: netoPartida(d.cantidad, d.costo, d.descuento)
+            };
+        });
+
+        const totales = totalizarPartidas(partidas, p => ({
+            cantidad: p.cantidad, precio: p.costo_unitario, dto1: p.descuento
+        }));
+
+        _Swal.fire({
+            icon: 'warning',
+            title: '¿Seguro?',
+            html: `Se generará la cotización por <strong>${Currency.format(totales.base)}</strong>` +
+                  (totales.descuento > 0 ? `<br>Descuento aplicado: <strong>${Currency.format(totales.descuento)}</strong>` : ''),
+            footer: '<b style="color: red;">ADVERTENCIA - Este cambio no se puede revertir</b>',
+            preConfirm: () => firmarYEnviarCotizacion(partidas, totales, usuarioFinanzasId)
+        });
+    });
+
+    function firmarYEnviarCotizacion(partidas, totales, usuarioFinanzasId) {
+        _Swal.fire({
+            title: 'Firma el documento antes de continuar',
+            html: `
+                <div class="border-1">
+                    <p>Firma del usuario</p>
+                    <canvas id="signature" width="400" height="200" style="border:1px solid #ccc;"></canvas>
+                    <button type="button" class="btn green-500 mt-2" id="limpiar_firma">Limpiar</button>
+                </div>`,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                const canvas = document.getElementById('signature');
+                const signaturePad = new SignaturePad(canvas, {
+                    penColor: 'rgb(0, 0, 0)',
+                    minWidth: 0.5,
+                    maxWidth: 1.0,
+                    throttle: 16,
+                    minDistance: 3
+                });
+
+                const firmaBase64 = '@Context.Session.GetString("Firma")';
+                if (firmaBase64 && firmaBase64 !== 'null' && firmaBase64.trim() !== '') {
+                    signaturePad.fromDataURL(firmaBase64);
+                }
+
+                document.getElementById('limpiar_firma').addEventListener('click', () => signaturePad.clear());
+                Swal.__signaturePad = signaturePad;
+            },
+            preConfirm: async () => {
+                const signaturePad = Swal.__signaturePad;
+
+                if (!signaturePad || signaturePad.isEmpty()) {
+                    Swal.showValidationMessage('Debes firmar antes de continuar.');
+                    return false;
+                }
+
+                const data = await GetData({
+                    path: '/Requisicion/GenerarCotizacion',
+                    data: {
+                        id_encabezado: encabezadoGerente,
+                        partidas: JSON.stringify(partidas),
+                        total: totales.base.toFixed(2),
+                        usuario_finanzas_id: usuarioFinanzasId,
+                        comentario: document.getElementById('Comentario').value,
+                        firma1: signaturePad.toDataURL('image/png', 0.5)
+                    }
+                });
+
+                if (!data?.success) {
+                    Swal.showValidationMessage(`Error: ${data?.message || 'No se pudo guardar.'}`);
+                    return false;
+                }
+                return data;
+            }
+        }).then(result => {
+            if (!result.isConfirmed || !result.value) return;
+
+            _Swal.fire({
+                icon: 'success',
+                title: 'Guardado',
+                html: `La selección fue actualizada correctamente.<br><strong>Nuevo folio:</strong> ${result.value.folio_generado}`,
+                showCancelButton: false
+            });
+
+            bootstrap.Modal.getInstance(document.getElementById('modalAgregarOpcionesGerente'))?.hide();
+            actualizarTabla();
+        });
+    }
+</script>

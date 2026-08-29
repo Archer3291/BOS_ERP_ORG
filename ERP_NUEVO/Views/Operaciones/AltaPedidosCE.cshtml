@@ -1,0 +1,1075 @@
+﻿@model BOS_ERP.Models.LoginViewModel
+@{
+    ViewBag.Title = "Pedidos ";
+
+}
+@section styles {
+    <style>
+        #loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6); /* Fondo semitransparente oscuro */
+            z-index: 1050; /* Por encima de todo */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader-content {
+            text-align: center;
+        }
+
+        .section-title {
+            font-weight: bold;
+            background-color: #003366;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+        }
+
+        .table input {
+            min-width: 80px;
+        }
+
+        .form-floating {
+            position: relative;
+        }
+
+        .input-group {
+            height: 100%; /* Asegura que el contenedor ocupe toda la altura del div */
+        }
+
+        .custom-input, .custom-btn {
+            height: 100%; /* Hace que el input y el botón llenen completamente el contenedor */
+        }
+
+        .custom-btn {
+            padding: 0 15px; /* Asegura que el padding no afecte la altura */
+            display: flex;
+            align-items: center; /* Centra el texto del botón verticalmente */
+        }
+
+        .input-group > .form-control {
+            height: auto;
+        }
+
+        .ticket-style {
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+            font-family: 'Courier New', Courier, monospace;
+            border: 2px solid #dcdcdc;
+            padding: 20px;
+        }
+
+        .no-border {
+            border: none;
+            /*background: #f9f9f9;*/
+            box-shadow: none;
+            transition: background 0.3s ease, border 0.3s ease;
+        }
+
+            .no-border:hover {
+                /*background: #e9e9e9;*/
+            }
+
+        .ticket-style .form-floating input {
+            font-size: 1rem;
+            padding-left: 2.5rem; /* Space for the icon */
+        }
+
+        .ticket-style label {
+            color: #333;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .ticket-style input[type="number"] {
+            font-weight: bold;
+            text-align: right;
+            font-size: 1.2rem;
+            color: #444;
+        }
+
+            .ticket-style input[type="number"]:read-only {
+                color: #777;
+            }
+
+        .ticket-style .form-floating {
+            margin-bottom: 1rem;
+            padding: 1.2rem;
+            border-radius: 8px;
+        }
+
+        .ticket-style .fw-bold {
+            color: #e74c3c;
+            font-size: 1.3rem;
+        }
+
+        .ticket-style .form-floating textarea {
+            background: #f9f9f9;
+            height: auto;
+            min-height: 100px;
+        }
+
+        .form-floating label i {
+            position: absolute;
+            left: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+            font-size: 1rem;
+        }
+    </style>
+}
+<form asp-action="" method="post">
+    @Html.AntiForgeryToken()
+</form>
+<div class="container my-4">
+    <!-- Encabezado fijo con botones -->
+    <div class="container-fluid border-bottom py-2 shadow-sm" style="position: sticky; top: 60px; z-index: 1020; background-color: var(--bs-body-bg);">
+        <div class="d-flex justify-content-between align-items-center px-3">
+            <!-- Ícono y título -->
+            <div class="d-flex align-items-center">
+                <i class="fas fa-file-invoice-dollar me-2 text-primary" style="font-size: 26px;"></i>
+                <h2 class="mb-0">Pedido</h2>
+            </div>
+
+            <!-- Botones de acción -->
+            <div>
+                <button class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-times me-1"></i> Cancelar
+                </button>
+                <button class="btn btn-success" id="guardar-btn">
+                    <i class="fas fa-save me-1"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+    <ul class="nav nav-tabs my-4" id="formTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="generales-tab" data-bs-toggle="tab" data-bs-target="#generales" type="button" role="tab" aria-controls="generales" aria-selected="true" style="font-size: 1.1rem;">
+                <i class="fas fa-info-circle me-2" style="font-size: 1.1rem;"></i> Datos Generales
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="detalle-tab" data-bs-toggle="tab" data-bs-target="#detalle" type="button" role="tab" aria-controls="detalle" aria-selected="false" style="font-size: 1.1rem;">
+                <i class="fas fa-list-alt me-2" style="font-size: 1.1rem;"></i> Detalle
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="articulos-tab" data-bs-toggle="tab" data-bs-target="#articulos" type="button" role="tab" aria-controls="articulos" aria-selected="false" style="font-size: 1.1rem;">
+                <i class="fas fa-box-open me-2" style="font-size: 1.1rem;"></i> Artículos
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="condiciones-tab" data-bs-toggle="tab" data-bs-target="#condiciones" type="button" role="tab" aria-controls="condiciones" aria-selected="false" style="font-size: 1.1rem;">
+                <i class="fas fa-file-invoice-dollar me-2" style="font-size: 1.1rem;"></i> Condiciones de Pago
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="complemento-tab" data-bs-toggle="tab" data-bs-target="#complemento" type="button" role="tab" aria-controls="condiciones" aria-selected="false" style="font-size: 1.1rem;">
+                <i class="fas fa-file-invoice-dollar me-2" style="font-size: 1.1rem;"></i> Complemento CE
+            </button>
+        </li>
+    </ul>
+
+
+
+
+    <div class="tab-content" id="formTabsContent">
+        <!-- Tab: Datos Generales -->
+        <div class="tab-pane fade show active" id="generales" role="tabpanel" aria-labelledby="generales-tab">
+            <div class="container p-4 rounded-4 shadow-lg">
+                <div class="container my-4 p-4 rounded-4 shadow-sm" style="border-left: 5px solid #0d6efd;">
+
+                    <div class="row g-4 mb-3">
+                        <!-- Columna izquierda -->
+                        <div class="col-md-6">
+                            <h5 class="fw-bold text-primary mb-3">Datos Generales</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating shadow-sm rounded">
+                                        <select class="form-select" id="sucursal">
+                                            <option selected>CEDIS</option>
+                                        </select>
+                                        <label for="sucursal">Sucursal</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating shadow-sm rounded">
+                                        <select class="form-select" id="almacen">
+                                            <option selected>ALMACEN GENERAL</option>
+                                        </select>
+                                        <label for="almacen">Almacén</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating shadow-sm rounded">
+                                        <select class="form-select" id="grupo-docto">
+                                            <option selected>Requisición</option>
+                                        </select>
+                                        <label for="grupo-docto">Grupo docto</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating shadow-sm rounded">
+                                        <select class="form-select" id="tipo-docto">
+                                            <option selected>Requisición Compra</option>
+                                        </select>
+                                        <label for="tipo-docto">Tipo docto</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna derecha -->
+                        <div class="col-md-6">
+                            <h5 class="fw-bold text-primary mb-3">Documento</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating shadow-sm rounded">
+                                        <input type="text" class="form-control" id="estatus" value="ALTA" readonly placeholder="Estatus" />
+                                        <label for="estatus">Estatus</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating shadow-sm rounded">
+                                        <input type="text" class="form-control" id="folio" value="XA3001-0000416" readonly placeholder="Folio" />
+                                        <label for="folio">Folio</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating shadow-sm rounded">
+                                        <input type="date" class="form-control" id="fecha" value="2025-04-21" placeholder="Fecha" />
+                                        <label for="fecha">Fecha</label>
+                                    </div>
+                                </div>
+                                <!-- Espacio vacío para alinear -->
+                                <div class="col-md-6"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="tab-pane fade" id="detalle" role="tabpanel" aria-labelledby="detalle-tab">
+            <div class="container p-4 rounded-4 shadow-lg">
+                <div class="container my-4 p-4 rounded-4 shadow-sm" style="border-left: 5px solid #0d6efd;">
+                    <!-- Detalle del proveedor -->
+                    <h5 class="fw-bold text-primary mb-3">Detalles</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <div class="input-group h-100">
+                                <input type="text" class="form-control custom-input" id="cliente" required placeholder="Cliente" />
+                                <button class="btn btn-outline-primary custom-btn" type="button" id="btn-proveedor" data-bs-toggle="modal" data-bs-target="#modalBuscarCliente">Buscar</button>
+                            </div>
+                            <label for="proveedor"> </label>
+                        </div>
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <input type="text" class="form-control" id="rfc" required placeholder="RFC" />
+                            <label for="rfc">RFC</label>
+                        </div>
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <div class="input-group h-100">
+                                <input type="text" class="form-control custom-input" id="docto-previo" required placeholder="Docto previo" />
+                                <button class="btn btn-outline-primary custom-btn" type="button" id="btn-docto-previo">Buscar</button>
+                            </div>
+                            <label for="docto-previo"> </label>
+                        </div>
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <div class="input-group h-100">
+                                <input type="text" class="form-control custom-input" id="partidas-previas" required placeholder="Partidas previas" />
+                                <button class="btn btn-outline-primary custom-btn" type="button" id="btn-partidas-previas">Buscar</button>
+                            </div>
+                            <label for="partidas-previas"></label>
+                        </div>
+
+                        <!-- Columna para el textarea -->
+                        <div class="col-md-6 form-floating shadow-sm rounded" style="position: relative;">
+                            <textarea class="form-control" id="info-proveedor" rows="4" placeholder="Información del proveedor" readonly
+                                      style="padding-top: 1.5rem; height: auto;"></textarea>
+                            <label for="info-proveedor" style="position: absolute; top: 0; left: 0; padding: .375rem .75rem; pointer-events: none; transition: all 0.2s ease-in-out;">Información del proveedor</label>
+                        </div>
+
+                        <!-- Fila con descuentos y Direccion de entrega en 2 y 2 (con row) -->
+                        <div class="col-md-6">
+                            <div class="row g-3">
+                                <!-- Fila superior con Descuento 1 y Direccion de entrega -->
+                                <div class="col-md-6 form-floating shadow-sm rounded">
+                                    <select class="form-select" id="direccion" required aria-label="direccion">
+                                        <option selected disabled>Direccion de entrega</option>
+
+                                        <!-- Agrega más agentes si lo deseas -->
+                                    </select>
+                                    <label for="direccion">
+                                        Direccion de entrega
+                                    </label>
+                                </div>
+                                <div class="col-md-6 form-floating shadow-sm rounded">
+                                    <input type="number" class="form-control" id="descuento1" placeholder="Descuento 1" required />
+                                    <label for="descuento1">Descuento 1</label>
+                                </div>
+
+                                <!-- Fila inferior con Descuento 2 y 3 -->
+                                <div class="col-md-6 form-floating shadow-sm rounded">
+                                    <input type="number" class="form-control" id="descuento2" placeholder="Descuento 2" required />
+                                    <label for="descuento2">Descuento 2</label>
+                                </div>
+                                <div class="col-md-6 form-floating shadow-sm rounded">
+                                    <input type="number" class="form-control" id="descuento3" placeholder="Descuento 3" required />
+                                    <label for="descuento3">Descuento 3</label>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <select class="form-select" id="vendedor" required aria-label="vendedor">
+                                <option selected disabled>Selecciona un Vendedor</option>
+
+                                <!-- Agrega más agentes si lo deseas -->
+                            </select>
+                            <label for="vendedor">
+                                Vendedor
+                            </label>
+                        </div>
+
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <select class="form-select" id="moneda" required>
+                                <option value="MXN">PESOS</option>
+                                <option value="USD">DÓLAR</option>
+                                <option value="EUR">EURO</option>
+                            </select>
+                            <label for="moneda">Moneda</label>
+                        </div>
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <input type="text" class="form-control" id="paridad" value="1.0000" required placeholder="Paridad" />
+                            <label for="paridad">Paridad</label>
+                        </div>
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <input type="text" class="form-control" id="factura" required placeholder="Factura" />
+                            <label for="factura">Factura</label>
+                        </div>
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <select class="form-select" id="contacto" required aria-label="Contacto">
+                                <option selected disabled>Selecciona un contacto</option>
+                                <option value="juan_perez">Juan Pérez</option>
+                                <option value="ana_garcia">Ana García</option>
+                                <option value="luis_fernandez">Luis Fernández</option>
+                                <!-- Agrega más contactos aquí si lo deseas -->
+                            </select>
+                            <label for="contacto">Contacto</label>
+                        </div>
+
+
+                        <!-- Formato en inglés -->
+                        <div class="col-md-2 d-flex align-items-center">
+                            <input class="form-check-input me-2" type="checkbox" id="formato-ingles" />
+                            <label class="form-check-label" for="formato-ingles">Formato en Inglés</label>
+                        </div>
+
+                        <!-- Concepto e Incoterm -->
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <input type="text" class="form-control" id="concepto" required placeholder="Concepto" />
+                            <label for="concepto">Concepto</label>
+                        </div>
+                        <div class="col-md-3 form-floating shadow-sm rounded">
+                            <select class="form-select" id="incoterm" required aria-label="Incoterm">
+                                <option selected disabled>Selecciona un Incoterm</option>
+                                <option value="EXW">EXW – En fábrica</option>
+                                <option value="FOB">FOB – Libre a bordo</option>
+                                <option value="CFR">CFR – Costo y flete</option>
+                                <option value="CIF">CIF – Costo, seguro y flete</option>
+                                <option value="DAP">DAP – Entregado en lugar</option>
+                                <option value="DDP">DDP – Entregado con derechos pagados</option>
+                                <!-- Puedes agregar más según lo necesites -->
+                            </select>
+                            <label for="incoterm">
+                                Incoterm
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Tabla de artículos -->
+        <div class="tab-pane fade" id="articulos" role="tabpanel" aria-labelledby="detalle-tab">
+            <div class="container p-4 rounded-4 shadow-lg">
+                <input type="text" id="txtTotal" class="form-control fw-bold text-end" readonly>
+
+                <div class="container my-4 p-4 rounded-4 shadow-sm" style="border-left: 5px solid #0d6efd;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-primary mb-0">Artículos</h5>
+                        <button type="button"
+                                class="btn btn-outline-primary"
+                                data-mdb-ripple-init
+                                data-mdb-ripple-color="primary"
+                                data-mdb-ripple-duration="1000ms"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalBuscarProducto">
+                            <i class="fas fa-plus fa-beat"></i> Nuevo Producto
+                        </button>
+                    </div>
+
+                    <div class="table-responsive-sm">
+                        <table id="clientesTable" class="table table-striped table-bordered table-hover" style="width:100%">
+                            <thead class="table-secondary">
+                                <tr>
+                                    <th>Artículo</th>
+                                    <th>Cantidad</th>
+                                    <th>Exist. ALM GRAL</th>
+                                    <th>Exist. MOD</th>
+                                    <th>Unidad</th>
+                                    <th>Precio de lista</th>
+                                    <th>Descuento</th>
+                                    <th>Importe</th>
+                                    <th>Descripción</th>
+                                    <th>Minimo</th>
+                                    <th>Tipo</th>
+                                    <th>Locacion</th>
+                                    <th>Comentario Partida</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Los datos se cargarán vía AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="tab-pane fade" id="condiciones" role="tabpanel" aria-labelledby="detalle-tab">
+            <div class="container p-4 rounded-4 shadow-lg">
+                <div class="container my-4 p-4 rounded-4 shadow-sm" style="border-left: 5px solid #0d6efd;">
+                    <h5 class="fw-bold text-primary mb-3">Condiciones de Pago y Crédito</h5>
+                    <div class="row g-3 mb-4">
+                        <!-- Columna combinada: Crédito + Condiciones de pago -->
+                        <div class="col-md-6">
+                            <div class="row">
+                                <!-- Crédito -->
+                                <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                    <input type="number" class="form-control no-border" id="limite-credito" value="0.00" readonly placeholder="Límite de crédito" />
+                                    <label for="limite-credito"><i class="fas fa-credit-card fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Límite de crédito</label>
+                                </div>
+                                <!-- Condiciones de pago -->
+                                <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                    <input type="number" class="form-control" id="plazo" placeholder="Plazo" />
+                                    <label for="plazo"><i class="fas fa-calendar-day fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Plazo</label>
+                                </div>
+                                <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                    <input type="date" class="form-control" id="fecha-pago" value="2025-04-21" placeholder="Fecha de Pago" />
+                                    <label for="fecha-pago"><i class="fas fa-calendar-alt fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Fecha de Pago</label>
+                                </div>
+                                <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                    <input type="time" class="form-control" id="hora-entrega" value="12:00" placeholder="Hora de Entrega" />
+                                    <label for="hora-entrega"><i class="fas fa-clock fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Hora de Entrega</label>
+                                </div>
+                                <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                    <input type="text" class="form-control" id="condiciones" value="Pago de contado" placeholder="Condiciones" />
+                                    <label for="condiciones"><i class="fas fa-cogs fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Condiciones</label>
+                                </div>
+                                <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                    <select class="form-select" id="forma-pago" aria-label="Forma de Pago">
+                                        <option selected>Efectivo</option>
+                                        <option value="01">01 - Efectivo</option>
+                                        <option value="02">02 - Cheque nominativo</option>
+                                        <option value="03">03 - Transferencia electrónica</option>
+                                        <option value="04">04 - Tarjeta de crédito</option>
+                                        <option value="28">28 - Tarjeta de débito</option>
+                                    </select>
+                                    <label for="forma-pago">
+                                        <i class="fas fa-money-bill-wave fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Forma de Pago
+                                    </label>
+                                </div>
+
+                                <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                    <select class="form-select" id="metodo-pago" aria-label="Método de Pago">
+                                        <option selected>Pago en parcialidades o diferido</option>
+                                        <option value="PUE">PUE - Pago en una sola exhibición</option>
+                                        <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+                                    </select>
+                                    <label for="metodo-pago">
+                                        <i class="fas fa-credit-card fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Método de Pago
+                                    </label>
+                                </div>
+
+                                <div class="col-md-12 form-floating mb-3 shadow-sm rounded">
+                                    <select class="form-select" id="uso-cfdi" aria-label="Uso CFDI">
+                                        <option selected>G03 - Gastos en general</option>
+                                        <option value="D01">D01 - Honorarios médicos</option>
+                                        <option value="D02">D02 - Gastos médicos por incapacidad</option>
+                                        <option value="P01">P01 - Por definir</option>
+                                        <option value="NOMINA">Nómina</option>
+                                    </select>
+                                    <label for="uso-cfdi">
+                                        <i class="fas fa-file-invoice fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Uso CFDI
+                                    </label>
+                                </div>
+
+                                <div class="form-floating mb-3 shadow-sm rounded">
+                                    <textarea class="form-control" id="direccion-entrega" rows="2" placeholder="Dirección de entrega"></textarea>
+                                    <label for="direccion-entrega"><i class="fas fa-map-marker-alt fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Dirección de entrega</label>
+                                </div>
+                                <div class="form-floating mb-3 shadow-sm rounded">
+                                    <textarea class="form-control" id="comentarios" rows="4" placeholder="Comentarios"></textarea>
+                                    <label for="comentarios"><i class="fas fa-file-alt fa-lg"></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Comentarios</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna derecha: Totales -->
+                        <div class="col-md-6">
+                            <div class="ticket-style p-4 rounded">
+                                <div class="row">
+                                    <div class="col-md-12 form-floating mb-3 shadow-sm rounded">
+                                        <input type="number" class="form-control no-border" id="total-subtotal1" value="0.00" readonly placeholder="Subtotal" />
+                                        <label for="total-subtotal1"><i class="fas fa-money-bill-wave fa-lg"></i> Subtotal</label>
+                                    </div>
+                                    <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                        <input type="number" class="form-control no-border" id="total-descuento" value="0.00" readonly placeholder="Descuento" />
+                                        <label for="total-descuento"><i class="fas fa-percent fa-lg"></i> Descuento</label>
+                                    </div>
+                                    <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                        <input type="number" class="form-control no-border" id="total-flete" value="0.00" placeholder="Flete" />
+                                        <label for="total-flete"><i class="fas fa-truck fa-lg"></i> Flete</label>
+                                    </div>
+                                    <div class="col-md-12 form-floating mb-3 shadow-sm rounded">
+                                        <input type="number" class="form-control no-border" id="total-subtotal2" value="0.00" readonly placeholder="Subtotal" />
+                                        <label for="total-subtotal2"><i class="fas fa-money-bill-wave fa-lg"></i> Subtotal</label>
+                                    </div>
+                                    <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                        <input type="number" class="form-control no-border" id="ret-isr" value="0.00" readonly placeholder="Ret ISR" />
+                                        <label for="ret-isr"><i class="fas fa-file-invoice-dollar fa-lg"></i> Ret ISR</label>
+                                    </div>
+                                    <div class="col-md-6 form-floating mb-3 shadow-sm rounded">
+                                        <input type="number" class="form-control no-border" id="iva" value="0.00" readonly placeholder="IVA" />
+                                        <label for="iva"><i class="fas fa-percentage fa-lg"></i> IVA</label>
+                                    </div>
+                                    <div class="col-md-12 form-floating mb-3 shadow-sm rounded">
+                                        <input type="number" class="form-control fw-bold text-danger no-border" id="importe" value="0.00" readonly placeholder="IMPORTE" />
+                                        <label for="importe"><i class="fas fa-credit-card fa-lg"></i> <strong>IMPORTE</strong></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="complemento" role="tabpanel" aria-labelledby="detalle-tab">
+            <div class="container p-4 rounded-4 shadow-lg">
+                <div class="container my-4 p-4 rounded-4 shadow-sm" style="border-left: 5px solid #0d6efd;">
+                    <h5 class="fw-bold text-primary mb-3">Condiciones de Pago y Crédito</h5>
+                    <br />
+                    <div class="row g-3 mb-4">
+                        <div class="row">
+                            <div class="form-floating mb-3 col-md-4">
+                                <input type="text" id="ClaveDePedimento" name="ClaveDePedimento" class="form-control" maxlength="3" value="A1" placeholder="Clave de Pedimento" />
+                                <label for="ClaveDePedimento">Clave de Pedimento</label>
+                            </div>
+
+                            <div class="form-floating mb-3 col-md-4">
+                                <select id="CertificadoOrigen" name="CertificadoOrigen" class="form-select" aria-label="Certificado de Origen">
+                                    <option value="0">No</option>
+                                    <option value="1">Sí</option>
+                                </select>
+                                <label for="CertificadoOrigen">Certificado de Origen</label>
+                            </div>
+
+                            <div class="form-floating mb-3 col-md-4">
+                                <input type="text" id="Incoterm" name="Incoterm" class="form-control" maxlength="3" value="DAP" placeholder="Incoterm" />
+                                <label for="Incoterm">Incoterm</label>
+                            </div>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <textarea id="Observaciones" name="Observaciones" class="form-control" placeholder="Observaciones" style="height: 100px;"></textarea>
+                            <label for="Observaciones">Observaciones</label>
+                        </div>
+
+
+
+                        <div class="row">
+
+                            <div class="accordion" id="accordionDomicilios">
+
+                                <!-- Emisor -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingEmisor">
+                                        <div class="form-check w-100">
+                                            <input class="form-check-input me-2" type="checkbox" id="chkEmisor" name="chkEmisor" data-bs-toggle="collapse" data-bs-target="#collapseEmisor" aria-expanded="false" aria-controls="collapseEmisor" style="font-size: 20px; margin-top: .9em; ">
+                                            <label class="form-check-label w-100" for="chkEmisor" style="cursor:pointer;">
+                                                <span class="accordion-button collapsed bg-primary text-white" style="pointer-events: none;">Domicilio del Emisor</span>
+                                            </label>
+                                        </div>
+                                    </h2>
+                                    <div id="collapseEmisor" class="accordion-collapse collapse" aria-labelledby="headingEmisor">
+                                        <div class="accordion-body">
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="CalleEmisor" name="CalleEmisor" value="AV. INSURGENTES SUR">
+                                                <label for="CalleEmisor">Calle</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="NumeroExteriorEmisor" name="NumeroExteriorEmisor" value="123">
+                                                <label for="NumeroExteriorEmisor">Número Exterior</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="ColoniaEmisor" name="ColoniaEmisor" value="0244">
+                                                <label for="ColoniaEmisor">Colonia</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="MunicipioEmisor" name="MunicipioEmisor" value="028">
+                                                <label for="MunicipioEmisor">Municipio</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="EstadoEmisor" name="EstadoEmisor" value="SLP">
+                                                <label for="EstadoEmisor">Estado</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="PaisEmisor" name="PaisEmisor" value="MEX">
+                                                <label for="PaisEmisor">País</label>
+                                            </div>
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="CPEmisor" name="CPEmisor" value="78395">
+                                                <label for="CPEmisor">Código Postal</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Receptor -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingReceptor">
+                                        <div class="form-check w-100">
+                                            <input class="form-check-input me-2" type="checkbox" id="chkReceptor" name="chkReceptor" data-bs-toggle="collapse" data-bs-target="#collapseReceptor" aria-expanded="false" aria-controls="collapseReceptor" style="font-size: 20px; margin-top: .9em; ">
+                                            <label class="form-check-label w-100" for="chkReceptor" style="cursor:pointer;">
+                                                <span class="accordion-button collapsed bg-success text-white" style="pointer-events: none;">Domicilio del Receptor</span>
+                                            </label>
+                                        </div>
+                                    </h2>
+                                    <div id="collapseReceptor" class="accordion-collapse collapse" aria-labelledby="headingReceptor">
+                                        <div class="accordion-body">
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="CalleReceptor" name="CalleReceptor" value="456 OAK AVE">
+                                                <label for="CalleReceptor">Calle</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="EstadoReceptor" name="EstadoReceptor" value="CA">
+                                                <label for="EstadoReceptor">Estado</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="PaisReceptor" name="PaisReceptor" value="USA">
+                                                <label for="PaisReceptor">País</label>
+                                            </div>
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="CPReceptor" name="CPReceptor" value="90210">
+                                                <label for="CPReceptor">Código Postal</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Destinatario -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingDestinatario">
+                                        <div class="form-check w-100">
+                                            <input class="form-check-input me-2" type="checkbox" id="chkDestinatario" name="chkDestinatario" data-bs-toggle="collapse" data-bs-target="#collapseDestinatario" aria-expanded="false" aria-controls="collapseDestinatario" style="font-size: 20px; margin-top: .9em; ">
+                                            <label class="form-check-label w-100" for="chkDestinatario" style="cursor:pointer;">
+                                                <span class="accordion-button collapsed bg-info text-white" style="pointer-events: none;">Destinatario</span>
+                                            </label>
+                                        </div>
+                                    </h2>
+                                    <div id="collapseDestinatario" class="accordion-collapse collapse" aria-labelledby="headingDestinatario">
+                                        <div class="accordion-body">
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="NombreDestinatario" name="NombreDestinatario" value="EL COMERCIO USA INC">
+                                                <label for="NombreDestinatario">Nombre</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="NumRegIdTrib" name="NumRegIdTrib" value="756985236">
+                                                <label for="NumRegIdTrib">NumRegIdTrib</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="CalleDest" name="CalleDest" value="123 MAIN ST">
+                                                <label for="CalleDest">Calle</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="EstadoDest" name="EstadoDest" value="TX">
+                                                <label for="EstadoDest">Estado</label>
+                                            </div>
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control" id="PaisDest" name="PaisDest" value="USA">
+                                                <label for="PaisDest">País</label>
+                                            </div>
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="CPDest" name="CPDest" value="75001">
+                                                <label for="CPDest">Código Postal</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Buscar Cliente -->
+        <div class="modal fade" id="modalBuscarCliente" tabindex="-1" aria-labelledby="modalBuscarClienteLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalBuscarClienteLabel">Buscar Cliente</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <input type="text" id="inputBuscarNombreCliente" class="form-control" placeholder="Escribe el nombre o clave">
+                        </div>
+                        <div id="listaResultadosCliente" style="max-height:400px; overflow:auto;"></div>
+                        <div id="pagination-cliente" class="d-flex justify-content-between mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal: Buscar Producto -->
+        <div class="modal fade" id="modalBuscarProducto" tabindex="-1" aria-labelledby="modalBuscarProductoLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-gradient bg-primary text-white rounded-top-4">
+                        <h5 class="modal-title" id="modalBuscarProductoLabel">Buscar Producto</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <input type="text" id="inputBuscarNombreProducto" class="form-control" placeholder="Escribe el nombre o clave">
+                        </div>
+                        <div id="listaResultados" style="max-height:400px; overflow:auto;"></div>
+                        <div id="pagination" class="d-flex justify-content-between mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="loader-overlay" style="display: none;">
+            <div class="loader-content">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3 text-white">Procesando factura, por favor espere...</p>
+            </div>
+        </div>
+
+
+        @section Scripts {
+
+            <script src="~/Scripts/formularios.js"></script>
+            <script src="~/Scripts/Operaciones/Pedido/buscadores.js"></script>
+            <script>
+        function limpiarModal() {
+            document.body.classList.remove('modal-open');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.style.overflow = 'auto';
+            setTimeout(() => {
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            }, 300);
+        }
+
+        let table;           // Instancia global de DataTable
+        const pageSize = 50; // Tamaño de página para la búsqueda
+
+        $(document).ready(function () {
+            // 1) Inicializa DataTable y guárdala en la variable
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            table = $('#clientesTable').DataTable({
+                responsive: true,
+                select: true,
+                layout: {
+                    topStart: {
+                        buttons: [
+                            {
+                                extend: 'copyHtml5',
+                                text: '<i class="fa-solid fa-copy"></i>',
+                                titleAttr: 'Copiar'
+                            },
+                            {
+                                extend: 'excelHtml5',
+                                text: '<i class="fa-solid fa-file-excel"></i>',
+                                titleAttr: 'Exportar a Excel'
+                            },
+                            //{
+                            //    extend: 'csvHtml5',
+                            //    text: '<i class="fa-solid fa-file-csv"></i>',
+                            //    titleAttr: 'Exportar a CSV'
+                            //},
+                            {
+                                extend: 'pdfHtml5',
+                                text: '<i class="fa-solid fa-file-pdf"></i>',
+                                titleAttr: 'Exportar a PDF'
+                            },
+                            'colvis',
+                            {
+                                text: '<i class="fa fa-trash"></i>',
+                                titleAttr: 'Eliminar fila(s) seleccionada(s)',
+                                className: 'btn btn-outline-danger',
+                                action: function (e, dt, node, config) {
+                                    var filas = dt.rows({ selected: true });
+                                    if (!filas.count()) {
+                                        toastr.warning('Selecciona al menos una fila para eliminar.');
+                                        return;
+                                    }
+
+                                    Swal.fire({
+                                        title: `¿Eliminar ${filas.count()} fila(s)?`,
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonText: 'Sí, eliminar',
+                                        cancelButtonText: 'Cancelar',
+                                        theme: currentTheme
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            filas.remove().draw(false);
+                                            toastr.success(`${filas.count()} fila(s) eliminada(s).`);
+                                            actualizarTotal();
+                                        }
+                                    });
+                                }
+
+                            }
+                        ],
+                        pageLength: {
+                            menu: [5, 10, 25, 50]
+                        }
+                    }
+                },
+                lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
+                pageLength: 10,
+                language: {
+                    select: { rows: '%d fila(s) seleccionada(s)' },
+                    buttons: {
+                        copyTitle: 'Copiado al portapapeles',
+                        copySuccess: { _: '%d filas copiadas', 1: '1 fila copiada' }
+                    }
+                },
+                columnDefs: [{ className: 'dt-center', targets: '_all' },
+                    { responsivePriority: 1, targets: [1, 5, 7] }
+                ]
+            });
+
+        });
+        function actualizarTotal() {
+            let subtotal = 0;
+            let totalIva = 0;
+            let subtable1 = 0;
+
+            const monedaSeleccionada = document.querySelector('#moneda').value;
+            let tasaCambio = 1;
+
+            let paridad = parseFloat(document.querySelector('#paridad').value) || 1;
+            //|| monedaSeleccionada === 'EUR')
+            if (monedaSeleccionada === 'USD' || monedaSeleccionada === 'EUR')  {
+                tasaCambio = 1 / paridad;
+            }
+
+            const rows = table.rows().nodes().toArray();
+
+            rows.forEach(tr => {
+                const cantidad = parseFloat(tr.querySelector('.cantidad')?.value || 0);
+                const descuento = parseFloat(tr.querySelector('.descuento')?.value || 0);
+                const precioInput = tr.querySelector('.precio');
+                const iva = parseFloat(tr.dataset.iva || 0);
+
+                // Obtener el precio original desde el atributo, o establecerlo la primera vez
+                if (!precioInput.dataset.original) {
+                    precioInput.dataset.original = precioInput.value;
+                }
+
+                const precioOriginal = parseFloat(precioInput.dataset.original || 0);
+                const precioAjustado = precioOriginal * tasaCambio;
+
+                precioInput.value = precioAjustado.toFixed(4);
+
+                const importe = cantidad * precioAjustado * (1 - descuento / 100);
+                const ivaImporte = importe * (iva / 100);
+
+                subtotal += importe;
+                totalIva += ivaImporte;
+                subtable1 += cantidad * precioAjustado;
+
+                const spanImporte = tr.querySelector('.importe');
+                if (spanImporte) {
+                    spanImporte.textContent = importe.toFixed(2);
+                }
+            });
+
+            const totalConIva = subtotal + totalIva;
+
+            document.getElementById('total-subtotal2').value = subtotal.toFixed(2);
+            document.getElementById('iva').value = totalIva.toFixed(2);
+            document.getElementById('importe').value = totalConIva.toFixed(2);
+            document.getElementById('total-subtotal1').value = subtable1.toFixed(2);
+        }
+
+
+
+        fetch('/Operaciones/DatosSelect')
+            .then(response => response.json())
+            .then(data => {
+                llenarSelect('moneda', data.monedas, 'c3', 'c2');
+                llenarSelect('vendedor', data.vendedores, 'c2', 'c3');
+                llenarSelect('forma-pago', data.formaspago, 'c1', 'c2');
+                llenarSelect('metodo-pago', data.metodopago, 'c1', 'c2');
+                llenarSelect('uso-cfdi', data.usocfdi, 'c1', 'c2');
+
+            })
+            .catch(error => {
+                console.error('Error al obtener los datos:', error);
+            });
+
+        function llenarSelect(selectId, datos, valueKey, textKey) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Selecciona una opcion</option>'; // limpia y agrega opción inicial
+
+            datos.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item[valueKey];
+                option.textContent = item[textKey];
+                select.appendChild(option);
+            });
+        }
+
+document.getElementById("guardar-btn").addEventListener("click", async function () {
+    const guardarBtn = document.getElementById("guardar-btn");
+    const loaderOverlay = document.getElementById("loader-overlay");
+    loaderOverlay.style.display = "flex";
+    guardarBtn.disabled = true;
+
+    try {
+        const formData = new FormData();
+
+        // Agregar datos del formulario principal
+        formData.append("cliente", document.getElementById("cliente").value);
+        formData.append("rfc", document.getElementById("rfc").value);
+        formData.append("doctoPrevio", document.getElementById("docto-previo").value);
+        formData.append("partidasPrevias", document.getElementById("partidas-previas").value);
+        formData.append("direccion", document.getElementById("direccion").value);
+        formData.append("descuento1", document.getElementById("descuento1").value);
+        formData.append("descuento2", document.getElementById("descuento2").value);
+        formData.append("descuento3", document.getElementById("descuento3").value);
+        formData.append("vendedor", document.getElementById("vendedor").value);
+        formData.append("moneda", document.getElementById("moneda").value);
+        formData.append("paridad", document.getElementById("paridad").value);
+        formData.append("factura", document.getElementById("factura").value);
+        formData.append("contacto", document.getElementById("contacto").value);
+        formData.append("formatoIngles", document.getElementById("formato-ingles").checked);
+        formData.append("concepto", document.getElementById("concepto").value);
+        formData.append("incoterm", document.getElementById("incoterm").value);
+        formData.append("formapago", document.getElementById("forma-pago").value);
+        formData.append("metodopago", document.getElementById("metodo-pago").value);
+        formData.append("usocfdi", document.getElementById("uso-cfdi").value);
+
+        // Token CSRF desde input oculto generado por @Html.AntiForgeryToken()
+        const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        formData.append("__RequestVerificationToken", csrfToken);
+
+        // Procesar artículos
+        const rows = document.querySelectorAll("#clientesTable tbody tr");
+        rows.forEach((row, i) => {
+            formData.append(`articulos[${i}].articulo`, row.dataset.clavesat || "");
+            formData.append(`articulos[${i}].cantidad`, row.cells[1].querySelector('input')?.value || 0);
+            formData.append(`articulos[${i}].ClaveUnidad`, row.dataset.udmsat || "");
+            formData.append(`articulos[${i}].Unidad`, row.cells[4].innerText || 0);
+            formData.append(`articulos[${i}].precio`, row.cells[5].querySelector('input')?.value || 0);
+            formData.append(`articulos[${i}].descuento`, row.cells[6].querySelector('input')?.value || 0);
+            formData.append(`articulos[${i}].importe`, row.cells[7].innerText || 0);
+            formData.append(`articulos[${i}].descripcion`, row.cells[8].innerText || "");
+            formData.append(`articulos[${i}].iva`, row.dataset.iva || "");
+            formData.append(`articulos[${i}].preciouni`, row.dataset.preciouni || "");
+            formData.append(`articulos[${i}].objeto`, row.dataset.objeto || "");
+            formData.append(`articulos[${i}].claveprod`, row.cells[0].innerText || "");
+        });
+
+        // Realizar la solicitud
+        const response = await fetch('/PedidoCe/GuardarFacturaCE', {
+            method: 'POST',
+            body: formData // No necesitas headers, FormData los gestiona automáticamente
+        });
+
+        const data = await response.json();
+
+        if (data.resultado) {
+            toastr.success("Factura guardada correctamente", "Éxito");
+        } else {
+            toastr.error("Hubo un error al guardar la factura: " + data.mensaje, "Error");
+        }
+    } catch (error) {
+        console.error("Error al guardar la factura:", error);
+        toastr.error("Ocurrió un error inesperado al procesar la factura", "Error");
+    } finally {
+        loaderOverlay.style.display = "none";
+        guardarBtn.disabled = false;
+    }
+});
+
+
+
+
+
+        $(document).ready(function () {
+            // Obtener las tasas desde el servidor
+            $.get("/Sistemas/Paridad/ObtenerTasasJson", function (response) {
+                if (response.data) {
+                    // Guardar las tasas de cambio (deberías tenerlas disponibles en JavaScript)
+                    const tasas = response.data;
+
+                    // Establecer la paridad inicial (en este caso, peso)
+                    $('#paridad').val(tasas[0].Peso.toFixed(4));
+
+                    // Cambiar la paridad cuando el usuario cambia la moneda seleccionada
+                    $('#moneda').on('change', function () {
+                        const selectedMoneda = $(this).val();
+                        let paridad = 1;
+
+                        switch (selectedMoneda) {
+                            case 'USD':
+                                paridad = tasas[0].Dolar;
+                                break;
+                            case 'EUR':
+                                paridad = tasas[0].Euro;
+                                break;
+                            case 'MXN':
+                            default:
+                                paridad = tasas[0].Peso;
+                                break;
+                        }
+
+                        $('#paridad').val(paridad.toFixed(4));
+                        actualizarTotal();
+                    });
+                }
+            });
+        });
+
+
+            </script>
+        }

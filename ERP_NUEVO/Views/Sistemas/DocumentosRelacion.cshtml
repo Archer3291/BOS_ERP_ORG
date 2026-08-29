@@ -1,0 +1,1140 @@
+﻿@{
+    ViewBag.Title = "Vinculación Documental";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+        /* ── Página base ── */
+    .vd-page {
+        background: var(--bg-gray);
+        min-height: 100vh;
+        padding-bottom: 48px;
+        animation: vdFadeIn .35s ease both;
+    }
+
+    @@keyframes vdFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    /* ── Header ── */
+    .vd-header {
+        background: var(--primary-blue);
+        border-bottom: 3px solid var(--accent-blue);
+        padding: 24px 32px 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .vd-header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(59,130,246,.12) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+    .vd-header-inner {
+        position: relative;
+        z-index: 1;
+    }
+
+    .vd-eyebrow {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        color: var(--accent-blue);
+        margin-bottom: 4px;
+        opacity: .9;
+    }
+
+    .vd-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin: 0 0 4px;
+    }
+
+    .vd-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: rgba(241,245,249,.55);
+    }
+
+        .vd-breadcrumb a {
+            color: rgba(241,245,249,.6);
+            text-decoration: none;
+            transition: color .15s;
+        }
+
+            .vd-breadcrumb a:hover {
+                color: #f1f5f9;
+            }
+
+    /* ── Stats bar ── */
+    .vd-stats {
+        background: var(--bg-light);
+        border-bottom: 1px solid var(--border-light);
+        box-shadow: var(--shadow);
+    }
+
+    .vd-stat-item {
+        padding: 16px 28px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-right: 1px solid var(--border-light);
+        transition: background .15s;
+    }
+
+        .vd-stat-item:last-child {
+            border-right: none;
+        }
+
+        .vd-stat-item:hover {
+            background: var(--bg-gray);
+        }
+
+    .vd-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+        flex-shrink: 0;
+        transition: transform .2s;
+    }
+
+    .vd-stat-item:hover .vd-stat-icon {
+        transform: scale(1.08);
+    }
+
+    .si-primary {
+        background: rgba(30,58,95,.12);
+        color: var(--primary-blue);
+    }
+
+    .si-accent {
+        background: rgba(59,130,246,.12);
+        color: var(--accent-blue);
+    }
+
+    .si-success {
+        background: rgba(5,150,105,.12);
+        color: var(--success-color);
+    }
+
+    [data-theme="dark"] .si-primary {
+        background: rgba(71,85,105,.25);
+    }
+
+    [data-theme="dark"] .si-accent {
+        background: rgba(96,165,250,.15);
+    }
+
+    [data-theme="dark"] .si-success {
+        background: rgba(16,185,129,.15);
+    }
+
+    .vd-stat-val {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .vd-stat-lbl {
+        font-size: 11px;
+        color: var(--text-light);
+        margin-top: 2px;
+        letter-spacing: .03em;
+    }
+
+    /* ── Card ── */
+    .vd-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        margin-top: 24px;
+    }
+
+    .vd-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .vd-card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .vd-card-title i {
+            color: var(--primary-blue);
+        }
+
+    [data-theme="dark"] .vd-card-title i {
+        color: var(--accent-blue);
+    }
+
+    .vd-card-body {
+        padding: 20px;
+    }
+
+    /* ── Buttons ── */
+    .vd-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .2s ease;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .vd-btn-primary {
+        background: var(--primary-blue);
+        color: #fff;
+        border-color: var(--primary-blue);
+    }
+
+        .vd-btn-primary:hover {
+            background: var(--primary-blue-dark);
+            border-color: var(--primary-blue-dark);
+            box-shadow: 0 4px 12px rgba(30,58,95,.35);
+            transform: translateY(-1px);
+            color: #fff;
+        }
+
+    .vd-btn-secondary {
+        background: transparent;
+        color: var(--text-light);
+        border-color: var(--border-light);
+    }
+
+        .vd-btn-secondary:hover {
+            color: var(--text-dark);
+            border-color: var(--secondary-blue);
+            background: var(--bg-gray);
+        }
+
+    .vd-btn-danger {
+        background: rgba(220,38,38,.1);
+        color: var(--danger-color);
+        border-color: rgba(220,38,38,.25);
+    }
+
+        .vd-btn-danger:hover {
+            background: var(--danger-color);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(220,38,38,.35);
+            transform: translateY(-1px);
+        }
+
+    .vd-btn:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    /* ── DataTable overrides ── */
+    #tblRelaciones_wrapper .dataTables_filter input,
+    #tblRelaciones_wrapper .dataTables_length select {
+        background: var(--bg-gray) !important;
+        border: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        border-radius: 7px !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+        #tblRelaciones_wrapper .dataTables_filter input:focus,
+        #tblRelaciones_wrapper .dataTables_length select:focus {
+            outline: none !important;
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15) !important;
+        }
+
+    #tblRelaciones_wrapper .dataTables_filter label,
+    #tblRelaciones_wrapper .dataTables_length label,
+    #tblRelaciones_wrapper .dataTables_info {
+        color: var(--text-light) !important;
+        font-size: 12.5px !important;
+    }
+
+    #tblRelaciones_wrapper .dataTables_paginate .paginate_button {
+        color: var(--text-light) !important;
+        border-radius: 7px !important;
+        border: none !important;
+        font-size: 12.5px !important;
+        transition: all .15s !important;
+    }
+
+        #tblRelaciones_wrapper .dataTables_paginate .paginate_button.current,
+        #tblRelaciones_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: var(--primary-blue) !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(30,58,95,.3) !important;
+        }
+
+        #tblRelaciones_wrapper .dataTables_paginate .paginate_button:not(.current):hover {
+            background: var(--bg-gray) !important;
+            color: var(--text-dark) !important;
+        }
+
+    table#tblRelaciones {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+    }
+
+        table#tblRelaciones thead th {
+            background: var(--bg-gray) !important;
+            color: var(--text-light) !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: .08em !important;
+            text-transform: uppercase !important;
+            border: none !important;
+            border-bottom: 2px solid var(--border-light) !important;
+            padding: 12px 14px !important;
+            white-space: nowrap;
+        }
+
+            table#tblRelaciones thead th.sorting_asc,
+            table#tblRelaciones thead th.sorting_desc {
+                color: var(--primary-blue) !important;
+            }
+
+    [data-theme="dark"] table#tblRelaciones thead th.sorting_asc,
+    [data-theme="dark"] table#tblRelaciones thead th.sorting_desc {
+        color: var(--accent-blue) !important;
+    }
+
+    table#tblRelaciones tbody tr {
+        transition: background .12s;
+    }
+
+        table#tblRelaciones tbody tr:hover td {
+            background: var(--very-light-blue) !important;
+        }
+
+    [data-theme="dark"] table#tblRelaciones tbody tr:hover td {
+        background: rgba(71,85,105,.25) !important;
+    }
+
+    table#tblRelaciones tbody td {
+        background: var(--bg-light) !important;
+        color: var(--text-dark) !important;
+        font-size: 13px !important;
+        border: none !important;
+        border-bottom: 1px solid var(--border-light) !important;
+        padding: 13px 14px !important;
+        vertical-align: middle !important;
+    }
+
+    /* ── Badges ── */
+    .vd-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .04em;
+    }
+
+    .vd-badge-blue {
+        background: rgba(59,130,246,.12);
+        color: var(--accent-blue);
+        border: 1px solid rgba(59,130,246,.2);
+    }
+
+    .vd-badge-warning {
+        background: rgba(217,119,6,.12);
+        color: var(--warning-color);
+        border: 1px solid rgba(217,119,6,.2);
+    }
+
+    .vd-badge-success {
+        background: rgba(5,150,105,.12);
+        color: var(--success-color);
+        border: 1px solid rgba(5,150,105,.2);
+    }
+
+    .vd-badge-gray {
+        background: var(--bg-gray);
+        color: var(--text-light);
+        border: 1px solid var(--border-light);
+    }
+
+    /* ── Doc pill ── */
+    .vd-doc-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+        .vd-doc-pill .abrev {
+            font-size: 10px;
+            font-weight: 700;
+            background: rgba(30,58,95,.1);
+            color: var(--primary-blue);
+            border: 1px solid rgba(30,58,95,.2);
+            padding: 2px 8px;
+            border-radius: 5px;
+            letter-spacing: .03em;
+            font-family: 'Courier New', monospace;
+        }
+
+    [data-theme="dark"] .vd-doc-pill .abrev {
+        background: rgba(96,165,250,.15);
+        color: var(--accent-blue);
+        border-color: rgba(96,165,250,.25);
+    }
+
+    .vd-doc-pill .doc-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    /* ── Action buttons ── */
+    .vd-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+    }
+
+    .vd-icon-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 7px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-light);
+        color: var(--text-light);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all .18s ease;
+    }
+
+        .vd-icon-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .vd-icon-btn.edit:hover {
+            background: rgba(59,130,246,.1);
+            color: var(--accent-blue);
+            border-color: rgba(59,130,246,.3);
+        }
+
+        .vd-icon-btn.del:hover {
+            background: rgba(220,38,38,.1);
+            color: var(--danger-color);
+            border-color: rgba(220,38,38,.3);
+        }
+
+    .vd-fecha {
+        font-size: 12px;
+        color: var(--text-light);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .vd-subtxt {
+        font-size: 12px;
+        color: var(--text-light);
+    }
+
+    /* ── Modales ── */
+    .vd-modal .modal-content {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .vd-modal .modal-header {
+        background: var(--bg-gray);
+        border-bottom: 1px solid var(--border-light);
+        padding: 18px 24px;
+    }
+
+    .vd-modal .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .vd-modal .modal-title .ico-primary {
+            color: var(--primary-blue);
+        }
+
+        .vd-modal .modal-title .ico-danger {
+            color: var(--danger-color);
+        }
+
+    [data-theme="dark"] .vd-modal .modal-title .ico-primary {
+        color: var(--accent-blue);
+    }
+
+    .vd-modal .close {
+        color: var(--text-light) !important;
+        opacity: 1 !important;
+        text-shadow: none !important;
+        font-size: 22px;
+        transition: color .15s;
+        line-height: 1;
+    }
+
+        .vd-modal .close:hover {
+            color: var(--text-dark) !important;
+        }
+
+    .vd-modal .modal-body {
+        padding: 24px;
+    }
+
+    .vd-modal .modal-footer {
+        border-top: 1px solid var(--border-light);
+        padding: 16px 24px;
+        background: var(--bg-gray);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    /* ── Form elements ── */
+    .vd-fg {
+        margin-bottom: 20px;
+    }
+
+    .vd-label {
+        display: block;
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 7px;
+    }
+
+        .vd-label .req {
+            color: var(--danger-color);
+            margin-left: 2px;
+        }
+
+    .vd-ctrl {
+        width: 100%;
+        background: var(--bg-gray) !important;
+        border: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        border-radius: 9px !important;
+        padding: 10px 13px !important;
+        font-size: 13.5px !important;
+        transition: border-color .2s, box-shadow .2s;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+        .vd-ctrl:focus {
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15) !important;
+            background: var(--bg-light) !important;
+        }
+
+        .vd-ctrl option {
+            background: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .vd-ctrl:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+    .vd-ctrl-readonly {
+        background: var(--bg-gray) !important;
+        border-color: var(--border-light) !important;
+        color: var(--text-light) !important;
+        cursor: not-allowed !important;
+    }
+
+    .vd-hint {
+        font-size: 11.5px;
+        color: var(--text-light);
+        margin-top: 6px;
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+        .vd-hint i {
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+    /* ── Info box dentro de modal ── */
+    .vd-info-box {
+        background: rgba(59,130,246,.07);
+        border: 1px solid rgba(59,130,246,.2);
+        border-left: 3px solid var(--accent-blue);
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 12.5px;
+        color: var(--text-dark);
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+        .vd-info-box i {
+            color: var(--accent-blue);
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+    /* ── Confirm / danger box ── */
+    .vd-danger-box {
+        background: rgba(220,38,38,.06);
+        border: 1px solid rgba(220,38,38,.18);
+        border-left: 3px solid var(--danger-color);
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 13px;
+        color: var(--text-dark);
+        margin-top: 14px;
+        line-height: 1.55;
+        word-break: break-word;
+    }
+
+    .vd-warn-txt {
+        font-size: 13.5px;
+        color: var(--text-dark);
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    /* ── Spinner ── */
+    .vd-spin {
+        display: inline-block;
+        width: 13px;
+        height: 13px;
+        border: 2px solid rgba(255,255,255,.35);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: vdSpin .65s linear infinite;
+        vertical-align: middle;
+    }
+
+    @@keyframes vdSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* ── Estado vacío en select ── */
+    .vd-select-placeholder {
+        font-style: italic;
+        color: var(--text-light);
+    }
+
+    /* ── Loading skeleton para stats ── */
+    .vd-skeleton {
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, var(--border-light) 25%, var(--bg-gray) 50%, var(--border-light) 75%);
+        background-size: 200% 100%;
+        animation: vdShimmer 1.2s infinite;
+        vertical-align: middle;
+    }
+
+    @@keyframes vdShimmer {
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    /* ── Responsividad tabla ── */
+    @@media (max-width: 767px) {
+        .vd-header {
+            padding: 18px 16px 14px;
+        }
+
+        .vd-card-body {
+            padding: 12px;
+        }
+
+        .vd-stat-item {
+            padding: 12px 16px;
+        }
+
+        #tblRelaciones_wrapper .dataTables_filter,
+        #tblRelaciones_wrapper .dataTables_length {
+            float: none;
+            text-align: left;
+        }
+    }
+</style>
+
+@* ───── HTML ───── *@
+<div class="vd-page">
+
+    @* ── Header ── *@
+    <div class="vd-header">
+        <div class="vd-header-inner">
+            <div class="d-flex align-items-start justify-content-between flex-wrap" style="gap:12px">
+                <div>
+                    <div class="vd-eyebrow">
+                        <i class="fas fa-layer-group me-1"></i> Sistema de Documentos &middot; SRS
+                    </div>
+                    <h1 class="vd-title">
+                        <i class="fas fa-link" style="color:var(--accent-blue);font-size:16px;margin-right:8px;"></i>
+                        Vinculación <strong>Documentos ↔ Kepler</strong>
+                    </h1>
+                </div>
+                <nav class="vd-breadcrumb mt-1">
+                    <a href="/"><i class="fas fa-house-chimney"></i></a>
+                    <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                    <a href="#">Documentos</a>
+                    <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                    <span>TpDoc ↔ Kepler</span>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    @* ── Stats ── *@
+    <div class="vd-stats">
+        <div class="row g-0">
+            <div class="col-12 col-sm-4">
+                <div class="vd-stat-item">
+                    <div class="vd-stat-icon si-primary">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div>
+                        <div class="vd-stat-val" id="statTotalRel"><span class="vd-skeleton"></span></div>
+                        <div class="vd-stat-lbl">Relaciones activas</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="vd-stat-item">
+                    <div class="vd-stat-icon si-accent">
+                        <i class="fas fa-file-lines"></i>
+                    </div>
+                    <div>
+                        <div class="vd-stat-val" id="statTotalTpdoc"><span class="vd-skeleton"></span></div>
+                        <div class="vd-stat-lbl">Tipos de documento</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="vd-stat-item">
+                    <div class="vd-stat-icon si-success">
+                        <i class="fas fa-boxes-stacked"></i>
+                    </div>
+                    <div>
+                        <div class="vd-stat-val" id="statDocsKepler"><span class="vd-skeleton"></span></div>
+                        <div class="vd-stat-lbl">Docs Kepler disponibles</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Card principal ── *@
+    <div class="container-fluid px-3 px-md-4">
+        <div class="vd-card">
+            <div class="vd-card-head">
+                <div class="vd-card-title">
+                    <i class="fas fa-table-list"></i>
+                    Relaciones registradas
+                </div>
+                <button class="vd-btn vd-btn-primary" id="btnNuevaRelacion">
+                    <i class="fas fa-plus"></i> Nueva relación
+                </button>
+            </div>
+            <div class="vd-card-body">
+                <div class="table-responsive">
+                    <table id="tblRelaciones" class="w-100">
+                        <thead>
+                            <tr>
+                                <th>Tipo de documento</th>
+                                <th>Género</th>
+                                <th>Grupo</th>
+                                <th>Tipo Kepler</th>
+                                <th>Descripción Kepler</th>
+                                <th>Vinculado</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@* ── Modal Crear ── *@
+<div class="modal fade vd-modal" id="modalCrear" tabindex="-1" aria-labelledby="modalCrearTitle" aria-modal="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCrearTitle">
+                    <i class="fas fa-link ico-primary"></i>
+                    Nueva vinculación
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="vd-info-box">
+                    <i class="fas fa-circle-info"></i>
+                    <span>Selecciona primero el <strong>tipo de documento nuevo</strong> y luego elige el equivalente en el catálogo Kepler. Solo aparecen los Kepler sin vínculo previo para ese tipo.</span>
+                </div>
+
+                <div class="vd-fg">
+                    <label class="vd-label" for="crearIdtpdoc">
+                        Tipo de documento nuevo <span class="req">*</span>
+                    </label>
+                    <select id="crearIdtpdoc" class="vd-ctrl">
+                        <option value="">— Selecciona un tipo de documento —</option>
+                    </select>
+                </div>
+
+                <div class="vd-fg">
+                    <label class="vd-label" for="crearIdDoc">
+                        Documento Kepler <span class="req">*</span>
+                    </label>
+                    <select id="crearIdDoc" class="vd-ctrl" disabled>
+                        <option value="">— Primero selecciona el tipo de documento —</option>
+                    </select>
+                    <p class="vd-hint">
+                        <i class="fas fa-filter"></i>
+                        Solo se listan los documentos Kepler que aún <strong>no</strong> están vinculados a este tipo.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="vd-btn vd-btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-xmark"></i> Cancelar
+                </button>
+                <button class="vd-btn vd-btn-primary" id="btnGuardarCrear">
+                    <i class="fas fa-floppy-disk"></i> Guardar relación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Modal Editar ── *@
+<div class="modal fade vd-modal" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarTitle" aria-modal="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarTitle">
+                    <i class="fas fa-pen-to-square ico-primary"></i>
+                    Editar vinculación
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editIdrel" />
+                <input type="hidden" id="editIdtpdoc" />
+
+                <div class="vd-fg">
+                    <label class="vd-label" for="editNombreTpdoc">Tipo de documento nuevo</label>
+                    <input type="text" id="editNombreTpdoc" class="vd-ctrl vd-ctrl-readonly" readonly />
+                    <p class="vd-hint">
+                        <i class="fas fa-lock"></i>
+                        El tipo de documento no puede modificarse. Elimina esta relación y crea una nueva si lo necesitas.
+                    </p>
+                </div>
+
+                <div class="vd-fg">
+                    <label class="vd-label" for="editIdDoc">
+                        Nuevo documento Kepler <span class="req">*</span>
+                    </label>
+                    <select id="editIdDoc" class="vd-ctrl">
+                        <option value="">— Selecciona —</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="vd-btn vd-btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-xmark"></i> Cancelar
+                </button>
+                <button class="vd-btn vd-btn-primary" id="btnGuardarEditar">
+                    <i class="fas fa-floppy-disk"></i> Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Modal Eliminar ── *@
+<div class="modal fade vd-modal" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarTitle" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEliminarTitle">
+                    <i class="fas fa-triangle-exclamation ico-danger"></i>
+                    Eliminar vinculación
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="eliminarIdrel" />
+                <p class="vd-warn-txt">
+                    ¿Confirmas que deseas <strong>eliminar</strong> esta relación? La acción no puede deshacerse.
+                </p>
+                <div class="vd-danger-box" id="eliminarDetalle"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="vd-btn vd-btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-xmark"></i> Cancelar
+                </button>
+                <button class="vd-btn vd-btn-danger" id="btnConfirmarEliminar">
+                    <i class="fas fa-trash-can"></i> Sí, eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+    var token = $('input[name="__RequestVerificationToken"]').val();
+    var tabla;
+
+    /* ── Helpers de badge ── */
+    function generoBadge(g) {
+        if (!g) return '<span class="vd-subtxt">—</span>';
+        var up = g.toUpperCase();
+        var cls = up.includes('PERM') ? 'vd-badge-blue'
+                : up.includes('TEMP') ? 'vd-badge-warning'
+                : 'vd-badge-gray';
+        return `<span class="vd-badge ${cls}"><i class="fas fa-tag" style="font-size:9px"></i>${g}</span>`;
+    }
+
+    /* ── Init ── */
+    $(document).ready(function () {
+        tabla = $('#tblRelaciones').DataTable({
+            ajax: { url: '@Url.Action("GetRelaciones","TpdocKeplerRel")', dataSrc: 'data' },
+            columns: [
+                {
+                    data: null,
+                    render: function (d) {
+                        return `<div class="vd-doc-pill">
+                                    <span class="abrev">${d.abreviaturatpdoc}</span>
+                                    <span class="doc-name">${d.nombre_tpdoc}</span>
+                                </div>`;
+                    }
+                },
+                { data: 'genero',           render: function (d) { return generoBadge(d); } },
+                { data: 'grupo',            render: function (d) { return `<span class="vd-subtxt">${d || '—'}</span>`; } },
+                { data: 'tipo',             render: function (d) { return `<span style="font-size:12.5px;color:var(--text-dark)">${d || '—'}</span>`; } },
+                { data: 'descripcion_kepler', render: function (d) { return `<span style="font-size:13px">${d || '—'}</span>`; } },
+                {
+                    data: 'fecha_creacion',
+                    render: function (d) {
+                        if (!d) return '<span class="vd-subtxt">—</span>';
+                        var ts = parseInt(d.replace('/Date(', '').replace(')/', ''));
+                        var dt = new Date(ts);
+                        return `<span class="vd-fecha">
+                                    <i class="fas fa-calendar-days" style="font-size:10px;margin-right:4px;color:var(--text-light)"></i>
+                                    ${dt.toLocaleDateString('es-MX')}
+                                </span>`;
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function (d) {
+                        return `<div class="vd-actions">
+                                    <button class="vd-icon-btn edit btnEditar"
+                                        data-idrel="${d.idrel}"
+                                        data-idtpdoc="${d.idtpdoc}"
+                                        data-nombre="${d.nombre_tpdoc}"
+                                        data-idoc="${d.id_doc}"
+                                        title="Editar vinculación">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button class="vd-icon-btn del btnEliminar"
+                                        data-idrel="${d.idrel}"
+                                        data-detalle="${d.nombre_tpdoc} ↔ [${d.genero}] ${d.tipo}: ${d.descripcion_kepler}"
+                                        title="Eliminar vinculación">
+                                        <i class="fas fa-trash-can"></i>
+                                    </button>
+                                </div>`;
+                    }
+                }
+            ],
+            language: { },
+            order: [[0, 'asc']],
+            responsive: true,
+            drawCallback: function () {
+                $('#statTotalRel').text(this.api().rows().count());
+            }
+        });
+
+        cargarTpdocs();
+    });
+
+    /* ── Catálogo TpDocs ── */
+    function cargarTpdocs() {
+        $.get('@Url.Action("GetTpdocs","TpdocKeplerRel")', function (res) {
+            $('#statTotalTpdoc').text(res.data.length);
+            var opts = '<option value="">— Selecciona un tipo de documento —</option>';
+            $.each(res.data, function (i, t) {
+                opts += `<option value="${t.idtpdoc}">[${t.abreviaturatpdoc}] ${t.tpdoc}</option>`;
+            });
+            $('#crearIdtpdoc').html(opts);
+        });
+    }
+
+    /* ── Docs Kepler disponibles ── */
+    function cargarKeplerDisponibles(idtpdoc, target) {
+        var $s = $(target).html('<option value="">Cargando documentos…</option>').prop('disabled', true);
+        $.get('@Url.Action("GetDocsKeplerDisponibles","TpdocKeplerRel")', { idtpdoc: idtpdoc }, function (res) {
+            $('#statDocsKepler').text(res.data.length);
+            if (!res.data.length) {
+                $s.html('<option value="">Sin documentos disponibles para este tipo</option>');
+                toastr.info('No hay documentos Kepler disponibles para este tipo de documento.');
+                return;
+            }
+            var opts = '<option value="">— Selecciona un documento Kepler —</option>';
+            $.each(res.data, function (i, k) {
+                opts += `<option value="${k.id_doc}">${k.display_text}</option>`;
+            });
+            $s.html(opts).prop('disabled', false);
+        });
+    }
+
+    /* ── CREAR ── */
+    $('#btnNuevaRelacion').click(function () {
+        $('#crearIdtpdoc').val('');
+        $('#crearIdDoc').html('<option value="">— Primero selecciona el tipo de documento —</option>').prop('disabled', true);
+        $('#modalCrear').modal('show');
+    });
+
+    $('#crearIdtpdoc').on('change', function () {
+        if (!$(this).val()) {
+            $('#crearIdDoc').html('<option value="">—</option>').prop('disabled', true);
+            return;
+        }
+        cargarKeplerDisponibles($(this).val(), '#crearIdDoc');
+    });
+
+    $('#btnGuardarCrear').click(function () {
+        var idtpdoc = $('#crearIdtpdoc').val();
+        var idDoc   = $('#crearIdDoc').val();
+        if (!idtpdoc || !idDoc) { toastr.warning('Debes completar ambos campos antes de guardar.'); return; }
+        ajax('@Url.Action("Create","TpdocKeplerRel")', { Idtpdoc: idtpdoc, IdDoc: idDoc },
+             $(this), '<i class="fas fa-floppy-disk"></i> Guardar relación', '#modalCrear');
+    });
+
+    /* ── EDITAR ── */
+    $(document).on('click', '.btnEditar', function () {
+        $('#editIdrel').val($(this).data('idrel'));
+        $('#editIdtpdoc').val($(this).data('idtpdoc'));
+        $('#editNombreTpdoc').val($(this).data('nombre'));
+        cargarKeplerDisponibles($(this).data('idtpdoc'), '#editIdDoc');
+        $('#modalEditar').modal('show');
+    });
+
+    $('#btnGuardarEditar').click(function () {
+        var idDoc = $('#editIdDoc').val();
+        if (!idDoc) { toastr.warning('Selecciona el nuevo documento Kepler.'); return; }
+        ajax('@Url.Action("Edit","TpdocKeplerRel")',
+             { Idrel: $('#editIdrel').val(), Idtpdoc: $('#editIdtpdoc').val(), IdDoc: idDoc },
+             $(this), '<i class="fas fa-floppy-disk"></i> Actualizar', '#modalEditar');
+    });
+
+    /* ── ELIMINAR ── */
+    $(document).on('click', '.btnEliminar', function () {
+        $('#eliminarIdrel').val($(this).data('idrel'));
+        $('#eliminarDetalle').text($(this).data('detalle'));
+        $('#modalEliminar').modal('show');
+    });
+
+    $('#btnConfirmarEliminar').click(function () {
+        ajax('@Url.Action("Delete","TpdocKeplerRel")', { idrel: $('#eliminarIdrel').val() },
+             $(this), '<i class="fas fa-trash-can"></i> Sí, eliminar', '#modalEliminar');
+    });
+
+    /* ── Helper AJAX genérico ── */
+    function ajax(url, data, $btn, lblOrig, modalId) {
+        data.__RequestVerificationToken = token;
+        $btn.html('<span class="vd-spin"></span> Procesando…').prop('disabled', true);
+        $.ajax({
+            url: url, method: 'POST', data: data,
+            success: function (res) {
+                if (res.success) {
+                    toastr.success(res.message);
+                    $(modalId).modal('hide');
+                    tabla.ajax.reload();
+                } else {
+                    toastr.error(res.message);
+                }
+            },
+            error: function () { toastr.error('Error de comunicación con el servidor.'); },
+            complete: function () { $btn.html(lblOrig).prop('disabled', false); }
+        });
+    }
+    </script>
+}

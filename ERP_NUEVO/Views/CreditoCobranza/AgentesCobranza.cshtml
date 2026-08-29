@@ -1,0 +1,685 @@
+﻿@{
+    ViewBag.Title = "Agentes de cobranza";
+    ViewBag.PageTitle = "Agentes de cobranza";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* ── Page shell ────────────────────────────────────────────────── */
+    .vnd-page {
+        padding: 2rem 2.25rem;
+        min-height: 100%;
+    }
+
+    .vnd-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .vnd-title-block h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        letter-spacing: -.03em;
+        margin: 0;
+        line-height: 1.1;
+    }
+
+    .vnd-title-block p {
+        margin: .25rem 0 0;
+        font-size: .82rem;
+        color: var(--text-light);
+    }
+
+    /* ── Pill button ───────────────────────────────────────────────── */
+    .btn-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        padding: .55rem 1.25rem;
+        border-radius: 999px;
+        font-size: .82rem;
+        font-weight: 600;
+        letter-spacing: .01em;
+        border: none;
+        cursor: pointer;
+        transition: background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+        white-space: nowrap;
+    }
+
+    .btn-pill-primary {
+        background: var(--accent-blue);
+        color: #fff;
+        box-shadow: 0 2px 10px rgba(59,130,246,.25);
+    }
+
+        .btn-pill-primary:hover {
+            background: var(--primary-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(59,130,246,.3);
+        }
+
+    .btn-pill-ghost {
+        background: transparent;
+        color: var(--text-light);
+        border: 1.5px solid var(--border-light);
+    }
+
+        .btn-pill-ghost:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+    .btn-pill-danger {
+        background: transparent;
+        color: var(--danger-color);
+        border: 1.5px solid var(--border-light);
+    }
+
+        .btn-pill-danger:hover {
+            background: var(--danger-color);
+            color: #fff;
+            border-color: var(--danger-color);
+        }
+
+    /* ── Card container for the table ─────────────────────────────── */
+    .vnd-card {
+        background: var(--bg-light);
+        border-radius: 18px;
+        border: 1.5px solid var(--border-light);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+        /* ── custom-table-container overrides (used by createTable) ────── */
+        .vnd-card .custom-table-container {
+            margin: 0 !important;
+            padding: 1.25rem 1.5rem 1.5rem;
+        }
+
+    /* ── Status badge ──────────────────────────────────────────────── */
+    .vnd-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .2rem .65rem;
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 600;
+        letter-spacing: .02em;
+    }
+
+    .vnd-badge-active {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .vnd-badge-inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .vnd-badge-cobrador {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    [data-theme="dark"] .vnd-badge-active {
+        background: #064e3b;
+        color: #6ee7b7;
+    }
+
+    [data-theme="dark"] .vnd-badge-inactive {
+        background: #7f1d1d;
+        color: #fca5a5;
+    }
+
+    [data-theme="dark"] .vnd-badge-cobrador {
+        background: #1e3a8a;
+        color: #93c5fd;
+    }
+
+    /* ── Dot indicators ────────────────────────────────────────────── */
+    .vnd-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .vnd-dot-active {
+        background: #10b981;
+    }
+
+    .vnd-dot-inactive {
+        background: #ef4444;
+    }
+
+    .vnd-dot-cobrador {
+        background: #3b82f6;
+    }
+
+    /* ── Modal – clean & minimal ───────────────────────────────────── */
+    .vnd-modal .modal-content {
+        border: none;
+        border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        background: var(--bg-light);
+        overflow: hidden;
+    }
+
+    .vnd-modal .modal-header {
+        padding: 1.4rem 1.75rem 1rem;
+        border-bottom: 1.5px solid var(--border-light);
+        background: var(--bg-light);
+    }
+
+    .vnd-modal .modal-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        color: var(--text-dark);
+    }
+
+    .vnd-modal .modal-body {
+        padding: 1.5rem 1.75rem;
+        background: var(--bg-light);
+    }
+
+    .vnd-modal .modal-footer {
+        padding: 1rem 1.75rem 1.4rem;
+        border-top: 1.5px solid var(--border-light);
+        background: var(--bg-light);
+        gap: .6rem;
+    }
+
+    /* ── Floating label fields ─────────────────────────────────────── */
+    .vnd-field {
+        position: relative;
+        margin-bottom: 1.25rem;
+    }
+
+        .vnd-field label {
+            display: block;
+            font-size: .74rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: var(--text-light);
+            margin-bottom: .4rem;
+        }
+
+        .vnd-field .field-icon {
+            position: absolute;
+            right: .85rem;
+            bottom: .72rem;
+            color: var(--text-light);
+            font-size: .8rem;
+            pointer-events: none;
+            transition: color var(--transition-fast);
+        }
+
+    .vnd-input,
+    .vnd-select {
+        width: 100%;
+        padding: .65rem 2.2rem .65rem .9rem;
+        border-radius: 11px;
+        border: 1.5px solid var(--border-light);
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-size: .86rem;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        appearance: none;
+        outline: none;
+    }
+
+    .vnd-select {
+        padding-right: 2.2rem;
+    }
+
+        .vnd-input:focus,
+        .vnd-select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+            background: var(--bg-light);
+        }
+
+    .vnd-input.is-valid {
+        border-color: var(--success-color);
+    }
+
+    .vnd-input.is-invalid,
+    .vnd-select.is-invalid {
+        border-color: var(--danger-color);
+    }
+
+    .vnd-field .invalid-msg {
+        font-size: .73rem;
+        color: var(--danger-color);
+        margin-top: .3rem;
+        display: none;
+    }
+
+    .vnd-input.is-invalid ~ .invalid-msg,
+    .vnd-select.is-invalid ~ .invalid-msg {
+        display: block;
+    }
+
+    /* ── Checkbox toggle (es_cobrador) ─────────────────────────────── */
+    .vnd-toggle-row {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .75rem 1rem;
+        border-radius: 11px;
+        background: var(--bg-gray);
+        border: 1.5px solid var(--border-light);
+        cursor: pointer;
+        transition: border-color var(--transition-fast);
+        user-select: none;
+    }
+
+        .vnd-toggle-row:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .vnd-toggle-row input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        .vnd-toggle-row span {
+            font-size: .84rem;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+    /* ── Section dividers inside modal ─────────────────────────────── */
+    .vnd-section-label {
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--accent-blue);
+        margin: 1rem 0 .75rem;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+        .vnd-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-light);
+        }
+
+    /* ── Responsive tweaks ─────────────────────────────────────────── */
+    @@media (max-width: 576px) {
+        .vnd-page {
+            padding: 1rem;
+        }
+
+        .vnd-card .custom-table-container {
+            padding: .75rem;
+        }
+    }
+</style>
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<div class="vnd-page">
+
+    <!-- Header -->
+    <div class="vnd-header">
+        <div class="vnd-title-block">
+            <h1>Agentes de cobranza</h1>
+            <p>Gestión del equipo de cobranza</p>
+        </div>
+        <button class="btn-pill btn-pill-primary" onclick="openCreate()">
+            <i class="fa-solid fa-plus"></i> Nuevo agente de cobranza
+        </button>
+    </div>
+
+    <!-- Table card -->
+    <div class="vnd-card">
+        <div id="cobradoresTableContainer"></div>
+    </div>
+</div>
+
+<!-- ── Modal ─────────────────────────────────────────────────────────── -->
+<div class="modal fade vnd-modal" id="cobradorModal" tabindex="-1" aria-labelledby="cobradorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="cobradorModalLabel">Nuevo agente de cobranza</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="vnd-action" value="create">
+                <input type="hidden" id="vnd-id" value="">
+
+                <!-- Identificación -->
+                <div class="vnd-section-label"><i class="fa-solid fa-id-card"></i> Identificación</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="vnd-field">
+                            <label for="vnd-clave">Clave</label>
+                            <input type="text" id="vnd-clave" class="vnd-input" maxlength="10"
+                                   oninput="this.value=this.value.toUpperCase()"
+                                   onkeypress="return /[A-Za-z0-9]/.test(String.fromCharCode(event.charCode))"
+                                   placeholder="Ej. VND01">
+                            <i class="fa-solid fa-key field-icon"></i>
+                            <div class="invalid-msg">Campo obligatorio (máx. 10 caracteres)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="vnd-field">
+                            <label for="vnd-nombre">Nombre</label>
+                            <input type="text" id="vnd-nombre" class="vnd-input" maxlength="100" placeholder="Nombre completo">
+                            <i class="fa-solid fa-user field-icon"></i>
+                            <div class="invalid-msg">Campo obligatorio</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comisiones -->
+                <div class="vnd-section-label"><i class="fa-solid fa-percent"></i> Comisiones</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="vnd-field">
+                            <label for="vnd-comision2">Comisión s/cobro (%)</label>
+                            <input type="number" id="vnd-comision2" class="vnd-input" step="0.01" min="0" max="100" placeholder="0.00">
+                            <i class="fa-solid fa-hand-holding-dollar field-icon"></i>
+                            <div class="invalid-msg">Valor entre 0 y 100</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contacto -->
+                <div class="vnd-section-label"><i class="fa-solid fa-phone"></i> Contacto</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="vnd-field">
+                            <label for="vnd-tel1">Teléfono principal</label>
+                            <input type="tel" id="vnd-tel1" class="vnd-input" maxlength="20"
+                                   onkeypress="return /[0-9+\-\s]/.test(String.fromCharCode(event.charCode))"
+                                   placeholder="10 dígitos">
+                            <i class="fa-solid fa-phone field-icon"></i>
+                            <div class="invalid-msg">Campo obligatorio</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="vnd-field">
+                            <label for="vnd-tel2">Teléfono secundario <span style="font-weight:400;color:var(--text-light)">(opcional)</span></label>
+                            <input type="tel" id="vnd-tel2" class="vnd-input" maxlength="20"
+                                   onkeypress="return /[0-9+\-\s]/.test(String.fromCharCode(event.charCode))"
+                                   placeholder="Alternativo">
+                            <i class="fa-solid fa-mobile-screen field-icon"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="vnd-field">
+                            <label for="vnd-correo1">Correo principal</label>
+                            <input type="email" id="vnd-correo1" class="vnd-input" maxlength="100" placeholder="correo@ejemplo.com">
+                            <i class="fa-solid fa-envelope field-icon"></i>
+                            <div class="invalid-msg">Correo inválido</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="vnd-field">
+                            <label for="vnd-correo2">Correo secundario <span style="font-weight:400;color:var(--text-light)">(opcional)</span></label>
+                            <input type="email" id="vnd-correo2" class="vnd-input" maxlength="100" placeholder="alternativo@ejemplo.com">
+                            <i class="fa-solid fa-envelope-open field-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado -->
+                <div class="vnd-section-label"><i class="fa-solid fa-sliders"></i> Estado</div>
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-6">
+                        <label class="vnd-toggle-row" for="vnd-activo">
+                            <input type="checkbox" id="vnd-activo" checked>
+                            <span>Agente de cobranza activo</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-pill btn-pill-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </button>
+                <button type="button" class="btn-pill btn-pill-primary" onclick="savecobrador()">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+        // ── Helpers ──────────────────────────────────────────────────────────────────
+
+        function statusBadge(activo) {
+            if (activo)
+                return `<span class="vnd-badge vnd-badge-active"><span class="vnd-dot vnd-dot-active"></span>Activo</span>`;
+            return `<span class="vnd-badge vnd-badge-inactive"><span class="vnd-dot vnd-dot-inactive"></span>Inactivo</span>`;
+        }
+
+        function cobradorBadge(esCobrador) {
+            if (!esCobrador) return '<span style="color:var(--text-light);font-size:.78rem">—</span>';
+            return `<span class="vnd-badge vnd-badge-cobrador"><span class="vnd-dot vnd-dot-cobrador"></span>Sí</span>`;
+        }
+
+        function formatPercent(v) {
+            if (v === null || v === undefined) return '—';
+            return parseFloat(v).toFixed(2) + ' %';
+        }
+
+        // ── Init table ───────────────────────────────────────────────────────────────
+
+        const cobradoresTable = createTable({
+            selector: '#cobradoresTableContainer',
+            path: '/Vendedor/GetCobradores',
+            rowKey: 'id',
+            searchPlaceholder: 'Buscar agente de cobramza',
+            columns: [
+                {
+                    title: 'Clave',
+                    data: 'clave_vendedor',
+                    className: 'text-center',
+                    formatter: (v) => `<code style="font-size:.8rem;background:var(--bg-gray);padding:.15rem .45rem;border-radius:6px;color:var(--accent-blue)">${v ?? ''}</code>`
+                },
+                {
+                    title: 'Nombre',
+                    data: 'nombre',
+                    formatter: (v) => `<span style="font-weight:500">${v ?? ''}</span>`
+                },
+                {
+                    title: 'Com. venta',
+                    data: 'comision1',
+                    className: 'text-center',
+                    formatter: formatPercent
+                },
+                {
+                    title: 'Com. cobro',
+                    data: 'comision2',
+                    className: 'text-center',
+                    formatter: formatPercent
+                },
+                {
+                    title: 'Teléfono',
+                    data: 'telefono1',
+                    formatter: (v) => v ?? '<span style="color:var(--text-light);font-size:.78rem">—</span>'
+                },
+                {
+                    title: 'Estatus',
+                    data: 'activo',
+                    className: 'text-center',
+                    formatter: statusBadge
+                }
+            ],
+            actions: [
+                { title: 'Editar', icon: 'fa-pen-to-square', color: 'green-500', onClick: (row) => openEdit(row) },
+                { title: 'Eliminar', icon: (row) => row.activo ? 'fa-toggle-large-on' : 'fa-toggle-large-off', color: (row) => row.activo ? 'green-500' : 'red-500', onClick: (row) => desactivarCobrador(row) }
+            ]
+        });
+
+        // ── Modal helpers ────────────────────────────────────────────────────────────
+
+        function resetForm() {
+            ['vnd-clave', 'vnd-nombre', 'vnd-comision2',
+                'vnd-tel1', 'vnd-tel2', 'vnd-correo1', 'vnd-correo2'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) { el.value = ''; el.classList.remove('is-valid', 'is-invalid'); }
+                });
+            document.getElementById('vnd-activo').checked = true;
+            document.getElementById('vnd-id').value = '';
+        }
+
+        async function openCreate() {
+            resetForm();
+            document.getElementById('vnd-action').value = 'create';
+            document.getElementById('vnd-clave').readOnly = false;
+            document.getElementById('cobradorModalLabel').textContent = 'Nuevo agente de cobranza';
+            new bootstrap.Modal(document.getElementById('cobradorModal')).show();
+        }
+
+        async function openEdit(row) {
+            resetForm();
+            document.getElementById('vnd-action').value = 'edit';
+            document.getElementById('cobradorModalLabel').textContent = 'Editar agente de cobranza';
+
+            document.getElementById('vnd-clave').value = row.clave_vendedor ?? '';
+            document.getElementById('vnd-clave').readOnly = true;
+            document.getElementById('vnd-nombre').value = row.nombre ?? '';
+            document.getElementById('vnd-comision2').value = row.comision2 ?? '';
+            document.getElementById('vnd-tel1').value = row.telefono1 ?? '';
+            document.getElementById('vnd-tel2').value = row.telefono2 ?? '';
+            document.getElementById('vnd-correo1').value = row.correo1 ?? '';
+            document.getElementById('vnd-correo2').value = row.correo2 ?? '';
+            document.getElementById('vnd-activo').checked = !!row.activo;
+            document.getElementById('vnd-id').value = row.id ?? '';
+
+            new bootstrap.Modal(document.getElementById('cobradorModal')).show();
+        }
+
+        // ── Validation ───────────────────────────────────────────────────────────────
+
+        function validateField(id, condition) {
+            const el = document.getElementById(id);
+            if (!el) return true;
+            const ok = condition(el.value.trim());
+            el.classList.toggle('is-valid', ok);
+            el.classList.toggle('is-invalid', !ok);
+            return ok;
+        }
+
+        function validateForm() {
+            const isEmail = v => !v || /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(v);
+            const inRange = v => v === '' || (parseFloat(v) >= 0 && parseFloat(v) <= 100);
+
+            const checks = [
+                validateField('vnd-clave', v => /^[A-Za-z0-9]{1,10}$/.test(v)),
+                validateField('vnd-nombre', v => v.length > 0),
+                validateField('vnd-comision2', inRange),
+                validateField('vnd-tel1', v => v.length > 0),
+                validateField('vnd-correo1', isEmail),
+                validateField('vnd-correo2', isEmail),
+            ];
+
+            return checks.every(Boolean);
+        }
+
+        // ── Live validation ──────────────────────────────────────────────────────────
+
+        ['vnd-clave', 'vnd-nombre', 'vnd-tel1'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', function () {
+                const ok = this.value.trim().length > 0;
+                this.classList.toggle('is-valid', ok);
+                this.classList.toggle('is-invalid', !ok);
+            });
+        });
+
+        // ── Save ─────────────────────────────────────────────────────────────────────
+
+        async function savecobrador() {
+            if (!validateForm()) {
+                toastMixin.fire({ icon: 'warning', title: 'Revisa los campos marcados' });
+                return;
+            }
+
+            const action = document.getElementById('vnd-action').value;
+            const url = action === 'create' ? '/Vendedor/SaveVendedor' : '/Vendedor/EditarVendedor';
+
+            const payload = {
+                id: document.getElementById('vnd-id').value,
+                clave_vendedor: document.getElementById('vnd-clave').value.trim(),
+                nombre: document.getElementById('vnd-nombre').value.trim(),
+                comision1: 0,
+                comision2: document.getElementById('vnd-comision2').value,
+                telefono1: document.getElementById('vnd-tel1').value.trim(),
+                telefono2: document.getElementById('vnd-tel2').value.trim(),
+                correo1: document.getElementById('vnd-correo1').value.trim(),
+                correo2: document.getElementById('vnd-correo2').value.trim(),
+                es_cobrador: true,
+                activo: document.getElementById('vnd-activo').checked,
+            };
+
+            const response = await GetData({
+                path: url,
+                data: payload
+            }).then(_res => {
+                if (_res.icon === "success") {
+                    toastMixin.fire(_res);
+                    cobradoresTable.reload();
+                    bootstrap.Modal.getInstance(document.getElementById('cobradorModal'))?.hide();
+                } else {
+                    toastMixin.fire(_res);
+                }
+            });
+        }
+
+        // ── Delete ───────────────────────────────────────────────────────────────────
+
+        async function desactivarCobrador(row) {
+            const result = await Swal.fire({
+                title: row.activo ? '¿Desactivar agente de cobranza?' : '¿Activar agente de cobranza?',
+                html: `<span style="color:var(--text-light);font-size:.9rem">Puedes volverlo a ${row.activo ? 'avtivar' : 'desactivar'} en cualquier momento.</span>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: row.activo ? 'Sí, desactivar' : 'Si, activar',
+                cancelButtonText: 'Cancelar',
+                customClass: { popup: 'rounded-4' }
+            });
+
+            if (!result.isConfirmed) return;
+
+            const response = await GetData({
+                path: '/Vendedor/DesactivarVendedor',
+                data: {
+                    id: row.id,
+                    status: row.activo ? false : true,
+                },
+            }).then(_res => {
+                toastMixin.fire(_res);
+                cobradoresTable.reload();
+            });
+        }
+    </script>
+}

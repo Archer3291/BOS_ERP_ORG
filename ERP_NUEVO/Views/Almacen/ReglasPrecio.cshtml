@@ -1,0 +1,2947 @@
+﻿@{
+    ViewBag.Title = "Reglas de Precio";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<style>
+    :root {
+        --rp-radius-sm: 8px;
+        --rp-radius-md: 10px;
+        --rp-radius-lg: 14px;
+        --rp-radius-xl: 18px;
+        --rp-transition: 0.16s cubic-bezier(.4,0,.2,1);
+        --primary: #1e3a5f;
+        --primary-dark: #0f1729;
+        --accent-blue: #3b82f6;
+        --text-dark: #0f172a;
+        --text-mid: #475569;
+        --text-soft: #94a3b8;
+        --border: #e2e8f0;
+        --border-focus: #3b82f6;
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --surface-alt: #f1f5f9;
+        --green-bg: #d1fae5;
+        --green-text: #065f46;
+        --green-bdr: #a7f3d0;
+        --blue-bg: #dbeafe;
+        --blue-text: #1d4ed8;
+        --blue-bdr: #bfdbfe;
+        --purple-bg: #ede9fe;
+        --purple-text: #5b21b6;
+        --purple-bdr: #c4b5fd;
+        --amber-bg: #fef3c7;
+        --amber-text: #92400e;
+        --amber-bdr: #fcd34d;
+        --red-bg: #fee2e2;
+        --red-text: #991b1b;
+        --red-bdr: #fca5a5;
+        --gray-bg: #f1f5f9;
+        --gray-text: #475569;
+        --gray-bdr: #cbd5e1;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+        --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+        --shadow-lg: 0 10px 30px rgba(0,0,0,.10), 0 4px 12px rgba(0,0,0,.06);
+    }
+
+    [data-theme="dark"] {
+        --primary: #60a5fa;
+        --primary-dark: #93c5fd;
+        --accent-blue: #60a5fa;
+        --text-dark: #f1f5f9;
+        --text-mid: #cbd5e1;
+        --text-soft: #64748b;
+        --border: #334155;
+        --border-focus: #60a5fa;
+        --bg: #0f172a;
+        --surface: #1e293b;
+        --surface-alt: #0f172a;
+        --green-bg: #064e3b;
+        --green-text: #6ee7b7;
+        --green-bdr: #065f46;
+        --blue-bg: #1e3a5f;
+        --blue-text: #93c5fd;
+        --blue-bdr: #1d4ed8;
+        --purple-bg: #3b0764;
+        --purple-text: #c4b5fd;
+        --purple-bdr: #5b21b6;
+        --amber-bg: #451a03;
+        --amber-text: #fcd34d;
+        --amber-bdr: #78350f;
+        --red-bg: #450a0a;
+        --red-text: #fca5a5;
+        --red-bdr: #991b1b;
+        --gray-bg: #1e293b;
+        --gray-text: #94a3b8;
+        --gray-bdr: #334155;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.25);
+        --shadow-md: 0 4px 12px rgba(0,0,0,.30);
+        --shadow-lg: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    /* ── PAGE WRAP ── */
+    .rp-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: var(--bg);
+        color: var(--text-dark);
+        min-height: 100vh;
+        padding: 1.75rem 2rem 3rem;
+    }
+
+    /* ── HEADER ── */
+    .rp-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .rp-page-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -.3px;
+        color: var(--text-dark);
+        line-height: 1.2;
+    }
+
+    .rp-page-sub {
+        font-size: .8rem;
+        color: var(--text-soft);
+        margin-top: .3rem;
+        max-width: 420px;
+    }
+
+    .btn-new-rule {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: var(--rp-radius-md);
+        padding: .58rem 1.1rem;
+        font-size: .85rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        box-shadow: 0 2px 8px rgba(30,58,95,.28);
+        transition: background var(--rp-transition), transform .1s;
+    }
+
+        .btn-new-rule:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-new-rule:active {
+            transform: scale(.97);
+        }
+
+        .btn-new-rule svg {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+        }
+
+    /* ── KPI STRIP ── */
+    .kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: .6rem;
+        margin-bottom: 1.35rem;
+    }
+
+    .kpi-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--rp-radius-md);
+        padding: .9rem 1rem;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow var(--rp-transition);
+    }
+
+        .kpi-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+    .kpi-label {
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: var(--text-soft);
+        margin-bottom: .3rem;
+    }
+
+    .kpi-val {
+        font-size: 1.7rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+        .kpi-val.c-blue {
+            color: #1d4ed8;
+        }
+
+        .kpi-val.c-green {
+            color: #059669;
+        }
+
+        .kpi-val.c-purple {
+            color: #6d28d9;
+        }
+
+        .kpi-val.c-amber {
+            color: #d97706;
+        }
+
+    /* ── TOOLBAR ── */
+    .rp-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .5rem;
+        margin-bottom: .9rem;
+    }
+
+    .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 180px;
+        max-width: 280px;
+    }
+
+        .search-box svg {
+            position: absolute;
+            left: .65rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            color: var(--text-soft);
+            pointer-events: none;
+        }
+
+        .search-box input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: var(--rp-radius-md);
+            padding: .5rem .75rem .5rem 2.1rem;
+            font-size: .85rem;
+            font-family: inherit;
+            background: var(--surface);
+            color: var(--text-dark);
+            outline: none;
+            transition: border-color var(--rp-transition), box-shadow var(--rp-transition);
+        }
+
+            .search-box input:focus {
+                border-color: var(--border-focus);
+                box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            }
+
+    .rp-select {
+        border: 1px solid var(--border);
+        border-radius: var(--rp-radius-md);
+        padding: .5rem .75rem;
+        font-size: .85rem;
+        font-family: inherit;
+        background: var(--surface);
+        color: var(--text-dark);
+        cursor: pointer;
+        outline: none;
+        transition: border-color var(--rp-transition);
+    }
+
+        .rp-select:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+        }
+
+    .count-label {
+        font-size: .78rem;
+        color: var(--text-soft);
+        margin-left: auto;
+    }
+
+    /* ── TABLE ── */
+    .rp-table-wrap {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--rp-radius-xl);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .rp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .84rem;
+    }
+
+        .rp-table thead th {
+            background: var(--surface-alt);
+            padding: .7rem 1rem;
+            text-align: left;
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-mid);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+            .rp-table thead th:first-child {
+                padding-left: 1.25rem;
+            }
+
+            .rp-table thead th:last-child {
+                padding-right: 1.25rem;
+                text-align: right;
+            }
+
+            .rp-table thead th.sortable {
+                cursor: pointer;
+                user-select: none;
+            }
+
+                .rp-table thead th.sortable:hover {
+                    color: var(--text-dark);
+                }
+
+        .rp-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background var(--rp-transition);
+        }
+
+            .rp-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .rp-table tbody tr:hover {
+                background: var(--surface-alt);
+            }
+
+        .rp-table tbody td {
+            padding: .75rem 1rem;
+            vertical-align: middle;
+        }
+
+            .rp-table tbody td:first-child {
+                padding-left: 1.25rem;
+            }
+
+            .rp-table tbody td:last-child {
+                padding-right: 1.25rem;
+            }
+
+    /* ── BADGES ── */
+    .badge-rp {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        font-size: .68rem;
+        font-weight: 700;
+        border-radius: 20px;
+        padding: .2rem .6rem;
+        white-space: nowrap;
+        letter-spacing: .02em;
+    }
+
+        .badge-rp svg {
+            width: 7px;
+            height: 7px;
+            flex-shrink: 0;
+        }
+
+    .b-blue {
+        background: var(--blue-bg);
+        color: var(--blue-text);
+    }
+
+    .b-green {
+        background: var(--green-bg);
+        color: var(--green-text);
+    }
+
+    .b-purple {
+        background: var(--purple-bg);
+        color: var(--purple-text);
+    }
+
+    .b-amber {
+        background: var(--amber-bg);
+        color: var(--amber-text);
+    }
+
+    .b-gray {
+        background: var(--gray-bg);
+        color: var(--gray-text);
+    }
+
+    .b-red {
+        background: var(--red-bg);
+        color: var(--red-text);
+    }
+
+    /* criteria tags */
+    .crit-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .25rem;
+    }
+
+    .ctag {
+        display: inline-flex;
+        align-items: center;
+        font-size: .7rem;
+        background: var(--surface-alt);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: .15rem .45rem;
+        color: var(--text-mid);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+        .ctag.cli {
+            background: var(--blue-bg);
+            border-color: var(--blue-bdr);
+            color: var(--blue-text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 600;
+        }
+
+    /* priority pill */
+    .prio-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        font-size: .74rem;
+        font-weight: 700;
+        background: var(--surface-alt);
+        color: var(--text-mid);
+        border: 1px solid var(--border);
+    }
+
+        .prio-pill.hi {
+            background: var(--amber-bg);
+            color: var(--amber-text);
+            border-color: var(--amber-bdr);
+        }
+
+    .val-mono {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .84rem;
+        font-weight: 600;
+    }
+
+    /* action buttons */
+    .act-btns {
+        display: flex;
+        justify-content: flex-end;
+        gap: .3rem;
+    }
+
+    .btn-ic {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: var(--rp-radius-sm);
+        border: 1px solid var(--border);
+        background: transparent;
+        cursor: pointer;
+        color: var(--text-soft);
+        transition: all var(--rp-transition);
+    }
+
+        .btn-ic svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+        }
+
+        .btn-ic:hover.tog {
+            background: var(--green-bg);
+            border-color: var(--green-bdr);
+            color: var(--green-text);
+        }
+
+        .btn-ic:hover.edt {
+            background: var(--blue-bg);
+            border-color: var(--blue-bdr);
+            color: var(--blue-text);
+        }
+
+        .btn-ic:hover.del {
+            background: var(--red-bg);
+            border-color: var(--red-bdr);
+            color: var(--red-text);
+        }
+
+    /* empty / skeleton */
+    .rp-empty {
+        padding: 3.5rem 1rem;
+        text-align: center;
+        color: var(--text-soft);
+    }
+
+        .rp-empty svg {
+            width: 42px;
+            height: 42px;
+            margin: 0 auto .75rem;
+            display: block;
+            opacity: .25;
+        }
+
+        .rp-empty p {
+            font-size: .86rem;
+        }
+
+    .skel {
+        background: linear-gradient(90deg,var(--surface-alt) 25%,var(--border) 50%,var(--surface-alt) 75%);
+        background-size: 200%;
+        animation: skel-anim 1.4s infinite;
+        border-radius: 4px;
+    }
+
+    @@keyframes skel-anim {
+        from {
+            background-position: 200%
+        }
+
+        to {
+            background-position: -200%
+        }
+    }
+
+    /* ── PAGINATION ── */
+    .rp-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .75rem 1.25rem;
+        border-top: 1px solid var(--border);
+        font-size: .78rem;
+        color: var(--text-soft);
+    }
+
+    .pag-btns {
+        display: flex;
+        gap: .25rem;
+    }
+
+    .pag-btn {
+        width: 29px;
+        height: 29px;
+        border-radius: var(--rp-radius-sm);
+        border: 1px solid var(--border);
+        background: transparent;
+        cursor: pointer;
+        font-size: .76rem;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--rp-transition);
+        color: var(--text-dark);
+    }
+
+        .pag-btn:hover:not(:disabled) {
+            background: var(--surface-alt);
+        }
+
+        .pag-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            font-weight: 700;
+        }
+
+        .pag-btn:disabled {
+            opacity: .3;
+            cursor: default;
+        }
+
+    /* ── MODAL ── */
+    .modal-content {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        border-radius: var(--rp-radius-xl);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-dark);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+        border-bottom: 1px solid var(--border);
+        padding: 1.15rem 1.5rem 1rem;
+        background: var(--surface);
+    }
+
+        .modal-header .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .modal-header .btn-close {
+            opacity: .45;
+        }
+
+            .modal-header .btn-close:hover {
+                opacity: 1;
+            }
+
+    .modal-body {
+        padding: 1.35rem 1.5rem;
+        background: var(--surface);
+    }
+
+    .modal-footer {
+        border-top: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+        background: var(--surface);
+    }
+
+    /* step indicator */
+    .step-bar {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+
+        .step-bar::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            height: 1px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+    .step-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: .3rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .step-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .7rem;
+        font-weight: 700;
+        color: var(--text-soft);
+        transition: all .22s;
+    }
+
+        .step-dot.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .step-dot.done {
+            border-color: #059669;
+            background: var(--green-bg);
+            color: #059669;
+        }
+
+    .step-lbl {
+        font-size: .68rem;
+        color: var(--text-soft);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    /* form sections */
+    .fsec {
+        margin-bottom: 1.2rem;
+    }
+
+    .fsec-title {
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--text-mid);
+        margin-bottom: .75rem;
+        padding-bottom: .45rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* type selector cards */
+    .type-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .65rem;
+    }
+
+    .type-card {
+        border: 2px solid var(--border);
+        border-radius: var(--rp-radius-md);
+        padding: .9rem 1rem;
+        cursor: pointer;
+        transition: all var(--rp-transition);
+        background: transparent;
+        text-align: left;
+        font-family: inherit;
+        color: var(--text-dark);
+    }
+
+        .type-card:hover {
+            border-color: var(--text-soft);
+            background: var(--surface-alt);
+        }
+
+        .type-card.sel-desc {
+            border-color: var(--accent-blue);
+            background: var(--blue-bg);
+        }
+
+        .type-card.sel-fixed {
+            border-color: #059669;
+            background: var(--green-bg);
+        }
+
+    .type-card-icon {
+        font-size: 1.3rem;
+        margin-bottom: .35rem;
+        line-height: 1;
+    }
+
+    .type-card-name {
+        font-size: .88rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .type-card-desc {
+        font-size: .76rem;
+        color: var(--text-mid);
+        margin-top: .2rem;
+        line-height: 1.4;
+    }
+
+    /* hint box */
+    .hint-info {
+        background: var(--blue-bg);
+        border: 1px solid var(--blue-bdr);
+        border-radius: var(--rp-radius-md);
+        padding: .65rem .9rem;
+        font-size: .78rem;
+        color: var(--blue-text);
+        display: flex;
+        align-items: flex-start;
+        gap: .5rem;
+        margin-bottom: .75rem;
+    }
+
+        .hint-info svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+    /* form fields */
+    .fgroup label {
+        display: block;
+        font-size: .76rem;
+        font-weight: 600;
+        color: var(--text-mid);
+        margin-bottom: .3rem;
+    }
+
+        .fgroup label .req {
+            color: #dc2626;
+            margin-left: 2px;
+        }
+
+        .fgroup label .opt {
+            font-size: .7rem;
+            font-weight: 400;
+            color: var(--text-soft);
+            margin-left: 4px;
+        }
+
+    .fgroup input, .fgroup select, .fgroup textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: var(--rp-radius-sm);
+        padding: .5rem .7rem;
+        font-size: .875rem;
+        font-family: inherit;
+        color: var(--text-dark);
+        background: var(--surface);
+        outline: none;
+        transition: border-color var(--rp-transition), box-shadow var(--rp-transition);
+    }
+
+        .fgroup input:focus, .fgroup select:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+        }
+
+        .fgroup input.err, .fgroup select.err {
+            border-color: #dc2626;
+        }
+
+    .field-err {
+        font-size: .71rem;
+        color: #dc2626;
+        display: none;
+        margin-top: .25rem;
+    }
+
+        .field-err.show {
+            display: block;
+        }
+
+    /* toggle rows */
+    .tog-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--surface-alt);
+        border: 1px solid var(--border);
+        border-radius: var(--rp-radius-md);
+        padding: .65rem .9rem;
+        margin-bottom: .5rem;
+        transition: background var(--rp-transition);
+    }
+
+        .tog-row:last-child {
+            margin-bottom: 0;
+        }
+
+    .tog-label {
+        font-size: .85rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        cursor: pointer;
+        user-select: none;
+        margin-bottom: 0;
+    }
+
+        .tog-label svg {
+            width: 14px;
+            height: 14px;
+            color: var(--text-soft);
+        }
+
+        .tog-label small {
+            font-size: .73rem;
+            color: var(--text-soft);
+            font-weight: 400;
+        }
+
+    /* switch */
+    .sw {
+        position: relative;
+        width: 38px;
+        height: 21px;
+        flex-shrink: 0;
+    }
+
+        .sw input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+    .sw-track {
+        position: absolute;
+        inset: 0;
+        background: var(--border);
+        border-radius: 21px;
+        transition: .18s;
+        cursor: pointer;
+    }
+
+        .sw-track:before {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: .18s;
+            box-shadow: 0 1px 3px rgba(0,0,0,.18);
+        }
+
+    .sw input:checked + .sw-track {
+        background: var(--primary);
+    }
+
+        .sw input:checked + .sw-track:before {
+            transform: translateX(17px);
+        }
+
+    /* promo / dates block */
+    #promo-block {
+        display: none;
+    }
+
+        #promo-block.vis {
+            display: block;
+        }
+
+    #fechas-block {
+        display: none;
+    }
+
+        #fechas-block.vis {
+            display: flex;
+            gap: .65rem;
+            flex-wrap: wrap;
+        }
+
+        #fechas-block > .fgroup {
+            flex: 1;
+            min-width: 130px;
+        }
+
+    #max-desc-wrap {
+        display: none;
+    }
+
+        #max-desc-wrap.vis {
+            display: block;
+        }
+
+    /* modal footer buttons */
+    .btn-ghost-modal {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: var(--rp-radius-sm);
+        padding: .52rem .95rem;
+        font-size: .85rem;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: inherit;
+        color: var(--text-mid);
+        transition: background var(--rp-transition);
+    }
+
+        .btn-ghost-modal:hover {
+            background: var(--surface-alt);
+        }
+
+    .btn-save-modal {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: var(--rp-radius-sm);
+        padding: .52rem 1.2rem;
+        font-size: .85rem;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        box-shadow: 0 2px 8px rgba(30,58,95,.22);
+        transition: background var(--rp-transition), transform .1s;
+    }
+
+        .btn-save-modal:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-save-modal:active {
+            transform: scale(.97);
+        }
+
+        .btn-save-modal svg, .btn-save-modal .spin {
+            width: 14px;
+            height: 14px;
+        }
+
+    .spin {
+        animation: spin .7s linear infinite;
+        display: none;
+    }
+
+    .btn-save-modal.loading .spin {
+        display: block;
+    }
+
+    .btn-save-modal.loading .save-icon {
+        display: none;
+    }
+
+    .btn-danger-rp {
+        background: #dc2626;
+        color: #fff;
+        border: none;
+        border-radius: var(--rp-radius-sm);
+        padding: .48rem .9rem;
+        font-size: .83rem;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background var(--rp-transition);
+    }
+
+        .btn-danger-rp:hover {
+            background: #b91c1c;
+        }
+
+    /* ── TOAST ── */
+    #toast-dock {
+        position: fixed;
+        top: 1.4rem;
+        right: 1.4rem;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: .45rem;
+        pointer-events: none;
+    }
+
+    .toast-rp {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--rp-radius-md);
+        padding: .65rem 1rem;
+        font-size: .82rem;
+        font-weight: 500;
+        box-shadow: var(--shadow-lg);
+        min-width: 250px;
+        pointer-events: all;
+        animation: toast-slide-in .2s cubic-bezier(.4,0,.2,1);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+        .toast-rp.fade-out {
+            opacity: 0;
+            transform: translateX(12px);
+            transition: .28s;
+        }
+
+    .toast-icon-wrap {
+        width: 17px;
+        height: 17px;
+        flex-shrink: 0;
+    }
+
+    .toast-rp.success .toast-icon-wrap {
+        color: #059669;
+    }
+
+    .toast-rp.error .toast-icon-wrap {
+        color: #dc2626;
+    }
+
+    .toast-rp.info .toast-icon-wrap {
+        color: var(--accent-blue);
+    }
+
+    @@keyframes toast-slide-in {
+        from {
+            opacity: 0;
+            transform: translateX(12px)
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0)
+        }
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg)
+        }
+    }
+
+    /* ── CONFIRM MODAL ── */
+    #modalConfirm .modal-content {
+        max-width: 370px;
+        margin: auto;
+    }
+
+    #modalConfirm h3 {
+        font-size: .95rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: .45rem;
+    }
+
+    #modalConfirm p {
+        font-size: .82rem;
+        color: var(--text-mid);
+        line-height: 1.55;
+    }
+
+    /* ── RESPONSIVE ── */
+    @@media (max-width: 640px) {
+        .rp-page {
+            padding: 1rem 1rem 2rem;
+        }
+
+        .kpi-strip {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .type-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ── Panel conflictos ── */
+    .conflict-panel {
+        display: none;
+        background: var(--amber-bg);
+        border: 1px solid var(--amber-bdr);
+        border-radius: var(--rp-radius-md);
+        padding: .8rem 1rem;
+        margin-top: .75rem;
+        font-size: .8rem;
+    }
+
+        .conflict-panel.vis {
+            display: block;
+        }
+
+    .cp-header {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        font-weight: 700;
+        font-size: .8rem;
+        color: var(--amber-text);
+        margin-bottom: .3rem;
+    }
+
+        .cp-header svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+        }
+
+    .cp-subtext {
+        font-size: .73rem;
+        color: var(--amber-text);
+        opacity: .8;
+        margin-bottom: .65rem;
+    }
+
+    .cp-rule {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--rp-radius-sm);
+        padding: .5rem .7rem;
+        margin-bottom: .4rem;
+    }
+
+        .cp-rule:last-child {
+            margin-bottom: 0;
+        }
+
+    .cp-rule-clash {
+        border-color: #dc2626 !important;
+        background: var(--red-bg) !important;
+    }
+
+    .cp-rule-top {
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        flex-wrap: wrap;
+        margin-bottom: .3rem;
+    }
+
+    .cp-prio {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .78rem;
+        font-weight: 700;
+        background: var(--surface-alt);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: .1rem .4rem;
+        color: var(--text-mid);
+    }
+
+        .cp-prio.cp-prio-warn {
+            background: var(--red-bg);
+            border-color: var(--red-bdr);
+            color: var(--red-text);
+        }
+
+    .cp-rule-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .cp-rule-tipo {
+        font-size: .68rem;
+    }
+
+    .cp-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .25rem;
+    }
+
+    .cp-tag {
+        font-size: .68rem;
+        padding: .12rem .4rem;
+        background: var(--surface-alt);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text-mid);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+        .cp-tag.cli {
+            background: var(--blue-bg);
+            border-color: var(--blue-bdr);
+            color: var(--blue-text);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 600;
+        }
+
+    .cp-clash-msg {
+        font-size: .72rem;
+        color: var(--red-text);
+        margin-top: .35rem;
+        padding-top: .35rem;
+        border-top: 1px solid var(--red-bdr);
+    }
+</style>
+
+<!-- Toast dock -->
+<div id="toast-dock"></div>
+
+<div class="rp-page">
+
+    <!-- ══════════════════════════════════════════════
+         MODAL: NUEVA / EDITAR REGLA
+    ══════════════════════════════════════════════ -->
+    <div class="modal fade" id="modalRegla" tabindex="-1" aria-labelledby="modal-title-lbl" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-title-lbl">Nueva regla de precio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" id="regla-id" value="0" />
+
+                    <!-- ① TIPO DE REGLA -->
+                    <div class="fsec">
+                        <div class="fsec-title">① ¿Qué tipo de regla quieres crear?</div>
+                        <div class="type-cards">
+                            <button type="button" class="type-card sel-desc" id="opt-desc" data-val="DESCUENTO" onclick="selTipo(this)">
+                                <div class="type-card-icon">%</div>
+                                <div class="type-card-name">Descuento porcentual</div>
+                                <div class="type-card-desc">Aplica un porcentaje de descuento sobre el precio base del producto.</div>
+                            </button>
+                            <button type="button" class="type-card" id="opt-fijo" data-val="PRECIO_FIJO" onclick="selTipo(this)">
+                                <div class="type-card-icon">$</div>
+                                <div class="type-card-name">Precio fijo</div>
+                                <div class="type-card-desc">Establece un precio específico independiente del precio base.</div>
+                            </button>
+                        </div>
+                        <input type="hidden" id="tipo_regla" value="DESCUENTO" />
+                    </div>
+
+                    <!-- ② CRITERIOS -->
+                    <div class="fsec">
+                        <div class="fsec-title">② ¿A quién y a qué productos aplica?</div>
+                        <div class="hint-info">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="8" stroke-linecap="round" />
+                                <line x1="12" y1="12" x2="12" y2="16" />
+                            </svg>
+                            Debes especificar al menos uno de: producto, línea, grupo o tipo de producto. El cliente es opcional.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="fgroup">
+                                    <label>Cliente <span class="opt">(opcional — deja vacío para todos)</span></label>
+                                    <select id="cliente_id">
+                                        <option value="">— Todos los clientes —</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="fgroup">
+                                    <label>Producto (clave) <span class="opt">(opcional)</span></label>
+                                    <select id="cve_prod"></select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="fgroup">
+                                    <label>Línea</label>
+                                    <input type="text" id="lin_prod" placeholder="Selecciona una línea..." maxlength="50" />
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="fgroup">
+                                    <label>Grupo</label>
+                                    <input type="text" id="gpo" placeholder="Selecciona un grupo..." maxlength="50" />
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="fgroup">
+                                    <label>Tipo de producto</label>
+                                    <input type="text" id="tp" placeholder="Selecciona un tipo..." maxlength="50" />
+                                </div>
+                            </div>
+                        </div>
+                        <div id="criterio-err" class="field-err" style="margin-top:.4rem;">
+                            Especifica al menos un criterio: producto, línea, grupo o tipo.
+                        </div>
+
+                        <!-- Alcance: cuántos productos toca la regla con estos criterios.
+                             En 0 la regla no hace nada, que es el error silencioso más
+                             común al capturar (línea o grupo equivocados). -->
+                        <div id="alcance-panel"
+                             style="display:none;margin-top:.5rem;padding:8px 12px;
+                                    border-radius:var(--rp-radius-sm);border:1px solid var(--border);
+                                    background:var(--surface-alt);font-size:.74rem;
+                                    align-items:center;gap:7px;">
+                            <span id="alcance-txt" style="color:var(--text-soft);"></span>
+                        </div>
+                    </div>
+
+                    <!-- Panel de conflictos en tiempo real -->
+                    <div id="conflict-panel" class="conflict-panel"></div>
+
+                    <!-- ③ VALOR Y PRIORIDAD -->
+                    <div class="fsec">
+                        <div class="fsec-title">③ Valor y prioridad</div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="fgroup">
+                                    <label id="lbl-valor">Descuento (%) <span class="req">*</span></label>
+                                    <input type="number" id="valor" placeholder="ej. 15" min="0" step="0.01" />
+                                    <span class="field-err" id="valor-err"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="max-desc-wrap">
+                                <div class="fgroup">
+                                    <label>Descuento máximo (%) <span class="opt">(opcional)</span></label>
+                                    <input type="number" id="max_descuento" placeholder="ej. 25" min="0" max="100" step="0.01" />
+                                    <span class="opt" style="display:block;margin-top:.25rem;line-height:1.4;">
+                                        Hasta dónde puede llegar un vendedor autorizado.
+                                        Si lo dejas vacío, el tope es el mismo descuento de arriba.
+                                    </span>
+                                    <span class="field-err" id="max-desc-err"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="fgroup">
+                                    <label style="display:flex;align-items:center;gap:5px;">
+                                        Prioridad <span class="req">*</span>
+                                        <button type="button"
+                                                id="prio-help-btn"
+                                                onclick="togglePrioHelp(event)"
+                                                title="¿Cómo funcionan las prioridades?"
+                                                style="width:15px;height:15px;border-radius:50%;
+                           border:1.5px solid var(--border);background:var(--surface-alt);
+                           cursor:pointer;display:inline-flex;align-items:center;
+                           justify-content:center;padding:0;font-size:9px;font-weight:700;
+                           color:var(--text-soft);line-height:1;flex-shrink:0;font-family:inherit;">
+                                            ?
+                                        </button>
+                                    </label>
+                                    <input type="number" id="prioridad" value="10" min="1" max="999" />
+                                    <span class="field-err" id="prio-err"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ④ OPCIONES: PROMOCIÓN + ESTADO -->
+                    <div class="fsec" style="margin-bottom:0">
+                        <div class="fsec-title">④ Opciones adicionales</div>
+
+                        <div class="tog-row">
+                            <label class="tog-label" for="activo">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18.36 6.64A9 9 0 1 1 5.64 17.36" />
+                                    <path d="M12 2v10" />
+                                </svg>
+                                Regla activa
+                                <small>La regla se aplica al calcular precios</small>
+                            </label>
+                            <label class="sw">
+                                <input type="checkbox" id="activo" checked />
+                                <span class="sw-track"></span>
+                            </label>
+                        </div>
+                        <div class="tog-row">
+                            <label class="tog-label" for="aplicar_automatico">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                                </svg>
+                                Aplicar automáticamente
+                                <small>Se aplica sin intervención manual al generar precios</small>
+                            </label>
+                            <label class="sw">
+                                <input type="checkbox" id="aplicar_automatico" checked />
+                                <span class="sw-track"></span>
+                            </label>
+                        </div>
+                        <div class="tog-row">
+                            <label class="tog-label" for="es_promocion">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M7 7h.01M17 17h.01M6.2 6.2L17.8 17.8M12 3a9 9 0 1 1 0 18A9 9 0 0 1 12 3z" />
+                                </svg>
+                                Es una promoción
+                                <small>Activa fechas de vigencia y nombre</small>
+                            </label>
+                            <label class="sw">
+                                <input type="checkbox" id="es_promocion" onchange="togglePromo(this)" />
+                                <span class="sw-track"></span>
+                            </label>
+                        </div>
+
+                        <!-- Bloque promo -->
+                        <div id="promo-block" style="margin-top:.75rem;">
+                            <div class="row g-3 mb-2">
+                                <div class="col-12">
+                                    <div class="fgroup">
+                                        <label>Nombre de la promoción <span class="req">*</span></label>
+                                        <input type="text" id="nombre_promocion" placeholder="ej. Descuento verano 2025" maxlength="120" />
+                                        <span class="field-err" id="nom-prom-err"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="fechas-block">
+                                <div class="fgroup">
+                                    <label>Fecha inicio</label>
+                                    <input type="date" id="fecha_inicio" />
+                                </div>
+                                <div class="fgroup">
+                                    <label>Fecha fin</label>
+                                    <input type="date" id="fecha_fin" />
+                                    <span class="field-err" id="fecha-err"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /modal-body -->
+
+                <div class="modal-footer">
+                    <span id="form-global-err" style="font-size:.76rem;color:#dc2626;margin-right:auto;display:none;"></span>
+                    <button class="btn-ghost-modal" type="button" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn-save-modal" id="btn-guardar" type="button" onclick="guardarRegla()">
+                        <svg class="save-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                        <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                        </svg>
+                        Guardar regla
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         MODAL: CONFIRMAR ELIMINACIÓN
+    ══════════════════════════════════════════════ -->
+    <div class="modal fade" id="modalConfirm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content" style="padding:1.5rem;">
+                <h3>Eliminar regla</h3>
+                <p id="confirm-msg" class="mt-2">¿Seguro que deseas eliminar esta regla? Esta acción no se puede deshacer.</p>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button class="btn-ghost-modal" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn-danger-rp" id="confirm-ok-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         HEADER
+    ══════════════════════════════════════════════ -->
+    <div class="rp-header">
+        <div>
+            <div class="rp-page-title">Reglas de precio</div>
+            <div class="rp-page-sub">Configura descuentos, precios fijos y promociones por cliente, producto, línea o grupo.</div>
+        </div>
+        <button class="btn-new-rule" onclick="abrirModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nueva regla
+        </button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-strip">
+        <div class="kpi-card">
+            <div class="kpi-label">Total reglas</div>
+            <div class="kpi-val c-blue" id="kpi-total">—</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Activas</div>
+            <div class="kpi-val c-green" id="kpi-activas">—</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Promociones</div>
+            <div class="kpi-val c-purple" id="kpi-promos">—</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Descuentos</div>
+            <div class="kpi-val c-blue" id="kpi-desc">—</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Precio fijo</div>
+            <div class="kpi-val c-amber" id="kpi-fijos">—</div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="rp-toolbar">
+        <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" id="buscador" placeholder="Buscar cliente, producto, línea…" oninput="filtrar()" />
+        </div>
+        <select class="rp-select" id="filtro-tipo" onchange="filtrar()">
+            <option value="">Tipo: todos</option>
+            <option value="DESCUENTO">% Descuento</option>
+            <option value="PRECIO_FIJO">$ Precio fijo</option>
+        </select>
+        <select class="rp-select" id="filtro-estado" onchange="filtrar()">
+            <option value="">Estado: todos</option>
+            <option value="1">Solo activas</option>
+            <option value="0">Solo inactivas</option>
+        </select>
+        <select class="rp-select" id="filtro-promo" onchange="filtrar()">
+            <option value="">Con y sin promo</option>
+            <option value="1">Solo promociones</option>
+            <option value="0">Sin promoción</option>
+        </select>
+        <span class="count-label ms-auto" id="lbl-conteo"></span>
+    </div>
+
+    <!-- Table -->
+    <div class="rp-table-wrap">
+        <div class="table-responsive">
+            <table class="rp-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" onclick="ordenar('prioridad')" title="Ordenar por prioridad">
+                            Prio <span id="sort-prioridad"></span>
+                        </th>
+                        <th>Criterios de aplicación</th>
+                        <th>Tipo</th>
+                        <th class="sortable" onclick="ordenar('valor')" title="Ordenar por valor">
+                            Valor <span id="sort-valor"></span>
+                        </th>
+                        <th>Vigencia</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body">
+                    <tr class="skel-row"><td colspan="7" style="padding:.65rem 1.25rem"><div class="skel" style="height:13px;width:100%"></div></td></tr>
+                    <tr class="skel-row"><td colspan="7" style="padding:.65rem 1.25rem"><div class="skel" style="height:13px;width:80%"></div></td></tr>
+                    <tr class="skel-row"><td colspan="7" style="padding:.65rem 1.25rem"><div class="skel" style="height:13px;width:91%"></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="rp-pagination" id="paginacion" style="display:none;">
+            <span id="pag-info"></span>
+            <div class="pag-btns" id="pag-btns"></div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ── TOOLTIP FLOTANTE: AYUDA DE PRIORIDADES ── -->
+<div id="prio-help-panel"
+     style="display:none;position:fixed;z-index:99999;width:360px;
+            border:0.5px solid var(--border);border-radius:var(--rp-radius-lg);
+            overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;
+            box-shadow:var(--shadow-lg);background:var(--surface);">
+
+    <!-- Encabezado -->
+    <div style="padding:14px 16px 12px;border-bottom:1px solid var(--border);
+                display:flex;align-items:center;gap:10px;background:var(--surface);">
+        <div style="width:28px;height:28px;border-radius:var(--rp-radius-sm);
+                    background:var(--purple-bg);display:flex;align-items:center;
+                    justify-content:center;flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="var(--purple-text)" stroke-width="2.2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+        </div>
+        <div>
+            <p style="margin:0;font-size:.82rem;font-weight:700;color:var(--text-dark);line-height:1.3;">
+                ¿Cómo se elige la regla ganadora?
+            </p>
+            <p style="margin:0;font-size:.7rem;color:var(--text-soft);">3 etapas de desempate</p>
+        </div>
+        <button type="button" onclick="togglePrioHelp()"
+                style="margin-left:auto;background:none;border:none;cursor:pointer;
+                       width:24px;height:24px;border-radius:6px;display:flex;
+                       align-items:center;justify-content:center;
+                       color:var(--text-soft);flex-shrink:0;font-size:1.1rem;line-height:1;
+                       font-family:inherit;padding:0;">
+            ×
+        </button>
+    </div>
+
+    <!-- Cuerpo -->
+    <div style="padding:14px 16px;background:var(--surface);max-height:70vh;overflow-y:auto;">
+
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+
+            <!-- Etapa 1 -->
+            <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;
+                        background:var(--purple-bg);
+                        border-left:2px solid var(--purple-bdr);
+                        border-radius:0 var(--rp-radius-sm) var(--rp-radius-sm) 0;">
+                <div style="width:20px;height:20px;border-radius:50%;background:var(--purple-text);
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:10px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">1</div>
+                <div>
+                    <p style="margin:0 0 3px;font-size:.78rem;font-weight:700;color:var(--purple-text);">
+                        Especificidad — criterios precisos ganan
+                    </p>
+                    <p style="margin:0 0 3px;font-size:.72rem;color:var(--purple-text);line-height:1.5;">
+                        Cliente <span style="background:var(--purple-text);color:#fff;border-radius:4px;padding:1px 5px;font-size:.66rem;font-weight:700;">+4</span>&nbsp;
+                        Producto <span style="background:var(--purple-text);color:#fff;border-radius:4px;padding:1px 5px;font-size:.66rem;font-weight:700;">+3</span>&nbsp;
+                        Línea/Gpo/Tipo <span style="background:var(--purple-text);color:#fff;border-radius:4px;padding:1px 5px;font-size:.66rem;font-weight:700;">+2 c/u</span>
+                    </p>
+                    <p style="margin:0;font-size:.72rem;color:var(--purple-text);opacity:.85;">
+                        La regla con más puntos gana sin importar la prioridad.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Etapa 2 -->
+            <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;
+                        background:var(--green-bg);
+                        border-left:2px solid var(--green-bdr);
+                        border-radius:0 var(--rp-radius-sm) var(--rp-radius-sm) 0;">
+                <div style="width:20px;height:20px;border-radius:50%;background:#059669;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:10px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px;">2</div>
+                <div>
+                    <p style="margin:0 0 3px;font-size:.78rem;font-weight:700;color:var(--green-text);">
+                        Número de prioridad — menor = más urgente
+                    </p>
+                    <p style="margin:0;font-size:.72rem;color:var(--green-text);line-height:1.5;">
+                        Si empatan en especificidad, gana la de número menor.<br>
+                        <span style="background:#059669;color:#fff;border-radius:4px;padding:1px 5px;font-size:.66rem;font-weight:700;">Prioridad 1</span>
+                        es la más fuerte,
+                        <span style="background:var(--gray-bdr);color:var(--gray-text);border-radius:4px;padding:1px 5px;font-size:.66rem;font-weight:700;">999</span>
+                        la más débil.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Etapa 3 -->
+            <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;
+                        background:var(--gray-bg);
+                        border-left:2px solid var(--gray-bdr);
+                        border-radius:0 var(--rp-radius-sm) var(--rp-radius-sm) 0;">
+                <div style="width:20px;height:20px;border-radius:50%;background:var(--gray-bdr);
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:10px;font-weight:700;color:var(--gray-text);flex-shrink:0;margin-top:1px;">3</div>
+                <div>
+                    <p style="margin:0 0 3px;font-size:.78rem;font-weight:700;color:var(--gray-text);">
+                        ID de la regla — desempate final
+                    </p>
+                    <p style="margin:0;font-size:.72rem;color:var(--gray-text);line-height:1.5;opacity:.9;">
+                        Si aún empatan, gana la más reciente (ID mayor).
+                        Esto es la <em>ambigüedad</em> que el panel de conflictos señala en rojo.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Ejemplo -->
+        <div style="border-top:1px solid var(--border);padding-top:12px;">
+            <p style="margin:0 0 8px;font-size:.68rem;font-weight:700;color:var(--text-soft);
+                      text-transform:uppercase;letter-spacing:.07em;">Ejemplo</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                <div style="padding:8px 10px;background:var(--purple-bg);
+                            border-radius:var(--rp-radius-sm);border:1px solid var(--purple-bdr);">
+                    <p style="margin:0 0 2px;font-size:.68rem;color:var(--purple-text);opacity:.7;">Regla A</p>
+                    <p style="margin:0 0 5px;font-size:.75rem;font-weight:700;color:var(--purple-text);">
+                        Cliente + Producto
+                    </p>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="background:var(--purple-text);color:#fff;border-radius:4px;
+                                     padding:2px 7px;font-size:.74rem;font-weight:700;">7 pts</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="var(--purple-text)" stroke-width="2.5">
+                            <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                        <span style="font-size:.74rem;color:var(--purple-text);font-weight:700;">Gana</span>
+                    </div>
+                </div>
+                <div style="padding:8px 10px;background:var(--gray-bg);
+                            border-radius:var(--rp-radius-sm);border:1px solid var(--gray-bdr);">
+                    <p style="margin:0 0 2px;font-size:.68rem;color:var(--gray-text);opacity:.7;">Regla B</p>
+                    <p style="margin:0 0 5px;font-size:.75rem;font-weight:700;color:var(--gray-text);">
+                        Solo línea, prio=1
+                    </p>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <span style="background:var(--gray-bdr);color:var(--gray-text);border-radius:4px;
+                                     padding:2px 7px;font-size:.74rem;font-weight:700;">2 pts</span>
+                        <span style="font-size:.74rem;color:var(--gray-text);">Pierde</span>
+                    </div>
+                </div>
+            </div>
+            <p style="margin:0;font-size:.72rem;color:var(--text-mid);line-height:1.5;">
+                Regla A gana (7 &gt; 2 pts) aunque B tenga prioridad 1.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- /rp-page -->
+@* ─── PEGA ESTO en el @section scripts de tu vista Index.cshtml ─────────────
+    Reemplaza TODO el bloque @section scripts { ... } existente con este.
+    ─────────────────────────────────────────────────────────────────────────── *@
+@section scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            // ── Estado ──────────────────────────────────────────────────────────
+            var _todas = [];
+            var _filtradas = [];
+            var _sortField = 'prioridad';
+            var _sortAsc = true;
+            var _page = 1;
+            var _pageSize = 15;
+            var _pendingDeleteId = null;
+
+            var _bsModalRegla = null;
+            var _bsModalConfirm = null;
+
+            // Estado del panel de conflictos
+            // 'ok' | 'warning' | 'blocked'
+            var _conflictState = 'ok';
+
+            let tomManager = new TomSelectManager();
+
+            // ── Init ────────────────────────────────────────────────────────────
+            document.addEventListener('DOMContentLoaded', function () {
+                _bsModalRegla = new bootstrap.Modal(document.getElementById('modalRegla'));
+                _bsModalConfirm = new bootstrap.Modal(document.getElementById('modalConfirm'));
+                cargarTabla();
+                // Escuchar cambio de prioridad también dispara re-chequeo
+                document.getElementById('prioridad').addEventListener('input', verificarConflictos);
+                // Escuchar cambio de tipo de regla
+                document.getElementById('tipo_regla').addEventListener('change', verificarConflictos);
+            });
+
+            // ── API ─────────────────────────────────────────────────────────────
+            window.cargarTabla = function () {
+                $.get('/ReglasPrecio/Listar', function (data) {
+                    _todas = data || [];
+                    actualizarKpis();
+                    filtrar();
+                }).fail(function () {
+                    mostrarToast('error', 'Error al cargar las reglas. Intenta de nuevo.');
+                    renderTabla([]);
+                });
+            };
+
+            // ── TomSelect remoto ────────────────────────────────────────────────
+            function crearTomRemoto(selector, url, renderOption, renderItem) {
+                var currentPage = 1;
+                var currentQuery = '';
+                var hasMore = false;
+
+                var ts = new TomSelect(selector, {
+                    valueField: 'id',
+                    labelField: 'nombre',
+                    searchField: ['id', 'nombre', 'clave'],
+                    preload: true,
+                    maxItems: 1,
+                    create: false,
+                    loadThrottle: 300,
+                    placeholder: 'Buscar...',
+                    render: {
+                        option: renderOption,
+                        item: renderItem,
+                        no_results: () => `<div style="padding:6px 12px;font-size:.8rem;color:var(--text-soft)">Sin resultados</div>`,
+                        loading: () => `<div style="padding:6px 12px;font-size:.8rem;color:var(--text-soft)">Buscando...</div>`,
+                    },
+                    load: function (query, callback) {
+                        currentQuery = query;
+                        currentPage = 1;
+                        hasMore = false;
+                        $.getJSON(url, { q: query, page: 1, pageSize: 30 }, function (res) {
+                            hasMore = res.has_more;
+                            currentPage = 1;
+                            callback(res.items);
+                            bindScrollPagination(ts, url, function (moreItems) {
+                                ts.addOptions(moreItems);
+                                ts.refreshOptions(false);
+                            });
+                        }).fail(function () { callback(); });
+                    },
+                });
+
+                ts._loadSingle = function (value) {
+                    if (!value) { ts.clear(); return; }
+                    $.getJSON(url, { q: value, page: 1, pageSize: 5 }, function (res) {
+                        if (res.items && res.items.length) {
+                            ts.addOptions(res.items);
+                            ts.setValue(value, true);
+                        }
+                    });
+                };
+
+                function bindScrollPagination(instance, endpoint, cb) {
+                    var dropdown = instance.dropdown_content;
+                    if (!dropdown || dropdown._scrollBound) return;
+                    dropdown._scrollBound = true;
+                    dropdown.addEventListener('scroll', function () {
+                        var nearBottom = dropdown.scrollTop + dropdown.clientHeight >= dropdown.scrollHeight - 40;
+                        if (nearBottom && hasMore && !instance.loading) {
+                            currentPage++;
+                            hasMore = false;
+                            instance.loading = 1;
+                            instance.refreshOptions(false);
+                            $.getJSON(endpoint, { q: currentQuery, page: currentPage, pageSize: 30 }, function (res) {
+                                hasMore = res.has_more;
+                                instance.loading = 0;
+                                cb(res.items);
+                            }).fail(function () {
+                                instance.loading = 0;
+                                currentPage--;
+                                hasMore = true;
+                            });
+                        }
+                    });
+                }
+
+                return ts;
+            }
+
+            // TomSelect: Cliente
+            var tsCliente = crearTomRemoto(
+                '#cliente_id',
+                '/ReglasPrecio/BuscarClientes',
+                (data, escape) => `<div style="color:var(--text-dark)">
+                        <span style="font-weight:600">${escape(data.nombre)}</span>
+                        <span style="font-size:.74rem;color:var(--text-soft);margin-left:5px">${escape(data.clave || '')}</span>
+                    </div>`,
+                (data, escape) => `<div style="color:var(--text-dark)">${escape(data.nombre)}
+                        <span style="font-size:.74rem;color:var(--text-soft)">(${escape(data.clave || '')})</span></div>`
+            );
+
+            // TomSelect: Producto
+            var tsProducto = crearTomRemoto(
+                '#cve_prod',
+                '/ReglasPrecio/BuscarProductos',
+                (data, escape) => `<div style="color:var(--text-dark)">
+                        <span style="font-weight:600;font-family:'JetBrains Mono',monospace;font-size:.78rem">${escape(data.id)}</span>
+                        <span style="display:block;font-size:.74rem;color:var(--text-soft)">${escape(data.nombre)}</span>
+                    </div>`,
+                (data, escape) => `<div style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-dark)">${escape(data.id)}</div>`
+            );
+
+            // Listeners de conflictos en tiempo real
+            tsCliente.on('change', verificarConflictos);
+            tsProducto.on('change', verificarConflictos);
+            ['lin_prod', 'gpo', 'tp'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('change', verificarConflictos);
+            });
+
+            // TomSelect: Línea / Grupo / Tipo (carga completa)
+            GetData({ path: '/ReglasPrecio/DatosSelect' }).then(function (_res) {
+                var baseOpts = { maxItems: 1, create: false };
+                tomManager.create('lin_prod', Object.assign({}, baseOpts, {
+                    selector: '#lin_prod',
+                    options: _res.lineas,
+                    valueField: 'id', displayField: 'nombre', searchField: ['id', 'nombre'],
+                    placeholder: 'Selecciona una línea...',
+                    render: {
+                        option: (d, e) => `<div>${e(d.nombre)} <span style="font-size:.74rem;color:var(--text-soft)">(${e(d.id)})</span></div>`,
+                        item: (d, e) => `<div>${e(d.nombre)}</div>`
+                    }
+                }));
+                tomManager.create('gpo', Object.assign({}, baseOpts, {
+                    selector: '#gpo',
+                    options: _res.grupos,
+                    valueField: 'id', displayField: 'nombre', searchField: ['id', 'nombre'],
+                    placeholder: 'Selecciona un grupo...',
+                    render: {
+                        option: (d, e) => `<div>${e(d.nombre)} <span style="font-size:.74rem;color:var(--text-soft)">(${e(d.id)})</span></div>`,
+                        item: (d, e) => `<div>${e(d.nombre)}</div>`
+                    }
+                }));
+                tomManager.create('tp', Object.assign({}, baseOpts, {
+                    selector: '#tp',
+                    options: _res.tipos,
+                    valueField: 'id', displayField: 'nombre', searchField: ['id', 'nombre'],
+                    placeholder: 'Selecciona un tipo...',
+                    render: {
+                        option: (d, e) => `<div>${e(d.nombre)} <span style="font-size:.74rem;color:var(--text-soft)">(${e(d.id)})</span></div>`,
+                        item: (d, e) => `<div>${e(d.nombre)}</div>`
+                    }
+                }));
+            });
+
+            // ── KPIs ────────────────────────────────────────────────────────────
+            function actualizarKpis() {
+                var activas = _todas.filter(r => r.activo).length;
+                var promos = _todas.filter(r => r.es_promocion).length;
+                var desc = _todas.filter(r => r.tipo_regla === 'DESCUENTO').length;
+                var fijos = _todas.filter(r => r.tipo_regla === 'PRECIO_FIJO').length;
+                document.getElementById('kpi-total').textContent = _todas.length;
+                document.getElementById('kpi-activas').textContent = activas;
+                document.getElementById('kpi-promos').textContent = promos;
+                document.getElementById('kpi-desc').textContent = desc;
+                document.getElementById('kpi-fijos').textContent = fijos;
+            }
+
+            // ── Filtro + Orden ──────────────────────────────────────────────────
+            window.filtrar = function () {
+                var texto = (document.getElementById('buscador').value || '').toLowerCase();
+                var tipo = document.getElementById('filtro-tipo').value;
+                var estado = document.getElementById('filtro-estado').value;
+                var promo = document.getElementById('filtro-promo').value;
+
+                _filtradas = _todas.filter(function (r) {
+                    if (tipo && r.tipo_regla !== tipo) return false;
+                    if (estado === '1' && !r.activo) return false;
+                    if (estado === '0' && r.activo) return false;
+                    if (promo === '1' && !r.es_promocion) return false;
+                    if (promo === '0' && r.es_promocion) return false;
+                    if (texto) {
+                        var haystack = [
+                            r.nombre_cliente || '', r.cve_prod || '', r.lin_prod || '',
+                            r.gpo || '', r.tp || '', r.nombre_promocion || ''
+                        ].join(' ').toLowerCase();
+                        if (haystack.indexOf(texto) === -1) return false;
+                    }
+                    return true;
+                });
+
+                _filtradas.sort(function (a, b) {
+                    var va = a[_sortField], vb = b[_sortField];
+                    if (va == null) va = _sortAsc ? Infinity : -Infinity;
+                    if (vb == null) vb = _sortAsc ? Infinity : -Infinity;
+                    if (va < vb) return _sortAsc ? -1 : 1;
+                    if (va > vb) return _sortAsc ? 1 : -1;
+                    return 0;
+                });
+
+                _page = 1;
+                document.getElementById('lbl-conteo').textContent =
+                    _filtradas.length + ' regla' + (_filtradas.length !== 1 ? 's' : '') +
+                    ' encontrada' + (_filtradas.length !== 1 ? 's' : '');
+                renderPagina();
+            };
+
+            window.ordenar = function (field) {
+                if (_sortField === field) _sortAsc = !_sortAsc;
+                else { _sortField = field; _sortAsc = true; }
+                ['prioridad', 'valor'].forEach(function (f) {
+                    var el = document.getElementById('sort-' + f);
+                    if (el) el.textContent = (f === _sortField) ? (_sortAsc ? ' ↑' : ' ↓') : '';
+                });
+                filtrar();
+            };
+
+            // ── Render tabla ────────────────────────────────────────────────────
+            function renderPagina() {
+                var total = _filtradas.length;
+                var totalPg = Math.max(1, Math.ceil(total / _pageSize));
+                _page = Math.min(_page, totalPg);
+                var desde = (_page - 1) * _pageSize;
+                var hasta = Math.min(desde + _pageSize, total);
+                renderTabla(_filtradas.slice(desde, hasta));
+                renderPaginacion(total, totalPg, desde, hasta);
+            }
+
+            function renderTabla(lista) {
+                var tbody = document.getElementById('tabla-body');
+                if (!lista.length) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="7"><div class="rp-empty">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+                        '<rect x="3" y="3" width="18" height="18" rx="3"/>' +
+                        '<path d="M9 9h6M9 12h6M9 15h3"/></svg>' +
+                        '<p>No hay reglas que coincidan con los filtros activos.</p></div></td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = lista.map(function (r) {
+                    var tags = '';
+                    if (r.nombre_cliente) tags += '<span class="ctag cli">' + esc(r.nombre_cliente) + '</span>';
+                    if (r.clave) tags += '<span class="ctag">' + esc(r.clave) + '</span>';
+                    // Se guarda la clave, pero en la tabla se muestra la descripción.
+                    if (r.lin_prod) tags += '<span class="ctag">Línea: ' + esc(r.lin_prod_nombre || r.lin_prod) + '</span>';
+                    if (r.gpo) tags += '<span class="ctag">Gpo: ' + esc(r.gpo_nombre || r.gpo) + '</span>';
+                    if (r.tp) tags += '<span class="ctag">Tipo: ' + esc(r.tp_nombre || r.tp) + '</span>';
+                    if (!tags) tags = '<span style="color:var(--text-soft);font-size:.75rem">— Global —</span>';
+
+                    // Alcance real de la regla. En 0 no altera ningún precio, y eso no se
+                    // notaba por ningún lado: la regla se veía igual de sana que las demás.
+                    var afecta = Number(r.productos_afectados);
+                    if (!isNaN(afecta)) {
+                        tags += afecta === 0
+                            ? '<span class="badge-rp b-red" title="Los criterios de esta regla no coinciden con ningún producto, así que no cambia ningún precio.">Sin productos</span>'
+                            : '<span class="ctag" style="opacity:.75" title="Productos que alcanza esta regla">'
+                              + afecta + (afecta === 1 ? ' producto' : ' productos') + '</span>';
+                    }
+
+                    var tipoBadge = r.tipo_regla === 'DESCUENTO'
+                        ? '<span class="badge-rp b-blue">% Desc.</span>'
+                        : '<span class="badge-rp b-green">$ Fijo</span>';
+                    if (r.es_promocion) tipoBadge += ' <span class="badge-rp b-purple">Promo</span>';
+
+                    var valTxt = r.tipo_regla === 'DESCUENTO'
+                        ? r.valor.toFixed(2) + '%'
+                        : '$' + Number(r.valor).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+
+                    var vig = '<span style="color:var(--text-soft);font-size:.76rem">—</span>';
+                    if (r.fecha_inicio || r.fecha_fin) {
+                        var fi = r.fecha_inicio ? dateFormatter(r.fecha_inicio) : '∞';
+                        var ff = r.fecha_fin ? dateFormatter(r.fecha_fin) : '∞';
+                        vig = '<span style="font-size:.76rem;color:var(--text-mid)">' + fi + ' → ' + ff + '</span>';
+                        if (r.fecha_fin && new Date(r.fecha_fin) < new Date())
+                            vig = '<span class="badge-rp b-amber">Vencida</span>';
+                    }
+
+                    var est = r.activo
+                        ? '<span class="badge-rp b-green"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>Activa</span>'
+                        : '<span class="badge-rp b-gray"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>Inactiva</span>';
+                    if (!r.aplicar_automatico) est += ' <span class="badge-rp b-amber">Manual</span>';
+
+                    var prioPill = '<span class="prio-pill' + (r.prioridad <= 5 ? ' hi' : '') + '">' + r.prioridad + '</span>';
+
+                    return '<tr>' +
+                        '<td>' + prioPill + '</td>' +
+                        '<td><div class="crit-tags">' + tags + '</div></td>' +
+                        '<td>' + tipoBadge + '</td>' +
+                        '<td class="val-mono">' + valTxt + '</td>' +
+                        '<td>' + vig + '</td>' +
+                        '<td>' + est + '</td>' +
+                        '<td><div class="act-btns">' +
+                        '<button class="btn-ic tog" title="' + (r.activo ? 'Desactivar' : 'Activar') + '" onclick="toggleActivo(' + r.id + ',' + !r.activo + ')">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64A9 9 0 1 1 5.64 17.36"/><path d="M12 2v10"/></svg></button>' +
+                        '<button class="btn-ic edt" title="Editar" onclick="editarRegla(' + r.id + ')">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+                        '<button class="btn-ic del" title="Eliminar" onclick="pedirEliminar(' + r.id + ')">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>' +
+                        '</div></td></tr>';
+                }).join('');
+            }
+
+            function renderPaginacion(total, totalPg, desde, hasta) {
+                var pag = document.getElementById('paginacion');
+                var info = document.getElementById('pag-info');
+                var btns = document.getElementById('pag-btns');
+                if (totalPg <= 1) { pag.style.display = 'none'; return; }
+                pag.style.display = 'flex';
+                info.textContent = 'Mostrando ' + (desde + 1) + '–' + hasta + ' de ' + total;
+                var html = '<button class="pag-btn" ' + (_page === 1 ? 'disabled' : '') + ' onclick="irPagina(' + (_page - 1) + ')">‹</button>';
+                for (var i = 1; i <= totalPg; i++) {
+                    if (totalPg > 7 && i > 2 && i < totalPg - 1 && Math.abs(i - _page) > 1) {
+                        if (i === 3 || i === totalPg - 2)
+                            html += '<span style="padding:0 4px;line-height:29px;font-size:.76rem;color:var(--text-soft)">…</span>';
+                        continue;
+                    }
+                    html += '<button class="pag-btn' + (_page === i ? ' active' : '') + '" onclick="irPagina(' + i + ')">' + i + '</button>';
+                }
+                html += '<button class="pag-btn" ' + (_page === totalPg ? 'disabled' : '') + ' onclick="irPagina(' + (_page + 1) + ')">›</button>';
+                btns.innerHTML = html;
+            }
+
+            window.irPagina = function (p) { _page = p; renderPagina(); };
+
+            // ── Modal abrir / cerrar ────────────────────────────────────────────
+            window.abrirModal = function () {
+                resetForm();
+                document.getElementById('modal-title-lbl').textContent = 'Nueva regla de precio';
+                _bsModalRegla.show();
+            };
+
+            // Asigna un criterio de línea/grupo/tipo. Tiene que pasar por la instancia de
+            // TomSelect: escribir el .value del input original no refresca el control y el
+            // campo se ve vacío aunque el valor esté puesto.
+            function setCriterio(id, valor) {
+                var ts = window.tomManager && tomManager.getInstance
+                    ? tomManager.getInstance(id)
+                    : null;
+                var v = (valor === null || valor === undefined) ? '' : String(valor);
+
+                if (ts) {
+                    if (v) ts.setValue(v, true); else ts.clear(true);
+                    return;
+                }
+
+                var el = document.getElementById(id);
+                if (el) el.value = v;
+            }
+
+            window.editarRegla = function (id) {
+                var r = _todas.find(x => x.id === id);
+                if (!r) return;
+                resetForm();
+                document.getElementById('modal-title-lbl').textContent = 'Editar regla #' + id;
+                document.getElementById('regla-id').value = r.id;
+
+                tsCliente._loadSingle(r.cliente_id || null);
+                tsProducto._loadSingle(r.cve_prod || null);
+
+                // Los selects trabajan con el id del catálogo, pero la regla guarda la clave
+                // (que es lo que compara la función de precios contra catproductos). Listar
+                // devuelve el id ya resuelto; asignar la clave directamente al input dejaba
+                // el campo en blanco y, al guardar, corrompía el criterio.
+                setCriterio('lin_prod', r.lin_prod_id);
+                setCriterio('gpo', r.gpo_id);
+                setCriterio('tp', r.tp_id);
+
+                document.getElementById('valor').value = r.valor;
+                document.getElementById('max_descuento').value = r.max_descuento || '';
+                document.getElementById('prioridad').value = r.prioridad;
+                document.getElementById('activo').checked = r.activo;
+                document.getElementById('aplicar_automatico').checked = r.aplicar_automatico !== false;
+
+                var targetBtn = document.querySelector('.type-card[data-val="' + r.tipo_regla + '"]');
+                if (targetBtn) selTipo(targetBtn);
+
+                document.getElementById('es_promocion').checked = r.es_promocion;
+                document.getElementById('nombre_promocion').value = r.nombre_promocion || '';
+                document.getElementById('fecha_inicio').value = r.fecha_inicio ? formatDateForInput(r.fecha_inicio) : '';
+                document.getElementById('fecha_fin').value = r.fecha_fin ? formatDateForInput(r.fecha_fin) : '';
+                if (r.es_promocion) {
+                    document.getElementById('promo-block').classList.add('vis');
+                    document.getElementById('fechas-block').classList.add('vis');
+                }
+
+                _bsModalRegla.show();
+                // Disparar chequeo de conflictos al abrir en modo edición
+                setTimeout(verificarConflictos, 600);
+            };
+
+            window.resetForm = function () {
+                ['regla-id', 'max_descuento', 'nombre_promocion', 'fecha_inicio', 'fecha_fin']
+                    .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+
+                // Estos tres los maneja TomSelect: limpiar el input original no basta.
+                ['lin_prod', 'gpo', 'tp'].forEach(function (id) { setCriterio(id, ''); });
+
+                var alcance = document.getElementById('alcance-panel');
+                if (alcance) alcance.style.display = 'none';
+
+                if (tsCliente) { tsCliente.clear(); tsCliente.clearOptions(); }
+                if (tsProducto) { tsProducto.clear(); tsProducto.clearOptions(); }
+
+                document.getElementById('valor').value = '';
+                document.getElementById('prioridad').value = '10';
+                document.getElementById('activo').checked = true;
+                document.getElementById('es_promocion').checked = false;
+
+                document.querySelectorAll('.type-card').forEach(b => b.classList.remove('sel-desc', 'sel-fixed'));
+                document.getElementById('opt-desc').classList.add('sel-desc');
+                document.getElementById('tipo_regla').value = 'DESCUENTO';
+                document.getElementById('lbl-valor').textContent = 'Descuento (%) *';
+                document.getElementById('max-desc-wrap').classList.add('vis');
+
+                document.getElementById('promo-block').classList.remove('vis');
+                document.getElementById('fechas-block').classList.remove('vis');
+                document.getElementById('aplicar_automatico').checked = true;
+
+                var ph = document.getElementById('prio-help-panel');
+                if (ph) ph.style.display = 'none';
+
+                _conflictState = 'ok';
+                ocultarPanelConflictos();
+                limpiarErrores();
+            };
+
+            function limpiarErrores() {
+                document.querySelectorAll('.field-err').forEach(e => { e.classList.remove('show'); e.textContent = ''; });
+                document.querySelectorAll('.err').forEach(e => e.classList.remove('err'));
+                var ge = document.getElementById('form-global-err');
+                ge.style.display = 'none'; ge.textContent = '';
+                document.getElementById('criterio-err').classList.remove('show');
+            }
+
+            // ── Tipo de regla ───────────────────────────────────────────────────
+            window.selTipo = function (btn) {
+                document.querySelectorAll('.type-card').forEach(b => b.classList.remove('sel-desc', 'sel-fixed'));
+                var val = btn.dataset.val;
+                document.getElementById('tipo_regla').value = val;
+                if (val === 'DESCUENTO') {
+                    btn.classList.add('sel-desc');
+                    document.getElementById('lbl-valor').textContent = 'Descuento (%) *';
+                    document.getElementById('max-desc-wrap').classList.add('vis');
+                } else {
+                    btn.classList.add('sel-fixed');
+                    document.getElementById('lbl-valor').textContent = 'Precio fijo ($) *';
+                    document.getElementById('max-desc-wrap').classList.remove('vis');
+                }
+                verificarConflictos();
+            };
+
+            // ── Toggle promo ────────────────────────────────────────────────────
+            window.togglePromo = function (cb) {
+                var block = document.getElementById('promo-block');
+                var fechas = document.getElementById('fechas-block');
+                if (cb.checked) { block.classList.add('vis'); fechas.classList.add('vis'); }
+                else { block.classList.remove('vis'); fechas.classList.remove('vis'); }
+            };
+
+            // ── Validación frontend ─────────────────────────────────────────────
+            function validar() {
+                limpiarErrores();
+                var ok = true;
+
+                var cveProd = document.getElementById('cve_prod').value.trim();
+                var linProd = document.getElementById('lin_prod').value.trim();
+                var gpo = document.getElementById('gpo').value.trim();
+                var tp = document.getElementById('tp').value.trim();
+                if (!cveProd && !linProd && !gpo && !tp) {
+                    document.getElementById('criterio-err').classList.add('show');
+                    ok = false;
+                }
+
+                var tipo = document.getElementById('tipo_regla').value;
+                var valor = parseFloat(document.getElementById('valor').value);
+                // Un 0 no es un valor válido: un descuento de 0% no hace nada y un precio
+                // fijo de $0 regala el producto.
+                if (isNaN(valor) || valor <= 0) {
+                    mostrarFieldErr('valor-err', tipo === 'DESCUENTO'
+                        ? 'El descuento debe ser mayor a 0%.'
+                        : 'El precio fijo debe ser mayor a $0.');
+                    document.getElementById('valor').classList.add('err');
+                    ok = false;
+                } else if (tipo === 'DESCUENTO' && valor > 100) {
+                    mostrarFieldErr('valor-err', 'El descuento no puede superar el 100%.');
+                    document.getElementById('valor').classList.add('err');
+                    ok = false;
+                }
+
+                var maxDescVal = document.getElementById('max_descuento').value;
+                if (maxDescVal !== '') {
+                    var md = parseFloat(maxDescVal);
+                    if (isNaN(md) || md < 0 || md > 100) {
+                        mostrarFieldErr('max-desc-err', 'Debe estar entre 0 y 100.');
+                        ok = false;
+                    }
+                }
+
+                var prio = parseInt(document.getElementById('prioridad').value);
+                if (isNaN(prio) || prio < 1 || prio > 999) {
+                    mostrarFieldErr('prio-err', 'La prioridad debe estar entre 1 y 999.');
+                    document.getElementById('prioridad').classList.add('err');
+                    ok = false;
+                }
+
+                var esPromo = document.getElementById('es_promocion').checked;
+                if (esPromo && !document.getElementById('nombre_promocion').value.trim()) {
+                    mostrarFieldErr('nom-prom-err', 'Ingresa un nombre para la promoción.');
+                    ok = false;
+                }
+
+                var fi = document.getElementById('fecha_inicio').value;
+                var ff = document.getElementById('fecha_fin').value;
+                if (fi && ff && fi >= ff) {
+                    mostrarFieldErr('fecha-err', 'La fecha fin debe ser posterior a la de inicio.');
+                    document.getElementById('fecha_fin').classList.add('err');
+                    ok = false;
+                }
+
+                return ok;
+            }
+
+            // ════════════════════════════════════════════════════════════════════
+            //  SISTEMA DE CONFLICTOS — MEJORADO
+            // ════════════════════════════════════════════════════════════════════
+
+            var _conflictTimer = null;
+            var _conflictXhr = null;   // abort si hay petición en vuelo
+
+            // Colores/clase por nivel de conflicto
+            var _nivelConfig = {
+                'EXACTO': { cls: 'cp-nivel-blocked', ico: '🔴', lbl: 'CHOQUE EXACTO — No se puede guardar', badge: 'b-red' },
+                'MISMA_ESPEC': { cls: 'cp-nivel-warn', ico: '🟠', lbl: 'Misma especificidad — revisa prioridad', badge: 'b-amber' },
+                'MAS_ESPECIFICA': { cls: 'cp-nivel-info', ico: '🔵', lbl: 'Más específica (gana sobre la nueva)', badge: 'b-blue' },
+                'MENOS_ESPECIFICA': { cls: 'cp-nivel-ok', ico: '🟢', lbl: 'Menos específica (la nueva gana)', badge: 'b-green' },
+            };
+
+            /**
+             * Recalcula la especificidad de la regla que está siendo editada
+             * según los controles actuales del formulario.
+             */
+            function calcEspecificidadActual() {
+                var pts = 0;
+                if (document.getElementById('cliente_id').value) pts += 4;
+                if (document.getElementById('cve_prod').value.trim()) pts += 3;
+                if (document.getElementById('lin_prod').value.trim()) pts += 2;
+                if (document.getElementById('gpo').value.trim()) pts += 2;
+                if (document.getElementById('tp').value.trim()) pts += 2;
+                return pts;
+            }
+
+            /**
+             * Punto de entrada: debounce 400ms y llama al backend.
+             */
+            function verificarConflictos() {
+                clearTimeout(_conflictTimer);
+                _conflictTimer = setTimeout(_doVerificarConflictos, 400);
+            }
+
+            // ── Alcance de la regla ─────────────────────────────────────────────
+            // Cuenta los productos que tocan los criterios actuales con el mismo filtro
+            // que usa obtener_precio_final. Una regla en 0 no altera ningún precio; antes
+            // eso solo se descubría consultando la base a mano.
+            var _alcanceXhr = null;
+
+            function verificarAlcance() {
+                var panel = document.getElementById('alcance-panel');
+                var txt = document.getElementById('alcance-txt');
+                if (!panel || !txt) return;
+
+                var cveProd = document.getElementById('cve_prod').value.trim();
+                var linProd = document.getElementById('lin_prod').value.trim();
+                var gpo = document.getElementById('gpo').value.trim();
+                var tp = document.getElementById('tp').value.trim();
+
+                if (!cveProd && !linProd && !gpo && !tp) {
+                    panel.style.display = 'none';
+                    return;
+                }
+
+                if (_alcanceXhr) _alcanceXhr.abort();
+
+                panel.style.display = 'flex';
+                panel.style.borderColor = 'var(--border)';
+                panel.style.background = 'var(--surface-alt)';
+                txt.style.color = 'var(--text-soft)';
+                txt.textContent = 'Calculando alcance…';
+
+                _alcanceXhr = $.getJSON('/ReglasPrecio/ProductosAfectados', {
+                    cve_prod: cveProd || null,
+                    lin_prod: linProd || null,
+                    gpo: gpo || null,
+                    tp: tp || null
+                }, function (res) {
+                    _alcanceXhr = null;
+
+                    if (res.sin_criterios) { panel.style.display = 'none'; return; }
+
+                    if (res.total === 0) {
+                        panel.style.background = 'var(--red-bg)';
+                        panel.style.borderColor = 'var(--red-bdr)';
+                        txt.style.color = 'var(--red-text)';
+                        txt.textContent = '⚠ Con estos criterios la regla no alcanza ningún producto: '
+                            + 'no cambiaría ningún precio.';
+                    } else {
+                        panel.style.background = 'var(--green-bg)';
+                        panel.style.borderColor = 'var(--green-bdr)';
+                        txt.style.color = 'var(--green-text)';
+                        txt.textContent = '✓ La regla aplica a ' + res.total
+                            + (res.total === 1 ? ' producto.' : ' productos.');
+                    }
+                }).fail(function (xhr) {
+                    if (xhr.statusText === 'abort') return;
+                    _alcanceXhr = null;
+                    panel.style.display = 'none';
+                });
+            }
+
+            function _doVerificarConflictos() {
+                verificarAlcance();
+                var id = parseInt(document.getElementById('regla-id').value) || 0;
+                var clienteId = document.getElementById('cliente_id').value || '';
+                var cveProd = document.getElementById('cve_prod').value.trim();
+                var linProd = document.getElementById('lin_prod').value.trim();
+                var gpo = document.getElementById('gpo').value.trim();
+                var tp = document.getElementById('tp').value.trim();
+                var tipoRegla = document.getElementById('tipo_regla').value;
+                var prioridad = parseInt(document.getElementById('prioridad').value) || 0;
+
+                if (!cveProd && !linProd && !gpo && !tp) {
+                    _conflictState = 'ok';
+                    ocultarPanelConflictos();
+                    _actualizarBotonGuardar();
+                    return;
+                }
+
+                // Mostrar spinner en el panel mientras carga
+                _mostrarSpinnerConflictos();
+
+                if (_conflictXhr) _conflictXhr.abort();
+
+                _conflictXhr = $.getJSON('/ReglasPrecio/BuscarConflictos', {
+                    cliente_id: clienteId || null,
+                    cve_prod: cveProd || null,
+                    lin_prod: linProd || null,
+                    gpo: gpo || null,
+                    tp: tp || null,
+                    tipo_regla: tipoRegla,
+                    prioridad: prioridad,
+                    excluir_id: id
+                }, function (res) {
+                    _conflictXhr = null;
+                    if (!res.conflictos || !res.conflictos.length) {
+                        _conflictState = 'ok';
+                        mostrarPanelOk();
+                    } else {
+                        var hayExacto = res.hay_exacto;
+                        _conflictState = hayExacto ? 'blocked' : 'warning';
+                        mostrarPanelConflictos(res.conflictos, res.espec_actual, prioridad);
+                    }
+                    _actualizarBotonGuardar();
+                }).fail(function (xhr) {
+                    if (xhr.statusText === 'abort') return;
+                    _conflictXhr = null;
+                    _conflictState = 'ok';
+                    ocultarPanelConflictos();
+                    _actualizarBotonGuardar();
+                });
+            }
+
+            /**
+             * Deshabilita / habilita el botón Guardar según _conflictState.
+             * También actualiza la leyenda del pie del modal.
+             */
+            function _actualizarBotonGuardar() {
+                var btn = document.getElementById('btn-guardar');
+                var ge = document.getElementById('form-global-err');
+
+                if (_conflictState === 'blocked') {
+                    btn.disabled = true;
+                    btn.title = 'Resuelve el choque exacto antes de guardar';
+                    ge.textContent = '🔴 Existe un choque exacto de tipo, especificidad y prioridad. Cambia la prioridad para poder guardar.';
+                    ge.style.display = 'block';
+                } else {
+                    btn.disabled = false;
+                    btn.title = '';
+                    // Solo ocultar si el error era de conflicto (no de validación)
+                    if (ge.textContent.startsWith('🔴')) {
+                        ge.style.display = 'none';
+                        ge.textContent = '';
+                    }
+                }
+            }
+
+            // ── Renderizado del panel ────────────────────────────────────────────
+
+            function _mostrarSpinnerConflictos() {
+                var panel = document.getElementById('conflict-panel');
+                if (!panel) return;
+                panel.innerHTML = `
+                        <div class="cp-header" style="color:var(--text-soft)">
+                            <svg style="width:13px;height:13px;animation:spin .8s linear infinite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                            </svg>
+                            Verificando conflictos…
+                        </div>`;
+                panel.classList.add('vis');
+                // Quitar color de alerta mientras carga
+                panel.style.background = 'var(--surface-alt)';
+                panel.style.borderColor = 'var(--border)';
+            }
+
+            function mostrarPanelOk() {
+                var panel = document.getElementById('conflict-panel');
+                if (!panel) return;
+                panel.innerHTML = `
+                        <div class="cp-header" style="color:#059669">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            Sin conflictos — esta combinación es única para el tipo de regla seleccionado.
+                        </div>`;
+                panel.style.background = 'var(--green-bg)';
+                panel.style.borderColor = 'var(--green-bdr)';
+                panel.classList.add('vis');
+
+                // Auto-ocultar el OK tras 3s
+                setTimeout(function () {
+                    if (_conflictState === 'ok') ocultarPanelConflictos();
+                }, 3000);
+            }
+
+            function mostrarPanelConflictos(lista, especActual, prioProp) {
+                var panel = document.getElementById('conflict-panel');
+                if (!panel) return;
+
+                var hayExacto = lista.some(r => r.nivel_conflicto === 'EXACTO');
+                var hayMismaEsp = lista.some(r => r.nivel_conflicto === 'MISMA_ESPEC');
+
+                // Título del panel
+                var tituloIco, tituloCls, tituloTxt, subtxt;
+                if (hayExacto) {
+                    tituloIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>`;
+                    tituloCls = 'var(--red-text)';
+                    tituloTxt = 'Choque exacto — No se puede guardar';
+                    subtxt = 'Hay ' + lista.filter(r => r.nivel_conflicto === 'EXACTO').length +
+                        ' regla(s) con idéntico tipo, especificidad (' + especActual +
+                        ' pts) y prioridad (' + prioProp + '). Cambia la prioridad o los criterios.';
+                    panel.style.background = 'var(--red-bg)';
+                    panel.style.borderColor = 'var(--red-bdr)';
+                } else if (hayMismaEsp) {
+                    tituloIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>`;
+                    tituloCls = 'var(--amber-text)';
+                    tituloTxt = 'Competencia de misma especificidad — revisa la prioridad';
+                    subtxt = 'La prioridad (número menor = mayor precedencia) determinará cuál regla gana. Puedes guardar, pero verifica que sea lo que quieres.';
+                    panel.style.background = 'var(--amber-bg)';
+                    panel.style.borderColor = 'var(--amber-bdr)';
+                } else {
+                    tituloIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/>
+                        </svg>`;
+                    tituloCls = 'var(--blue-text)';
+                    tituloTxt = 'Reglas relacionadas encontradas';
+                    subtxt = 'La especificidad determinará el orden de aplicación. La regla más específica siempre gana.';
+                    panel.style.background = 'var(--blue-bg)';
+                    panel.style.borderColor = 'var(--blue-bdr)';
+                }
+
+                var html = `
+                        <div class="cp-header" style="color:${tituloCls}">
+                            ${tituloIco} ${esc(tituloTxt)}
+                        </div>
+                        <div class="cp-subtext" style="color:${tituloCls};opacity:.85">${esc(subtxt)}</div>`;
+
+                // Resumen de especificidad de la regla actual
+                html += `
+                        <div style="font-size:.72rem;color:var(--text-mid);margin-bottom:.5rem;
+                                    display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+                            <span style="font-weight:700">Tu regla:</span>
+                            <span class="cp-prio" style="background:var(--purple-bg);border-color:var(--purple-bdr);color:var(--purple-text)">
+                                Especificidad ${especActual} pts
+                            </span>
+                            <span class="cp-prio">Prioridad ${prioProp || '—'}</span>
+                            ${_crearTagsCriteriosActuales()}
+                        </div>`;
+
+                lista.forEach(function (r) {
+                    var nc = r.nivel_conflicto || 'MENOS_ESPECIFICA';
+                    var cfg = _nivelConfig[nc] || _nivelConfig['MENOS_ESPECIFICA'];
+                    var esCrash = nc === 'EXACTO';
+
+                    var tags = '';
+                    if (r.nombre_cliente) tags += '<span class="cp-tag cli">' + esc(r.nombre_cliente) + '</span>';
+                    if (r.cve_prod) tags += '<span class="cp-tag">' + esc(r.cve_prod) + '</span>';
+                    if (r.lin_prod) tags += '<span class="cp-tag">Línea: ' + esc(r.lin_prod) + '</span>';
+                    if (r.gpo) tags += '<span class="cp-tag">Gpo: ' + esc(r.gpo) + '</span>';
+                    if (r.tp) tags += '<span class="cp-tag">Tipo: ' + esc(r.tp) + '</span>';
+                    if (!tags) tags = '<span style="font-size:.73rem;color:var(--text-soft)">— Global —</span>';
+
+                    var valTxt = r.tipo_regla === 'DESCUENTO'
+                        ? parseFloat(r.valor).toFixed(2) + '%'
+                        : '$' + Number(r.valor).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+
+                    html += `
+                        <div class="cp-rule ${esCrash ? 'cp-rule-clash' : ''}">
+                            <div class="cp-rule-top">
+                                <span class="badge-rp ${cfg.badge}" style="font-size:.65rem">${cfg.ico} ${esc(nc.replace('_', ' '))}</span>
+                                <span class="cp-prio ${esCrash ? 'cp-prio-warn' : ''}">Prio ${r.prioridad}</span>
+                                <span class="cp-rule-val">${valTxt}</span>
+                                <span class="cp-rule-tipo badge-rp ${r.tipo_regla === 'DESCUENTO' ? 'b-blue' : 'b-green'}">
+                                    ${r.tipo_regla === 'DESCUENTO' ? '% Desc.' : '$ Fijo'}
+                                </span>
+                                ${r.es_promocion ? '<span class="badge-rp b-purple">Promo</span>' : ''}
+                                ${!r.activo ? '<span class="badge-rp b-gray">Inactiva</span>' : ''}
+                                <span style="font-size:.7rem;color:var(--text-soft);margin-left:auto">ID #${r.id}</span>
+                            </div>
+                            <div class="cp-tags">${tags}</div>
+                            <div class="cp-razon">${esc(r.razon_conflicto || '')}</div>
+                            ${esCrash ? `<div class="cp-clash-msg">
+                                ⚠ Mismo tipo (${esc(r.tipo_regla)}), misma especificidad (${r.especificidad} pts) y misma prioridad (${r.prioridad}).
+                                Si guardas, el sistema no podrá decidir cuál aplicar — la más reciente ganará arbitrariamente.
+                                <strong>Ajusta la prioridad antes de guardar.</strong>
+                            </div>` : ''}
+                        </div>`;
+                });
+
+                panel.innerHTML = html;
+                panel.classList.add('vis');
+            }
+
+            function _crearTagsCriteriosActuales() {
+                var html = '';
+                var cli = tsCliente && tsCliente.getValue() ? tsCliente.getOption(tsCliente.getValue()) : null;
+                var prod = tsProducto && tsProducto.getValue() ? tsProducto.getOption(tsProducto.getValue()) : null;
+                var lin = document.getElementById('lin_prod').value.trim();
+                var gpo = document.getElementById('gpo').value.trim();
+                var tp = document.getElementById('tp').value.trim();
+
+                if (cli) html += `<span class="cp-tag cli">${esc(cli.textContent || cli.innerText || '')}</span>`;
+                if (prod) html += `<span class="cp-tag">${esc(prod.textContent || prod.innerText || '')}</span>`;
+                if (lin) html += `<span class="cp-tag">Línea: ${esc(lin)}</span>`;
+                if (gpo) html += `<span class="cp-tag">Gpo: ${esc(gpo)}</span>`;
+                if (tp) html += `<span class="cp-tag">Tipo: ${esc(tp)}</span>`;
+                return html;
+            }
+
+            function ocultarPanelConflictos() {
+                var panel = document.getElementById('conflict-panel');
+                if (panel) {
+                    panel.innerHTML = '';
+                    panel.classList.remove('vis');
+                    panel.style.background = '';
+                    panel.style.borderColor = '';
+                }
+            }
+
+            // ════════════════════════════════════════════════════════════════════
+            //  GUARDAR  — doble capa de protección
+            // ════════════════════════════════════════════════════════════════════
+            window.guardarRegla = function () {
+                if (!validar()) return;
+
+                // 1ª capa: estado del panel en memoria
+                if (_conflictState === 'blocked') {
+                    var ge = document.getElementById('form-global-err');
+                    ge.textContent = '🔴 Existe un choque exacto de tipo, especificidad y prioridad. Cambia la prioridad o los criterios antes de guardar.';
+                    ge.style.display = 'block';
+                    return;
+                }
+
+                var btn = document.getElementById('btn-guardar');
+                btn.classList.add('loading');
+                btn.disabled = true;
+
+                var data = {
+                    id: parseInt(document.getElementById('regla-id').value) || 0,
+                    cliente_id: document.getElementById('cliente_id').value || null,
+                    cve_prod: document.getElementById('cve_prod').value.trim() || null,
+                    lin_prod: document.getElementById('lin_prod').value.trim() || null,
+                    gpo: document.getElementById('gpo').value.trim() || null,
+                    tp: document.getElementById('tp').value.trim() || null,
+                    tipo_regla: document.getElementById('tipo_regla').value,
+                    valor: parseFloat(document.getElementById('valor').value),
+                    max_descuento: document.getElementById('max_descuento').value || null,
+                    fecha_inicio: document.getElementById('fecha_inicio').value || null,
+                    fecha_fin: document.getElementById('fecha_fin').value || null,
+                    prioridad: parseInt(document.getElementById('prioridad').value),
+                    nombre_promocion: document.getElementById('nombre_promocion').value || null,
+                    es_promocion: document.getElementById('es_promocion').checked,
+                    activo: document.getElementById('activo').checked,
+                    aplicar_automatico: document.getElementById('aplicar_automatico').checked,
+                };
+
+                // 2ª capa: validación anti-conflicto en el servidor (por seguridad)
+                $.post('/ReglasPrecio/ValidarConflictos', data, function (vRes) {
+                    if (vRes.bloqueado) {
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                        _conflictState = 'blocked';
+                        _actualizarBotonGuardar();
+                        var ge = document.getElementById('form-global-err');
+                        ge.textContent = '🔴 ' + vRes.mensaje;
+                        ge.style.display = 'block';
+                        // Refrescar el panel visual con los conflictos recibidos
+                        mostrarPanelConflictos(
+                            vRes.conflictos,
+                            calcEspecificidadActual(),
+                            data.prioridad
+                        );
+                        return;
+                    }
+
+                    // Sin bloqueo → persistir
+                    _persistirRegla(data, btn);
+                }).fail(function () {
+                    // Si la validación previa falla, intentamos guardar igual
+                    // (el backend tiene su propia capa de protección)
+                    _persistirRegla(data, btn);
+                });
+            };
+
+            /**
+             * Envía la regla al servidor. Estaba duplicado en las dos ramas del guardado,
+             * así que cada branch nueva había que escribirla dos veces.
+             */
+            function _persistirRegla(data, btn) {
+                $.post('/ReglasPrecio/Guardar', data, function (res) {
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+
+                    if (res.success) {
+                        _bsModalRegla.hide();
+                        mostrarToast('success', data.id ? 'Regla actualizada.' : 'Regla creada.');
+                        cargarTabla();
+                        return;
+                    }
+
+                    // La regla no alcanza ningún producto: casi siempre es un error de
+                    // captura, pero puede ser intencional si el producto todavía no existe.
+                    if (res.code === 'SIN_PRODUCTOS' && !data.forzar) {
+                        if (confirm(res.message + '\n\n¿Guardarla de todos modos?')) {
+                            btn.classList.add('loading');
+                            btn.disabled = true;
+                            _persistirRegla(Object.assign({}, data, { forzar: true }), btn);
+                        }
+                        return;
+                    }
+
+                    var ge = document.getElementById('form-global-err');
+                    ge.textContent = (res.code === 'CONFLICT_EXACT' ? '🔴 ' : '') + res.message;
+                    ge.style.display = 'block';
+
+                    if (res.code === 'CONFLICT_EXACT') {
+                        _conflictState = 'blocked';
+                        _actualizarBotonGuardar();
+                    }
+                }).fail(function () {
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                    var ge = document.getElementById('form-global-err');
+                    ge.textContent = 'Error de red. Intenta de nuevo.';
+                    ge.style.display = 'block';
+                });
+            }
+
+            // ── Eliminar ────────────────────────────────────────────────────────
+            window.pedirEliminar = function (id) {
+                _pendingDeleteId = id;
+                var r = _todas.find(x => x.id === id);
+                var msg = r
+                    ? '¿Eliminar la regla #' + id + (r.nombre_cliente ? ' para ' + r.nombre_cliente : '') +
+                    ' (' + r.tipo_regla + ')? Esta acción no se puede deshacer.'
+                    : '¿Eliminar esta regla? Esta acción no se puede deshacer.';
+                document.getElementById('confirm-msg').textContent = msg;
+                document.getElementById('confirm-ok-btn').onclick = confirmarEliminar;
+                _bsModalConfirm.show();
+            };
+
+            function confirmarEliminar() {
+                if (!_pendingDeleteId) return;
+                var id = _pendingDeleteId;
+                _bsModalConfirm.hide();
+                _pendingDeleteId = null;
+
+                $.post('/ReglasPrecio/Eliminar', { id: id }, function (res) {
+                    if (res.success) {
+                        mostrarToast('success', 'Regla eliminada correctamente.');
+                        cargarTabla();
+                    } else {
+                        mostrarToast('error', 'No se pudo eliminar la regla.');
+                    }
+                }).fail(function () {
+                    mostrarToast('error', 'Error de red al eliminar.');
+                });
+            }
+
+            // ── Toggle activo ───────────────────────────────────────────────────
+            window.toggleActivo = function (id, nuevoEstado) {
+                var r = _todas.find(x => x.id === id);
+                if (!r) return;
+
+                // Guardar espera los criterios como ID de catálogo y los persiste como
+                // CLAVE. La fila que devuelve Listar trae la clave, así que reenviarla tal
+                // cual (Object.assign sobre r) volvería a traducir y dejaría la regla sin
+                // criterios. Se manda el id que Listar resuelve para eso.
+                // forzar: desactivar una regla que hoy no alcanza productos es justo lo que
+                // uno quiere poder hacer, no algo que deba bloquearse.
+                var data = {
+                    id: r.id,
+                    cliente_id: r.cliente_id || null,
+                    cve_prod: r.cve_prod || null,
+                    lin_prod: r.lin_prod_id || null,
+                    gpo: r.gpo_id || null,
+                    tp: r.tp_id || null,
+                    tipo_regla: r.tipo_regla,
+                    valor: r.valor,
+                    max_descuento: r.max_descuento,
+                    prioridad: r.prioridad,
+                    fecha_inicio: r.fecha_inicio,
+                    fecha_fin: r.fecha_fin,
+                    nombre_promocion: r.nombre_promocion,
+                    es_promocion: r.es_promocion,
+                    aplicar_automatico: r.aplicar_automatico,
+                    activo: nuevoEstado,
+                    forzar: true
+                };
+
+                $.post('/ReglasPrecio/Guardar', data, function (res) {
+                    if (res.success) {
+                        mostrarToast('info', nuevoEstado ? 'Regla activada.' : 'Regla desactivada.');
+                        cargarTabla();
+                    } else {
+                        mostrarToast('error', res.message || 'Error al cambiar estado.');
+                    }
+                }).fail(function () {
+                    mostrarToast('error', 'Error de red al cambiar estado.');
+                });
+            };
+
+            // ── Toasts ──────────────────────────────────────────────────────────
+            window.mostrarToast = function (tipo, msg) {
+                var iconos = {
+                    success: '<svg class="toast-icon-wrap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+                    error: '<svg class="toast-icon-wrap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+                    info: '<svg class="toast-icon-wrap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+                };
+                var t = document.createElement('div');
+                t.className = 'toast-rp ' + tipo;
+                t.innerHTML = (iconos[tipo] || '') + '<span>' + esc(msg) + '</span>';
+                document.getElementById('toast-dock').appendChild(t);
+                setTimeout(function () {
+                    t.classList.add('fade-out');
+                    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 320);
+                }, 3200);
+            };
+
+            window.togglePrioHelp = function (e) {
+                if (e) e.stopPropagation();
+                var panel = document.getElementById('prio-help-panel');
+                var btn = document.getElementById('prio-help-btn');
+                if (!panel || !btn) return;
+
+                if (panel.style.display !== 'none') {
+                    panel.style.display = 'none';
+                    return;
+                }
+
+                // Posicionar relativo al botón ?
+                var rect = btn.getBoundingClientRect();
+                var panelW = 360;
+                var margin = 8;
+
+                // Intentar a la derecha del botón; si se sale, ir a la izquierda
+                var left = rect.right + margin;
+                if (left + panelW > window.innerWidth - margin) {
+                    left = rect.left - panelW - margin;
+                }
+                // Si aún se sale por la izquierda, alinear al borde
+                if (left < margin) left = margin;
+
+                // Vertical: alinear con la parte superior del botón
+                var top = rect.top;
+                panel.style.display = 'block';
+                var panelH = panel.offsetHeight;
+                if (top + panelH > window.innerHeight - margin) {
+                    top = window.innerHeight - panelH - margin;
+                }
+                if (top < margin) top = margin;
+
+                panel.style.left = left + 'px';
+                panel.style.top = top + 'px';
+            };
+
+            // Cerrar el panel al hacer clic fuera de él
+            document.addEventListener('click', function (e) {
+                var panel = document.getElementById('prio-help-panel');
+                var btn = document.getElementById('prio-help-btn');
+                if (!panel || panel.style.display === 'none') return;
+                if (!panel.contains(e.target) && e.target !== btn) {
+                    panel.style.display = 'none';
+                }
+            });
+
+            // ── Helpers ──────────────────────────────────────────────────────────
+            function esc(s) {
+                var d = document.createElement('div');
+                d.textContent = s || '';
+                return d.innerHTML;
+            }
+
+            function mostrarFieldErr(id, msg) {
+                var el = document.getElementById(id);
+                if (el) { el.textContent = msg; el.classList.add('show'); }
+            }
+
+        })();
+
+        // ── Utilidades de fecha (fuera del IIFE para que sean globales) ──────────
+        function formatDateForInput(dotNetDate) {
+            if (!dotNetDate) return '';
+            var match = /\/Date\((\d+)\)\//.exec(dotNetDate);
+            if (!match) return '';
+            var date = new Date(parseInt(match[1]));
+            var year = date.getFullYear();
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            var day = String(date.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        function dateFormatter(val) {
+            if (!val) return '';
+            var match = /\/Date\((\d+)\)\//.exec(val);
+            if (match) {
+                var d = new Date(parseInt(match[1]));
+                return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+            if (val.length >= 10) {
+                var parts = val.substring(0, 10).split('-');
+                if (parts.length === 3) {
+                    var months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                    return parts[2] + ' ' + (months[parseInt(parts[1]) - 1] || parts[1]) + ' ' + parts[0];
+                }
+            }
+            return val;
+        }
+    </script>
+}
+

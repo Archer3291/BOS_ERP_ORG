@@ -1,0 +1,1526 @@
+﻿@{
+    ViewBag.Title = "Traslados";
+    ViewData["PageTitle"] = "Traslados";
+}
+
+@* <link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" /> *@
+<link href="~/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<style>
+    /* ── Variables & Reset ──────────────────────────────────────────── */
+    .page-traslados {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ── Panel de filtros ───────────────────────────────────────────── */
+    .filters-panel {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+    }
+
+        .filters-panel .panel-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-light);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+    /* ── Barra de acciones ──────────────────────────────────────────── */
+    .actions-bar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 16px;
+        gap: 8px;
+    }
+
+    /* ── Badges de stock ────────────────────────────────────────────── */
+    .badge-stock {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--success-color);
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .stock-low {
+        background: var(--warning-color) !important;
+    }
+
+    .stock-critical {
+        background: var(--danger-color) !important;
+    }
+
+    /* ── Product info card dentro del modal ─────────────────────────── */
+    .product-info {
+        background: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-bottom: 20px;
+    }
+
+        .product-info h5 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+        }
+
+        .product-info table td,
+        .product-info table th {
+            padding: 4px 8px;
+            font-size: 13px;
+        }
+
+        .product-info table th {
+            color: var(--text-light);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+    /* ── Contenedor del formulario de traslado ───────────────────────── */
+    .transfer-section {
+        background: var(--light-blue);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+    }
+
+        .transfer-section .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    /* ── Modal general ──────────────────────────────────────────────── */
+    .modal-content {
+        border-radius: 14px;
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+        border-radius: 13px 13px 0 0;
+        padding: 16px 20px;
+    }
+
+    .modal-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-footer {
+        border-top: 1px solid var(--border-light);
+        padding: 14px 20px;
+        gap: 8px;
+    }
+
+    /* ── TomSelect fix ──────────────────────────────────────────────── */
+    .ts-wrapper .option .title {
+        display: block;
+        color: #001c59;
+        font-size: 13px;
+    }
+
+    .ts-wrapper .option .url {
+        font-size: 11px;
+        display: block;
+        color: var(--accent-blue);
+    }
+
+    /* ── Kepler modal ───────────────────────────────────────────────── */
+    .kepler-empty {
+        text-align: center;
+        padding: 48px 20px;
+        color: var(--text-light);
+    }
+
+        .kepler-empty i {
+            font-size: 2.5rem;
+            opacity: .25;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+    /* ── drag-scroll tabla ──────────────────────────────────────────── */
+    .dt-scroll-body {
+        cursor: grab;
+        user-select: none;
+    }
+
+        .dt-scroll-body:active {
+            cursor: grabbing;
+        }
+
+    /* ── Tabla de sugerencias en Swal ───────────────────────────────── */
+    .sug-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .sug-table th {
+            background: var(--very-light-blue);
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 11px;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+        .sug-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .sug-table tr:hover td {
+            background: var(--light-blue);
+        }
+
+        .sug-table .sug-btn {
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            padding: 3px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+    .sug-btn:hover {
+        opacity: .85;
+    }
+
+    /* ── Panel de seleccionados ─────────────────────────────────────── */
+    .seleccion-panel {
+        background: var(--bg-light);
+        border: 1.5px solid var(--accent-blue);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-top: 16px;
+        box-shadow: var(--shadow);
+        animation: slideDown .22s cubic-bezier(.4,0,.2,1);
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .seleccion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .seleccion-label {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .seleccion-count {
+        background: var(--accent-blue);
+        color: #fff;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 1px 8px;
+        margin-left: 6px;
+    }
+
+    .seleccion-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .seleccion-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 5px 10px 5px 12px;
+        font-size: 12px;
+        color: var(--text-dark);
+        animation: chipIn .18s cubic-bezier(.4,0,.2,1);
+    }
+
+    @@keyframes chipIn {
+        from {
+            opacity: 0;
+            transform: scale(.88);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .seleccion-chip .chip-code {
+        font-weight: 700;
+        color: var(--accent-blue);
+    }
+
+    .seleccion-chip .chip-cant {
+        background: var(--light-blue);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 11px;
+        color: var(--text-light);
+    }
+
+    .seleccion-chip .chip-remove {
+        background: none;
+        border: none;
+        color: var(--text-light);
+        cursor: pointer;
+        padding: 0 2px;
+        line-height: 1;
+        font-size: 13px;
+        border-radius: 4px;
+        transition: color .15s, background .15s;
+    }
+
+        .seleccion-chip .chip-remove:hover {
+            color: var(--danger-color);
+            background: #fee2e2;
+        }
+
+    /* ── Modal resumen ──────────────────────────────────────────────── */
+    .resumen-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .resumen-table th {
+            background: var(--very-light-blue);
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 2px solid var(--border-light);
+            color: var(--text-light);
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .resumen-table td {
+            padding: 9px 10px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+
+        .resumen-table tbody tr:hover td {
+            background: var(--light-blue);
+        }
+
+        .resumen-table .td-code {
+            font-weight: 700;
+            color: var(--accent-blue);
+            white-space: nowrap;
+        }
+
+        .resumen-table .td-remove {
+            text-align: center;
+        }
+
+            .resumen-table .td-remove button {
+                background: none;
+                border: none;
+                color: var(--text-light);
+                cursor: pointer;
+                padding: 2px 6px;
+                border-radius: 5px;
+                font-size: 13px;
+                transition: color .15s, background .15s;
+            }
+
+                .resumen-table .td-remove button:hover {
+                    color: var(--danger-color);
+                    background: #fee2e2;
+                }
+
+    .resumen-almacen-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 5px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 14px;
+    }
+
+        .resumen-almacen-badge i {
+            color: var(--accent-blue);
+        }
+
+    .resumen-stats {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    .resumen-stat {
+        flex: 1;
+        min-width: 110px;
+        background: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 10px 14px;
+        text-align: center;
+    }
+
+        .resumen-stat .stat-num {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            line-height: 1.1;
+        }
+
+        .resumen-stat .stat-label {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+    /* ── Confirmacion step ──────────────────────────────────────────── */
+    .confirm-step {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .confirm-check-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 9px;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: var(--text-dark);
+    }
+
+        .confirm-check-item i.ok {
+            color: var(--success-color);
+            font-size: 15px;
+        }
+</style>
+
+<div class="page-traslados">
+
+    <!-- ── Filtros ──────────────────────────────────────────────────── -->
+    <div class="filters-panel">
+        <div class="panel-label">
+            <i class="fa-solid fa-sliders"></i> Filtros
+        </div>
+        <div class="row align-items-end g-2">
+            <div class="col-md-5 col-sm-12">
+                <label class="form-label mb-1" style="font-size:13px;color:var(--text-light);">Sucursal</label>
+                <select id="filSucursal" placeholder="Selecciona una sucursal..."></select>
+            </div>
+            <div class="col-md-5 col-sm-12">
+                <label class="form-label mb-1" style="font-size:13px;color:var(--text-light);">Almacén</label>
+                <select id="filAlmacen" placeholder="Selecciona un almacén..."></select>
+            </div>
+            <div class="col-md-2 col-sm-12">
+                <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros" title="Limpiar filtros">
+                    <i class="fa-solid fa-filter-slash"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Acciones ─────────────────────────────────────────────────── -->
+    <div class="d-flex gap-2">
+        <div class="actions-bar">
+            <button class="btn btn-primary" id="btnSincronizarKepler" onclick="abrirModalKepler()">
+                <i class="fa-solid fa-rotate me-1"></i> Sincronizar con Kepler
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Tabla (createTable) ──────────────────────────────────────── -->
+    <div id="tablaTraslados"></div>
+
+    <!-- ── Lista de productos seleccionados ─────────────────────────── -->
+    <div id="seleccionPanel" class="seleccion-panel d-none">
+        <div class="seleccion-header">
+            <span class="seleccion-label">
+                <i class="fa-solid fa-list-check me-2"></i>
+                Productos seleccionados
+                <span class="seleccion-count" id="seleccionCount">0</span>
+            </span>
+            <div class="d-flex gap-2 align-items-center">
+                <button class="btn btn-sm btn-outline-secondary" onclick="limpiarSeleccion()">
+                    <i class="fa-solid fa-xmark me-1"></i> Limpiar
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="abrirResumen()">
+                    <i class="fa-solid fa-eye me-1"></i> Ver resumen y procesar
+                </button>
+            </div>
+        </div>
+        <div id="seleccionChips" class="seleccion-chips"></div>
+    </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     Modal: Traslado
+══════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-arrows-cross me-2"></i> Trasladar Material
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Info del producto -->
+                <div class="product-info" id="productInfo"></div>
+
+                <!-- Formulario -->
+                <form id="traslados_form">
+                    <div class="transfer-section">
+                        <div class="section-title">
+                            <i class="fas fa-warehouse"></i> Traslado Interno
+                            <button id="almacen-disponible" type="button"
+                                    class="btn btn-sm btn-outline-primary ms-auto"
+                                    onclick="sugerenciasAlmacen(this)">
+                                <i class="fa-solid fa-pallet-boxes me-1"></i> Ver sugerencias
+                            </button>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" style="font-size:13px;">Tarima Origen</label>
+                                <select id="tarimaOrigen"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" style="font-size:13px;">Tarima Destino</label>
+                                <select id="tarimaDestino" placeholder="Selecciona la tarima de destino..."></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" style="font-size:13px;">Cantidad a Trasladar</label>
+                                <input type="number" class="form-control" id="cantidadInterno" min="1">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" style="font-size:13px;">Motivo del Traslado</label>
+                                <select class="form-select" id="motivoInterno">
+                                    <option value="">Seleccionar motivo...</option>
+                                    <option value="reubicacion">Reubicación</option>
+                                    <option value="reorganizacion">Reorganización</option>
+                                    <option value="ajuste_inventario">Ajuste de inventario</option>
+                                    <option value="mantenimiento">Mantenimiento</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label" style="font-size:13px;">Observaciones</label>
+                        <textarea class="form-control" id="observacionesGenerales" rows="3"
+                                  placeholder="Observaciones adicionales del traslado..."></textarea>
+                    </div>
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="procesarTraslado()">
+                    <i class="fas fa-check me-1"></i> Confirmar Traslado
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     Modal: Kepler
+══════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="keplerModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-rotate me-2"></i> Sincronizar con Kepler
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="row align-items-end g-2 mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label" style="font-size:13px;color:var(--text-light);">
+                            Almacén de origen a sincronizar
+                        </label>
+                        <select id="keplerAlmacen" placeholder="Selecciona un almacén..."></select>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary w-100" onclick="cargarProductosKepler()">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Cargar productos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading -->
+                <div id="keplerLoading" class="text-center py-5 d-none">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted" style="font-size:13px;">Consultando inventario...</p>
+                </div>
+
+                <!-- Tabla Kepler (createTable local) -->
+                <div id="keplerProductosWrapper" class="d-none">
+                    <div id="keplerTablaContainer"></div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary d-none" id="btnConfirmarKepler"
+                        onclick="confirmarSincronizacionKepler()">
+                    <i class="fas fa-check me-1"></i> Confirmar Sincronización
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     Modal: Migrar inventario
+══════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="migrarInventario" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-rotate me-2"></i> Migrar Inventario Con Costos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="row align-items-end g-2 mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label" style="font-size:13px;color:var(--text-light);">
+                            Almacén de origen a sincronizar
+                        </label>
+                        <select id="keplerAlmacen" placeholder="Selecciona un almacén..."></select>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary w-100" onclick="cargarProductos()">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i> Cargar productos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading -->
+                <div id="keplerLoading" class="text-center py-5 d-none">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted" style="font-size:13px;">Consultando inventario...</p>
+                </div>
+
+                <!-- Tabla Kepler (createTable local) -->
+                <div id="keplerProductosWrapper" class="d-none">
+                    <div id="keplerTablaContainer"></div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary d-none" id="btnConfirmarKepler"
+                        onclick="confirmarSincronizacionKepler()">
+                    <i class="fas fa-check me-1"></i> Confirmar Sincronización
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     Modal: Resumen de seleccionados
+══════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="resumenModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-clipboard-list me-2"></i> Resumen de movimientos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="resumenModalBody">
+                <!-- Se rellena dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="iniciarConfirmacionDoble()">
+                    <i class="fa-solid fa-circle-check me-1"></i> Procesar movimientos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCantidad" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Cantidad a mover
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Producto:
+                    <strong id="producto"></strong>
+                </p>
+                <input type="number" class="form-control" id="cantidadMover" min="1">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnGuardarCantidad">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script> *@
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/TableBuilder.js"></script>
+
+    <script>
+        /* ================================================================
+            ESTADO GLOBAL
+        ================================================================ */
+        let ubicaciones = {};
+        let inventoryData = [];
+        let currentProduct = null;
+        let keplerProductos = [];
+        let keplerAlmacenSelect;
+        let tableInstance;
+
+        // Mapa de productos seleccionados en la tabla principal: id_producto+ulocation → row
+        const productosBD = new Map();
+
+        /* ================================================================
+            TOM-SELECT: filtros
+        ================================================================ */
+        const filtroAlmacen = new TomSelect('#filAlmacen', {
+            create: false,
+            maxItems: 1,
+            valueField: 'id_almacen',
+            searchField: ['cve_almacen', 'almacen_descripcion', 'cve_sucursal', 'sucursal_descripcion'],
+            render: {
+                option: (d, e) => `<div><span class="title">${e(d.cve_almacen)}</span><span class="url">${e(d.cve_sucursal)} – ${e(d.almacen_descripcion)}</span></div>`,
+                item: (d, e) => `<div><span style="color:dark">${e(d.cve_sucursal)} – ${e(d.almacen_descripcion)}</span></div>`
+            }
+        });
+
+        const filtroSucursal = new TomSelect('#filSucursal', {
+            create: false,
+            maxItems: 1,
+            valueField: 'id_sucursal',
+            searchField: ['cve_sucursal', 'descripcion'],
+            render: {
+                option: (d, e) => `<div><span class="title">${e(d.cve_sucursal)}</span><span class="url">${e(d.descripcion)}</span></div>`,
+                item: (d, e) => `<div><span style="color:dark">${e(d.cve_sucursal)} – ${e(d.descripcion)}</span></div>`
+            }
+        });
+
+        /* ================================================================
+            TOM-SELECT: tarimas (modal traslado)
+        ================================================================ */
+        const tarimaOr = new TomSelect('#tarimaOrigen', {
+            create: false,
+            maxItems: 1,
+            valueField: 'id_tarima',
+            searchField: ['codigo', 'ulocation', 'cve_almacen'],
+            render: {
+                option: (d, e) => `<div><span class="title">${e(d.codigo)}</span><span class="url">${e(d.ulocation)} – ${e(d.cve_almacen)}</span></div>`,
+                item: (d, e) => `<div><span style="color:dark">${e(d.codigo)} – ${e(d.ulocation)}</span></div>`
+            }
+        });
+
+        const tarimaDes = new TomSelect('#tarimaDestino', {
+            create: false,
+            maxItems: 1,
+            valueField: 'id_tarima',
+            searchField: ['codigo', 'ulocation', 'cve_almacen'],
+            render: {
+                option: (d, e) => `<div><span class="title">${e(d.codigo)}</span><span class="url">${e(d.ulocation)} – ${e(d.cve_almacen)}</span></div>`,
+                item: (d, e) => `<div><span style="color:dark">${e(d.codigo)} – ${e(d.ulocation)}</span></div>`
+            }
+        });
+
+        /* ================================================================
+            PANEL DE SELECCIONADOS
+        ================================================================ */
+        function seleccionKey(row) {
+            return `${row.id_producto}_${row.ulocation}`;
+        }
+
+        function renderChipsSeleccionados() {
+            const panel = document.getElementById('seleccionPanel');
+            const chips = document.getElementById('seleccionChips');
+            const count = document.getElementById('seleccionCount');
+            const total = productosBD.size;
+
+            count.textContent = total;
+
+            if (total === 0) {
+                panel.classList.add('d-none');
+                chips.innerHTML = '';
+                return;
+            }
+
+            panel.classList.remove('d-none');
+
+            chips.innerHTML = '';
+            productosBD.forEach((row, key) => {
+                const chip = document.createElement('div');
+                chip.className = 'seleccion-chip';
+                chip.dataset.key = key;
+                chip.innerHTML = `
+                <span class="chip-code">${row.codigo}</span>
+                <span>${row.descripcion?.substring(0, 30)}${row.descripcion?.length > 30 ? '…' : ''}</span>
+                <span class="chip-cant">${row.cantidad} ${row.unidadproducto ?? ''}</span>
+                <button class="chip-remove" title="Quitar" onclick="quitarSeleccionado('${key}')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>`;
+                chips.appendChild(chip);
+            });
+        }
+
+        function quitarSeleccionado(key) {
+            productosBD.delete(key);
+            tableInstance?.clearSelection?.(); // quita el check visual de la tabla
+            // reload silencioso para reflejar checks
+            tableInstance?.reload?.();
+            renderChipsSeleccionados();
+        }
+
+        function limpiarSeleccion() {
+            productosBD.clear();
+            tableInstance?.clearSelection?.();
+            tableInstance?.reload?.();
+            renderChipsSeleccionados();
+        }
+
+        /* ================================================================
+            MODAL RESUMEN
+        ================================================================ */
+        function abrirResumen() {
+            if (productosBD.size === 0) {
+                _Swal.fire({
+                    icon: 'info',
+                    title: 'Sin productos seleccionados',
+                    customClass: {
+                        popup: 'small-toast'
+                    },
+                    showCancelButton: false
+                });
+                return;
+            }
+
+            const rows = Array.from(productosBD.values());
+            const totalCantidad = rows.reduce((s, r) => s + (parseFloat(r.cantidad) || 0), 0);
+            const totalCosto = rows.reduce((s, r) => s + (parseFloat(r.costo_promedio_total) || 0), 0);
+
+            // Almacén de origen (tomamos del filtro activo o del primer producto)
+            const almacenLabel = filtroAlmacen.getItem(filtroAlmacen.getValue())?.textContent?.trim() ||
+                rows[0]?.almacendescripcion ||
+                '—';
+
+            let filas = rows.map((r, i) => `
+            <tr>
+                <td class="td-code">${r.codigo}</td>
+                <td>${r.descripcion}</td>
+                <td>${r.cantidad} ${r.unidadproducto ?? ''}</td>
+                <td>${r.almacendescripcion ?? '—'}</td>
+                <td>$${parseFloat(r.costo_promedio_total ?? 0).toFixed(2)}</td>
+                <td class="td-remove">
+                    <button title="Quitar" onclick="quitarDeResumen('${seleccionKey(r)}')">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            </tr>`).join('');
+
+            document.getElementById('resumenModalBody').innerHTML = `
+            <div class="resumen-almacen-badge">
+                <i class="fa-solid fa-warehouse"></i>
+                Almacén: ${almacenLabel}
+            </div>
+            <div class="resumen-stats">
+                <div class="resumen-stat">
+                    <div class="stat-num">${rows.length}</div>
+                    <div class="stat-label">Productos</div>
+                </div>
+                <div class="resumen-stat">
+                    <div class="stat-num">${totalCantidad.toLocaleString()}</div>
+                    <div class="stat-label">Unidades totales</div>
+                </div>
+                <div class="resumen-stat">
+                    <div class="stat-num">$${totalCosto.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div class="stat-label">Costo total</div>
+                </div>
+            </div>
+            <div style="max-height:340px;overflow-y:auto;">
+                <table class="resumen-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Almacén</th>
+                            <th>Costo total</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="resumenTbody">${filas}</tbody>
+                </table>
+            </div>`;
+
+            new bootstrap.Modal(document.getElementById('resumenModal')).show();
+        }
+
+        // Quitar desde el modal resumen y actualizar el mismo modal
+        function quitarDeResumen(key) {
+            productosBD.delete(key);
+            renderChipsSeleccionados();
+            if (productosBD.size === 0) {
+                bootstrap.Modal.getInstance(document.getElementById('resumenModal'))?.hide();
+                return;
+            }
+            abrirResumen(); // refrescar
+        }
+
+        /* ================================================================
+            CONFIRMACIÓN DOBLE ANTES DE PROCESAR
+        ================================================================ */
+        async function iniciarConfirmacionDoble() {
+            if (productosBD.size === 0) return;
+
+            const rows = Array.from(productosBD.values());
+            const almacenVal = filtroAlmacen.getValue();
+            const almacenLabel = filtroAlmacen.getItem(almacenVal)?.textContent?.trim() ||
+                rows[0]?.almacendescripcion || '—';
+
+            // ── Paso 1: confirmar lista de productos ─────────────────────
+            const paso1 = await _Swal.fire({
+                title: 'Paso 1 de 2 — Confirmar productos',
+                html: `
+                <p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">
+                    Estás a punto de procesar <strong>${rows.length} producto(s)</strong>.
+                    ¿La lista es correcta?
+                </p>
+                <div style="max-height:220px;overflow-y:auto;text-align:left;">
+                    ${rows.map(r => `
+                        <div class="confirm-check-item">
+                            <i class="fa-solid fa-circle-check ok"></i>
+                            <div>
+                                <strong>${r.codigo}</strong> — ${r.descripcion?.substring(0, 40)}
+                                <span style="color:var(--text-light);font-size:12px;margin-left:6px;">${r.cantidad} ${r.unidadproducto ?? ''}</span>
+                            </div>
+                        </div>`).join('')}
+                </div>`,
+                showCancelButton: true,
+                confirmButtonText: 'Sí, continuar',
+                cancelButtonText: 'Revisar lista',
+                customClass: {
+                    popup: 'swal2-lg'
+                }
+            });
+
+            if (!paso1.isConfirmed) return;
+
+            // ── Paso 2: confirmar almacén ────────────────────────────────
+            const paso2 = await _Swal.fire({
+                title: 'Paso 2 de 2 — Confirmar almacén',
+                html: `
+                <p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">
+                    Verifica que el almacén de destino sea correcto antes de continuar.
+                </p>
+                <div class="confirm-check-item" style="justify-content:center;font-size:14px;">
+                    <i class="fa-solid fa-warehouse" style="color:var(--accent-blue);font-size:18px;"></i>
+                    <strong>${almacenLabel}</strong>
+                </div>
+                <p style="font-size:12px;color:var(--danger-color);margin-top:14px;font-weight:600;">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    Esta acción no se puede revertir.
+                </p>`,
+                showCancelButton: true,
+                confirmButtonText: 'Confirmar y procesar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#059669',
+                customClass: {
+                    popup: 'swal2-md'
+                }
+            });
+
+            if (!paso2.isConfirmed) return;
+
+            // ── Enviar al backend ────────────────────────────────────────
+            bootstrap.Modal.getInstance(document.getElementById('resumenModal'))?.hide();
+            ejecutarProcesamiento(rows, almacenVal);
+        }
+
+        async function ejecutarProcesamiento(rows, idAlmacen) {
+            try {
+                await GetData({
+                    path: '/Solicitudes/ProcesarMovimientos',
+                    data: {
+                        id_almacen: idAlmacen,
+                        productos: JSON.stringify(rows)
+                    },
+                    swalResponse: true,
+                    swalType: 'modal',
+                    swalPath: '/Traslados/Traslados'
+                });
+                // Limpiar selección tras éxito
+                productosBD.clear();
+                renderChipsSeleccionados();
+                tableInstance?.reload();
+            } catch (err) {
+                console.error('Error al procesar:', err);
+            }
+        }
+
+        /* ================================================================
+            TABLA PRINCIPAL — createTable
+        ================================================================ */
+        function initTabla() {
+            tableInstance = createTable({
+                selector: '#tablaTraslados',
+                path: '/Solicitudes/GetTraslados',
+                rowKey: 'id_producto',
+                searchPlaceholder: 'Buscar producto...',
+                data: () => ({
+                    id_sucursal: filtroSucursal.getValue() || '',
+                    id_almacen: filtroAlmacen.getValue() || ''
+                }),
+                columns: [{
+                        title: 'Código',
+                        data: 'codigo',
+                        formatter: v => `<strong>${v}</strong>`
+                    },
+                    {
+                        title: 'Producto',
+                        data: 'descripcion'
+                    },
+                    {
+                        title: 'Ubicación',
+                        data: 'almacendescripcion',
+                        formatter: v => `<span style="color:var(--text-light);font-size:13px;"><i class="fas fa-map-marker-alt me-1"></i>${v}</span>`
+                    },
+                    {
+                        title: 'Stock',
+                        data: null,
+                        sortable: false,
+                        formatter: (_, row) => {
+                            let cls = 'badge-stock';
+                            if (row.cantidad <= 10) cls += ' stock-critical';
+                            else if (row.cantidad <= 50) cls += ' stock-low';
+                            return `<span class="${cls}">${row.cantidad} ${row.unidadproducto}</span>`;
+                        }
+                    },
+                    {
+                        title: 'Ulocation',
+                        data: 'ulocation'
+                    },
+                    {
+                        title: 'Almacén',
+                        data: 'cve_almacen'
+                    },
+                    {
+                        title: 'Tarima',
+                        data: 'tarima'
+                    },
+                ],
+                actions: [
+                    { title: 'Trasladar', icon: 'fa-arrows-cross', color: 'green-500', onClick: row => openTransferModal(row.id_producto, row.ulocation) }
+                ],
+                GlobalEvents: {
+                    onDataLoaded: response => {
+                        inventoryData = response.data ?? response;
+                    }
+                }
+            });
+        }
+
+        /* ================================================================
+            FILTROS — eventos
+        ================================================================ */
+        document.getElementById('filSucursal').addEventListener('change', () => {
+            const idSuc = filtroSucursal.getValue();
+
+            const almsFiltrados = ubicaciones.almacenes?.filter(a => a.id_sucursal == idSuc) ?? [];
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(almsFiltrados);
+            filtroAlmacen.refreshOptions(false);
+            filtroAlmacen.clear(true);
+
+            const tarimasFil = ubicaciones.tarimas?.filter(a => a.id_sucursal == idSuc) ?? [];
+            tarimaOr.clearOptions();
+            tarimaOr.addOption(tarimasFil);
+            tarimaOr.refreshOptions(false);
+            tarimaDes.clearOptions();
+            tarimaDes.addOption(tarimasFil);
+            tarimaDes.refreshOptions(false);
+
+            tableInstance?.reload();
+        });
+
+        document.getElementById('filAlmacen').addEventListener('change', () => tableInstance?.reload());
+
+        document.getElementById('btnLimpiarFiltros').addEventListener('click', () => {
+            filtroSucursal.clear(true);
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(ubicaciones.almacenes ?? []);
+            filtroAlmacen.refreshOptions(false);
+            filtroAlmacen.clear(true);
+            tableInstance?.reload();
+        });
+
+        /* ================================================================
+            MODAL TRASLADO — abrir
+        ================================================================ */
+        function openTransferModal(idProducto, ulocation) {
+            currentProduct = inventoryData.find(i => i.id_producto === idProducto && i.ulocation === ulocation);
+            if (!currentProduct) return;
+
+            document.getElementById('almacen-disponible').setAttribute('data-id', currentProduct.codigo);
+
+            document.getElementById('productInfo').innerHTML = `
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h5 class="mb-0"><i class="fas fa-box me-2 text-primary"></i>${currentProduct.descripcion}</h5>
+                <span class="badge-stock">${currentProduct.cantidad} ${currentProduct.unidadproducto} disp.</span>
+            </div>
+            <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                    <tr>
+                        <th>Código:</th><td>${currentProduct.codigo}</td>
+                        <th>Clave sucursal:</th><td>${currentProduct.clavesucursal}</td>
+                    </tr>
+                    <tr>
+                        <th>Sucursal:</th><td>${currentProduct.descripcionsucursal}</td>
+                        <th>Almacén:</th><td>${currentProduct.almacendescripcion}</td>
+                    </tr>
+                    <tr>
+                        <th>Tipo almacén:</th><td>${currentProduct.tipoalmacen}</td>
+                        <th>Ubicación:</th><td>${currentProduct.tarima}</td>
+                    </tr>
+                    <tr>
+                        <th>Ulocation:</th><td>${currentProduct.ulocation}</td>
+                        <th>Contenedor:</th><td>${currentProduct.unidadnombre}</td>
+                    </tr>
+                </tbody>
+            </table>`;
+
+            tarimaOr.clear();
+            tarimaOr.setValue(currentProduct.id_tarima, true);
+            tarimaOr.disable();
+            tarimaDes.clear();
+            tarimaDes.enable();
+
+            const inp = document.getElementById('cantidadInterno');
+            inp.max = currentProduct.cantidad;
+            inp.placeholder = `Máximo: ${currentProduct.cantidad}`;
+            inp.value = '';
+
+            document.getElementById('traslados_form').reset();
+
+            new bootstrap.Modal(document.getElementById('transferModal')).show();
+        }
+
+        /* ================================================================
+            MODAL TRASLADO — confirmar
+        ================================================================ */
+        function procesarTraslado() {
+            const tarimaOrigen = tarimaOr.getValue();
+            const tarimaDestino = tarimaDes.getValue();
+            const cantidad = parseFloat(document.getElementById('cantidadInterno').value);
+            const motivo = document.getElementById('motivoInterno').value;
+            const observaciones = document.getElementById('observacionesGenerales').value;
+
+            if (!tarimaOrigen || !cantidad || !motivo) {
+                return _Swal.fire({
+                    icon: 'error',
+                    title: 'Completa todos los campos',
+                    customClass: {
+                        popup: 'small-toast'
+                    },
+                    showCancelButton: false
+                });
+            }
+            if (tarimaOrigen === tarimaDestino) {
+                return _Swal.fire({
+                    icon: 'error',
+                    title: 'La tarima origen y destino deben ser diferentes',
+                    customClass: {
+                        popup: 'small-toast'
+                    },
+                    showCancelButton: false
+                });
+            }
+
+            const trasladoData = {
+                producto: {
+                    ...currentProduct,
+                    cantidad
+                },
+                tipo: 'interno',
+                observaciones,
+                detalles: {
+                    tarimaOrigen: parseInt(tarimaOrigen),
+                    tarimaDestino: parseInt(tarimaDestino),
+                    cantidad,
+                    motivo
+                }
+            };
+
+            const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:auto">
+            <style>.flip{animation:spinY 2s linear infinite;transform-origin:center}@@keyframes spinY{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}</style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g></svg>`;
+
+            _Swal.fire({
+                iconHtml: warningIcon,
+                title: 'Confirmar traslado',
+                html: '¿Está seguro que desea mover el material?',
+                footer: "<b style='color:red'>ADVERTENCIA — Este cambio no se puede revertir</b>",
+                customClass: {
+                    icon: 'p-0 bg-transparent border-0 shadow-none'
+                },
+                preConfirm: () => GetData({
+                    path: '/Solicitudes/GenerarMovimiento',
+                    data: {
+                        movimiento: JSON.stringify(trasladoData.detalles),
+                        producto: JSON.stringify(trasladoData.producto),
+                        tipoMovimiento: trasladoData.tipo,
+                        comentarios: trasladoData.observaciones
+                    },
+                    swalResponse: true,
+                    swalType: 'modal',
+                    swalPath: '/Traslados/Traslados'
+                })
+            });
+        }
+
+        /* ================================================================
+            SUGERENCIAS DE TARIMA
+        ================================================================ */
+        async function sugerenciasAlmacen(e) {
+            const id = $(e).data('id');
+            const disponible = await GetData({
+                path: '/Solicitudes/GetInventarioDisponible',
+                data: {
+                    id
+                }
+            });
+
+            let rows = '';
+            disponible.data.forEach((item, i) => {
+                rows += `<tr>
+                <td>${item.codigo  ?? '—'}</td>
+                <td>${item.cantidad ?? '—'}</td>
+                <td>${item.tarima   ?? ''}</td>
+                <td>${item.ulocation ?? ''}</td>
+                <td style="text-align:center">
+                    <button class="sug-btn" onclick="selectLocation(${item.id_tarima})">Agregar</button>
+                </td>
+            </tr>`;
+            });
+
+            _Swal.fire({
+                html: `<h6 style="margin:16px 0 10px;text-align:left">Stock disponible</h6>
+                    <div style="max-height:360px;overflow-y:auto">
+                        <table class="sug-table">
+                            <thead><tr><th>Código</th><th>Cantidad</th><th>Tarima</th><th>Ulocation</th><th></th></tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>`
+            });
+        }
+
+        function selectLocation(idTarima) {
+            tarimaDes.clear();
+            tarimaDes.setValue(idTarima, true);
+            Swal.close();
+        }
+
+        /* ================================================================
+           KEPLER MODAL
+        ================================================================ */
+        function initKeplerSelect() {
+            keplerAlmacenSelect = new TomSelect('#keplerAlmacen', {
+                create: false,
+                maxItems: 1,
+                valueField: 'cve_almacen',
+                searchField: ['cve_almacen', 'almacen_descripcion', 'cve_sucursal'],
+                render: {
+                    option: (d, e) => `<div><span class="title">${e(d.cve_almacen)}</span><span class="url">${e(d.cve_sucursal)} – ${e(d.descripcion_almacem)}</span></div>`,
+                    item: (d, e) => `<div><span style="color:dark">${e(d.cve_sucursal)} – ${e(d.descripcion_almacem)}</span></div>`
+                }
+            });
+        }
+
+        async function abrirModalKepler() {
+            let almacenesKepler = [];
+            try {
+                almacenesKepler = await GetData({
+                    path: '/Solicitudes/GetAmacenesKepler'
+                });
+            } catch (err) {
+                console.warn('No se pudieron cargar los almacenes de Kepler, usando cache local.', err);
+                almacenesKepler = ubicaciones.almacenes ?? [];
+            }
+
+            if (keplerAlmacenSelect) {
+                keplerAlmacenSelect.clearOptions();
+                keplerAlmacenSelect.addOption(almacenesKepler);
+                keplerAlmacenSelect.refreshOptions(false);
+                keplerAlmacenSelect.clear();
+            }
+
+            keplerProductos = [];
+            keplerTableInstance = null;
+            document.getElementById('keplerTablaContainer').innerHTML = '';
+            document.getElementById('keplerLoading').classList.add('d-none');
+            document.getElementById('keplerProductosWrapper').classList.add('d-none');
+            document.getElementById('btnConfirmarKepler').classList.add('d-none');
+
+            new bootstrap.Modal(document.getElementById('keplerModal')).show();
+        }
+
+        let keplerTableInstance = null;
+        const _originalFetch = window.fetch.bind(window);
+
+        async function cargarProductosKepler() {
+            const idAlmacen = keplerAlmacenSelect?.getValue();
+            if (!idAlmacen) {
+                return _Swal.fire({
+                    icon: 'warning',
+                    title: 'Selecciona un almacén primero',
+                    customClass: {
+                        popup: 'small-toast'
+                    }
+                });
+            }
+
+            keplerTableInstance = createTable({
+                selector: '#keplerTablaContainer',
+                path: '/Solicitudes/GetProductosAlmacen',
+                rowKey: (row) => `${row.codigo}|${row.pedimento}`,
+                sortDir: 'desc',
+                searchPlaceholder: 'Buscar por código o descripción...',
+                columns: [
+                    {
+                        title: 'Índice',
+                        data: null,
+                        formatter: (v, row, i) => `<span class="text-muted">${i}</span>`
+                    },
+                    {
+                        title: 'Código',
+                        data: 'codigo',
+                        formatter: v => `<strong>${v ?? ''}</strong>`
+                    },
+                    {
+                        title: 'Descripción',
+                        data: 'descripcion'
+                    },
+                    {
+                        title: 'Cantidad',
+                        data: 'cantidad',
+                        formatter: (v) => {
+                            const n = parseFloat(v ?? 0);
+                            const cls = n <= 10 ? 'text-danger fw-bold' : n <= 50 ? 'text-warning fw-bold' : 'text-success fw-semibold';
+                            return `<span class="${cls}">${n}</span>`;
+                        }
+                    },
+                    {
+                        title: 'Unidad',
+                        data: 'unidad'
+                    },
+                    {
+                        title: 'Peso',
+                        data: 'peso'
+                    },
+                    {
+                        title: 'Fraccion arancelaria',
+                        data: 'fraccion'
+                    },
+                ],
+                GlobalEvents: {
+                    onDataLoaded: () => {
+                        document.getElementById('btnConfirmarKepler').classList.remove('d-none');
+                    }
+                },
+                data: () => ({
+                    id_almacen: idAlmacen,
+                }),
+                selectable: {
+                    enabled: true,
+                    onChange: rows => {
+                        keplerProductos = [];
+                        rows.forEach(row => {
+                            keplerProductos.push({
+                                clave: row.codigo,
+                                descripcion: row.descripcion,
+                                cantidad: row.cantidad,
+                                unidad: row.unidad,
+                                peso: row.peso,
+                                fraccion: row.fraccion,
+                                pedimento: row.pedimento
+                            })
+                        })
+                    }
+                }
+            });
+
+            document.getElementById('keplerProductosWrapper').classList.remove('d-none');
+        }
+
+        $('#btnGuardarCantidad').on('click', function () {
+            const codigo = $('#modalCantidad').data('codigo');
+            const cantidad = parseFloat($('#cantidadMover').val());
+            const producto = keplerProductos.find(x => x.clave === codigo);
+
+            if (producto) {
+                producto.cantidad = cantidad;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalCantidad')).hide();
+        });
+
+        async function confirmarSincronizacionKepler() {
+            const idAlmacen = keplerAlmacenSelect?.getValue();
+            _Swal.fire({
+                icon: 'question',
+                title: '¿Confirmar sincronización?',
+                html: `Se sincronizarán <b>${keplerProductos.length}</b> producto(s) con Kepler.`,
+                footer: "<b style='color:red'>Esta acción actualizará el inventario en Kepler y no puede ser revertida</b>",
+                showCancelButton: true,
+                confirmButtonText: 'Sincronizar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    Swal.fire({
+                        title: 'Sincronizando almacen de kepler, esto puede tardar unos segundos...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    GetData({
+                        path: '/Solicitudes/SincronizarAlmacenes',
+                        data: {
+                            id_almacen: idAlmacen,
+                            productos: JSON.stringify(keplerProductos),
+                            ids: JSON.stringify(Array.from(keplerTableInstance.getSelectedRows()).map(x => x.codigo))
+                        },
+                        swalResponse: true,
+                        swalType: 'modal',
+                        swalPath: '/Traslados/Traslados'
+                    })
+                }
+            });
+        }
+
+        /* ================================================================
+            INIT
+        ================================================================ */
+        document.addEventListener('DOMContentLoaded', async () => {
+
+            initKeplerSelect();
+
+            ubicaciones = await GetData({
+                path: '/Solicitudes/GetUbicaciones'
+            });
+
+            filtroSucursal.clearOptions();
+            filtroSucursal.addOption(ubicaciones.sucursales ?? []);
+            filtroSucursal.refreshOptions(false);
+            filtroSucursal.setValue(@Context.Session.GetInt32("Sucursal"), true);
+
+            const idSucInicial = parseInt(filtroSucursal.getValue());
+            const almsIniciales = ubicaciones.almacenes?.filter(a => a.id_sucursal == idSucInicial) ?? [];
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(almsIniciales);
+            filtroAlmacen.refreshOptions(false);
+
+            const tarimasIniciales = ubicaciones.tarimas?.filter(a => a.id_sucursal == idSucInicial) ?? [];
+            tarimaOr.clearOptions();
+            tarimaOr.addOption(tarimasIniciales);
+            tarimaOr.refreshOptions(false);
+            tarimaDes.clearOptions();
+            tarimaDes.addOption(tarimasIniciales);
+            tarimaDes.refreshOptions(false);
+
+            initTabla();
+        });
+    </script>
+}

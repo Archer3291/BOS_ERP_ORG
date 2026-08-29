@@ -1,0 +1,368 @@
+﻿@{
+    ViewBag.Title = "Presupuesto";
+}
+
+<link href="~/content/sidebar.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="mb-4 w-50">
+    <label for="selectorTabla" class="form-label">
+        <i class="fa-solid fa-table"></i> Mostrar tabla
+    </label>
+    <select id="selectorTabla" class="form-select">
+        <option value="tablaPresupuesto">Pendientes de presupuesto</option>
+        <option value="tablaRetenidas">Retenidas por presupuesto</option>
+    </select>
+</div>
+
+<div>
+    <div class="contenedor-tabla" id="contenedor-tablaPresupuesto"><div id="tablaPresupuesto"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaRetenidas"><div id="tablaRetenidas"></div></div>
+</div>
+
+<!-- Detalle de la cotización -->
+<div class="modal fade" id="modalPresupuesto" tabindex="-1" aria-labelledby="modalPresupuestoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPresupuestoLabel">
+                    <i class="bi bi-cash-coin me-2"></i> Revisión de presupuesto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="cuerpoPresupuesto"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Cerrar
+                </button>
+                <button type="button" id="btn-rechazar-presupuesto" class="btn btn-outline-danger">
+                    <i class="bi bi-pause-circle me-1"></i> Retener
+                </button>
+                <button type="button" id="btn-aprobar-presupuesto" class="btn btn-success">
+                    <i class="bi bi-check-lg me-1"></i> Aprobar presupuesto
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/scripts/TableBuilder.js"></script>
+<script src="~/scripts/compras-nacionales.js?v=@DateTime.Now.Ticks"></script>
+<script>
+    // ============================================
+    // PASO 5 — PRESUPUESTO
+    // Aprobar (4|10 -> 5), retener (4 -> 10) o cancelar (10 -> 27).
+    // ============================================
+    const TABLAS_PRESUPUESTO = {
+        tablaPresupuesto: {
+            url: '/Requisicion/GetCotizacionesPresupuesto',
+            prioridad: true,
+            acciones: [
+                { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                { icon: 'fa-magnifying-glass-dollar', color: 'btn-success', title: 'Revisar presupuesto', onClick: row => revisarPresupuesto(row, false) },
+                { icon: 'fa-download', color: 'green-500', title: 'Descargar cotización', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+            ]
+        },
+        tablaRetenidas: {
+            url: '/Requisicion/GetCotizacionesRetenidas',
+            prioridad: false,
+            acciones: [
+                { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                { icon: 'fa-magnifying-glass-dollar', color: 'btn-success', title: 'Revisar y liberar', onClick: row => revisarPresupuesto(row, true) },
+                { icon: 'fa-ban', color: 'red-500', title: 'Cancelar en definitiva', onClick: row => cancelarPorPresupuesto(row) },
+            ]
+        }
+    };
+
+    const tablasPresupuesto = {};
+    let documentoPresupuesto = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const selector = document.getElementById('selectorTabla');
+
+        mostrarSoloTabla(selector.value);
+        selector.addEventListener('change', () => mostrarSoloTabla(selector.value));
+
+        const folio = folioDeLaUrl();
+
+        Object.entries(TABLAS_PRESUPUESTO).forEach(([id, config]) => {
+            tablasPresupuesto[id] = createTable({
+                selector: `#${id}`,
+                path: config.url,
+                rowKey: 'id_encabezado',
+                searchPlaceholder: 'Buscar por folio, responsable u observaciones...',
+                sortDir: 'desc',
+                data: () => ({ folio }),
+                columns: columnasDocumento(),
+                actions: config.acciones,
+                exports: ['excel'],
+                GlobalEvents: {
+                    onDataLoaded: respuesta => {
+                        if (config.prioridad) aplicarPrioridadFilas(`#${id}`, respuesta);
+                    }
+                }
+            });
+        });
+
+        document.getElementById('btn-aprobar-presupuesto').addEventListener('click', aprobarPresupuesto);
+        document.getElementById('btn-rechazar-presupuesto').addEventListener('click', retenerPresupuesto);
+    });
+
+    function mostrarSoloTabla(tablaId) {
+        document.querySelectorAll('.contenedor-tabla').forEach(contenedor => {
+            contenedor.style.display = contenedor.id === `contenedor-${tablaId}` ? 'block' : 'none';
+        });
+    }
+
+    function actualizarTablasPresupuesto() {
+        Object.values(tablasPresupuesto).forEach(t => t.refreshPage());
+    }
+
+    // ============================================
+    // DETALLE
+    // ============================================
+    async function revisarPresupuesto(row, esRetenida) {
+        const _res = await GetData({
+            path: '/Requisicion/GetCotizacionPresupuestoData',
+            data: { id: row.id_encabezado }
+        });
+
+        if (!_res?.success) {
+            toastMixin.fire({ icon: 'error', title: _res?.error || 'No se pudo cargar la cotización.' });
+            actualizarTablasPresupuesto();
+            return;
+        }
+
+        documentoPresupuesto = row.id_encabezado;
+
+        const { requisicion, partidas, opciones } = _res.returnResult;
+        const cuerpo = document.getElementById('cuerpoPresupuesto');
+
+        const totales = totalizarPartidas(partidas, p => ({
+            cantidad: p.cant_ud, precio: p.pv_prod, dto1: p.descuento
+        }));
+
+        cuerpo.innerHTML = `
+            <div class="row g-3 mb-4">
+                ${[
+                    ['Folio', requisicion.folio],
+                    ['Solicitante', requisicion.solicitante || '—'],
+                    ['Área solicitante', requisicion.area_solicitante || '—'],
+                    ['Centro de costos', requisicion.centro_costos || 'Sin asignar'],
+                    ['Aprobó gerente', requisicion.gerente || '—'],
+                    ['Cotizó', requisicion.comprador || '—'],
+                ].map(([k, v]) => `
+                <div class="col-md-4">
+                    <div class="card-resumen">
+                        <h6 class="text-muted mb-1" style="font-size:.8rem">${k}</h6>
+                        <p class="mb-0 fw-semibold">${v}</p>
+                    </div>
+                </div>`).join('')}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Observaciones de la solicitud</label>
+                <p class="text-muted">${requisicion.observaciones || 'Sin observaciones.'}</p>
+            </div>
+
+            ${esRetenida && requisicion.motivo ? `
+            <div class="alert alert-warning">
+                <strong><i class="bi bi-pause-circle me-1"></i> Motivo por el que se retuvo:</strong>
+                <div>${requisicion.motivo}</div>
+            </div>` : ''}
+
+            <div class="table-responsive mb-4">
+                <table class="table modern-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descripción</th>
+                            <th>Proveedor</th>
+                            <th class="text-end">Cantidad</th>
+                            <th class="text-end">C/U</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-end">Descuento %</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${partidas.map(p => {
+                            const cantidad = parseFloat(p.cant_ud) || 0;
+                            const precio = parseFloat(p.pv_prod) || 0;
+                            const dto1 = porcentajeDescuento(p.descuento);
+                            return `
+                        <tr>
+                            <td><span class="badge bg-primary">${p.cve_prod}</span></td>
+                            <td>${p.descr_prod || '—'}</td>
+                            <td>${p.cve_vdr_cpr || '—'}</td>
+                            <td class="text-end">${cantidad} ${p.ud || ''}</td>
+                            <td class="text-end">${Currency.format(precio)}</td>
+                            <td class="text-end">${Currency.format(brutoPartida(cantidad, precio))}</td>
+                            <td class="text-end"><span class="badge bg-warning text-dark">${formatoPorcentaje(dto1)}</span></td>
+                            <td class="text-end fw-bold">${Currency.format(netoPartida(cantidad, precio, dto1))}</td>
+                        </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            ${bloqueOpcionesDescartadas(opciones, partidas)}
+
+            <div class="d-flex justify-content-end">
+                <div style="min-width:320px">
+                    ${[
+                        ['Subtotal', Currency.format(totales.subtotal)],
+                        ['Descuento', `- ${Currency.format(totales.descuento)}`],
+                    ].map(([k, v]) => `
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">${k}</span>
+                        <span>${v}</span>
+                    </div>`).join('')}
+                    <hr class="my-2" />
+                    <div class="d-flex justify-content-between">
+                        <strong>Monto a comprometer</strong>
+                        <strong class="fs-5">${Currency.format(totales.base)}</strong>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        Los impuestos se calculan en el siguiente paso, cuando Compras define el método de pago.
+                    </small>
+                </div>
+            </div>`;
+
+        // Una retenida ya fue rechazada: solo se libera o se cancela desde la tabla
+        document.getElementById('btn-rechazar-presupuesto').style.display = esRetenida ? 'none' : '';
+        document.getElementById('btn-aprobar-presupuesto').innerHTML = esRetenida
+            ? '<i class="bi bi-check-lg me-1"></i> Liberar y continuar'
+            : '<i class="bi bi-check-lg me-1"></i> Aprobar presupuesto';
+
+        document.getElementById('modalPresupuestoLabel').innerHTML =
+            `<i class="bi bi-cash-coin me-2"></i> Revisión de presupuesto — ${requisicion.folio}`;
+
+        new bootstrap.Modal(document.getElementById('modalPresupuesto')).show();
+    }
+
+    // Comparativo: contra que otras opciones se eligio la que se esta autorizando
+    function bloqueOpcionesDescartadas(opciones, partidas) {
+        // Los nombres de proveedor capturados a mano traen saltos de linea y
+        // espacios de sobra: hay que normalizar antes de comparar.
+        const clave = (producto, proveedor) =>
+            `${(producto || '').trim()}|${(proveedor || '').replace(/\s+/g, ' ').trim()}`.toLowerCase();
+
+        const elegidas = new Set(partidas.map(p => clave(p.cve_prod, p.cve_vdr_cpr)));
+        const descartadas = (opciones || []).filter(o => !elegidas.has(clave(o.producto, o.proveedor_nombre)));
+
+        if (!descartadas.length) return '';
+
+        return `
+            <details class="mb-4">
+                <summary class="fw-semibold" style="cursor:pointer">
+                    Opciones que no se eligieron (${descartadas.length})
+                </summary>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm modern-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Proveedor</th>
+                                <th class="text-end">Cantidad</th>
+                                <th class="text-end">C/U</th>
+                                <th class="text-end">Descuento %</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-center">Cotización</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${descartadas.map(o => `
+                            <tr class="text-muted">
+                                <td>${o.producto || '—'}</td>
+                                <td>${(o.proveedor_nombre || '—').replace(/\s+/g, ' ').trim()}</td>
+                                <td class="text-end">${parseFloat(o.cantidad) || 0} ${o.unidad || ''}</td>
+                                <td class="text-end">${Currency.format(parseFloat(o.precio) || 0)}</td>
+                                <td class="text-end">${formatoPorcentaje(o.descuento)}</td>
+                                <td class="text-end">${Currency.format(parseFloat(o.total) || 0)}</td>
+                                <td class="text-center">${enlaceAdjunto(o.ruta, o.nombre_original, o.extencion)}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </details>`;
+    }
+
+    // ============================================
+    // ACCIONES
+    // ============================================
+    function aprobarPresupuesto() {
+        ejecutarAccionPresupuesto({
+            path: '/Requisicion/AprobarPresupuesto',
+            titulo: '¿Aprobar el presupuesto?',
+            texto: 'La cotización pasa a Compras para definir el método de pago.',
+            icono: 'question',
+            pedirMotivo: false
+        });
+    }
+
+    function retenerPresupuesto() {
+        ejecutarAccionPresupuesto({
+            path: '/Requisicion/RechazarPresupuesto',
+            titulo: '¿Retener la cotización?',
+            texto: 'Queda en espera hasta que finanzas decida liberarla o cancelarla.',
+            icono: 'warning',
+            pedirMotivo: true
+        });
+    }
+
+    function cancelarPorPresupuesto(row) {
+        documentoPresupuesto = row.id_encabezado;
+        ejecutarAccionPresupuesto({
+            path: '/Requisicion/CancelarPorPresupuesto',
+            titulo: `¿Cancelar ${row.nuevo_codigo} en definitiva?`,
+            texto: 'El documento no se puede reabrir después de cancelarse.',
+            icono: 'error',
+            pedirMotivo: true,
+            cerrarModal: false
+        });
+    }
+
+    function ejecutarAccionPresupuesto({ path, titulo, texto, icono, pedirMotivo, cerrarModal = true }) {
+        _Swal.fire({
+            icon: icono,
+            title: titulo,
+            text: texto,
+            input: pedirMotivo ? 'textarea' : undefined,
+            inputLabel: pedirMotivo ? 'Motivo' : undefined,
+            inputPlaceholder: pedirMotivo ? 'Escribe el motivo...' : undefined,
+            confirmButtonText: 'Confirmar',
+            preConfirm: async (comentario) => {
+                if (pedirMotivo && !comentario) {
+                    Swal.showValidationMessage('Debes ingresar un motivo');
+                    return false;
+                }
+
+                const _res = await GetData({
+                    path,
+                    data: { id_encabezado: documentoPresupuesto, comentario: comentario || '' }
+                });
+
+                if (!_res?.success) {
+                    Swal.showValidationMessage(_res?.html || 'No se pudo completar la acción.');
+                    return false;
+                }
+                return _res;
+            }
+        }).then(result => {
+            if (!result.isConfirmed || !result.value) return;
+
+            toastMixin.fire({ icon: result.value.icon, title: result.value.title });
+
+            if (cerrarModal) {
+                bootstrap.Modal.getInstance(document.getElementById('modalPresupuesto'))?.hide();
+            }
+            actualizarTablasPresupuesto();
+        });
+    }
+</script>

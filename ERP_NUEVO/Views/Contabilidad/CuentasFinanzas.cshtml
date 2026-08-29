@@ -1,0 +1,445 @@
+﻿@{
+    ViewBag.Title = "View";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<!-- Content Card -->
+<div class="content-card">
+    <div class="filters-section">
+        <button class="btn btn-primary btn-sm" onclick="abrirCrearCliente()">
+            <i class="fa-solid fa-plus"></i> Nueva Cuenta Cliente
+        </button>
+        <button class="btn btn-secondary btn-sm ms-2" onclick="abrirCrearProveedor()">
+            <i class="fa-solid fa-plus"></i> Nueva Cuenta Proveedor
+        </button>
+        <button class="btn btn-success btn-sm ms-2" onclick="abrirCrearContable()">
+            <i class="fa-solid fa-plus"></i> Nueva Cuenta Contable
+        </button>
+    </div>
+
+    <div class="tab-pane fade show active" id="clientes" role="tabpanel">
+        <div class="table-container">
+            <div id="tablaCuentas"></div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ===================== MODAL CREAR CLIENTE ===================== -->
+<div class="modal fade" id="modalCuentaCliente" tabindex="-1" aria-labelledby="modalCuentaClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCuentaClienteLabel">Crear Cuenta Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Cliente <span class="text-danger">*</span></label>
+                    <select id="selectCliente" class="form-select">
+                        <option value="">-- Selecciona un cliente --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Cuenta Contable</label>
+                    <input type="text" id="cuentaContableCliente" class="form-control" placeholder="Se generará automáticamente" />
+                    <small class="text-muted">Formato: 1-1-05-{cve_cli}</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" id="nombreCuentaCliente" class="form-control" placeholder="Nombre de la cuenta" />
+                </div>
+                <div id="errorCliente" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarCuentaCliente()">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== MODAL CREAR PROVEEDOR ===================== -->
+<div class="modal fade" id="modalCuentaProveedor" tabindex="-1" aria-labelledby="modalCuentaProveedorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCuentaProveedorLabel">Crear Cuenta Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Proveedor <span class="text-danger">*</span></label>
+                    <select id="selectProveedor" class="form-select">
+                        <option value="">-- Selecciona un proveedor --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Cuenta Contable</label>
+                    <input type="text" id="cuentaContableProveedor" class="form-control" placeholder="Se generará automáticamente" />
+                    <small class="text-muted">Formato: 2-1-01-{cve_prov}</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" id="nombreCuentaProveedor" class="form-control" placeholder="Nombre de la cuenta" />
+                </div>
+                <div id="errorProveedor" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarCuentaProveedor()">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== MODAL CREAR CUENTA CONTABLE ===================== -->
+<div class="modal fade" id="modalCuentaContable" tabindex="-1" aria-labelledby="modalCuentaContableLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCuentaContableLabel">Crear Cuenta Contable</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Código <span class="text-danger">*</span></label>
+                    <input type="text" id="codigoCuentaContable" class="form-control" placeholder="Ej. 5-1-01" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" id="nombreCuentaContable" class="form-control" placeholder="Ej. IVA por pagar" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Naturaleza <span class="text-danger">*</span></label>
+                    <select id="naturalezaCuentaContable" class="form-select">
+                        <option value="">-- Selecciona --</option>
+                        <option value="D">Deudor</option>
+                        <option value="A">Acreedor</option>
+                        <option value="N">No afectable</option>
+                    </select>
+                </div>
+                <div id="errorContable" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarCuentaContable()">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== MODAL EDITAR CUENTA ===================== -->
+<div class="modal fade" id="modalEditarCuenta" tabindex="-1" aria-labelledby="modalEditarCuentaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="modalEditarCuentaLabel">Editar Cuenta</h5>
+                    <p class="modal-subtitle mb-0 text-muted" id="subtitleEditar"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editCuentaId" />
+                <input type="hidden" id="editTipoCuenta" />
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" id="labelEditTitular">Titular</label>
+                    <input type="text" id="editCuentaNombre" class="form-control" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Cuenta Contable</label>
+                    <input type="text" id="editCuentaContable" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" id="editNombreCuenta" class="form-control" />
+                </div>
+                <div class="mb-3" id="wrapperEditNaturaleza" style="display:none;">
+                    <label class="form-label fw-semibold">Naturaleza <span class="text-danger">*</span></label>
+                    <select id="editNaturaleza" class="form-select">
+                        <option value="">-- Selecciona --</option>
+                        <option value="D">Deudor</option>
+                        <option value="A">Acreedor</option>
+                        <option value="N">No afectable</option>
+                    </select>
+                </div>
+                <div id="errorEditarCuenta" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="actualizarCuenta()">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script>
+    // ─── HELPERS ────────────────────────────────────────────────────────────────
+    let tomManager;
+    document.addEventListener('DOMContentLoaded', () => {
+        tomManager = new TomSelectManager();
+    });
+
+    function mostrarError(id, msg) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.classList.remove('d-none');
+    }
+
+    function ocultarError(id) {
+        document.getElementById(id).classList.add('d-none');
+    }
+
+    // ─── INIT TABLA ─────────────────────────────────────────────────────────────
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        window.tablaCuentas = createTable({
+            selector: '#tablaCuentas',
+            path: '/CuentasFinanzas/GetCuentasFinanzas',
+            searchPlaceholder: 'Buscar cuenta...',
+            columns: [
+                { title: 'Código', data: 'codigo' },
+                { title: 'Nombre', data: 'nombre' },
+                {
+                    title: 'Tipo', data: 'tipo', formatter: v => {
+                        if (v === 'cliente') return '<span class="badge bg-primary">Cliente</span>';
+                        if (v === 'proveedor') return '<span class="badge bg-secondary">Proveedor</span>';
+                        return '<span class="badge bg-success">Contable</span>';
+                    }
+                },
+                { title: 'Naturaleza', data: 'naturaleza', formatter: v => v === 'A' ? 'Acreedor' : v === 'D' ? 'Deudor' : 'No afectable' },
+            ],
+            actions: [
+                { icon: 'fa-solid fa-pen-to-square', color: 'green-500', title: 'Editar', onClick: row => abrirEditarCuenta(row) },
+            ],
+        });
+    });
+
+    // ─── CREAR CLIENTE ───────────────────────────────────────────────────────────
+
+    async function abrirCrearCliente() {
+        ocultarError('errorCliente');
+        document.getElementById('selectCliente').innerHTML = '<option value="">-- Escribe para buscar un cliente --</option>';
+        document.getElementById('cuentaContableCliente').value = '';
+        document.getElementById('nombreCuentaCliente').value = '';
+
+        const modal = new bootstrap.Modal(document.getElementById('modalCuentaCliente'));
+        modal.show();
+
+        tomManager.destroy('clientes');
+
+        tomManager.create('clientes', {
+            selector: '#selectCliente',
+            valueField: 'id_cliente',
+            displayField: 'n_cli',
+            searchField: ['n_cli', 'cve_cli'],
+            placeholder: 'Escribe para buscar un cliente',
+            preload: false,
+            loadThrottle: 300,
+            render: {
+                option: function (data, escape) {
+                    return `<div>
+                        <span style="color:black; font-weight:600;">${escape(data.cve_cli)}</span>
+                        <span style="color:black;"> - ${escape(data.n_cli)}</span>
+                    </div>`;
+                },
+                item: function (data, escape) {
+                    return `<div>
+                        <strong style="color:black;">${escape(data.cve_cli)}</strong>
+                        <span style="color:black;">- ${escape(data.n_cli)}</span>
+                    </div>`;
+                }
+            },
+            load: async function (query, callback) {
+                if (!query.length) return callback();
+                const _res = await GetData({ path: '/CuentasFinanzas/GetClientes', data: { param: query } });
+                callback(_res);
+            },
+            onChange: function (value) {
+                if (!value) return;
+                const selected = this.options[value];
+                document.getElementById('cuentaContableCliente').value = `1-1-05-${selected.cve_cli}`;
+                document.getElementById('nombreCuentaCliente').value = selected.n_cli;
+            }
+        });
+    }
+
+    function guardarCuentaCliente() {
+        ocultarError('errorCliente');
+        const select = document.getElementById('selectCliente');
+        const clienteId = select.value;
+        const nombre = document.getElementById('nombreCuentaCliente').value.trim();
+        const cuentaContable = document.getElementById('cuentaContableCliente').value;
+
+        if (!clienteId) return mostrarError('errorCliente', 'Selecciona un cliente.');
+        if (!nombre) return mostrarError('errorCliente', 'El nombre es obligatorio.');
+
+        GetData({
+            path: '/CuentasFinanzas/CrearCuentaCliente',
+            data: { clienteId, nombre, cuentaContable },
+            swalResponse: true,
+            swalType: 'modal',
+        });
+    }
+
+    // ─── CREAR PROVEEDOR ─────────────────────────────────────────────────────────
+
+    async function abrirCrearProveedor() {
+        ocultarError('errorProveedor');
+        document.getElementById('selectProveedor').innerHTML = '<option value="">-- Cargando... --</option>';
+        document.getElementById('cuentaContableProveedor').value = '';
+        document.getElementById('nombreCuentaProveedor').value = '';
+
+        const modal = new bootstrap.Modal(document.getElementById('modalCuentaProveedor'));
+        modal.show();
+
+        tomManager.destroy('proveedores');
+
+        tomManager.create('proveedores', {
+            selector: '#selectProveedor',
+            valueField: 'id_prov',
+            displayField: 'n_prov',
+            searchField: ['n_prov', 'cve_prov'],
+            placeholder: 'Escribe para buscar un proveedor',
+            preload: false,
+            loadThrottle: 300,
+            render: {
+                option: function (data, escape) {
+                    return `<div>
+                        <span style="color:black; font-weight:600;">${escape(data.cve_prov)}</span>
+                        <span style="color:black;"> - ${escape(data.n_prov)}</span>
+                    </div>`;
+                },
+                item: function (data, escape) {
+                    return `<div>
+                        <strong style="color:black;">${escape(data.cve_prov)}</strong>
+                        <span style="color:black;">- ${escape(data.n_prov)}</span>
+                    </div>`;
+                }
+            },
+            load: async function (query, callback) {
+                if (!query.length) return callback();
+                const _res = await GetData({ path: '/CuentasFinanzas/GetProveedores', data: { param: query } });
+                callback(_res);
+            },
+            onChange: function (value) {
+                if (!value) return;
+                const selected = this.options[value];
+                document.getElementById('cuentaContableProveedor').value = `2-1-01-${selected.cve_prov}`;
+                document.getElementById('nombreCuentaProveedor').value = selected.n_prov;
+            }
+        });
+    }
+
+    async function guardarCuentaProveedor() {
+        ocultarError('errorProveedor');
+        const select = document.getElementById('selectProveedor');
+        const proveedorId = select.value;
+        const nombre = document.getElementById('nombreCuentaProveedor').value.trim();
+        const cuentaContable = document.getElementById('cuentaContableProveedor').value;
+
+        if (!proveedorId) return mostrarError('errorProveedor', 'Selecciona un proveedor.');
+        if (!nombre) return mostrarError('errorProveedor', 'El nombre es obligatorio.');
+
+        await GetData({
+            path: '/CuentasFinanzas/CrearCuentaProveedor',
+            data: { proveedorId, nombre, cuentaContable },
+            swalResponse: true,
+            swalType: 'modal',
+        });
+    }
+
+    // ─── CREAR CUENTA CONTABLE ───────────────────────────────────────────────────
+
+    function abrirCrearContable() {
+        ocultarError('errorContable');
+        document.getElementById('codigoCuentaContable').value = '';
+        document.getElementById('nombreCuentaContable').value = '';
+        document.getElementById('naturalezaCuentaContable').value = '';
+
+        new bootstrap.Modal(document.getElementById('modalCuentaContable')).show();
+    }
+
+    async function guardarCuentaContable() {
+        ocultarError('errorContable');
+        const codigo = document.getElementById('codigoCuentaContable').value.trim();
+        const nombre = document.getElementById('nombreCuentaContable').value.trim();
+        const naturaleza = document.getElementById('naturalezaCuentaContable').value;
+
+        if (!codigo) return mostrarError('errorContable', 'El código es obligatorio.');
+        if (!nombre) return mostrarError('errorContable', 'El nombre es obligatorio.');
+        if (!naturaleza) return mostrarError('errorContable', 'Selecciona una naturaleza.');
+
+        await GetData({
+            path: '/CuentasFinanzas/CrearCuentaContable',
+            data: { codigo, nombre, naturaleza },
+            swalResponse: true,
+            swalType: 'modal',
+        });
+    }
+
+    // ─── EDITAR CUENTA ────────────────────────────────────────────────────────────
+
+    function abrirEditarCuenta(row) {
+        ocultarError('errorEditarCuenta');
+
+        // Determinar tipo
+        const tipo = row.cliente_id ? 'cliente' : row.proveedor_id ? 'proveedor' : 'contable';
+
+        document.getElementById('editCuentaId').value = row.id_cuenta_contable;
+        document.getElementById('editTipoCuenta').value = tipo;
+        document.getElementById('editCuentaContable').value = row.codigo ?? '';
+        document.getElementById('editNombreCuenta').value = row.nombre ?? '';
+        document.getElementById('subtitleEditar').textContent = row.codigo ?? '';
+
+        // Configurar etiqueta y campo titular según tipo
+        const labelMap = { cliente: 'Cliente', proveedor: 'Proveedor', contable: 'Tipo de cuenta' };
+        const valorMap = { cliente: row.titular ?? '', proveedor: row.titular ?? '', contable: 'Cuenta contable' };
+
+        document.getElementById('labelEditTitular').textContent = labelMap[tipo];
+        document.getElementById('editCuentaNombre').value = valorMap[tipo];
+
+        // Mostrar/ocultar naturaleza solo para cuentas contables
+        const wrapperNaturaleza = document.getElementById('wrapperEditNaturaleza');
+        if (tipo === 'contable') {
+            wrapperNaturaleza.style.display = '';
+            document.getElementById('editNaturaleza').value = row.naturaleza ?? '';
+        } else {
+            wrapperNaturaleza.style.display = 'none';
+        }
+
+        new bootstrap.Modal(document.getElementById('modalEditarCuenta')).show();
+    }
+
+    function actualizarCuenta() {
+        ocultarError('errorEditarCuenta');
+        const id = document.getElementById('editCuentaId').value;
+        const tipo = document.getElementById('editTipoCuenta').value;
+        const nombre = document.getElementById('editNombreCuenta').value.trim();
+        const clave = document.getElementById('editCuentaContable').value.trim();
+        const naturaleza = document.getElementById('editNaturaleza').value;
+
+        if (!nombre) return mostrarError('errorEditarCuenta', 'El nombre es obligatorio.');
+        if (tipo === 'contable' && !naturaleza) return mostrarError('errorEditarCuenta', 'La naturaleza es obligatoria.');
+
+        GetData({
+            path: '/CuentasFinanzas/EditarCuenta',
+            data: { id, nombre, clave, naturaleza: tipo === 'contable' ? naturaleza : '' },
+            swalResponse: true,
+            swalType: 'modal',
+        });
+    }
+</script>

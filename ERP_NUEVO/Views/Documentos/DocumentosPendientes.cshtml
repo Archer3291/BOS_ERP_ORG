@@ -1,0 +1,1403 @@
+﻿@*Documentos Pendientes — estatus_id = 1*@
+@{
+    ViewBag.Title = "Documentos Pendientes";
+    ViewBag.PageTitle = "Pendientes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .dp-page {
+        background: var(--bg-gray);
+        min-height: 100vh;
+        padding-bottom: 48px;
+        animation: dpFadeIn .35s ease both;
+    }
+
+    @@keyframes dpFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    /* ── Header ── */
+    .dp-header {
+        background: var(--primary-blue);
+        border-bottom: 3px solid #f59e0b; /* ámbar: color de pendiente */
+        padding: 24px 32px 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .dp-header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(245,158,11,.10) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+    .dp-header-inner {
+        position: relative;
+        z-index: 1;
+    }
+
+    .dp-eyebrow {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        color: #f59e0b;
+        margin-bottom: 4px;
+    }
+
+    .dp-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin: 0 0 4px;
+    }
+
+    .dp-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: rgba(241,245,249,.55);
+    }
+
+        .dp-breadcrumb a {
+            color: rgba(241,245,249,.6);
+            text-decoration: none;
+            transition: color .15s;
+        }
+
+            .dp-breadcrumb a:hover {
+                color: #f1f5f9;
+            }
+
+    /* ── Stats bar ── */
+    .dp-stats {
+        background: var(--bg-light);
+        border-bottom: 1px solid var(--border-light);
+        box-shadow: var(--shadow);
+    }
+
+    .dp-stat-item {
+        padding: 16px 28px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-right: 1px solid var(--border-light);
+        transition: background .15s;
+    }
+
+        .dp-stat-item:last-child {
+            border-right: none;
+        }
+
+        .dp-stat-item:hover {
+            background: var(--bg-gray);
+        }
+
+    .dp-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+        flex-shrink: 0;
+        transition: transform .2s;
+    }
+
+    .dp-stat-item:hover .dp-stat-icon {
+        transform: scale(1.08);
+    }
+
+    .si-cot {
+        background: rgba(245,158,11,.12);
+        color: #f59e0b;
+    }
+
+    .si-ped {
+        background: rgba(251,191,36,.12);
+        color: #d97706;
+    }
+
+    .si-rem {
+        background: rgba(252,211,77,.12);
+        color: #b45309;
+    }
+
+    .si-all {
+        background: rgba(245,158,11,.18);
+        color: #92400e;
+    }
+
+    .dp-stat-val {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dp-stat-lbl {
+        font-size: 11px;
+        color: var(--text-light);
+        margin-top: 2px;
+        letter-spacing: .03em;
+    }
+
+    /* ── Skeleton ── */
+    .dp-skeleton {
+        display: inline-block;
+        width: 36px;
+        height: 18px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, var(--border-light) 25%, var(--bg-gray) 50%, var(--border-light) 75%);
+        background-size: 200% 100%;
+        animation: dpShimmer 1.2s infinite;
+        vertical-align: middle;
+    }
+
+    @@keyframes dpShimmer {
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    /* ── Alerta de conteo ── */
+    .dp-alert-pending {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(245,158,11,.08);
+        border: 1px solid rgba(245,158,11,.25);
+        border-left: 4px solid #f59e0b;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 20px 0 0;
+        font-size: 13px;
+        color: #78350f;
+        font-weight: 600;
+    }
+
+        .dp-alert-pending i {
+            color: #f59e0b;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+    /* ── Tabs ── */
+    .dp-tabs {
+        background: var(--bg-light);
+        border-bottom: 2px solid var(--border-light);
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+        overflow-x: auto;
+    }
+
+    .dp-tab-btn {
+        padding: 14px 22px;
+        border: none;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-light);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        border-radius: 6px 6px 0 0;
+        transition: all .2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+        .dp-tab-btn:hover {
+            color: #d97706;
+            background: rgba(245,158,11,.06);
+        }
+
+        .dp-tab-btn.active {
+            color: #d97706;
+            border-bottom-color: #f59e0b;
+            background: rgba(245,158,11,.08);
+        }
+
+    /* ── Card ── */
+    .dp-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        margin-top: 24px;
+    }
+
+    .dp-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .dp-card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .dp-card-title i {
+            color: #f59e0b;
+        }
+
+    .dp-card-body {
+        padding: 20px;
+    }
+
+    /* ── DataTable overrides ── */
+    .dp-dt-wrap .dataTables_filter input,
+    .dp-dt-wrap .dataTables_length select {
+        background: var(--bg-gray) !important;
+        border: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        border-radius: 7px !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+        .dp-dt-wrap .dataTables_filter input:focus,
+        .dp-dt-wrap .dataTables_length select:focus {
+            outline: none !important;
+            border-color: #f59e0b !important;
+            box-shadow: 0 0 0 3px rgba(245,158,11,.15) !important;
+        }
+
+    .dp-dt-wrap .dataTables_filter label,
+    .dp-dt-wrap .dataTables_length label,
+    .dp-dt-wrap .dataTables_info {
+        color: var(--text-light) !important;
+        font-size: 12.5px !important;
+    }
+
+    .dp-dt-wrap .dataTables_paginate .paginate_button {
+        color: var(--text-light) !important;
+        border-radius: 7px !important;
+        border: none !important;
+        font-size: 12.5px !important;
+        transition: all .15s !important;
+    }
+
+        .dp-dt-wrap .dataTables_paginate .paginate_button.current,
+        .dp-dt-wrap .dataTables_paginate .paginate_button.current:hover {
+            background: #d97706 !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(180,83,9,.3) !important;
+        }
+
+        .dp-dt-wrap .dataTables_paginate .paginate_button:not(.current):hover {
+            background: var(--bg-gray) !important;
+            color: var(--text-dark) !important;
+        }
+
+    .dp-dt-wrap table {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+    }
+
+        .dp-dt-wrap table thead th {
+            background: var(--bg-gray) !important;
+            color: var(--text-light) !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: .08em !important;
+            text-transform: uppercase !important;
+            border: none !important;
+            border-bottom: 2px solid var(--border-light) !important;
+            padding: 12px 14px !important;
+            white-space: nowrap;
+        }
+
+            .dp-dt-wrap table thead th.sorting_asc,
+            .dp-dt-wrap table thead th.sorting_desc {
+                color: #d97706 !important;
+            }
+
+        .dp-dt-wrap table tbody tr {
+            transition: background .12s;
+        }
+
+            .dp-dt-wrap table tbody tr:hover td {
+                background: rgba(245,158,11,.05) !important;
+            }
+
+        .dp-dt-wrap table tbody td {
+            background: var(--bg-light) !important;
+            color: var(--text-dark) !important;
+            font-size: 13px !important;
+            border: none !important;
+            border-bottom: 1px solid var(--border-light) !important;
+            padding: 13px 14px !important;
+            vertical-align: middle !important;
+        }
+
+    /* ── Badge pendiente ── */
+    .estatus-pendiente {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(245,158,11,.12);
+        color: #b45309;
+        border: 1px solid rgba(245,158,11,.3);
+    }
+
+    /* ── Nat badges ── */
+    .nat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .04em;
+    }
+
+    .nat-VICOT {
+        background: rgba(59,130,246,.12);
+        color: var(--accent-blue);
+        border: 1px solid rgba(59,130,246,.2);
+    }
+
+    .nat-VIPED {
+        background: rgba(5,150,105,.12);
+        color: var(--success-color);
+        border: 1px solid rgba(5,150,105,.2);
+    }
+
+    .nat-VIREM {
+        background: rgba(217,119,6,.12);
+        color: var(--warning-color);
+        border: 1px solid rgba(217,119,6,.2);
+    }
+
+    .nat-VINCOT {
+        background: rgba(139,92,246,.12);
+        color: #7c3aed;
+        border: 1px solid rgba(139,92,246,.2);
+    }
+
+    /* ── Folio pill ── */
+    .dp-folio {
+        font-size: 12.5px;
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+        color: #b45309;
+        background: rgba(245,158,11,.08);
+        border: 1px solid rgba(245,158,11,.22);
+        padding: 3px 9px;
+        border-radius: 5px;
+        display: inline-block;
+    }
+
+    /* ── Panel ── */
+    .dp-panel {
+        display: none;
+    }
+
+        .dp-panel.active {
+            display: block;
+        }
+
+    /* ── Modal Bootstrap overrides ── */
+    .dp-modal .modal-content {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    }
+
+    .dp-modal .modal-header {
+        background: var(--bg-gray);
+        border-bottom: 1px solid var(--border-light);
+        padding: 16px 20px;
+        align-items: center;
+    }
+
+    .dp-modal .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+        .dp-modal .modal-title i {
+            color: #f59e0b;
+        }
+
+    .dp-modal .btn-close {
+        filter: none;
+        opacity: .6;
+        transition: opacity .15s;
+    }
+
+        .dp-modal .btn-close:hover {
+            opacity: 1;
+        }
+
+    .dp-modal .modal-body {
+        padding: 20px;
+    }
+
+    .dp-modal .modal-footer {
+        border-top: 1px solid var(--border-light);
+        background: var(--bg-gray);
+        padding: 12px 20px;
+    }
+
+    /* ── Info grid ── */
+    .dp-info-item {
+        background: rgba(245,158,11,.06);
+        border: 1px solid rgba(245,158,11,.15);
+        border-left: 3px solid #f59e0b;
+        border-radius: 8px;
+        padding: 12px 14px;
+        height: 100%;
+    }
+
+    .dp-info-lbl {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 5px;
+    }
+
+    .dp-info-val {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+        word-break: break-word;
+    }
+
+    /* ── Partidas ── */
+    .dp-partidas-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--border-light);
+    }
+
+    .dp-partidas-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .dp-partidas-title i {
+            color: #f59e0b;
+        }
+
+    .dp-partidas-count {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 20px;
+        background: rgba(245,158,11,.12);
+        color: #b45309;
+        border: 1px solid rgba(245,158,11,.25);
+    }
+
+    .dp-partidas-table-wrap {
+        border: 1px solid var(--border-light);
+        border-radius: 10px 10px 0 0;
+        overflow: hidden;
+        max-height: 340px;
+        overflow-y: auto;
+    }
+
+        .dp-partidas-table-wrap::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .dp-partidas-table-wrap::-webkit-scrollbar-track {
+            background: var(--bg-gray);
+        }
+
+        .dp-partidas-table-wrap::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 3px;
+        }
+
+    .dp-partidas-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+
+        .dp-partidas-table thead th {
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--border-light);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .dp-partidas-table tbody tr {
+            transition: background .1s;
+        }
+
+            .dp-partidas-table tbody tr:hover td {
+                background: rgba(245,158,11,.05) !important;
+            }
+
+        .dp-partidas-table tbody td {
+            padding: 10px 12px;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-light);
+            vertical-align: middle;
+        }
+
+        .dp-partidas-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .dp-partidas-table .col-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+    .exist-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .exist-ok {
+        background: rgba(5,150,105,.1);
+        color: var(--success-color);
+        border: 1px solid rgba(5,150,105,.2);
+    }
+
+    .exist-low {
+        background: rgba(217,119,6,.1);
+        color: var(--warning-color);
+        border: 1px solid rgba(217,119,6,.2);
+    }
+
+    .exist-out {
+        background: rgba(220,38,38,.1);
+        color: #dc2626;
+        border: 1px solid rgba(220,38,38,.2);
+    }
+
+    .dp-cve {
+        font-family: 'Courier New', monospace;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #b45309;
+        background: rgba(245,158,11,.08);
+        border: 1px solid rgba(245,158,11,.18);
+        padding: 2px 7px;
+        border-radius: 4px;
+    }
+
+    .dp-dto {
+        font-size: 12px;
+        color: var(--text-light);
+    }
+
+    .dp-partidas-totals {
+        display: flex;
+        justify-content: flex-end;
+        gap: 24px;
+        flex-wrap: wrap;
+        padding: 12px 16px;
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        font-size: 12.5px;
+    }
+
+    .dp-total-item {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .dp-total-lbl {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-light);
+        margin-bottom: 2px;
+    }
+
+    .dp-total-val {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-dark);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .dp-total-val.highlight {
+            color: #d97706;
+        }
+
+    .dp-modal-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 0;
+        gap: 12px;
+    }
+
+        .dp-modal-loader i {
+            font-size: 2em;
+            color: #f59e0b;
+        }
+
+        .dp-modal-loader p {
+            color: var(--text-light);
+            font-size: 13px;
+            margin: 0;
+        }
+
+    /* ── Progreso facturación VIREM ── */
+    .dp-prog-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .dp-prog-pend {
+        background: rgba(245,158,11,.12);
+        color: #b45309;
+        border: 1px solid rgba(245,158,11,.28);
+    }
+
+    .dp-prog-parc {
+        background: rgba(59,130,246,.1);
+        color: var(--accent-blue);
+        border: 1px solid rgba(59,130,246,.22);
+    }
+
+    .dp-prog-comp {
+        background: rgba(5,150,105,.1);
+        color: var(--success-color);
+        border: 1px solid rgba(5,150,105,.22);
+    }
+
+    /* ── Responsivo ── */
+    @@media (max-width: 575.98px) {
+        .dp-header {
+            padding: 16px 14px 12px;
+        }
+
+        .dp-title {
+            font-size: 16px;
+        }
+
+        .dp-tabs {
+            padding: 0 8px;
+        }
+
+        .dp-tab-btn {
+            padding: 10px 12px;
+            font-size: 11px;
+            gap: 5px;
+        }
+
+        .dp-card-body {
+            padding: 10px;
+        }
+
+        .dp-card-head {
+            padding: 12px 14px;
+        }
+
+        .dp-stat-item {
+            padding: 12px 14px;
+            border-right: none;
+            border-bottom: 1px solid var(--border-light);
+        }
+    }
+</style>
+
+<div class="dp-page">
+
+    <div class="dp-header">
+        <div class="dp-header-inner">
+            <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                <div>
+                    <div class="dp-eyebrow"><i class="fas fa-clock me-1"></i> Sistema de Ventas &middot; SRS</div>
+                    <h1 class="dp-title">
+                        <i class="fas fa-hourglass-half" style="color:#f59e0b;font-size:16px;margin-right:8px;"></i>
+                        Documentos <strong>Pendientes</strong>
+                    </h1>
+                </div>
+                <nav class="dp-breadcrumb mt-1">
+                    <a href="/"><i class="fas fa-house-chimney"></i></a>
+                    <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                    <a href="#">Ventas</a>
+                    <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                    <span>Pendientes</span>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="dp-stats d-none">
+        <div class="row g-0">
+            <div class="col-6 col-sm-3">
+                <div class="dp-stat-item">
+                    <div class="dp-stat-icon si-cot"><i class="fas fa-file-text"></i></div>
+                    <div>
+                        <div class="dp-stat-val" id="statVICOT"><span class="dp-skeleton"></span></div>
+                        <div class="dp-stat-lbl">Cotizaciones</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="dp-stat-item">
+                    <div class="dp-stat-icon si-ped"><i class="fas fa-cart-shopping"></i></div>
+                    <div>
+                        <div class="dp-stat-val" id="statVIPED"><span class="dp-skeleton"></span></div>
+                        <div class="dp-stat-lbl">Pedidos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="dp-stat-item">
+                    <div class="dp-stat-icon si-rem"><i class="fas fa-truck"></i></div>
+                    <div>
+                        <div class="dp-stat-val" id="statVIREM"><span class="dp-skeleton"></span></div>
+                        <div class="dp-stat-lbl">Remisiones</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-3">
+                <div class="dp-stat-item">
+                    <div class="dp-stat-icon si-all"><i class="fas fa-layer-group"></i></div>
+                    <div>
+                        <div class="dp-stat-val" id="statTODOS"><span class="dp-skeleton"></span></div>
+                        <div class="dp-stat-lbl">Total pendientes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dp-tabs">
+        <button class="dp-tab-btn active" onclick="cambiarTab('VICOT', this)">
+            <i class="fas fa-file-text"></i>
+            <span class="d-none d-sm-inline">Cotizaciones</span>
+            <span class="d-inline d-sm-none">Cot.</span>
+        </button>
+        <button class="dp-tab-btn" onclick="cambiarTab('VIPED', this)">
+            <i class="fas fa-cart-shopping"></i>
+            <span class="d-none d-sm-inline">Pedidos</span>
+            <span class="d-inline d-sm-none">Ped.</span>
+        </button>
+        <button class="dp-tab-btn" onclick="cambiarTab('VIREM', this)">
+            <i class="fas fa-truck"></i>
+            <span class="d-none d-sm-inline">Remisiones</span>
+            <span class="d-inline d-sm-none">Rem.</span>
+        </button>
+    </div>
+
+    <div class="container-fluid px-2 px-md-4">
+
+        <div id="panel-VICOT" class="dp-card dp-panel active">
+            <div class="dp-card-head">
+                <div class="dp-card-title"><i class="fas fa-file-text"></i> Cotizaciones Pendientes</div>
+                <span class="estatus-pendiente"><i class="fas fa-hourglass-half"></i> Estatus: Pendiente</span>
+            </div>
+            <div class="dp-card-body dp-dt-wrap">
+                <div id="tblVICOT"></div>
+            </div>
+        </div>
+
+        <div id="panel-VIPED" class="dp-card dp-panel">
+            <div class="dp-card-head">
+                <div class="dp-card-title"><i class="fas fa-cart-shopping"></i> Pedidos Pendientes</div>
+                <span class="estatus-pendiente"><i class="fas fa-hourglass-half"></i> Estatus: Pendiente</span>
+            </div>
+            <div class="dp-card-body dp-dt-wrap">
+                <div id="tblVIPED"></div>
+            </div>
+        </div>
+
+        <div id="panel-VIREM" class="dp-card dp-panel">
+            <div class="dp-card-head">
+                <div class="dp-card-title"><i class="fas fa-truck"></i> Remisiones Pendientes</div>
+                <span class="estatus-pendiente"><i class="fas fa-hourglass-half"></i> Estatus: Pendiente</span>
+            </div>
+            <div class="dp-card-body dp-dt-wrap">
+                <div id="tblVIREM"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade dp-modal" id="modalDetalle"
+     tabindex="-1"
+     aria-labelledby="modalDetalleTitle"
+     aria-modal="true"
+     role="dialog">
+
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalleTitle">
+                    <i class="fas fa-hourglass-half"></i> Detalle del documento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body" id="modalDetalleBody">
+                <div class="dp-modal-loader">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando documento...</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-xmark me-1"></i> Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+
+/* ── URLs ─────────────────────────────────────────────────────────── */
+var urlBuscarDocumento = '@Url.Action("BuscarDocumento", "DocumentosPendientesVentas")';
+
+var urlBase = {
+    VICOT: '@Url.Action("GetVICOT", "DocumentosPendientesVentas")',
+    VIPED: '@Url.Action("GetVIPED", "DocumentosPendientesVentas")',
+    VIREM: '@Url.Action("GetVIREM", "DocumentosPendientesVentas")'
+};
+
+/* ── Estado ───────────────────────────────────────────────────────── */
+var instancias = {};
+
+/* ── Bootstrap 5 modal ────────────────────────────────────────────── */
+var _modalDetalle = null;
+function getModal() {
+    if (!_modalDetalle) {
+        _modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'), {
+            backdrop: 'static',
+            keyboard: true
+        });
+    }
+    return _modalDetalle;
+}
+
+/* ── dateFormatter (faltaba en el original) ───────────────────────── */
+function dateFormatter(v) {
+    if (!v) return '—';
+    // Soporta ISO strings y /Date(ms)/ de ASP.NET
+    if (typeof v === 'string' && v.indexOf('/Date(') === 0) {
+        var ms = parseInt(v.replace('/Date(', '').replace(')/', ''), 10);
+        v = new Date(ms);
+    }
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return v; // si no parsea, devuelve tal cual
+    return d.toLocaleDateString('es-MX', {
+        day:   '2-digit',
+        month: '2-digit',
+        year:  'numeric'
+    });
+}
+
+/* ── Formatters genéricos ─────────────────────────────────────────── */
+function fmtMoney(v) {
+    var n = parseFloat(v) || 0;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function fmtFolio(v) {
+    return '<span class="dp-folio">' + (v || '—') + '</span>';
+}
+
+function fmtCliente(v, row) {
+    return row.n_cli || row.cli_prov || '—';
+}
+
+function fmtImporte(v) {
+    return '<span style="color:#d97706;font-weight:600;">' + fmtMoney(v) + '</span>';
+}
+
+function fmtEstatus() {
+    return '<span class="estatus-pendiente"><i class="fas fa-hourglass-half"></i> Pendiente</span>';
+}
+
+/* ── Existencia badge ─────────────────────────────────────────────── */
+function fmtExistencia(existencia, cantidad) {
+    var exist = parseFloat(existencia) || 0;
+    var cant  = parseFloat(cantidad)   || 0;
+    var cls  = exist <= 0 ? 'exist-out' : exist < cant ? 'exist-low' : 'exist-ok';
+    var icon = exist <= 0 ? 'fa-circle-xmark' : exist < cant ? 'fa-circle-exclamation' : 'fa-circle-check';
+    return '<span class="exist-badge ' + cls + '"><i class="fas ' + icon + '"></i> ' + exist.toFixed(0) + '</span>';
+}
+
+/* ── Totales de partidas ──────────────────────────────────────────── */
+function calcularTotales(productos) {
+    var sub = 0, iva = 0, ieps = 0;
+    (productos || []).forEach(function(p) {
+        sub  += parseFloat(p.importe) || 0;
+        iva  += parseFloat(p.iva)     || 0;
+        ieps += parseFloat(p.ieps)    || 0;
+    });
+    return { subtotal: sub, iva: iva, ieps: ieps, total: sub + iva + ieps };
+}
+
+/* ── Renderizar partidas ──────────────────────────────────────────── */
+function renderPartidas(productos) {
+    if (!productos || productos.length === 0) {
+        return '<div class="text-center py-4" style="color:var(--text-light);">' +
+               '<i class="fas fa-box-open" style="font-size:2em;opacity:.4;display:block;margin-bottom:8px;"></i>' +
+               'Sin partidas registradas</div>';
+    }
+
+    var rows = '';
+    productos.forEach(function(p, i) {
+        var dto = parseFloat(p.descuento) || 0;
+        var dtoHtml = dto > 0 ? ' <span class="dp-dto">(-' + dto.toFixed(0) + '%)</span>' : '';
+
+        rows +=
+            '<tr>' +
+            '<td class="text-center" style="color:var(--text-light);font-size:12px;">' + (i + 1) + '</td>' +
+            '<td><span class="dp-cve">' + (p.producto_id || '—') + '</span></td>' +
+            '<td>' + (p.descripcion || '—') + '</td>' +
+            '<td class="col-num">' + (parseFloat(p.cantidad) || 0).toFixed(2) +
+                ' <small style="color:var(--text-light)">' + (p.unidad || '') + '</small></td>' +
+            '<td class="col-num">' + fmtMoney(p.precio) + dtoHtml + '</td>' +
+            '<td class="col-num" style="color:#d97706;font-weight:600;">' + fmtMoney(p.importe) + '</td>' +
+            '<td class="col-num">' + fmtExistencia(p.existencia, p.cantidad) + '</td>' +
+            '</tr>';
+    });
+
+    var totales = calcularTotales(productos);
+
+    return '<div class="dp-partidas-table-wrap">' +
+           '<table class="dp-partidas-table"><thead><tr>' +
+           '<th style="width:36px;">#</th><th>Clave</th><th>Descripción</th>' +
+           '<th class="col-num">Cantidad</th><th class="col-num">Precio</th>' +
+           '<th class="col-num">Importe</th><th class="col-num">Existencia</th>' +
+           '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+           '<div class="dp-partidas-totals">' +
+           '<div class="dp-total-item"><div class="dp-total-lbl">Subtotal</div>' +
+               '<div class="dp-total-val">' + fmtMoney(totales.subtotal) + '</div></div>' +
+           (totales.ieps > 0
+               ? '<div class="dp-total-item"><div class="dp-total-lbl">IEPS</div>' +
+                 '<div class="dp-total-val">' + fmtMoney(totales.ieps) + '</div></div>'
+               : '') +
+           '<div class="dp-total-item"><div class="dp-total-lbl">IVA</div>' +
+               '<div class="dp-total-val">' + fmtMoney(totales.iva) + '</div></div>' +
+           '<div class="dp-total-item"><div class="dp-total-lbl">Total</div>' +
+               '<div class="dp-total-val highlight">' + fmtMoney(totales.total) + '</div></div>' +
+           '</div>';
+}
+
+/* ── Helpers grilla modal ─────────────────────────────────────────── */
+function mkCol(lbl, val) {
+    return '<div class="col-6 col-md-4 col-lg-3">' +
+           '<div class="dp-info-item">' +
+           '<div class="dp-info-lbl">' + lbl + '</div>' +
+           '<div class="dp-info-val">' + val + '</div>' +
+           '</div></div>';
+}
+
+function extrasToGrid(d) {
+    var out = '';
+    if (d.ccy)         out += mkCol('Moneda',          d.ccy);
+    if (d.incoterm)    out += mkCol('Incoterm',        d.incoterm);
+    if (d.ordenCompra) out += mkCol('Orden de compra', d.ordenCompra);
+    if (d.coment1)     out += mkCol('Comentario',      d.coment1);
+    return out;
+}
+
+/* ── Modal detalle (VICOT / VIPED) ───────────────────────────────── */
+function mostrarDetalle(row) {
+    document.getElementById('modalDetalleBody').innerHTML =
+        '<div class="dp-modal-loader"><i class="fas fa-spinner fa-spin"></i><p>Cargando documento...</p></div>';
+    document.getElementById('modalDetalleTitle').innerHTML =
+        '<i class="fas fa-hourglass-half"></i> Detalle del documento';
+
+    getModal().show();
+
+    $.ajax({
+        url:  urlBuscarDocumento,
+        type: 'GET',
+        data: { id: row.id_encabezado },
+        success: function(resp) {
+            if (!resp || !resp.success) {
+                document.getElementById('modalDetalleBody').innerHTML =
+                    '<div class="text-center py-4" style="color:#dc2626;">' +
+                    '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                    (resp && resp.message ? resp.message : 'Error al cargar el documento.') + '</div>';
+                return;
+            }
+
+            var d   = resp.data;
+            var nat = d.nat || '';
+
+            document.getElementById('modalDetalleTitle').innerHTML =
+                '<i class="fas fa-hourglass-half"></i> ' +
+                '<span class="nat-badge nat-' + nat + ' ms-1">' + nat + '</span>' +
+                '&nbsp;<span style="font-weight:400;font-size:13px;color:var(--text-light);">' + (d.folio || '') + '</span>' +
+                '&nbsp;<span class="estatus-pendiente ms-1" style="font-size:11px;">' +
+                    '<i class="fas fa-hourglass-half"></i> PENDIENTE</span>';
+
+            var productos   = d.productos || [];
+            var partidasCnt = productos.length;
+
+            var infoGrid =
+                '<div class="row g-2 mb-3">' +
+                mkCol('Folio',   '<span class="dp-folio">' + (d.folio || '—') + '</span>') +
+                mkCol('Fecha',   dateFormatter(d.fch0) || '—') +
+                mkCol('Cliente', d.n_cli || d.cli_prov || '—') +
+                mkCol('RFC',     d.rfc   || '—') +
+                extrasToGrid(d) +
+                mkCol('Capturó', d.usr0  || '—') +
+                '</div>';
+
+            document.getElementById('modalDetalleBody').innerHTML =
+                infoGrid +
+                '<div class="dp-partidas-header">' +
+                '<div class="dp-partidas-title"><i class="fas fa-list-ul"></i> Partidas del documento</div>' +
+                '<span class="dp-partidas-count">' + partidasCnt +
+                    ' artículo' + (partidasCnt !== 1 ? 's' : '') + '</span>' +
+                '</div>' +
+                renderPartidas(productos);
+        },
+        error: function(xhr) {
+            document.getElementById('modalDetalleBody').innerHTML =
+                '<div class="text-center py-4" style="color:#dc2626;">' +
+                '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                'Error de conexión (' + xhr.status + '). Intente de nuevo.</div>';
+        }
+    });
+}
+
+/* ── Formatters exclusivos de VIREM ──────────────────────────────── */
+function fmtFolioRem(v, row) {
+    var folios = row.todos_folios || v || '—';
+    var total  = parseInt(row.total_remisiones, 10) || 1;
+    var pill   = '<span class="dp-folio">' + (v || '—') + '</span>';
+    if (total > 1) {
+        pill += ' <span title="' + folios + '" style="cursor:help;font-size:11px;' +
+                'background:rgba(245,158,11,.15);color:#b45309;border:1px solid rgba(245,158,11,.3);' +
+                'border-radius:20px;padding:1px 7px;font-weight:700;">+' + (total - 1) + ' rem.</span>';
+    }
+    return pill;
+}
+
+function fmtProgreso(v, row) {
+    var pend    = parseInt(row.partidas_pendientes, 10) || 0;
+    var parcial = parseInt(row.partidas_parciales,  10) || 0;
+    var comp    = parseInt(row.partidas_completas,  10) || 0;
+    var total   = parseInt(row.total_partidas_tracking, 10) || 0;
+
+    if (total === 0) {
+        return '<span class="estatus-pendiente"><i class="fas fa-hourglass-half"></i> Pendiente</span>';
+    }
+
+    var html = '';
+    if (pend > 0)
+        html += '<span class="dp-prog-badge dp-prog-pend" title="Partidas pendientes">' +
+                '<i class="fas fa-hourglass-half"></i> ' + pend + '</span> ';
+    if (parcial > 0)
+        html += '<span class="dp-prog-badge dp-prog-parc" title="Partidas parciales">' +
+                '<i class="fas fa-circle-half-stroke"></i> ' + parcial + '</span> ';
+    if (comp > 0)
+        html += '<span class="dp-prog-badge dp-prog-comp" title="Partidas completas">' +
+                '<i class="fas fa-circle-check"></i> ' + comp + '</span>';
+    return html || '—';
+}
+
+function fmtImpPendiente(v, row) {
+    var imp = parseFloat(row.importe_pendiente) || 0;
+    if (imp <= 0) return '<span style="color:var(--text-light);">—</span>';
+    return '<span style="color:#dc2626;font-weight:700;">' + fmtMoney(imp) + '</span>';
+}
+
+/* ── Modal detalle VIREM (grupos) ────────────────────────────────── */
+function mostrarDetalleRem(row) {
+    document.getElementById('modalDetalleBody').innerHTML =
+        '<div class="dp-modal-loader"><i class="fas fa-spinner fa-spin"></i><p>Cargando remisiones...</p></div>';
+    document.getElementById('modalDetalleTitle').innerHTML =
+        '<i class="fas fa-truck"></i> Detalle de remisiones pendientes';
+
+    getModal().show();
+
+    var ids = (row.remisiones_ids || row.grupo_id.toString()).split(',');
+    var promesas = ids.map(function(id) {
+        return new Promise(function(resolve) {
+            $.ajax({
+                url:  urlBuscarDocumento,
+                type: 'GET',
+                data: { id: id.trim() },
+                success: function(r) { resolve(r && r.success ? r.data : null); },
+                error:   function()  { resolve(null); }
+            });
+        });
+    });
+
+    Promise.all(promesas).then(function(resultados) {
+        var html = '';
+
+        if (ids.length > 1) {
+            html += '<div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);' +
+                    'border-left:4px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:16px;' +
+                    'font-size:12.5px;color:#78350f;font-weight:600;">' +
+                    '<i class="fas fa-layer-group me-2" style="color:#f59e0b;"></i>' +
+                    'Grupo de ' + ids.length + ' remisiones — Folios: ' + (row.todos_folios || '—') +
+                    '</div>';
+        }
+
+        resultados.forEach(function(d, idx) {
+            if (!d) return;
+            var productos = d.productos || [];
+            html +=
+                '<div style="margin-bottom:' + (idx < resultados.length - 1 ? '28px' : '0') + ';">' +
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;' +
+                'padding-bottom:8px;border-bottom:2px solid var(--border-light);">' +
+                '<span class="nat-badge nat-VIREM">VIREM</span>' +
+                '<span class="dp-folio">' + (d.folio || '—') + '</span>' +
+                '<span style="font-size:12px;color:var(--text-light);">— ' + (d.n_cli || d.cli_prov || '') + '</span>' +
+                '</div>' +
+                '<div class="row g-2 mb-3">' +
+                mkCol('Fecha',   dateFormatter(d.fch0) || '—') +
+                mkCol('Cliente', d.n_cli || d.cli_prov || '—') +
+                mkCol('RFC',     d.rfc   || '—') +
+                mkCol('Capturó', d.usr0  || '—') +
+                (d.ordenCompra ? mkCol('Orden de compra', d.ordenCompra) : '') +
+                (d.coment1     ? mkCol('Comentario',      d.coment1)     : '') +
+                '</div>' +
+                '<div class="dp-partidas-header">' +
+                '<div class="dp-partidas-title"><i class="fas fa-list-ul"></i> Partidas</div>' +
+                '<span class="dp-partidas-count">' + productos.length +
+                    ' artículo' + (productos.length !== 1 ? 's' : '') + '</span>' +
+                '</div>' +
+                renderPartidas(productos) +
+                '</div>';
+        });
+
+        if (!html) {
+            html = '<div class="text-center py-4" style="color:#dc2626;">' +
+                   '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                   'No se pudo cargar el detalle.</div>';
+        }
+
+        document.getElementById('modalDetalleTitle').innerHTML =
+            '<i class="fas fa-truck" style="color:#f59e0b;"></i> ' +
+            'Remisiones pendientes &nbsp;<span style="font-weight:400;font-size:12px;color:var(--text-light);">' +
+            (row.todos_folios || row.folio || '') + '</span>';
+        document.getElementById('modalDetalleBody').innerHTML = html;
+    });
+}
+
+/* ── Función que actualiza los contadores del stats bar ───────────── */
+/*
+ * TableBuilder llama GlobalEvents.onDataLoaded(response) después de cada
+ * fetch. Lo usamos para actualizar las tarjetas de estadísticas.
+ * NOTA: el total global se recalcula sumando los tres stat-items;
+ *       como las tres tablas se pre-cargan al inicio, el valor converge
+ *       en cuanto termina la última petición.
+ */
+function makeOnDataLoaded(nat) {
+    return function(response) {
+        // TableBuilder devuelve { data: [...], total: N } o el array directo
+        var count = response.total
+            ?? (Array.isArray(response.data) ? response.data.length : 0)
+            ?? (Array.isArray(response)      ? response.length      : 0);
+
+        var el = document.getElementById('stat' + nat);
+        if (el) el.textContent = count;
+
+        // Recalcular total sumando los tres contadores ya pintados
+        var total = 0;
+        ['VICOT', 'VIPED', 'VIREM'].forEach(function(n) {
+            var e = document.getElementById('stat' + n);
+            // Sólo sumar si ya es un número (no el skeleton)
+            var val = parseInt(e && e.textContent, 10);
+            if (!isNaN(val)) total += val;
+        });
+        var elTodos = document.getElementById('statTODOS');
+        if (elTodos) elTodos.textContent = total;
+    };
+}
+
+/* ── Inicializar tabla con TableBuilder ───────────────────────────── */
+function iniciarTabla(nat) {
+    var esVIREM = (nat === 'VIREM');
+    var columns, actions;
+
+    if (esVIREM) {
+        columns = [
+            { title: 'Folio(s)',          data: 'folio',               formatter: fmtFolioRem },
+            { title: 'Fecha',             data: 'fch',                 formatter: function(v) { return dateFormatter(v); } },
+            { title: 'Cliente',           data: 'n_cli',               formatter: fmtCliente },
+            { title: 'Importe total',     data: 'imp',                 formatter: fmtImporte },
+            { title: 'Pend. de facturar', data: 'importe_pendiente',   formatter: fmtImpPendiente },
+            { title: 'Progreso',          data: 'partidas_pendientes', formatter: fmtProgreso }
+        ];
+        actions = [
+            {
+                icon:    'fa-eye',
+                color:   'btn-outline-warning',
+                title:   'Ver detalle del grupo',
+                onClick: function(row) { mostrarDetalleRem(row); }
+            },
+            {
+                icon:    'fa-file-arrow-down',
+                color:   'btn-outline-secondary',
+                title:   'Descargar',
+                onClick: function(row) { GenerarPDFGeneral(row.grupo_id); }
+            }
+        ];
+    } else {
+        var tieneIncoterm = (nat !== 'VICOT');
+        columns = [
+            { title: 'Folio',   data: 'folio',        formatter: fmtFolio },
+            { title: 'Fecha',   data: 'fch',          formatter: function(v) { return dateFormatter(v); } },
+            { title: 'Cliente', data: 'n_cli',        formatter: fmtCliente },
+            { title: 'Importe', data: 'imp',          formatter: fmtImporte },
+            { title: 'Estatus', data: 'estatus_label',formatter: fmtEstatus }
+        ];
+        if (tieneIncoterm) {
+            columns.push({ title: 'Incoterm', data: 'incoterm' });
+        }
+        columns.push({ title: 'Capturó', data: 'usr0' });
+
+        actions = [
+            {
+                icon:    'fa-eye',
+                color:   'btn-outline-warning',
+                title:   'Ver detalle',
+                onClick: function(row) { mostrarDetalle(row); }
+            },
+            {
+                icon:    'fa-file-arrow-down',
+                color:   'btn-outline-secondary',
+                title:   'Descargar',
+                onClick: function(row) { GenerarPDFGeneral(row.id_encabezado); }
+            }
+        ];
+    }
+
+    instancias[nat] = createTable({
+        selector:          '#tbl' + nat,
+        path:              urlBase[nat],
+        searchPlaceholder: 'Buscar folio, cliente...',
+        columns:           columns,
+        actions:           actions,
+        /* ✅ CORRECTO: GlobalEvents.onDataLoaded en lugar de onLoad */
+        GlobalEvents: {
+            onDataLoaded: makeOnDataLoaded(nat),
+            onError: function(err) {
+                console.error('[DocumentosPendientes] Error cargando ' + nat + ':', err);
+            }
+        }
+    });
+}
+
+/* ── Cambio de pestaña — lazy init ───────────────────────────────── */
+function cambiarTab(nat, btn) {
+    document.querySelectorAll('.dp-tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    btn.classList.add('active');
+
+    document.querySelectorAll('.dp-panel').forEach(function(p) {
+        p.classList.remove('active');
+    });
+    document.getElementById('panel-' + nat).classList.add('active');
+
+    // Lazy init: solo crear la tabla si aún no existe
+    if (!instancias[nat]) iniciarTabla(nat);
+}
+
+/* ── Arranque ─────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+    // Tabla activa al cargar
+    iniciarTabla('VICOT');
+
+    // Pre-cargar las otras dos en segundo plano para que los stats se llenen
+    setTimeout(function() { if (!instancias['VIPED']) iniciarTabla('VIPED'); }, 300);
+    setTimeout(function() { if (!instancias['VIREM']) iniciarTabla('VIREM'); }, 600);
+});
+
+    </script>
+}

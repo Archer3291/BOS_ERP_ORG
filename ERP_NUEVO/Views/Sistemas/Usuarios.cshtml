@@ -1,0 +1,1126 @@
+﻿@model IEnumerable<BOS_ERP.Models.Usuario>
+
+@{
+    ViewBag.Title = "Gestión de Usuarios";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    #Permisos {
+        display: none;
+    }
+
+    /* ========================================
+               ESTILOS MEJORADOS DEL FORMULARIO
+               ======================================== */
+
+    .modal-content {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 1.5rem;
+        border-bottom: none;
+    }
+
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+        .modal-title::before {
+            content: '👤';
+            font-size: 1.5rem;
+        }
+
+    .modal-body {
+        padding: 2rem;
+        background-color: var(--very-light-blue);
+    }
+
+    .modal-footer {
+        border-top: 1px solid var(--border-light);
+        padding: 1.25rem 2rem;
+        background-color: var(--bg-light);
+        border-radius: 0 0 12px 12px;
+    }
+
+    /* Estilo mejorado para los inputs */
+    .form-label {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid var(--border-light);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background-color: var(--bg-light);
+        }
+
+        .form-control:disabled, .form-select:disabled {
+            background-color: var(--disabled-color);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+    /* Grupos de formulario con iconos */
+    .form-group-icon {
+        position: relative;
+    }
+
+        .form-group-icon .form-control,
+        .form-group-icon .form-select {
+            padding-left: 2.75rem;
+        }
+
+        .form-group-icon i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--icon-color);
+            z-index: 10;
+        }
+
+    /* Separador visual entre secciones */
+    .form-section {
+        background-color: var(--bg-light);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow);
+    }
+
+    .form-section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--accent-blue);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Contenedor principal de permisos */
+    #permisos-container {
+        background-color: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 1rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    /* Módulo de permisos */
+    .permiso-modulo {
+        background-color: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow);
+    }
+
+        .permiso-modulo:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+    /* Header del módulo */
+    .permiso-modulo-header {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+        color: white !important;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+        .permiso-modulo-header::before {
+            content: '📁';
+            font-size: 1.1rem;
+        }
+
+        .permiso-modulo-header:hover {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-blue) 100%);
+            transform: translateY(-1px);
+        }
+
+        .permiso-modulo-header.selected {
+            background: linear-gradient(135deg, var(--success-color) 0%, #047857 100%);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
+        }
+
+            .permiso-modulo-header.selected::before {
+                content: '✓ 📂';
+            }
+
+        .permiso-modulo-header.no-modulo {
+            background: linear-gradient(135deg, var(--secondary-blue) 0%, var(--primary-blue-dark) 100%);
+            cursor: default;
+            opacity: 0.9;
+        }
+
+            .permiso-modulo-header.no-modulo::before {
+                content: '📌';
+            }
+
+            .permiso-modulo-header.no-modulo:hover {
+                background: linear-gradient(135deg, var(--secondary-blue) 0%, var(--primary-blue-dark) 100%);
+                transform: none;
+            }
+
+    /* Body del módulo */
+    .permiso-modulo-body {
+        padding: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        background-color: var(--very-light-blue);
+    }
+
+    /* Opciones de permisos individuales */
+    .permiso-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--border-light);
+        border-radius: 6px;
+        cursor: pointer;
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: var(--shadow);
+        user-select: none;
+        position: relative;
+    }
+
+        .permiso-option::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-light);
+            border-radius: 3px;
+            background-color: var(--bg-light);
+            transition: all 0.2s ease;
+        }
+
+        .permiso-option:hover {
+            background-color: var(--light-blue);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .permiso-option.selected {
+            background-color: var(--accent-blue);
+            color: white;
+            border-color: var(--primary-blue-dark);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+            .permiso-option.selected::before {
+                content: '✓';
+                background-color: white;
+                border-color: white;
+                color: var(--accent-blue);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 12px;
+            }
+
+        .permiso-option.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background-color: var(--disabled-color);
+            border-color: var(--border-light);
+            pointer-events: none;
+        }
+
+            .permiso-option.disabled::before {
+                background-color: var(--disabled-color);
+                border-color: var(--border-light);
+            }
+
+    [data-theme="dark"] .permiso-option.disabled {
+        opacity: 0.3;
+        background-color: var(--disabled-color);
+    }
+
+    /* Tema oscuro */
+    [data-theme="dark"] .permiso-modulo {
+        background-color: var(--bg-light);
+        border-color: var(--border-light);
+    }
+
+    [data-theme="dark"] .permiso-modulo-body {
+        background-color: var(--bg-gray);
+    }
+
+    [data-theme="dark"] .permiso-option {
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+        border-color: var(--border-light);
+    }
+
+        [data-theme="dark"] .permiso-option::before {
+            background-color: var(--bg-gray);
+            border-color: var(--border-light);
+        }
+
+        [data-theme="dark"] .permiso-option:hover {
+            background-color: var(--very-light-blue);
+            border-color: var(--accent-blue);
+        }
+
+        [data-theme="dark"] .permiso-option.selected {
+            background-color: var(--accent-blue);
+            color: var(--text-dark);
+            border-color: var(--primary-blue);
+        }
+
+    [data-theme="dark"] .modal-body {
+        background-color: var(--bg-gray);
+    }
+
+    [data-theme="dark"] .form-section {
+        background-color: var(--bg-light);
+    }
+
+    /* Mensaje de error */
+    .permisos-error {
+        border: 2px solid var(--danger-color) !important;
+        animation: shake 0.4s ease-in-out;
+    }
+
+    @@keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        25% {
+            transform: translateX(-5px);
+        }
+
+        75% {
+            transform: translateX(5px);
+        }
+    }
+
+    .error-message {
+        color: var(--danger-color);
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        background-color: rgba(220, 38, 38, 0.1);
+        border-radius: 6px;
+        border-left: 4px solid var(--danger-color);
+        display: none;
+    }
+
+        .error-message.show {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .error-message::before {
+            content: '⚠';
+            font-size: 1.2rem;
+        }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Scrollbar personalizado */
+    #permisos-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #permisos-container::-webkit-scrollbar-track {
+        background: var(--bg-gray);
+        border-radius: 4px;
+    }
+
+    #permisos-container::-webkit-scrollbar-thumb {
+        background: var(--secondary-blue);
+        border-radius: 4px;
+    }
+
+        #permisos-container::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-blue);
+        }
+
+    /* Badge de contador */
+    .permiso-modulo-header::after {
+        content: attr(data-count);
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 0.15rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin-left: auto;
+    }
+
+    /* Botones mejorados */
+    .btn {
+        border-radius: 8px;
+        padding: 0.625rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+    .btn-close {
+        background-color: rgba(255, 255, 255, 0.2);
+        opacity: 1;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+        .btn-close:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+</style>
+
+<link href="~/Content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/tablebuilder.css" rel="stylesheet" />
+
+<div class="contenedor-tabla">
+    <div class="card-body">
+        <div id="tablaUsuarios"></div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Usuario -->
+<div class="modal fade" id="modalUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalUsuarioLabel">Registrar Nuevo Usuario</h5>
+                <button type="button" class="btn-close btn-close" data-bs-dismiss="modal" aria-label="Close" title="Cerrar"></button>
+            </div>
+            <form id="formUsuario" class="needs-validation" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="action" value="create">
+                    <input type="hidden" id="UsuarioId" name="UsuarioId" value="0" />
+
+                    <!-- Sección: Información Personal -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-user"></i> Información Personal
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="Nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="Nombre" name="Nombre" required minlength="2" maxlength="100" placeholder="Ej: Juan">
+                                <div class="invalid-feedback">Por favor ingrese el nombre (mínimo 2 caracteres)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="Apellido" class="form-label">Apellido <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="Apellido" name="Apellido" required minlength="2" maxlength="100" placeholder="Ej: Pérez">
+                                <div class="invalid-feedback">Por favor ingrese el apellido (mínimo 2 caracteres)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="Email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="Email" name="Email" required placeholder="ejemplo@correo.com">
+                                <div class="invalid-feedback">Por favor ingrese un email válido</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="Telefono" class="form-label">Teléfono</label>
+                                <input type="text" class="form-control" id="Telefono" name="Telefono" pattern="[0-9]{10}" maxlength="15" placeholder="Ej: 4421234567">
+                                <div class="invalid-feedback">Por favor ingrese un teléfono válido</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Configuración de Cuenta -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-cog"></i> Configuración de Cuenta
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="NombreUsuario" class="form-label">Nombre de Usuario <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="NombreUsuario" name="NombreUsuario" required minlength="4" maxlength="50" placeholder="Ej: jperez">
+                                <div class="invalid-feedback">Por favor ingrese el nombre de usuario (mínimo 4 caracteres)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="RolId" class="form-label">Rol <span class="text-danger">*</span></label>
+                                <select class="form-select" id="RolId" name="RolId" required>
+                                    <option value="">Seleccione un rol</option>
+                                    @foreach (var rol in ViewBag.Roles as SelectList)
+                                    {
+                                        <option value="@rol.Value">@rol.Text</option>
+                                    }
+                                </select>
+                                <div class="invalid-feedback">Por favor seleccione un rol</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="EmpresaId" class="form-label">Empresa <span class="text-danger">*</span></label>
+                                <select class="form-select" id="EmpresaId" name="EmpresaId" required>
+                                    <option value="">Seleccione una empresa</option>
+                                    @foreach (var empresa in ViewBag.Empresas as SelectList)
+                                    {
+                                        <option value="@empresa.Value">@empresa.Text</option>
+                                    }
+                                </select>
+                                <div class="invalid-feedback">Por favor seleccione una empresa</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="Area" class="form-label">Area <span class="text-danger">*</span></label>
+                                <select class="form-select" id="Area" name="Area" required>
+                                    <option value="">Seleccione una Area</option>
+                                    @foreach (var areas in ViewBag.Areas as SelectList)
+                                    {
+                                        <option value="@areas.Value">@areas.Text</option>
+                                    }
+                                </select>
+                                <div class="invalid-feedback">Por favor seleccione una Area</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="SucursalId" class="form-label">Sucursal <span class="text-danger">*</span></label>
+                                <select class="form-select" id="SucursalId" name="SucursalId" required disabled>
+                                    <option value="">Primero seleccione una empresa</option>
+                                </select>
+                                <div class="invalid-feedback">Por favor seleccione una sucursal</div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="Activo" name="Activo" checked>
+                                    <label class="form-check-label" for="Activo">
+                                        <i class="fas fa-check-circle text-success me-1"></i> Usuario Activo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Permisos -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fas fa-shield-alt"></i> Permisos de Usuario
+                        </div>
+
+                        @{
+                            var permisos = ViewBag.PermisosRaw as List<BOS_ERP.Models.Permisos>;
+                            var modulos = permisos.Where(p => p.EsModulo).ToList();
+                            var permisosHijos = permisos.Where(p => !p.EsModulo && p.ModuloPadre != null).ToList();
+                            var permisosSinCategoria = permisos.Where(p => !p.EsModulo && p.ModuloPadre == null).ToList();
+                        }
+
+                        <div id="permisos-container">
+
+                            @foreach (var modulo in modulos)
+                            {
+                                <div class="permiso-modulo">
+                                    <div class="permiso-option permiso-modulo-header" data-value="@modulo.Id_permiso">
+                                        @modulo.Descripcion
+                                    </div>
+
+                                    <div class="permiso-modulo-body">
+                                        @foreach (var permiso in permisosHijos.Where(p => p.ModuloPadre == modulo.Id_permiso))
+                                        {
+                                            <div class="permiso-option" data-value="@permiso.Id_permiso">
+                                                @permiso.Descripcion
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            @if (permisosSinCategoria.Any())
+                            {
+                                <div class="permiso-modulo">
+                                    <div class="permiso-modulo-header no-modulo">
+                                        Permisos sin categoría
+                                    </div>
+
+                                    <div class="permiso-modulo-body">
+                                        @foreach (var permiso in permisosSinCategoria)
+                                        {
+                                            <div class="permiso-option" data-value="@permiso.Id_permiso">
+                                                @permiso.Descripcion
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="error-message" id="permisos-error">
+                            Debe seleccionar al menos un permiso
+                        </div>
+
+                        <select class="form-control d-none" multiple name="Permisos" id="Permisos">
+                            @foreach (var permiso in permisos)
+                            {
+                                <option value="@permiso.Id_permiso">@permiso.Descripcion</option>
+                            }
+                        </select>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="sendForm()">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="~/scripts/tablebuilder.js"></script>
+<script>
+        // Variable global para almacenar las sucursales
+    let todasLasSucursales = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const select = document.getElementById("Permisos");
+
+        // ===== MANEJO DE SUCURSALES DINÁMICAS =====
+        const empresaSelect = document.getElementById("EmpresaId");
+        const sucursalSelect = document.getElementById("SucursalId");
+        const areaSelect = document.getElementById("Area");
+
+        empresaSelect.addEventListener("change", function() {
+            const empresaId = this.value;
+
+            // Limpiar y deshabilitar el select de sucursales
+            sucursalSelect.innerHTML = '<option value="">Cargando sucursales...</option>';
+            sucursalSelect.disabled = true;
+
+            if (!empresaId) {
+                sucursalSelect.innerHTML = '<option value="">Primero seleccione una empresa</option>';
+                return;
+            }
+
+            // Filtrar sucursales por empresa
+            const sucursalesFiltradas = todasLasSucursales.filter(s => s.empresa_id == empresaId);
+
+            if (sucursalesFiltradas.length === 0) {
+                sucursalSelect.innerHTML = '<option value="">No hay sucursales para esta empresa</option>';
+                return;
+            }
+
+            // Llenar el select con las sucursales filtradas
+            sucursalSelect.innerHTML = '<option value="">Seleccione una sucursal</option>';
+            sucursalesFiltradas.forEach(sucursal => {
+                const option = document.createElement('option');
+                option.value = sucursal.id_sucursal;
+                option.textContent = `${sucursal.cve_sucursal} - ${sucursal.descripcion}`;
+                sucursalSelect.appendChild(option);
+            });
+
+            sucursalSelect.disabled = false;
+        });
+
+        // Función para actualizar el estado de los hijos
+        function actualizarEstadoHijos(moduloDiv, habilitar) {
+            const hijos = moduloDiv.closest('.permiso-modulo')
+                .querySelectorAll('.permiso-modulo-body .permiso-option');
+
+            hijos.forEach(hijo => {
+                if (habilitar) {
+                    hijo.classList.remove('disabled');
+                } else {
+                    hijo.classList.add('disabled');
+                    hijo.classList.remove('selected');
+
+                    const optHijo = Array.from(select.options)
+                        .find(o => o.value === hijo.dataset.value);
+                    if (optHijo) {
+                        optHijo.selected = false;
+                    }
+                }
+            });
+        }
+
+        // Inicializar estado de los módulos al cargar
+        document.querySelectorAll('.permiso-modulo').forEach(function(moduloContainer) {
+            const moduloHeader = moduloContainer.querySelector('.permiso-modulo-header');
+            if (moduloHeader && !moduloHeader.classList.contains('no-modulo')) {
+                const hijos = moduloContainer.querySelectorAll('.permiso-modulo-body .permiso-option');
+                hijos.forEach(hijo => {
+                    hijo.classList.add('disabled');
+                });
+            }
+        });
+
+        document.querySelectorAll(".permiso-option").forEach(function(div) {
+            div.addEventListener("click", function() {
+                if (this.classList.contains('disabled')) {
+                    return;
+                }
+
+                const value = this.dataset.value;
+                const option = Array.from(select.options)
+                    .find(opt => opt.value === value);
+
+                if (!option) return;
+
+                const isSelected = option.selected;
+                option.selected = !isSelected;
+                this.classList.toggle("selected", !isSelected);
+
+                if (this.classList.contains('permiso-modulo-header') && !this.classList.contains('no-modulo')) {
+                    const estaSeleccionado = !isSelected;
+                    actualizarEstadoHijos(this, estaSeleccionado);
+
+                    if (estaSeleccionado) {
+                        const hijos = this.closest('.permiso-modulo')
+                            .querySelectorAll('.permiso-modulo-body .permiso-option');
+
+                        hijos.forEach(hijo => {
+                            const optHijo = Array.from(select.options)
+                                .find(o => o.value === hijo.dataset.value);
+
+                            if (optHijo) {
+                                //optHijo.selected = true;
+                                //hijo.classList.add("selected");
+                            }
+                        });
+                    }
+                }
+
+                validarPermisos();
+            });
+        });
+
+        Array.from(select.options).forEach(opt => {
+            if (opt.selected) {
+                const div = document.querySelector(`.permiso-option[data-value="${opt.value}"]`);
+                if (div) {
+                    div.classList.add("selected");
+                }
+            }
+        });
+
+        const token = $('input[name="__RequestVerificationToken"]').val();
+        window.tablaUsuarios = createTable({
+            selector: '#tablaUsuarios',
+            path: '@Url.Action("GetUsuarios", "Usuarios")',
+            searchPlaceholder: 'Buscar usuario...',
+            columns: [{
+                    title: 'Nombre',
+                    data: 'nombre'
+                },
+                {
+                    title: 'Apellido',
+                    data: 'apellido'
+                },
+                {
+                    title: 'Usuario',
+                    data: 'usuario'
+                },
+                {
+                    title: 'Email',
+                    data: 'email'
+                },
+                {
+                    title: 'Usuario',
+                    data: 'nombreUsuario'
+                },
+                {
+                    title: 'Rol',
+                    data: null,
+                    formatter: (v) => v.rol.nombre
+                },
+                {
+                    title: 'Estado',
+                    data: 'activo',
+                    formatter: (v) => v ? 'Activo' : 'Inactivo'
+                },
+            ],
+            actions: [{
+                    icon: 'fa-pen-to-square',
+                    color: 'green-500',
+                    title: 'Editar',
+                    data: row => ({
+                        id: row.usuarioId
+                    }),
+                    onClick: row => editarUsuario(row)
+                },
+                {
+                    icon: 'fa-circle-info',
+                    color: 'cyan-500',
+                    title: 'Ver Detalle',
+                    data: row => ({
+                        id: row.usuarioId,
+                        nombre: `${row.nombre} ${row.apellido}`
+                    }),
+                    onClick: row => resetearContrasena(row)
+                },
+            ],
+        })
+    });
+
+    // return `
+    // <button class="btn btn-sm green-500" data-id="${data.UsuarioId}" title="Editar" onclick="editarUsuario(this)">
+    // <i class="fa-solid fa-pen-to-square"></i>
+    // </button>
+    // <button class="btn btn-sm btn-outline-warning" data-id="${data.UsuarioId}" data-nombre="${data.Nombre} ${data.Apellido}" title="Resetear Contraseña" onclick="resetearContrasena(this)">
+    // <i class="fa-solid fa-key"></i>
+    // </button>
+    // `;
+
+    function validarPermisos() {
+        const permisosSeleccionados = Array.from(document.getElementById('Permisos').selectedOptions);
+        const permisosContainer = document.getElementById('permisos-container');
+        const permisosError = document.getElementById('permisos-error');
+
+        if (permisosSeleccionados.length === 0) {
+            permisosContainer.classList.add('permisos-error');
+            permisosError.classList.add('show');
+            return false;
+        } else {
+            permisosContainer.classList.remove('permisos-error');
+            permisosError.classList.remove('show');
+            return true;
+        }
+    }
+
+    function crearUsuario() {
+        $('#formUsuario')[0].reset();
+        $('#UsuarioId').val('0');
+        $('#Activo').prop('checked', true);
+        $('#modalUsuarioLabel').text('Registrar Nuevo Usuario');
+        $('#action').val('create');
+
+        $('#formUsuario').removeClass('was-validated');
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-valid').removeClass('is-valid');
+
+        // Limpiar selecciones
+        document.querySelectorAll('.permiso-option').forEach(div => {
+            div.classList.remove('selected');
+        });
+        $('#Permisos option').prop('selected', false);
+
+        // Deshabilitar sucursales
+        const sucursalSelect = document.getElementById('SucursalId');
+        sucursalSelect.innerHTML = '<option value="">Primero seleccione una empresa</option>';
+        sucursalSelect.disabled = true;
+
+        // Deshabilitar SOLO los hijos
+        document.querySelectorAll('.permiso-modulo').forEach(function(moduloContainer) {
+            const moduloHeader = moduloContainer.querySelector('.permiso-modulo-header');
+            if (moduloHeader && !moduloHeader.classList.contains('no-modulo')) {
+                const hijos = moduloContainer.querySelectorAll('.permiso-modulo-body .permiso-option');
+                hijos.forEach(hijo => {
+                    hijo.classList.add('disabled');
+                    hijo.classList.remove('selected');
+                });
+            }
+        });
+
+        document.getElementById('permisos-container').classList.remove('permisos-error');
+        document.getElementById('permisos-error').classList.remove('show');
+
+        $('#modalUsuario').modal('show');
+    }
+
+    function editarUsuario(e) {
+        const id = e.usuarioId;
+
+        Swal.fire({
+            title: 'Cargando...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        GetData({
+            path: '@Url.Action("Details", "Usuarios")',
+            data: {
+                id: id
+            }
+        }).then((response) => {
+            Swal.close();
+
+            // Guardar todas las sucursales para uso global
+            todasLasSucursales = response.sucursales;
+
+            $('#UsuarioId').val(response.usuario.usuarioid);
+            $('#Nombre').val(response.usuario.nombre);
+            $('#Apellido').val(response.usuario.apellido);
+            $('#Email').val(response.usuario.email);
+            $('#Telefono').val(response.usuario.telefono);
+            $('#NombreUsuario').val(response.usuario.nombreusuario);
+            $('#Activo').prop('checked', response.usuario.activo);
+            $('#RolId').val(response.usuario.rolid);
+            $('#EmpresaId').val(response.usuario.empresaid);
+            $('#action').val('edit');
+            $('#modalUsuarioLabel').text('Editar Usuario');
+            $('#Area').val(response.usuario.areaid);
+
+            // Cargar sucursales para la empresa seleccionada
+            const empresaId = response.usuario.empresaid;
+            const sucursalSelect = document.getElementById('SucursalId');
+
+            if (empresaId) {
+                const sucursalesFiltradas = response.sucursales.filter(s => s.empresa_id == empresaId);
+
+                sucursalSelect.innerHTML = '<option value="">Seleccione una sucursal</option>';
+                sucursalesFiltradas.forEach(sucursal => {
+                    const option = document.createElement('option');
+                    option.value = sucursal.id_sucursal;
+                    option.textContent = `${sucursal.cve_sucursal} - ${sucursal.descripcion}`;
+
+                    // Seleccionar la sucursal del usuario si existe
+                    if (response.usuario.sucursalid && sucursal.id_sucursal == response.usuario.sucursalid) {
+                        option.selected = true;
+                    }
+
+                    sucursalSelect.appendChild(option);
+                });
+
+                sucursalSelect.disabled = false;
+            }
+
+            // Limpiar permisos
+            document.querySelectorAll('.permiso-option').forEach(div => {
+                div.classList.remove('selected');
+            });
+
+            document.querySelectorAll('.permiso-modulo-body .permiso-option').forEach(hijo => {
+                hijo.classList.add('disabled');
+            });
+
+            $('#Permisos option').prop('selected', false);
+            $('#SucursalId').val(response.usuario.sucursal_id);
+
+            // Seleccionar módulos y habilitar hijos
+            const permisosIds = response.permisos.map(p => p.permiso_id);
+
+            document.querySelectorAll('.permiso-modulo-header:not(.no-modulo)').forEach(moduloHeader => {
+                const moduloId = moduloHeader.dataset.value;
+                if (permisosIds.includes(parseInt(moduloId))) {
+                    $('#Permisos option[value="' + moduloId + '"]').prop('selected', true);
+                    moduloHeader.classList.add('selected');
+
+                    const hijos = moduloHeader.closest('.permiso-modulo')
+                        .querySelectorAll('.permiso-modulo-body .permiso-option');
+                    hijos.forEach(hijo => {
+                        hijo.classList.remove('disabled');
+                    });
+                }
+            });
+
+            // Seleccionar permisos individuales
+            response.permisos.forEach(permiso => {
+                const permisoId = permiso.permiso_id;
+                const div = document.querySelector('.permiso-option[data-value="' + permisoId + '"]');
+
+                if (div && !div.classList.contains('permiso-modulo-header')) {
+                    $('#Permisos option[value="' + permisoId + '"]').prop('selected', true);
+                    div.classList.add('selected');
+                }
+            });
+
+            // Habilitar permisos sin categoría
+            document.querySelectorAll('.no-modulo').forEach(noModulo => {
+                const hijos = noModulo.closest('.permiso-modulo')
+                    .querySelectorAll('.permiso-modulo-body .permiso-option');
+                hijos.forEach(hijo => {
+                    hijo.classList.remove('disabled');
+                });
+            });
+
+            $('#formUsuario').removeClass('was-validated');
+            document.getElementById('permisos-container').classList.remove('permisos-error');
+            document.getElementById('permisos-error').classList.remove('show');
+
+            $('#modalUsuario').modal('show');
+        }).catch((error) => {
+            Swal.close();
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Error al cargar los datos del usuario'
+            });
+        });
+    }
+
+    function sendForm() {
+        const form = document.getElementById('formUsuario');
+        const permisosValidos = validarPermisos();
+
+        if (!form.checkValidity() || !permisosValidos) {
+            form.classList.add('was-validated');
+            if (!permisosValidos) {
+                toastMixin.fire({
+                    icon: 'warning',
+                    title: 'Debe seleccionar al menos un permiso'
+                });
+            }
+            return;
+        }
+
+        const action = $('#action').val();
+        const url = action === 'create' ? '@Url.Action("Create", "Usuarios")' : '@Url.Action("Edit", "Usuarios")';
+
+        const permisosSeleccionados = Array.from(document.getElementById('Permisos').selectedOptions)
+            .map(opt => opt.value);
+
+        const formData = {
+            UsuarioId: $('#UsuarioId').val(),
+            Nombre: $('#Nombre').val().trim(),
+            Apellido: $('#Apellido').val().trim(),
+            Email: $('#Email').val().trim(),
+            Telefono: $('#Telefono').val().trim(),
+            NombreUsuario: $('#NombreUsuario').val().trim(),
+            RolId: $('#RolId').val(),
+            EmpresaId: $('#EmpresaId').val(),
+            SucursalId: $('#SucursalId').val(),
+            Area: $('#Area').val(),
+            Activo: $('#Activo').is(':checked'),
+            Permisos: permisosSeleccionados
+        };
+
+        Swal.fire({
+            title: action === 'create' ? 'Creando usuario...' : 'Actualizando usuario...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        GetData({
+            path: url,
+            data: formData
+        }).then((res) => {
+            Swal.close();
+
+            if (res.success) {
+                toastMixin.fire({
+                    icon: 'success',
+                    title: res.message,
+                });
+                $('#modalUsuario').modal('hide');
+                tablaUsuarios.reload();
+
+            } else {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: res.message
+                });
+            }
+        });
+    }
+
+    function resetearContrasena(e) {
+        const id = e.usuarioId;
+        const nombre = e.nombre + ' ' + e.apellido;
+
+        Swal.fire({
+            title: '¿Resetear contraseña?',
+            html: `Se restablecerá la contraseña de <b>${nombre}</b> a <code>1234</code>.<br>El usuario deberá cambiarla al iniciar sesión.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, resetear',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#d97706',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Restableciendo...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            GetData({
+                path: '@Url.Action("ResetearContrasena", "Usuarios")',
+                data: {
+                    id: id
+                }
+            }).then((res) => {
+                Swal.close();
+
+                if (res.success) {
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: res.message
+                    });
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: res.message
+                    });
+                }
+            }).catch((error) => {
+                Swal.close();
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error al procesar la solicitud'
+                });
+            });
+        });
+    }
+</script>

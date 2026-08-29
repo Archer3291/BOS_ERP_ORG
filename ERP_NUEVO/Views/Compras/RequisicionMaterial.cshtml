@@ -1,0 +1,106 @@
+﻿@* Vista padre *@
+@using BOS_ERP.Controllers;
+@{
+    ViewBag.Title = "Solicitud de cotizacion";
+    ViewBag.PageTitle = "Solicitud de cotizacion";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/content/Site.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/requisicion_material/style.css?v=@DateTime.Now.Ticks" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+
+<!-- Wizard (la barra de pasos, la barra de progreso y los botones
+     Anterior/Siguiente los dibuja createWizard() en tiempo de ejecución) -->
+<div class="rq-wizard-shell">
+    <div id="rq-wizard-bar"></div>
+
+    <div class="rq-wizard-body">
+        <div id="rq-wizard-panels">
+            @await Html.PartialAsync("RequisitionPartials/_WizardStep1")
+            @await Html.PartialAsync("RequisitionPartials/_WizardStep2")
+            @await Html.PartialAsync("RequisitionPartials/_WizardStep3")
+        </div>
+        <!-- createWizard() inserta aquí la navegación -->
+    </div>
+</div>
+
+<!-- Modal Buscar Producto -->
+@await Html.PartialAsync("RequisitionPartials/_ModalBuscarProducto")
+
+<script src="~/lib/tom-select/js/tom-select.complete.min.js?v=@DateTime.Now.Ticks"></script>
+<script src="~/scripts/WizardBuilder.js?v=@DateTime.Now.Ticks"></script>
+<script src="~/scripts/compras-nacionales.js?v=@DateTime.Now.Ticks"></script>
+
+<script>
+    // ============================================
+    // Columnas condicionales de la tabla de materiales.
+    // El descuento aplica a todos los documentos, por lo que su
+    // columna siempre está visible; solo el precio de venta depende
+    // del tipo de producto seleccionado en el paso 1.
+    // ============================================
+    function sincronizarColumnasTabla() {
+        const tabla = document.getElementById('tabla-materiales');
+        if (!tabla) return;
+
+        const tipoSeleccionado = document.querySelector('input[name="tpnom"]:checked');
+        const esVenta = tipoSeleccionado?.closest('.product-card')?.dataset.option === 'venta';
+
+        tabla.querySelectorAll('.columna-venta')
+            .forEach(col => col.style.display = esVenta ? '' : 'none');
+    }
+
+    // ============================================
+    // WIZARD (wwwroot/scripts/WizardBuilder.js)
+    // ============================================
+    const wizardRequisicion = createWizard({
+        selector: '#rq-wizard-bar',
+        panelsSelector: '#rq-wizard-panels',
+        labels: { next: 'Siguiente', prev: 'Anterior' },
+        steps: [
+            {
+                id: 1,
+                label: 'Tipo de producto',
+                panel: '#step-1',
+                formId: 'form-1',
+                errorMessage: 'Debes seleccionar el tipo de producto.',
+                beforeLeave: sincronizarColumnasTabla
+            },
+            {
+                id: 2,
+                label: 'Seleccionar productos',
+                panel: '#step-2',
+                formId: 'form-2',
+                errorMessage: 'Completa los campos obligatorios antes de continuar.',
+                onEnter: sincronizarColumnasTabla,
+                // validarDatos() está definida en _WizardStep2
+                validate: () => validarDatos()
+            },
+            {
+                id: 3,
+                label: 'Resumen',
+                panel: '#step-3',
+                // actualizarColumnasDeVenta() y generarResumen() están
+                // definidas en _WizardStep2 y _WizardStep3
+                onEnter: () => {
+                    actualizarColumnasDeVenta();
+                    generarResumen();
+                }
+            }
+        ],
+        onStepChange: () => window.scrollTo({ top: 0, behavior: 'smooth' })
+    });
+
+    // Disponible para los parciales (p. ej. volver al paso 1 tras enviar)
+    window.wizardRequisicion = wizardRequisicion;
+
+    // Mantener las columnas al día si cambian los switches o el tipo de producto
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('input[name="tpnom"]') || e.target.id === 'modoCompraDirecta') {
+            sincronizarColumnasTabla();
+        }
+    });
+
+    sincronizarColumnasTabla();
+</script>

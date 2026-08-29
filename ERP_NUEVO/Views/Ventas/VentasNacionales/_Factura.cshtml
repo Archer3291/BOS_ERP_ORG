@@ -1,0 +1,3329 @@
+﻿@using BOS_ERP.Controllers
+@model BOS_ERP.Models.FolioInfo
+<style>
+    /* Contenedor centrado tipo industrial */
+    .vn-fac-form-container {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 0 0.75rem;
+    }
+
+    /* Secciones como tarjetas (estilo industrial .vi-card) */
+    .vn-fac-section {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        box-shadow: var(--shadow-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ===== TOGGLE TIPO PAGO (píldora, estilo industrial .vi-pay-toggle) ===== */
+    .vi-pay-toggle {
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: var(--row-radius, 10px);
+        padding: 4px;
+    }
+
+    .vi-pay-btn {
+        position: relative;
+        border: none;
+        border-radius: 7px;
+        padding: .55rem 1.5rem;
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--secondary-blue, #64748b);
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+        white-space: nowrap;
+        transition: color 0.2s ease;
+    }
+
+        .vi-pay-btn .vi-pay-pill {
+            position: absolute;
+            inset: 0;
+            border-radius: 7px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease, background 0.25s ease;
+        }
+
+        .vi-pay-btn.active {
+            color: var(--primary-blue);
+        }
+
+            .vi-pay-btn.active .vi-pay-pill {
+                opacity: 1;
+                background: var(--light-blue);
+            }
+
+        .vi-pay-btn[data-val="credito"].active {
+            color: var(--success-color);
+        }
+
+            .vi-pay-btn[data-val="credito"].active .vi-pay-pill {
+                background: rgba(5, 150, 105, .1);
+            }
+
+        .vi-pay-btn i, .vi-pay-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+    .vn-fac-section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--light-blue);
+    }
+
+    .vn-fac-section-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        background: var(--primary-blue);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .vn-fac-section-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    /* Campos del formulario */
+    .vn-fac-form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .vn-fac-form-field {
+        position: relative;
+    }
+
+    .vn-fac-form-control, .vn-fac-form-select {
+        border: 1.5px solid var(--border-light);
+        border-radius: 10px;
+        padding: 0.65rem 0.9rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        background: var(--bg-gray);
+        width: 100%;
+    }
+
+        .vn-fac-form-control:focus, .vn-fac-form-select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+    .vn-fac-form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-light);
+        margin-bottom: 0.4rem;
+    }
+
+        .vn-fac-form-label i {
+            color: var(--accent-blue);
+            margin-right: 0.35rem;
+        }
+
+    /* Búsqueda con botón */
+    .vn-fac-search-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+        .vn-fac-search-group input {
+            flex: 1;
+        }
+
+    .vn-fac-btn-search {
+        background: var(--accent-blue);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+        .vn-fac-btn-search:hover {
+            background: var(--primary-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+        }
+
+    /* Tabla de productos */
+    .vn-fac-products-section {
+        background: transparent;
+        border-radius: 0;
+        padding: 0;
+        margin: 1rem 0 0;
+    }
+
+    .vn-fac-products-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .vn-fac-products-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+        margin: 0;
+    }
+
+    .vn-fac-btn-add {
+        background: var(--success-color);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+
+        .vn-fac-btn-add:hover {
+            background: #047857;
+            transform: translateY(-2px);
+        }
+
+
+    .vn-fac-table-container {
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        overflow-x: auto;
+        box-shadow: var(--shadow);
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .vn-fac-product-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1200px;
+    }
+
+        .vn-fac-product-table thead {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .vn-fac-product-table th {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .vn-fac-product-table td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.85rem;
+        }
+
+        .vn-fac-product-table tbody tr:hover {
+            background: var(--very-light-blue);
+        }
+
+    .vn-fac-empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-light);
+    }
+
+        .vn-fac-empty-state i {
+            font-size: 3rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+        }
+
+    .vn-fac-btn-delete {
+        background: var(--danger-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+
+        .vn-fac-btn-delete:hover {
+            background: #b91c1c;
+        }
+
+    /* Sidebar - Totales */
+    .vn-fac-totals-header {
+        margin-bottom: 1.5rem;
+    }
+
+        .vn-fac-totals-header h3 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+    .vn-fac-total-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.95rem;
+    }
+
+        .vn-fac-total-row:last-of-type {
+            border-bottom: none;
+        }
+
+    .vn-fac-total-final {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 1rem;
+        font-size: 1.3rem;
+        font-weight: 700;
+    }
+
+    .vn-fac-actions-group {
+        margin-top: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .vn-fac-btn-action {
+        width: 100%;
+        padding: 0.85rem;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+    /* Footer */
+    .vn-fac-form-footer {
+        background: var(--very-light-blue);
+        padding: 1.5rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .vn-fac-btn-footer {
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+
+    .vn-fac-btn-cancel {
+        background: transparent;
+        color: var(--text-light);
+        border: 2px solid var(--border-light);
+    }
+
+        .vn-fac-btn-cancel:hover {
+            background: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
+        }
+
+    .vn-fac-btn-submit {
+        background: linear-gradient(135deg, var(--success-color), #10b981);
+        color: white;
+    }
+
+        .vn-fac-btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+        }
+
+    /* Modales */
+    .vn-fac-modal-content {
+        border-radius: 20px;
+        border: none;
+        background: var( --bg-gray);
+    }
+
+    .vn-fac-modal-header {
+        background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+        color: white;
+        border-radius: 20px 20px 0 0;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .vn-fac-modal-body {
+        padding: 2rem;
+    }
+
+    .vn-fac-search-result {
+        background: var(--very-light-blue);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .vn-fac-search-result:hover {
+            border-color: var(--accent-blue);
+            transform: translateX(4px);
+        }
+
+    .vn-fac-sidebar-totals {
+        /* El sticky ahora lo controla el wrapper de la columna derecha (col-xl-4). */
+        position: static;
+    }
+    /* Layout 50/50 para Condiciones de Pago y Resumen */
+    .vn-fac-payment-summary-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    @@media (max-width: 1200px) {
+        .vn-fac-payment-summary-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .vn-fac-totals-header {
+        margin-bottom: 1.5rem;
+    }
+
+        .vn-fac-totals-header h3 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+    .vn-fac-ticket-container {
+        background: var(--bg-light);
+        width: auto;
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        position: relative;
+    }
+
+        /* Efecto de papel rasgado desactivado (look industrial limpio) */
+        .vn-fac-ticket-container::before {
+            display: none;
+        }
+
+    .vn-fac-ticket-header {
+        background: var(--primary-blue);
+        padding: 1.1rem 1.4rem;
+        text-align: center;
+        color: white;
+        position: relative;
+        margin-top: 0;
+    }
+
+        .vn-fac-ticket-header::after {
+            display: none;
+        }
+
+    .vn-fac-ticket-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.2rem;
+        opacity: 0.9;
+    }
+
+    .vn-fac-ticket-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    .vn-fac-ticket-body {
+        padding: 1.1rem 1.4rem;
+        background: var(--bg-light);
+    }
+
+    .vn-fac-ticket-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px dashed #cbd5e1;
+        font-size: 0.95rem;
+        color: var(--text-dark);
+    }
+
+        .vn-fac-ticket-line:last-of-type {
+            border-bottom: none;
+        }
+
+        .vn-fac-ticket-line span:first-child {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .vn-fac-ticket-line span:last-child {
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+    .vn-fac-ticket-separator {
+        border: none;
+        border-top: 2px dashed #cbd5e1;
+        margin: 1.5rem 0;
+    }
+
+    .vn-fac-ticket-total {
+        background: var(--very-light-blue);
+        padding: 1.1rem 1.4rem;
+        margin: 1.1rem -1.4rem -1.1rem -1.4rem;
+        border-top: 2px dashed var(--primary-blue);
+        position: relative;
+    }
+
+        .vn-fac-ticket-total::before,
+        .vn-fac-ticket-total::after {
+            display: none;
+        }
+
+        .vn-fac-ticket-total::before {
+            left: -15px;
+        }
+
+        .vn-fac-ticket-total::after {
+            right: -15px;
+        }
+
+    .vn-fac-total-amount {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--primary-blue);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+        .vn-fac-total-amount i {
+            color: var(--accent-blue);
+        }
+
+    .vn-fac-discount-highlight {
+        color: #dc2626 !important;
+    }
+
+    .vn-fac-actions-section {
+        padding: 2rem 2rem 2rem 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .vn-fac-ticket-btn {
+        width: 100%;
+        padding: 1rem;
+        border: none;
+        border-radius: 10px;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .vn-fac-ticket-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .vn-fac-ticket-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+    .vn-fac-btn-primary {
+        background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+        color: white;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+        .vn-fac-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+    .vn-fac-btn-secondary {
+        background: white;
+        color: var(--primary-blue);
+        border: 2px solid var(--primary-blue);
+    }
+
+        .vn-fac-btn-secondary:hover {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+    .vn-fac-footer-actions {
+        background: linear-gradient(135deg, #f8fafc 0%, #e1e7ef 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 0 0 20px 20px;
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .vn-fac-footer-btn {
+        flex: 1;
+        padding: 0.85rem;
+        border: none;
+        border-radius: 10px;
+        font-weight: bold;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-family: 'Courier New', monospace;
+    }
+
+    .vn-fac-btn-cancel {
+        background: white;
+        color: #dc2626;
+        border: 2px solid #dc2626;
+    }
+
+        .vn-fac-btn-cancel:hover {
+            background: #dc2626;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+    .vn-fac-btn-submit {
+        background: linear-gradient(135deg, var(--success-color), #10b981);
+        color: white;
+        box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
+    }
+
+        .vn-fac-btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+        }
+
+    /* Animación de entrada */
+    @@keyframes vn-fac-slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .vn-fac-ticket-container {
+        animation: vn-fac-slideDown 0.5s ease;
+    }
+
+    /* Efecto de perforación lateral (desactivado, look industrial limpio) */
+    .vn-fac-perforation {
+        display: none;
+    }
+
+    .vn-fac-perforation-hole {
+        display: none;
+    }
+
+
+    .disabled-field {
+        background-color: #C2C2C2 !important;
+        cursor: not-allowed !important;
+        opacity: 0.7;
+        color: black
+    }
+
+        .disabled-field:hover {
+            background-color: #f5f5f5 !important;
+        }
+    /* Botón Flotante */
+    .vn-fac-floating-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 65px;
+        height: 65px;
+        background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+        border-radius: 50%;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .vn-fac-floating-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 12px 35px rgba(59, 130, 246, 0.5);
+            background: linear-gradient(135deg, var(--accent-blue), var(--primary-blue));
+        }
+
+        .vn-fac-floating-btn:active {
+            transform: translateY(-2px) scale(1);
+        }
+
+    /* Animación de pulso */
+    @@keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        50% {
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.7), 0 0 0 10px rgba(59, 130, 246, 0.1);
+        }
+    }
+
+    .vn-fac-floating-btn.pulse {
+        animation: pulse 2s infinite;
+    }
+
+    /* Tooltip */
+    .vn-fac-floating-tooltip {
+        position: fixed;
+        bottom: 38px;
+        right: 105px;
+        background: var(--bg-gray);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 999;
+    }
+
+        .vn-fac-floating-tooltip::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 8px solid transparent;
+            border-left-color: var(--text-dark);
+        }
+
+    .vn-fac-floating-btn:hover + .vn-fac-floating-tooltip {
+        opacity: 1;
+    }
+
+    /* Modal Estilos */
+    .modal-header {
+        background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+        color: white;
+        border-radius: 0;
+    }
+
+    .btn-close-white {
+        filter: brightness(0) invert(1);
+    }
+
+    .list-group-item {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border-left: 3px solid transparent;
+    }
+
+        .list-group-item:hover {
+            background-color: var(--very-light-blue);
+            border-left-color: var(--accent-blue);
+            transform: translateX(5px);
+        }
+
+    .document-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-pending {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-approved {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-cancelled {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .toggle-text {
+        position: relative;
+        display: inline-block;
+        width: 90px; /* ancho total del switch */
+        height: 36px;
+    }
+
+        .toggle-text input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+    .slider-text {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #e74c3c;
+        border-radius: 34px;
+        transition: all .4s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        color: #fff;
+    }
+
+    .toggle-check {
+        position: relative;
+        display: inline-block;
+        width: 70px;
+        height: 34px;
+    }
+
+        .toggle-check input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+    .slider-check {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #e0e0e0 0%, #cfcfcf 100%);
+        transition: all .4s;
+        border-radius: 34px;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+        .slider-check:before {
+            position: absolute;
+            content: "✕";
+            height: 28px;
+            width: 28px;
+            left: 3px;
+            top: 3px;
+            background: white;
+            transition: all .4s;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #999;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+    .toggle-check input:checked + .slider-check {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+        .toggle-check input:checked + .slider-check:before {
+            transform: translateX(36px);
+            content: "✓";
+            color: #11998e;
+        }
+
+    /* Toggle de 3 estados - Mejorado */
+    .toggle-three-states {
+        position: relative;
+        width: 210px;
+        height: 48px;
+        background: var(--bg-light);
+        border-radius: 24px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: inset 0 2px 6px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+        border: 2px solid #e2e8f0;
+    }
+
+        .toggle-three-states:hover {
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+            border-color: #cbd5e1;
+        }
+
+    .toggle-slider {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 64px;
+        height: 40px;
+        background: white;
+        border-radius: 20px;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        z-index: 1;
+    }
+
+    .toggle-labels {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        padding: 0;
+    }
+
+    .toggle-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #94a3b8;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        flex: 1;
+        text-align: center;
+    }
+
+    /* Estado 1: Contado */
+    .toggle-three-states[data-state="contado"] {
+        /*background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);*/
+        border-color: #93c5fd;
+    }
+
+        .toggle-three-states[data-state="contado"] .toggle-slider {
+            z-index: 0;
+            left: 3px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4), 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .toggle-three-states[data-state="contado"] .toggle-label:nth-child(1) {
+            color: #1e3a8a;
+            font-weight: 800;
+            transform: scale(1.05);
+        }
+
+    /* Estado 2: Crédito */
+    .toggle-three-states[data-state="credito"] {
+        /*background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);*/
+        border-color: #6ee7b7;
+    }
+
+        .toggle-three-states[data-state="credito"] .toggle-slider {
+            z-index: 0;
+            left: 73px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4), 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .toggle-three-states[data-state="credito"] .toggle-label:nth-child(2) {
+            color: #064e3b;
+            font-weight: 800;
+            transform: scale(1.05);
+        }
+    /* Estado 2: Crédito */
+    .toggle-three-states[data-state="anticipo"] {
+        /*background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);*/
+        border-color: #f59e0b;
+    }
+    /* Estado 3: Anticipo */
+    /* Toggle profesional y sutil */
+    .toggle-three-states {
+        position: relative;
+        width: 100%;
+        max-width: 360px;
+        height: 48px;
+        background: var(--bg-light);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+        padding: 4px;
+    }
+
+        .toggle-three-states:hover {
+            background: var(--bg-gray);
+        }
+
+    .toggle-slider {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: calc(33.333% - 5.33px);
+        height: calc(100% - 8px);
+        background: #ffffff;
+        border-radius: 8px;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .toggle-labels {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        padding: 0 4px;
+        z-index: 1;
+    }
+
+    .toggle-label {
+        flex: 1;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748b;
+        transition: all 0.3s ease;
+        letter-spacing: -0.01em;
+    }
+
+    /* Estado Contado */
+    .toggle-three-states[data-state="contado"] .toggle-slider {
+        left: 4px;
+        background: #3b82f6;
+    }
+
+    .toggle-three-states[data-state="contado"] .toggle-label:nth-child(1) {
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    /* Estado Crédito */
+    .toggle-three-states[data-state="credito"] .toggle-slider {
+        left: calc(33.333% + 1.33px);
+        background: #10b981;
+    }
+
+    .toggle-three-states[data-state="credito"] .toggle-label:nth-child(2) {
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    /* Estado Anticipo - CORREGIDO */
+    .toggle-three-states[data-state="anticipo"] .toggle-slider {
+        left: calc(66.666% + 2.67px);
+        z-index: 0;
+        background: #f59e0b;
+    }
+
+    .toggle-three-states[data-state="anticipo"] .toggle-label:nth-child(3) {
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    /* Label de tipo de pago */
+    .tipo-pago-label {
+        font-weight: 500;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 10px 16px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        letter-spacing: -0.01em;
+    }
+
+        .tipo-pago-label span:first-child {
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .tipo-pago-label.contado {
+            color: #1e40af;
+            background: #eff6ff;
+            border-color: #dbeafe;
+        }
+
+        .tipo-pago-label.credito {
+            color: #065f46;
+            background: #ecfdf5;
+            border-color: #d1fae5;
+        }
+
+        .tipo-pago-label.anticipo {
+            color: #92400e;
+            background: #fffbeb;
+            border-color: #fef3c7;
+        }
+
+    .vn-fac-form-row {
+        margin-bottom: 2rem;
+    }
+
+    .vn-fac-form-field {
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .demo-info {
+        margin-top: 3rem;
+        padding: 1.25rem;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+        .demo-info p {
+            color: #475569;
+            font-size: 0.875rem;
+            line-height: 1.7;
+            margin-bottom: 0.4rem;
+        }
+
+            .demo-info p:last-child {
+                margin-bottom: 0;
+            }
+
+        .demo-info strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+    /* Responsivo */
+    @@media (max-width: 768px) {
+        .container {
+            padding: 32px;
+        }
+
+        .toggle-three-states {
+            max-width: 320px;
+            height: 46px;
+        }
+
+        .toggle-label {
+            font-size: 12px;
+        }
+
+        .tipo-pago-label {
+            font-size: 0.95rem;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .container {
+            padding: 24px;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .toggle-three-states {
+            max-width: 280px;
+            height: 44px;
+        }
+
+        .toggle-label {
+            font-size: 11px;
+        }
+
+        .tipo-pago-label {
+            font-size: 0.9rem;
+            padding: 8px 14px;
+        }
+
+            .tipo-pago-label span:first-child {
+                font-size: 1.125rem;
+            }
+
+        .vn-fac-form-field {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+    }
+
+    /* Estilos para la sección de adendas - VERSIÓN COMPACTA */
+    .adendas-radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--very-light-blue);
+        border-radius: 12px;
+        border: 2px solid var(--border-light);
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .adenda-option {
+        display: flex;
+        align-items: flex-start;
+        padding: 1rem;
+        background: var(--light-blue);
+        border-radius: 8px;
+        border: 2px solid var(--border-light);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+        .adenda-option:hover {
+            border-color: var(--accent-blue);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .adenda-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 1rem;
+            margin-top: 0.25rem;
+            cursor: pointer;
+            accent-color: var(--accent-blue);
+            flex-shrink: 0;
+        }
+
+        .adenda-option.selected {
+            border-color: var(--accent-blue);
+            background: var(--bg-gray);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+    .adenda-label {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+
+    .adenda-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .adenda-nombre {
+        font-weight: 700;
+        color: var(--primary-blue);
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .adenda-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .adenda-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-version {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+
+    .badge-prefix {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+
+    .badge-conceptos {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+    }
+
+    .adenda-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px dashed var(--border-light);
+    }
+
+    .adenda-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .detail-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .detail-value {
+        font-size: 0.75rem;
+        color: var(--text-dark);
+        font-family: 'Courier New', monospace;
+        word-break: break-word;
+    }
+
+    /* NUEVO: Acordeón para el template */
+    .adenda-template-accordion {
+        margin-top: 0.75rem;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .adenda-template-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.75rem;
+        background: linear-gradient(135deg, var(--accent-blue), var(--primary-blue));
+        color: white;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+        .adenda-template-toggle:hover {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+        }
+
+        .adenda-template-toggle i {
+            transition: transform 0.3s ease;
+        }
+
+        .adenda-template-toggle.expanded i {
+            transform: rotate(180deg);
+        }
+
+    .adenda-template-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        background: var(--light-blue);
+    }
+
+        .adenda-template-content.show {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+    .template-content {
+        font-size: 0.7rem;
+        color: var(--text-dark);
+        font-family: 'Courier New', monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+        padding: 0.75rem;
+        line-height: 1.4;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .adenda-timestamp {
+        font-size: 0.65rem;
+        color: var(--text-light);
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px dashed var(--border-light);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .no-adendas-message {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-light);
+        font-style: italic;
+    }
+
+        .no-adendas-message i {
+            font-size: 2.5rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+    /* Scrollbar personalizado */
+    .adendas-radio-group::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .adendas-radio-group::-webkit-scrollbar-track {
+        background: var(--bg-light);
+        border-radius: 4px;
+    }
+
+    .adendas-radio-group::-webkit-scrollbar-thumb {
+        background: var(--accent-blue);
+        border-radius: 4px;
+    }
+
+        .adendas-radio-group::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-blue);
+        }
+
+    .adenda-template-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .adenda-template-content::-webkit-scrollbar-track {
+        background: var(--bg-light);
+    }
+
+    .adenda-template-content::-webkit-scrollbar-thumb {
+        background: var(--primary-blue);
+        border-radius: 3px;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .adenda-details {
+            grid-template-columns: 1fr;
+        }
+
+        .adenda-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .adenda-badges {
+            width: 100%;
+        }
+
+        .adenda-badge {
+            font-size: 0.6rem;
+            padding: 0.15rem 0.5rem;
+        }
+    }
+</style>
+@{var role = Utilities.GetUserRole(User.Identity.Name, "ERP_SRS"); }
+<!-- Formulario -->
+<form id="vn-fac-formCotizacion" class="vn-fac-formCotizacion" method="post">
+    <div class="vn-fac-form-container">
+        <div class="vn-fac-form-grid">
+            <div class="row g-4">
+                <!-- ===== COLUMNA IZQUIERDA ===== -->
+                <div class="col-12 col-xl-8">
+            <!-- Nueva Sección: Tipo de Factura -->
+            <div class="vn-fac-section">
+                <div class="vn-fac-section-header">
+                    <div class="vn-fac-section-icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <h2 class="vn-fac-section-title">Tipo de Factura</h2>
+                    <button type="button"
+                            class="vn-fac-btn-add"
+                            data-bs-toggle="modal"
+                            data-bs-target="#vn-fac-modalBuscarDocumentos"
+                            style="margin-left: auto;">
+                        <i class="fas fa-file-alt me-1"></i> Buscar Documentos
+                    </button>
+                    @* Facturación especial desde remisiones (parcial / múltiple).
+                       Se habilita desde facturacion-remisiones-parciales-nacional.js
+                       en cuanto hay un cliente seleccionado (el modal filtra por cliente). *@
+                    <button type="button"
+                            class="vn-fac-btn-add"
+                            id="vn-fac-btnEspeciales" disabled
+                            style="margin-left: .5rem;"
+                            title="Selecciona primero un cliente">
+                        <i class="fas fa-folder-plus me-1"></i> Especiales
+                    </button>
+                </div>
+
+                <!-- Toggle Contado/Crédito (píldora, estilo industrial) -->
+                <div class="vn-fac-form-row" style="margin-bottom: 1.5rem;">
+                    <div class="vn-fac-form-field">
+                        <div class="vi-pay-toggle" id="vn-fac-toggle-pago" data-state="contado"
+                             style="grid-template-columns: 1fr 1fr;">
+                            <button type="button" class="vi-pay-btn active" data-val="contado"
+                                    onclick="selectTipoPagoFac('contado', event)">
+                                <div class="vi-pay-pill"></div>
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Contado</span>
+                            </button>
+                            <button type="button" class="vi-pay-btn" data-val="credito"
+                                    onclick="selectTipoPagoFac('credito', event)">
+                                <div class="vi-pay-pill"></div>
+                                <i class="fas fa-credit-card"></i>
+                                <span>Crédito</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Sección 1: Información General -->
+            <div class="vn-fac-section">
+                <div class="vn-fac-section-header">
+                    <div class="vn-fac-section-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <h2 class="vn-fac-section-title">Información General</h2>
+                </div>
+                <div class="vn-fac-form-row">
+                    <div class="vn-fac-form-field d-none">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-building"></i>Sucursal
+                        </label>
+                        <select class="vn-fac-form-select form-select" id="vn-fac-sucursal" name="sucursal">
+                            <option selected>CEDIS</option>
+                            <option>Sucursal Centro</option>
+                            <option>Sucursal Norte</option>
+                        </select>
+                    </div>
+                    <div class="vn-fac-form-field d-none">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-warehouse"></i>Almacén
+                        </label>
+                        <select class="vn-fac-form-select form-select" id="vn-fac-almacen" name="almacen">
+                            <option selected>ALMACÉN GENERAL</option>
+                            <option>ALMACÉN A</option>
+                            <option>ALMACÉN B</option>
+                        </select>
+                    </div>
+                    <div class="vn-fac-form-field">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-hashtag"></i>Folio
+                        </label>
+                        <input type="text" id="vn-fac-folio" value="@Model.Folio" name="folio" class="vn-fac-form-control" readonly autocomplete="off">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 2: Cliente -->
+            <div class="vn-fac-section">
+                <div class="vn-fac-section-header">
+                    <div class="vn-fac-section-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h2 class="vn-fac-section-title">Información del Cliente</h2>
+                    <button type="button" class="vn-fac-btn-add" data-bs-toggle="modal" data-bs-target="#vn-fac-modalBuscarAnticipos" id="btn-anticipos">
+                        <i class="fas fa-plus me-1"></i>Buscar Anticipos
+                    </button>
+                </div>
+                <div class="vn-fac-form-row">
+                    <div class="vn-fac-form-field" style="grid-column: span 2;">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-search"></i>Cliente
+                        </label>
+                        <div class="vn-fac-search-group">
+                            <button class="vn-fac-btn-search" type="button" data-bs-toggle="modal" data-bs-target="#vn-fac-modalBuscarCliente">
+                                <i class="fas fa-search me-1"></i>Buscar
+                            </button>
+                            <input type="text" name="cliente" class="vn-fac-form-control" id="vn-fac-cliente" placeholder="Buscar cliente..." disabled>
+                        </div>
+                    </div>
+                    <div class="vn-fac-form-field">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-id-card"></i>RFC
+                        </label>
+                        <input type="text" name="rfc" id="vn-fac-rfc" class="vn-fac-form-control" autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Banner crédito (solo se muestra en ventas a crédito) -->
+                <div class="vn-fac-form-field">
+                    <div id="vn-fac-credit-banner" style="display:none;" class="vn-credit-banner">
+                        <div id="vn-fac-credit-icon" style="font-size:18px;flex-shrink:0;margin-top:2px;"></div>
+                        <div style="flex:1">
+                            <div id="vn-fac-credit-title" style="font-weight:600;font-size:.8rem;margin-bottom:2px;"></div>
+                            <div id="vn-fac-credit-sub" style="font-size:.75rem;opacity:.85;"></div>
+                            <div class="vn-banner-bar-wrap" id="vn-fac-credit-bar-wrap">
+                                <div class="vn-banner-bar-fill" id="vn-fac-credit-bar" style="width:0%;"></div>
+                            </div>
+                        </div>
+                        <div id="vn-fac-credit-pct" style="font-size:.8rem;font-weight:600;flex-shrink:0;"></div>
+                    </div>
+                </div>
+
+                <div class="vn-fac-form-field">
+                    <label class="vn-fac-form-label">
+                        <i class="fas fa-info-circle"></i>Información del Cliente
+                    </label>
+                    <textarea class="vn-fac-form-control" id="vn-fac-info-proveedor" rows="4" readonly autocomplete="off"></textarea>
+                </div>
+                <div class="vn-fac-form-row">
+                    <div class="vn-fac-form-field">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-user-tie"></i>Vendedor
+                        </label>
+                        <select class="vn-fac-form-select form-select" name="vendedor" id="vn-fac-vendedor">
+                            <option selected disabled>Seleccionar vendedor</option>
+                            <option value="1">Carlos Mendoza</option>
+                            <option value="2">Ana García</option>
+                            <option value="3">Luis Fernández</option>
+                        </select>
+                    </div>
+                    <div class="vn-fac-form-field">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-dollar-sign"></i>Moneda
+                        </label>
+                        <select class="vn-fac-form-select form-select" name="moneda" id="vn-fac-moneda">
+                            <option selected disabled>Seleccione una moneda</option>
+                            <option>PESOS</option>
+                            <option>DOLARES</option>
+                            <option>EUROS</option>
+                        </select>
+                    </div>
+                    <div class="vn-fac-form-field">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-exchange-alt"></i>Paridad
+                        </label>
+                        <input type="text" id="vn-fac-paridad" name="paridad" class="vn-fac-form-control" value="1" autocomplete="off">
+                    </div>
+                </div>
+                <div class="vn-fac-form-row">
+                    <div class="vn-fac-form-field" style="grid-column: span 2;">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-comment"></i>Referencia
+                        </label>
+                        <input type="text" id="vn-fac-concepto" name="concepto" class="vn-fac-form-control" autocomplete="off">
+                    </div>
+                    <div class="vn-fac-form-field d-none" style="grid-column: span 2;">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-shipping-fast"></i>Incoterm
+                        </label>
+                        <select class="vn-fac-form-select form-select" name="incoterm" id="vn-fac-incoterm">
+                            <option selected disabled>Seleccionar Incoterm</option>
+                            <option value="EXW">EXW – En fábrica</option>
+                            <option value="FOB">FOB – Libre a bordo</option>
+                            <option value="CFR">CFR – Costo y flete</option>
+                            <option value="CIF">CIF – Costo, seguro y flete</option>
+                            <option value="DAP">DAP – Entregado en lugar</option>
+                            <option value="DDP">DDP – Entregado con derechos pagados</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Agregar después de la sección de información del cliente, dentro de vn-fac-section -->
+                <div class="vn-fac-form-row" id="vn-fac-seccion-adendas" style="display: none;">
+                    <div class="vn-fac-form-field" style="grid-column: span 2;">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-file-contract"></i> Seleccionar Adenda
+                        </label>
+                        <div id="vn-fac-adendas-container" class="adendas-radio-group">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                        <input type="hidden" id="vn-fac-adenda-seleccionada" name="adenda-seleccionada">
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Sección 3: Productos -->
+            <div class="vn-fac-section" id="vn-fac-seccion-productos">
+                <div class="vn-fac-section-header">
+                    <div class="vn-fac-section-icon">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <h2 class="vn-fac-section-title">Artículos y Productos</h2>
+                </div>
+                <div class="vn-fac-products-section">
+                    <div class="vn-fac-products-header">
+                        <h3 class="vn-fac-products-title">
+                            <i class="fas fa-list me-2"></i>Lista de Productos
+                        </h3>
+                        <button type="button" class="vn-fac-btn-add" data-bs-toggle="modal" data-bs-target="#vn-fac-modalBuscarProducto">
+                            <i class="fas fa-plus me-1"></i>Agregar
+                        </button>
+                    </div>
+                    <div class="vn-fac-table-container">
+                        <table class="vn-fac-product-table table-responsive">
+                            <thead>
+                                <tr>
+                                    <th>#</th> <!-- Nueva columna -->
+                                    <th>Artículo</th>
+                                    <th>Descripción</th>
+                                    <th>Existencia</th>
+                                    <th>Cantidad</th>
+                                    <th>Unidad</th>
+                                    <th>Precio</th>
+                                    @if (role == "Gerente")
+                                    {
+                                        <th>Desc %</th>
+                                    }
+                                    <th>Importe</th>
+                                    <th>Comentario</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vn-fac-productosTable" style="background: var(--very-light-blue)">
+                                <tr class="vn-fac-empty-state">
+                                    <td colspan="11">
+                                        <i class="fas fa-box-open d-block"></i>
+                                        <div>No hay productos agregados</div>
+                                        <small>Haz clic en "Agregar" para comenzar</small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="toggle-section">
+                    <label class="vn_fac-form-label">
+                        <i class="fas fa-id-card"></i> Con Flete
+                    </label>
+                    <div class="demo-wrapper d-flex align-items-center gap-2">
+                        <label class="toggle-check mb-0">
+                            <input type="checkbox" id="vn-fac-flete">
+                            <span class="slider-check"></span>
+                        </label>
+                        <div class="vn_fac-form-field">
+                            <!-- Input oculto al inicio -->
+                            <input type="number"
+                                   class="form-control d-none vn_fac-form-control"
+                                   name="flete"
+                                   id="vn-fac-flete-val"
+                                   placeholder="Costo flete">
+                        </div>
+                    </div>
+                    <div class="toggle-section mt-3">
+                        <label class="vn_ped-form-label">
+                            <i class="fas fa-file-alt"></i> Con Orden de Compra
+                        </label>
+                        <div class="demo-wrapper d-flex align-items-center gap-2">
+                            <label class="toggle-check mb-0">
+                                <input type="checkbox" id="vn-fac-orden-compra-check">
+                                <span class="slider-check"></span>
+                            </label>
+                            <div class="vn_ped-form-field">
+                                <input type="text"
+                                       class="form-control d-none vn_ped-form-control"
+                                       name="ordenCompra"
+                                       id="vn-fac-orden-compra-val"
+                                       placeholder="Número de orden de compra"
+                                       autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Tabla de Anticipos -->
+            <div class="card mb-3" id="tabla-anticipo">
+                <div class="card-header">
+                    <h6>Anticipos Aplicados</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Folio</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Monto</th>
+                                <th></th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vn-fac-anticiposTable">
+                            <tr class="vn-fac-empty-state-anticipos">
+                                <td colspan="6" class="text-center py-3">
+                                    <small class="text-muted">No hay anticipos agregados</small>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Totales -->
+            <!--<div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-6"><strong>Total:</strong></div>
+                        <div class="col-6 text-end"><span id="vn-fac-importe-display">$0.00</span></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6"><strong>Anticipos:</strong></div>
+                        <div class="col-6 text-end"><span id="vn-fac-total-anticipos-display">-$0.00</span></div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <div class="col-6"><strong>Total a Pagar:</strong></div>
+                        <div class="col-6 text-end fw-bold text-success"><span id="vn-fac-total-final-display">$0.00</span></div>
+                    </div>
+                </div>
+            </div>-->
+            <!-- Hidden Fields -->
+            <input type="hidden" id="vn-fac-total-anticipos" name="totalAnticipos" value="0">
+            <input type="hidden" id="vn-fac-total-final" name="totalFinal" value="0">
+
+                <!-- Sección 4: Condiciones de Pago -->
+                <div class="vn-fac-section">
+                    <div class="vn-fac-section-header">
+                        <div class="vn-fac-section-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h2 class="vn-fac-section-title">Condiciones de Pago</h2>
+                    </div>
+                    <div id="vn-fac-campos-credito" style="display: none;">
+                        <div class="vn-fac-form-row">
+                            <div class="vn-fac-form-field">
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-credit-card"></i>Límite Crédito
+                                </label>
+                                <input type="number" id="vn-fac-limite-credito" name="limite-credito" value="0.00" readonly class="vn-fac-form-control" autocomplete="off">
+                            </div>
+                            <div class="vn-fac-form-field">
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-credit-card"></i>Crédito Disponible
+                                </label>
+                                <input type="number" id="vn-fac-limite-disponible" name="limite-disponible" value="0.00" readonly class="vn-fac-form-control" autocomplete="off">
+                            </div>
+                            <div class="vn-fac-form-field">
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-calendar-day"></i>Plazo (días)
+                                </label>
+                                <input type="number" id="vn-fac-plazo" name="plazo" class="vn-fac-form-control" autocomplete="off">
+                            </div>
+                            <div class="vn-fac-form-field">
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-calendar"></i>Fecha Pago
+                                </label>
+                                <input type="date" id="vn-fac-fecha-pago" name="fecha-pago" class="vn-fac-form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="vn-fac-campos-anticipo" style="display: none;">
+                        <div class="vn-fac-form-row">
+                            <div class="vn-fac-form-field" hidden>
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-percent"></i>Porcentaje de Anticipo (%)
+                                </label>
+                                <input type="number" id="vn-fac-porcentaje-anticipo" name="porcentaje-anticipo" class="vn-fac-form-control" placeholder="Ej: 50" min="0" max="100" oninput="calcularAnticipoFactura()" autocomplete="off">
+                            </div>
+                            <div class="vn-fac-form-field">
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-dollar-sign"></i>Monto Anticipo
+                                </label>
+                                <input type="number" id="vn-fac-monto-anticipo" name="monto-anticipo" class="vn-fac-form-control" placeholder="0.00" autocomplete="off">
+                            </div>
+                            <div class="vn-fac-form-field" hidden>
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-dollar-sign"></i>Saldo Pendiente
+                                </label>
+                                <input type="number" id="vn-fac-saldo-pendiente" name="saldo-pendiente" class="vn-fac-form-control" placeholder="0.00" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="vn-fac-form-row">
+                            <div class="vn-fac-form-field">
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-calendar"></i>Fecha de Anticipo
+                                </label>
+                                <input type="date" id="vn-fac-fecha-anticipo" name="fecha-anticipo" class="vn-fac-form-control" autocomplete="off">
+                            </div>
+                            <div class="vn-fac-form-field" hidden>
+                                <label class="vn-fac-form-label">
+                                    <i class="fas fa-calendar-alt"></i>Fecha Pago Final
+                                </label>
+                                <input type="date" id="vn-fac-fecha-pago-final" name="fecha-pago-final" class="vn-fac-form-control" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vn-fac-form-row">
+                        <div class="vn-fac-form-field" style="grid-column: span 2;">
+                            <label class="vn-fac-form-label">
+                                <i class="fas fa-money-bill"></i> Método de Pago
+                            </label>
+                            <select class="vn-fac-form-select form-select" id="vn-fac-metodo-pago" name="metodo-pago" required>
+                                <option value="" selected disabled>Seleccione un método de pago</option>
+                                <option value="PUE">PUE - Pago en una sola exhibición</option>
+                                <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+                            </select>
+                        </div>
+                        <div class="vn-fac-form-field" style="grid-column: span 2;">
+                            <label class="vn-fac-form-label">
+                                <i class="fas fa-money-bill"></i>Forma de Pago
+                            </label>
+                            <select class="vn-fac-form-select form-select" id="vn-fac-forma-pago" name="forma-pago">
+                                <option selected>Efectivo</option>
+                                <option value="01">01 - Efectivo</option>
+                                <option value="02">02 - Cheque nominativo</option>
+                                <option value="03">03 - Transferencia electrónica</option>
+                                <option value="04">04 - Tarjeta de crédito</option>
+                                <option value="28">28 - Tarjeta de débito</option>
+                            </select>
+                        </div>
+                        <div class="vn-fac-form-field" style="grid-column: span 2;">
+                            <label class="vn-fac-form-label">
+                                <i class="fas fa-file-invoice"></i>Uso CFDI
+                            </label>
+                            <select class="vn-fac-form-select form-select" id="vn-fac-uso-cfdi" name="uso-cfdi">
+                                <option selected>G03 - Gastos en general</option>
+                                <option value="D01">D01 - Honorarios médicos</option>
+                                <option value="D02">D02 - Gastos médicos por incapacidad</option>
+                                <option value="P01">P01 - Por definir</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="vn-fac-form-field">
+                        <label class="vn-fac-form-label">
+                            <i class="fas fa-comment-dots"></i>Comentarios Adicionales
+                        </label>
+                        <textarea class="vn-fac-form-control" id="vn-fac-comentarios" name="comentarios" rows="3"></textarea>
+                    </div>
+                </div><!-- /Condiciones de Pago -->
+                </div><!-- /col-xl-8 -->
+
+                <!-- ===== COLUMNA DERECHA: Resumen fijo ===== -->
+                <div class="col-12 col-xl-4">
+                    <div style="position: sticky; top: 5rem; z-index: 0;">
+                <!-- Sidebar - Totales -->
+                <div class="vn-fac-ticket-container vn-fac-sidebar-totals">
+                    <div class="vn-fac-ticket-header">
+                        <div class="vn-fac-ticket-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="vn-fac-ticket-title">Resumen de Factura</div>
+                    </div>
+
+                    <div class="vn-fac-ticket-body">
+                        <div class="vn-fac-ticket-line">
+                            <span>Subtotal 1:</span>
+                            <span id="vn-fac-total-subtotal1-display">$0.00</span>
+                        </div>
+                        <div class="vn-fac-ticket-line">
+                            <span>Descuento:</span>
+                            <span id="vn-fac-total-descuento-display" class="vn-fac-discount-highlight">-$0.00</span>
+                        </div>
+                        <div class="vn-fac-ticket-line">
+                            <span>Flete:</span>
+                            <span id="vn-fac-total-flete-display">$0.00</span>
+                        </div>
+
+                        <hr class="vn-fac-ticket-separator">
+
+                        <div class="vn-fac-ticket-line">
+                            <span>Subtotal 2:</span>
+                            <span id="vn-fac-total-subtotal2-display">$0.00</span>
+                        </div>
+                        <div class="vn-fac-ticket-line">
+                            <span>IVA (16%):</span>
+                            <span id="vn-fac-iva-display">$0.00</span>
+                        </div>
+
+                        <hr class="vn-fac-ticket-separator">
+
+                        <div class="vn-fac-ticket-line">
+                            <span><i class="fas fa-coins"></i> Total:</span>
+                            <strong id="vn-fac-importe-display">$0.00</strong>
+                        </div>
+                        <div class="vn-fac-ticket-line" id="total-anticipo">
+                            <span>Anticipos:</span>
+                            <span id="vn-fac-total-anticipos-display" class="text-success">-$0.00</span>
+                        </div>
+
+
+                        <hr class="vn-fac-ticket-separator">
+
+                        <div class="vn-fac-ticket-total">
+                            <div class="vn-fac-total-amount">
+                                <span><i class="fas fa-money-bill-wave"></i> Total:</span>
+                                <strong id="vn-fac-total-final-display" class="text-success">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden inputs -->
+                    <input type="hidden" id="vn-fac-total-subtotal1" name="total-subtotal1" value="0.00">
+                    <input type="hidden" id="vn-fac-total-descuento" name="total-descuento" value="0.00">
+                    <input type="hidden" id="vn-fac-total-flete" name="total-flete" value="0.00">
+                    <input type="hidden" id="vn-fac-total-subtotal2" name="total-subtotal2" value="0.00">
+                    <input type="hidden" id="vn-fac-iva" name="iva" value="0.00">
+                    <input type="hidden" id="vn-fac-importe" name="importe" value="0.00">
+                    <input type="hidden" id="vn-fac-total-anticipos" name="total-anticipos" value="0.00">
+                    <input type="hidden" id="vn-fac-total-final" name="total-final" value="0.00">
+                    <input type="hidden" id="vn-fac-documentid" name="documentid">
+
+                    <!-- Perforaciones decorativas (ocultas) -->
+                    <div class="vn-fac-perforation">
+                        <div class="vn-fac-perforation-hole"></div>
+                        <div class="vn-fac-perforation-hole"></div>
+                        <div class="vn-fac-perforation-hole"></div>
+                        <div class="vn-fac-perforation-hole"></div>
+                        <div class="vn-fac-perforation-hole"></div>
+                    </div>
+                </div><!-- /ticket-container -->
+
+                        <div class="vn-fac-actions-section" style="margin-top:1rem; padding:0;">
+                            <button type="button" class="vn-fac-ticket-btn vn-fac-btn-secondary"
+                                    data-bs-toggle="modal" data-bs-target="#vn-fac-modalVistaPrevia"
+                                    onclick="actualizarVistaPreviaFactura()">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                            <button type="button" class="vn-fac-footer-btn vn-fac-btn-submit">
+                                <i class="fas fa-paper-plane"></i> Generar
+                            </button>
+                        </div>
+                    </div><!-- /sticky wrapper -->
+                </div><!-- /col-xl-4 -->
+            </div><!-- /row -->
+        </div><!-- /vn-fac-form-grid -->
+    </div><!-- /vn-fac-form-container -->
+</form>
+
+<div class="vn-fac-floating-tooltip">Buscar Documentos</div>
+<!-- Modal Buscar Anticipos -->
+<div class="modal fade" id="vn-fac-modalBuscarAnticipos" tabindex="-1" aria-labelledby="vn-fac-modalBuscarAnticiposLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="vn-fac-modalBuscarAnticiposLabel">
+                    <i class="fas fa-wallet me-2"></i> Buscar Anticipos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="vn-fac-inputBuscarAnticipo" class="form-control" placeholder="Folio o Cliente">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-warning w-100" id="vn-fac-btnLimpiarAnticipos">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <ul class="list-group list-group-flush" id="vn-fac-listaResultadosAnticipos" style="max-height: 500px; overflow-y: auto;">
+                    <!-- Resultados dinámicos -->
+                </ul>
+            </div>
+
+            <div class="modal-footer flex-column">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap mb-2">
+                    <div>
+                        <span>
+                            Mostrando <strong id="vn-fac-recordsFromAnticipos">0</strong> a
+                            <strong id="vn-fac-recordsToAnticipos">0</strong> de
+                            <strong id="vn-fac-totalRecordsAnticipos">0</strong> registros
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vn-fac-pageSizeAnticipos" class="form-select form-select-sm">
+                            <option value="25">25 por página</option>
+                            <option value="50" selected>50 por página</option>
+                            <option value="100">100 por página</option>
+                        </select>
+                        <div id="vn-fac-spinnerAnticipos" class="spinner-border text-primary d-none" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vn-fac-paginationAnticipos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal Buscar Documentos -->
+<div class="modal fade" id="vn-fac-modalBuscarDocumentos" tabindex="-1" aria-labelledby="vn-fac-modalBuscarDocumentosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="vn-fac-modalBuscarDocumentosLabel">
+                    <i class="fas fa-file-alt me-2"></i> Buscar Documentos Previos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtros de búsqueda -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="vn-fac-inputBuscarDocumento" class="form-control" placeholder="Folio o Cliente">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-warning w-100" id="vn-fac-btnLimpiarDocumentos">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista de resultados -->
+                <ul class="list-group list-group-flush" id="vn-fac-listaResultadosDocumentos" style="max-height: 500px; overflow-y: auto;">
+                    <!-- Ejemplo de documentos -->
+                    <li class="list-group-item" data-folio="FAC-2024-001">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-file-invoice text-primary me-2"></i>
+                                    <strong>Folio:</strong> FAC-2024-001
+                                </h6>
+                                <p class="mb-1 text-muted">
+                                    <i class="fas fa-user me-2"></i>
+                                    <strong>Cliente:</strong> Empresa Demo S.A. de C.V.
+                                </p>
+                                <div class="d-flex gap-3 small text-muted">
+                                    <span><i class="fas fa-calendar me-1"></i> 15/09/2024</span>
+                                    <span><i class="fas fa-money-bill-wave me-1"></i> $125,450.00</span>
+                                    <span><i class="fas fa-user-tie me-1"></i> Carlos Mendoza</span>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="document-badge badge-cancelled">Cancelado</span>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="modal-footer flex-column">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap mb-2">
+                    <div>
+                        <span>Mostrando <strong id="vn-fac-recordsFromDocumentos">1</strong> a <strong id="vn-fac-recordsToDocumentos">3</strong> de <strong id="vn-fac-totalRecordsDocumentos">3</strong> registros</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vn-fac-pageSizeDocumentos" class="form-select form-select-sm">
+                            <option value="25">25 por página</option>
+                            <option value="50" selected>50 por página</option>
+                            <option value="100">100 por página</option>
+                        </select>
+                        <div id="vn-fac-spinnerDocumentos" class="spinner-border text-primary d-none" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paginación -->
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vn-fac-paginationDocumentos">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Anterior</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Siguiente</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Buscar Cliente -->
+<div class="modal fade" id="vn-fac-modalBuscarCliente" tabindex="-1" aria-labelledby="vn-fac-modalBuscarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="vn-fac-modalBuscarClienteLabel">
+                    <i class="fas fa-search me-2"></i> Buscar Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Campo de búsqueda -->
+                <div class="input-group mb-3">
+                    <input type="text" id="vn-fac-inputBuscarCliente" class="form-control" placeholder="Ej. Nombre o RFC">
+                    <button type="button" class="btn btn-outline-warning" id="vn-fac-btnLimpiarClientes">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+
+                <!-- Lista de resultados -->
+                <ul class="list-group list-group-flush" id="vn-fac-listaResultadosClientes" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Resultados se llenarán aquí -->
+                </ul>
+            </div>
+
+            <div class="modal-footer flex-column">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap mb-2">
+                    <div>
+                        <span>
+                            Mostrando <strong id="vn-fac-recordsFromClientes">0</strong> a <strong id="vn-fac-recordsToClientes">0</strong> de <strong id="vn-fac-totalRecordsClientes">0</strong> registros
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vn-fac-pageSizeClientes" class="form-select form-select-sm">
+                            <option value="25">25 por página</option>
+                            <option value="50" selected>50 por página</option>
+                            <option value="100">100 por página</option>
+                        </select>
+                        <div id="vn-fac-spinnerClientes" class="spinner-border text-primary d-none" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paginación -->
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vn-fac-paginationClientes">
+                        <!-- Botones de paginación se generarán aquí -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Buscar Producto -->
+<div class="modal fade" id="vn-fac-modalBuscarProducto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue)); color: white;">
+                <h5 class="modal-title"><i class="fas fa-box-open me-2"></i>Buscar Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vn-fac-inputBuscarProducto" class="form-control" placeholder="Buscar por código o descripción">
+                    <button type="button" class="btn btn-outline-secondary" id="vn-fac-btnLimpiarProductos">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-group" id="vn-fac-listaResultadosProductos" style="max-height: 400px; overflow-y: auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column">
+                <div class="w-100 d-flex justify-content-between align-items-center mb-2">
+                    <span>Mostrando <strong id="vn-fac-recordsFromProductos">0</strong> a <strong id="vn-fac-recordsToProductos">0</strong> de <strong id="vn-fac-totalRecordsProductos">0</strong></span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select id="vn-fac-pageSizeProductos" class="form-select form-select-sm">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <div id="vn-fac-spinnerProductos" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vn-fac-paginationProductos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Vista Previa PDF -->
+<div class="modal fade" id="vn-fac-modalVistaPrevia" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0066cc, #0099ff); color: white;">
+                <h5 class="modal-title"><i class="fas fa-file-pdf me-2"></i>Vista Previa de Factura</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="vn-fac-previewPDF" style="background: #525659; padding: 2rem; min-height: 600px; max-height: 80vh; overflow-y: auto;">
+                    <!-- Documento PDF simulado -->
+                    <div class="vista-previa-factura" id="vista-previa-factura" style="background: white; max-width: 850px; margin: 0 auto; padding: 3rem; box-shadow: 0 0 20px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
+
+                        <!-- Header -->
+                        <div style="border-bottom: 3px solid #0066cc; padding-bottom: 1rem; margin-bottom: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <h1 style="color: #0066cc; margin: 0; font-size: 2rem;">FACTURA</h1>
+                                    <p style="margin: 0.5rem 0 0 0; color: #666;">Folio: <strong id="vn-fac-preview-folio">-</strong></p>
+                                </div>
+                                <div style="text-align: right; color: black">
+                                    <p style="margin: 0; font-size: 0.9rem;"><strong>Fecha:</strong> <span id="vn-fac-preview-fecha">01/10/2025</span></p>
+                                    <p style="margin: 0.3rem 0 0 0; font-size: 0.9rem;"><strong>Sucursal:</strong> <span id="vn-fac-preview-sucursal">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información del Cliente -->
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: #0066cc; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; font-size: 1.1rem;">INFORMACIÓN DEL CLIENTE</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; color: black; ">
+                                <div>
+                                    <p style="margin: 0.3rem 0;"><strong>Cliente:</strong> <span id="vn-fac-preview-cliente">-</span></p>
+                                    <p style="margin: 0.3rem 0;"><strong>RFC:</strong> <span id="vn-fac-preview-rfc">-</span></p>
+                                    <p style="margin: 0.3rem 0;"><strong>Vendedor:</strong> <span id="vn-fac-preview-vendedor">-</span></p>
+                                </div>
+                                <div>
+                                    <p style="margin: 0.3rem 0;"><strong>Moneda:</strong> <span id="vn-fac-preview-moneda">-</span></p>
+                                    <p style="margin: 0.3rem 0;"><strong>Incoterm:</strong> <span id="vn-fac-preview-incoterm">-</span></p>
+                                </div>
+                            </div>
+                            <div style="margin-top: 1rem; color: black;">
+                                <p style="margin: 0.3rem 0;"><strong>Concepto:</strong> <span id="vn-fac-preview-concepto">-</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Productos -->
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: #0066cc; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; font-size: 1.1rem;">PRODUCTOS</h3>
+                            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem;">
+                                <thead>
+                                    <tr style="background: #0066cc; color: white;">
+                                        <th style="padding: 0.5rem; text-align: left; border: 1px solid #ddd;">Artículo</th>
+                                        <th style="padding: 0.5rem; text-align: left; border: 1px solid #ddd;">Descripcion</th>
+                                        <th style="padding: 0.5rem; text-align: center; border: 1px solid #ddd;">Cant.</th>
+                                        <th style="padding: 0.5rem; text-align: center; border: 1px solid #ddd;">Unidad</th>
+                                        <th style="padding: 0.5rem; text-align: right; border: 1px solid #ddd;">Precio</th>
+                                        <th style="padding: 0.5rem; text-align: right; border: 1px solid #ddd;">Desc %</th>
+                                        <th style="padding: 0.5rem; text-align: right; border: 1px solid #ddd;">Importe</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vn-fac-preview-productos" style="color: black; ">
+                                    <tr>
+                                        <td colspan="6" style="padding: 2rem; text-align: center; color: #999; border: 1px solid #ddd;">
+                                            No hay productos agregados
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Totales -->
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 2rem;">
+                            <div style="width: 300px; border: 2px solid #0066cc; padding: 1rem; border-radius: 8px; color: black ">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Subtotal 1:</span>
+                                    <strong id="vn-fac-preview-subtotal1">$0.00</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: #dc3545;">
+                                    <span>Descuento:</span>
+                                    <strong id="vn-fac-preview-descuento">-$0.00</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Flete:</span>
+                                    <strong id="vn-fac-preview-flete">$0.00</strong>
+                                </div>
+                                <hr style="margin: 0.5rem 0; border: none; border-top: 1px solid #ddd;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Subtotal 2:</span>
+                                    <strong id="vn-fac-preview-subtotal2">$0.00</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>IVA (16%):</span>
+                                    <strong id="vn-fac-preview-iva">$0.00</strong>
+                                </div>
+                                <hr style="margin: 0.5rem 0; border: none; border-top: 2px solid #0066cc;">
+                                <div style="display: flex; justify-content: space-between; font-size: 1.2rem; color: #0066cc;">
+                                    <span>TOTAL:</span>
+                                    <strong id="vn-fac-preview-total">$0.00</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Condiciones de Pago -->
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="color: #0066cc; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; font-size: 1.1rem;">CONDICIONES DE PAGO</h3>
+                            <div style="margin-top: 1rem; color: black; ">
+                                <p style="margin: 0.3rem 0;"><strong>Forma de Pago:</strong> <span id="vn-fac-preview-forma-pago">-</span></p>
+                                <p style="margin: 0.3rem 0;"><strong>Metodo de Pago:</strong> <span id="vn-fac-preview-metodo-pago">-</span></p>
+                                <p style="margin: 0.3rem 0;"><strong>Plazo:</strong> <span id="vn-fac-preview-plazo">-</span> días</p>
+                                <p style="margin: 0.3rem 0;"><strong>Fecha de Pago:</strong> <span id="vn-fac-preview-fecha-pago">-</span></p>
+                                <p style="margin: 0.3rem 0;"><strong>Uso CFDI:</strong> <span id="vn-fac-preview-uso-cfdi">-</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Comentarios -->
+                        <div id="vn-fac-preview-comentarios-section" style="margin-bottom: 2rem; display: none;">
+                            <h3 style="color: #0066cc; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; font-size: 1.1rem;">COMENTARIOS</h3>
+                            <p id="vn-fac-preview-comentarios" style="margin-top: 1rem; color: #666; white-space: pre-wrap;"></p>
+                        </div>
+
+                        <!-- Footer -->
+                        <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e0e0e0; text-align: center; color: #999; font-size: 0.8rem;">
+                            <p style="margin: 0;">Este documento es una factura y constituye un comprobante fiscal digital por internet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cerrar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="descargarVistaPreviaFacturaPDF()">📄 Descargar PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/Scripts/Facturas/manejo-respuestas.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+    // Solo 2 estados en el toggle (como industrial): Contado / Crédito.
+    // El estado "anticipo" sigue soportado por aplicarEstadoPagoFactura pero ya
+    // no forma parte del ciclo del toggle.
+    let paymentStates2Factura = ['contado', 'credito'];
+    let currentStateIndex2Factura = 0;
+
+    // Selección directa desde los botones-píldora del toggle.
+    function selectTipoPagoFac(val, event) {
+        event?.preventDefault();
+        event?.stopPropagation();
+        aplicarEstadoPagoFactura(val);
+    }
+
+    // Compatibilidad: el toggle cíclico anterior sigue disponible por si algún
+    // código externo lo invoca.
+    function toggleCreditoContadoFactura() {
+        currentStateIndex2Factura = (currentStateIndex2Factura + 1) % paymentStates2Factura.length;
+        aplicarEstadoPagoFactura(paymentStates2Factura[currentStateIndex2Factura]);
+    }
+
+    // Aplica un estado de pago concreto (contado | credito | anticipo): sincroniza el
+    // índice del ciclo, el data-state del toggle, la visibilidad de secciones y la
+    // preselección del método de pago. Se usa desde el toggle, al iniciar y al cargar
+    // un documento, para que todo quede siempre consistente.
+    function aplicarEstadoPagoFactura(newState) {
+        const toggle = document.getElementById('vn-fac-toggle-pago');
+        const camposCredito = document.getElementById('vn-fac-campos-credito');
+        const camposAnticipo = document.getElementById('vn-fac-campos-anticipo');
+        const seccionProductos = document.getElementById('vn-fac-seccion-productos');
+        const fleteval = document.getElementById('vn-fac-flete-val');
+        const tAnticipo = document.getElementById('tabla-anticipo');
+        const btnAnticipo = document.getElementById('btn-anticipos');
+        const totalAnticipo = document.getElementById('total-anticipo');
+
+        // Mantener el índice del ciclo alineado con el estado aplicado.
+        const idx = paymentStates2Factura.indexOf(newState);
+        if (idx >= 0) currentStateIndex2Factura = idx;
+
+        if (toggle) toggle.setAttribute('data-state', newState);
+
+        // Sincronizar los botones-píldora del toggle con el estado aplicado.
+        document.querySelectorAll('#vn-fac-toggle-pago .vi-pay-btn')
+            .forEach(b => b.classList.toggle('active', b.dataset.val === newState));
+
+        if (camposCredito) camposCredito.style.display = 'none';
+        if (camposAnticipo) camposAnticipo.style.display = 'none';
+
+        if (newState === 'contado') {
+            limpiarCamposFactura();
+            if (seccionProductos) seccionProductos.style.display = '';
+            if (tAnticipo) tAnticipo.style.display = '';
+            if (btnAnticipo) btnAnticipo.style.display = '';
+            if (totalAnticipo) totalAnticipo.style.display = '';
+        } else if (newState === 'credito') {
+            if (camposCredito) camposCredito.style.display = 'block';
+            if (tAnticipo) tAnticipo.style.display = 'none';
+            if (btnAnticipo) btnAnticipo.style.display = 'none';
+            if (totalAnticipo) totalAnticipo.style.display = 'none';
+            limpiarCamposAnticipoFactura();
+            if (seccionProductos) seccionProductos.style.display = '';
+        } else if (newState === 'anticipo') {
+            if (camposAnticipo) camposAnticipo.style.display = 'block';
+            limpiarCamposCreditoFactura();
+            if (seccionProductos) seccionProductos.style.display = 'none';
+            if (tAnticipo) tAnticipo.style.display = 'none';
+            if (btnAnticipo) btnAnticipo.style.display = 'none';
+            if (totalAnticipo) totalAnticipo.style.display = 'none';
+            if (fleteval) fleteval.value = 0;
+        }
+
+        // ★ Preseleccionar el método de pago según el tipo:
+        //   contado/anticipo → PUE (una sola exhibición), crédito → PPD (parcialidades/diferido).
+        setMetodoPagoSegunTipoView(newState);
+
+        // El crédito solo se valida en ventas a crédito.
+        window.CreditoVentas?.evaluar('vn-fac');
+    }
+
+    // Preselecciona (y bloquea) el método de pago según el estado del toggle. El select
+    // queda deshabilitado porque lo gobierna el toggle; aun así se envía, porque el JS de
+    // la factura lee su .value directamente (no depende del submit nativo del form).
+    function setMetodoPagoSegunTipoView(estado) {
+        const select = document.getElementById('vn-fac-metodo-pago');
+        if (!select) return;
+        const mapa = { contado: 'PUE', credito: 'PPD', anticipo: 'PUE' };
+        const valor = mapa[estado] || 'PUE';
+
+        select.removeAttribute('disabled');
+        // Iterar en vez de .value es más confiable con selects deshabilitados.
+        Array.from(select.options).forEach(opt => { opt.selected = opt.value === valor; });
+        select.setAttribute('disabled', 'disabled');
+    }
+
+    // Estado inicial: contado → método PUE preseleccionado.
+    document.addEventListener('DOMContentLoaded', () => setMetodoPagoSegunTipoView('contado'));
+
+    function limpiarCamposFactura() {
+        limpiarCamposCreditoFactura();
+        limpiarCamposAnticipoFactura();
+    }
+
+    function limpiarCamposCreditoFactura() {
+        document.getElementById('vn-fac-limite-credito').value = '0.00';
+        document.getElementById('vn-fac-plazo').value = '';
+        document.getElementById('vn-fac-fecha-pago').value = '';
+    }
+
+    function limpiarCamposAnticipoFactura() {
+        document.getElementById('vn-fac-porcentaje-anticipo').value = '';
+        document.getElementById('vn-fac-monto-anticipo').value = '';
+        document.getElementById('vn-fac-saldo-pendiente').value = '';
+        document.getElementById('vn-fac-fecha-anticipo').value = '';
+        document.getElementById('vn-fac-fecha-pago-final').value = '';
+    }
+
+    function calcularAnticipoFactura() {
+        const porcentaje = parseFloat(document.getElementById('vn-fac-porcentaje-anticipo').value) || 0;
+        // Obtener el total desde tu campo de importe total
+        const totalVenta = parseFloat(document.getElementById('vn-fac-importe').value) || 0;
+
+        const montoAnticipo = (totalVenta * porcentaje) / 100;
+        const saldoPendiente = totalVenta - montoAnticipo;
+
+        document.getElementById('vn-fac-monto-anticipo').value = montoAnticipo.toFixed(2);
+        document.getElementById('vn-fac-saldo-pendiente').value = saldoPendiente.toFixed(2);
+    }
+</script>
+<script>
+    function actualizarVistaPreviaFactura() {
+        console.log('Modal abierto - actualizando vista previa...');
+
+        // === Helpers ===
+        const getValue = (id, defaultVal = '-') => {
+            const el = document.getElementById(id);
+            return (el?.value ?? '').toString().trim() || defaultVal;
+        };
+
+        const getSelectedText = (id, defaultVal = '-') => {
+            const el = document.getElementById(id);
+            const selected = el?.options?.[el.selectedIndex];
+            return selected?.text?.trim() || defaultVal;
+        };
+
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        const getDisplayValue = (id, defaultVal = '$0.00') => {
+            const el = document.getElementById(id);
+            return el?.textContent?.trim() || defaultVal;
+        };
+
+        // === TomSelect helper ===
+        const getTomValueText = (key) => {
+            const inst = tomManager.getInstance(key);
+            const val = inst?.getValue();
+            return inst?.getItem(val)?.textContent?.trim() || '';
+        };
+
+        const textVendedor = getTomValueText('vn-fac-vendedor');
+        const textMoneda = getTomValueText('vn-fac-moneda');
+        const textIncoterm = getTomValueText('vn-fac-incoterm');
+        const textCFDI = getTomValueText('vn-fac-uso-cfdi');
+        const textForma = getTomValueText('vn-fac-forma-pago');
+
+        // === Info general y cliente ===
+        setText('vn-fac-preview-folio', getValue('vn-fac-folio', 'Sin asignar'));
+        setText('vn-fac-preview-sucursal', getSelectedText('vn-fac-sucursal', 'CEDIS'));
+        const hoy = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        setText('vn-fac-preview-fecha', hoy);
+
+        setText('vn-fac-preview-cliente', getValue('vn-fac-cliente'));
+        setText('vn-fac-preview-rfc', getValue('vn-fac-rfc'));
+        setText('vn-fac-preview-vendedor', textVendedor);
+        setText('vn-fac-preview-moneda', textMoneda);
+        setText('vn-fac-preview-incoterm', textIncoterm);
+        setText('vn-fac-preview-concepto', getValue('vn-fac-concepto'));
+
+        // === Productos: helpers que permiten re-render seguro ===
+        const productosTable = document.getElementById('vn-fac-productosTable');
+        // seccionProductos: contenedor general donde están la tabla/tbody de preview y la vista de anticipo
+        const previewProductos = document.getElementById('vn-fac-preview-productos');
+
+        // Buscar o crear un contenedor para el mensaje de anticipo (no sobrescribe el DOM principal)
+        const seccionProductos = previewProductos ? previewProductos.closest('div') : document.getElementById('vn-fac-preview-productos-container') || null;
+        let anticipoDiv = seccionProductos ? seccionProductos.querySelector('.vn-fac-anticipo-info') : null;
+
+        if (seccionProductos && !anticipoDiv) {
+            // crear anticipoDiv (inserta al principio del contenedor, oculto por defecto)
+            anticipoDiv = document.createElement('div');
+            anticipoDiv.className = 'vn-fac-anticipo-info';
+            anticipoDiv.style.display = 'none';
+            seccionProductos.insertBefore(anticipoDiv, seccionProductos.firstChild);
+        }
+
+        // función que renderiza la tabla/tbody de productos desde productosTable
+        function renderProductosPreview() {
+            // Asegurarnos de que exista previewProductos; si no existe, intentar crearlo (tbody dentro de una tabla)
+            let preview = document.getElementById('vn-fac-preview-productos');
+            if (!preview && seccionProductos) {
+                // crear una tabla simple con tbody#vn-fac-preview-productos
+                const table = document.createElement('table');
+                table.className = 'table table-sm';
+                table.style.width = '100%';
+                const thead = document.createElement('thead');
+                thead.innerHTML = `<tr>
+                <th>Clave</th><th>Descripción</th><th>Cant.</th><th>UM</th><th>Precio</th><th>% Desc</th><th>Importe</th>
+            </tr>`;
+                table.appendChild(thead);
+                const tbody = document.createElement('tbody');
+                tbody.id = 'vn-fac-preview-productos';
+                table.appendChild(tbody);
+                seccionProductos.appendChild(table);
+                preview = tbody;
+            }
+
+            if (!preview) return; // no hay donde renderizar
+
+            // Vaciar y volver a generar
+            preview.innerHTML = '';
+
+            if (!productosTable) {
+                preview.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding:2rem; text-align:center; color:#999; border:1px solid #ddd">
+                        No hay productos agregados
+                    </td>
+                </tr>`;
+                return;
+            }
+
+            const rows = Array.from(productosTable.querySelectorAll('tr')).filter(r => !r.classList.contains('vn-fac-empty-state'));
+            if (rows.length === 0) {
+                preview.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding:2rem; text-align:center; color:#999; border:1px solid #ddd">
+                        No hay productos agregados
+                    </td>
+                </tr>`;
+                return;
+            }
+
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if (cols.length >= 8) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                    <td style="padding:.5rem; border:1px solid #ddd;">${cols[0]?.textContent?.trim() || '-'}</td>
+                    <td style="padding:.5rem; border:1px solid #ddd;">${cols[1]?.textContent?.trim() || '-'}</td>
+                    <td style="padding:.5rem; text-align:center; border:1px solid #ddd;">${cols[3]?.querySelector('input')?.value || '0'}</td>
+                    <td style="padding:.5rem; text-align:center; border:1px solid #ddd;">${cols[4]?.textContent?.trim() || '-'}</td>
+                    <td style="padding:.5rem; text-align:right; border:1px solid #ddd;">$${cols[5]?.querySelector('input')?.value || '0.00'}</td>
+                    <td style="padding:.5rem; text-align:right; border:1px solid #ddd;">${cols[6]?.querySelector('input')?.value || '0'}%</td>
+                    <td style="padding:.5rem; text-align:right; border:1px solid #ddd;">${cols[7]?.textContent?.trim() || '$0.00'}</td>
+                `;
+                    preview.appendChild(tr);
+                }
+            });
+        }
+
+        // === Totales ===
+        setText('vn-fac-preview-subtotal1', getDisplayValue('vn-fac-total-subtotal1-display'));
+        setText('vn-fac-preview-descuento', getDisplayValue('vn-fac-total-descuento-display'));
+        setText('vn-fac-preview-flete', getDisplayValue('vn-fac-total-flete-display'));
+        setText('vn-fac-preview-subtotal2', getDisplayValue('vn-fac-total-subtotal2-display'));
+        setText('vn-fac-preview-iva', getDisplayValue('vn-fac-iva-display'));
+        setText('vn-fac-preview-total', getDisplayValue('vn-fac-importe-display'));
+
+        // === Condiciones de pago ===
+        setText('vn-fac-preview-forma-pago', textForma);
+        setText('vn-fac-preview-metodo-pago', getSelectedText('vn-fac-metodo-pago'));
+        setText('vn-fac-preview-plazo', getValue('vn-fac-plazo'));
+        setText('vn-fac-preview-fecha-pago', getValue('vn-fac-fecha-pago'));
+        setText('vn-fac-preview-uso-cfdi', textCFDI);
+
+        // === Comentarios ===
+        const comentarios = getValue('vn-fac-comentarios', '');
+        const comentariosSection = document.getElementById('vn-fac-preview-comentarios-section');
+        const comentariosText = document.getElementById('vn-fac-preview-comentarios');
+        if (comentarios && comentariosSection && comentariosText) {
+            comentariosSection.style.display = 'block';
+            comentariosText.textContent = comentarios;
+        } else if (comentariosSection) {
+            comentariosSection.style.display = 'none';
+        }
+
+        // === Tipo de factura y comportamiento ===
+        const tipoFactura = document.getElementById('vn-fac-toggle-pago')?.getAttribute('data-state') || 'contado';
+
+        const campoPlazo = document.querySelector('#vn-fac-preview-plazo')?.parentElement || null;
+        const campoFechaPago = document.querySelector('#vn-fac-preview-fecha-pago')?.parentElement || null;
+        const campoFormaPago = document.querySelector('#vn-fac-preview-forma-pago')?.parentElement || null;
+
+        // Mostrar todo por defecto
+        [campoPlazo, campoFechaPago, campoFormaPago].forEach(c => { if (c) c.style.display = ''; });
+        if (seccionProductos) seccionProductos.style.display = '';
+
+        // ocultar anticipo div por defecto y luego lo mostraremos sólo si aplica
+        if (anticipoDiv) anticipoDiv.style.display = 'none';
+
+        if (tipoFactura === 'contado') {
+            if (campoPlazo) campoPlazo.style.display = 'none';
+            if (campoFechaPago) campoFechaPago.style.display = 'none';
+            // mostrar productos
+            if (seccionProductos) {
+                // asegurarse de que la tabla de productos esté visible y actualizada
+                renderProductosPreview();
+                if (previewProductos) previewProductos.style.display = '';
+            }
+        } else if (tipoFactura === 'anticipo') {
+            // ocultar campos de plazo/fecha
+            if (campoPlazo) campoPlazo.style.display = 'none';
+            if (campoFechaPago) campoFechaPago.style.display = 'none';
+
+            // mostrar mensaje de anticipo y ocultar la tabla de productos
+            const montoAnt = parseFloat(getValue('vn-fac-monto-anticipo') || 0);
+            if (anticipoDiv && seccionProductos) {
+                anticipoDiv.innerHTML = `
+                <div class="text-center my-4 p-4 border rounded shadow-sm bg-light">
+                    <h5 class="fw-bold text-success mb-2">💰 Anticipo registrado</h5>
+                    <p class="fs-5 mb-0" style="color:black">
+                        Monto del anticipo: <strong>$${montoAnt.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</strong>
+                    </p>
+                </div>
+            `;
+                anticipoDiv.style.display = '';
+            }
+            // ocultar la tabla de productos si existe
+            if (previewProductos) previewProductos.style.display = 'none';
+        } else {
+            // otro tipo: mostrar productos de nuevo
+            renderProductosPreview();
+            if (previewProductos) previewProductos.style.display = '';
+        }
+
+        console.log('Vista previa actualizada correctamente para tipo:', tipoFactura);
+    }
+
+</script>
+<script>
+    const chkFleteFactura = document.getElementById("vn-fac-flete");
+    const inputFleteFactura = document.getElementById("vn-fac-flete-val");
+    chkFleteFactura.addEventListener("change", () => {
+        if (chkFleteFactura.checked) {
+            inputFleteFactura.classList.remove("d-none"); // mostrar
+        } else {
+            inputFleteFactura.classList.add("d-none"); // ocultar
+            inputFleteFactura.value = ""; // limpiar valor al desactivar
+        }
+    });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.7.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script>
+    async function descargarVistaPreviaFacturaPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 12;
+        let y = margin;
+
+        // ============ CONFIGURACIÓN DE COLORES ============
+        const colors = {
+            primary: [13, 35, 75],        // Azul marino oscuro
+            secondary: [59, 130, 246],    // Azul primario
+            accent: [34, 197, 94],        // Verde esmeralda
+            highlight: [249, 115, 22],    // Naranja energético
+            dark: [30, 30, 40],           // Gris muy oscuro
+            text: [60, 70, 85],           // Gris texto
+            light: [248, 250, 252],       // Gris ultra claro
+            border: [219, 224, 231],      // Gris borde
+            white: [255, 255, 255]
+        };
+
+        // ============ FUNCIONES AUXILIARES ============
+        const getValue = (id, defaultVal = '-') =>
+            document.getElementById(id)?.value?.trim() || defaultVal;
+
+        const getSelectedText = (id, defaultVal = '-') => {
+            const el = document.getElementById(id);
+            if (!el) return defaultVal;
+            return el.options[el.selectedIndex]?.text?.trim() || defaultVal;
+        };
+
+        const formatCurrency = val =>
+            parseFloat(val || 0).toLocaleString('es-MX', {
+                style: 'currency',
+                currency: 'MXN'
+            });
+
+        const getTomSelectText = (id) => {
+            const instance = tomManager.getInstance(id);
+            return instance?.getItem(instance?.getValue())?.textContent || '';
+        };
+
+        // ============ OBTENER DATOS ============
+        const tipoFactura = document.getElementById('vn-fac-toggle-pago')?.getAttribute('data-state') || 'contado';
+        const folio = getValue('vn-fac-folio', 'S/A');
+        const fecha = new Date().toLocaleDateString('es-MX');
+        const sucursal = getSelectedText('vn-fac-sucursal', 'CEDIS');
+
+        // ============ HEADER CON LOGO ============
+        await drawHeaderFactura(doc, colors, margin, pageWidth, folio, fecha, sucursal, tipoFactura);
+        y = 41;
+
+        // ============ TARJETAS DE INFORMACIÓN ============
+        y = drawInfoCardsFactura(doc, colors, margin, pageWidth, y, tipoFactura, getTomSelectText, getValue, formatCurrency);
+
+        // ============ SECCIÓN DE PRODUCTOS O ANTICIPO ============
+        y = await drawProductsSectionFactura(doc, colors, margin, pageWidth, y, tipoFactura, getValue, formatCurrency);
+
+        // ============ RESUMEN FINANCIERO ============
+        drawFinancialSummaryFactura(doc, colors, margin, pageWidth, y);
+
+        // ============ CONDICIONES DE PAGO ============
+        y += 40;
+        y = drawPaymentConditionsFactura(doc, colors, margin, pageWidth, y, tipoFactura, getTomSelectText, getValue);
+
+        // ============ COMENTARIOS ============
+        y = drawCommentsFactura(doc, colors, margin, pageWidth, pageHeight, y, getValue);
+
+        // ============ FOOTER ============
+        drawFooterFactura(doc, colors, margin, pageWidth, pageHeight);
+
+        // ============ GUARDAR PDF ============
+        doc.save(`factura-${folio}-${Date.now()}.pdf`);
+    }
+
+    // ============ FUNCIÓN: HEADER CON LOGO ============
+    async function drawHeaderFactura(doc, colors, margin, pageWidth, folio, fecha, sucursal, tipoFactura) {
+        const headerHeight = 18;
+
+        // Fondo principal
+        doc.setFillColor(...colors.primary);
+        doc.rect(0, 0, pageWidth, headerHeight, 'F');
+
+        // Línea de acento vertical izquierda
+        doc.setFillColor(...colors.accent);
+        doc.rect(0, 0, 2.5, headerHeight, 'F');
+
+        // ============ LOGO ============
+        const logoUrl = `/Content/img/${empresa}/logo-light.png`;
+        try {
+            const img = await loadImageFactura(logoUrl);
+            doc.addImage(img, 'PNG', margin, 2, 17, 7.5, '', 'FAST');
+        } catch (error) {
+            // Fallback simple
+            doc.setFillColor(...colors.secondary);
+            doc.roundedRect(margin, 2, 6.5, 7.5, 1, 1, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6);
+            doc.setTextColor(...colors.white);
+            doc.text('LOGO', margin + 3.25, 5.75, { align: 'center' });
+        }
+
+        // ============ TÍTULO ============
+        const titleX = margin + 19;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(...colors.white);
+        doc.text('FACTURA', titleX, 6);
+
+        // Línea decorativa bajo título
+        doc.setDrawColor(...colors.secondary);
+        doc.setLineWidth(0.5);
+        doc.line(titleX, 6.8, titleX + 20, 6.8);
+
+        // ============ BADGE DE ESTADO COMPACTO ============
+        const badgeX = titleX;
+        const badgeY = 7.2;
+
+        const estadoConfig = {
+            contado: { color: colors.accent, label: 'CONTADO' },
+            credito: { color: colors.secondary, label: 'CRÉDITO' },
+            anticipo: { color: colors.highlight, label: 'ANTICIPO' }
+        };
+
+        const config = estadoConfig[tipoFactura] || estadoConfig.contado;
+
+        doc.setFillColor(...config.color);
+        doc.roundedRect(badgeX, badgeY, 13, 3.5, 0.8, 0.8, 'F');
+        doc.setTextColor(...colors.white);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.text(config.label, badgeX + 6.5, badgeY + 2.1, { align: 'center' });
+
+        // ============ INFORMACIÓN DERECHA ============
+        const rightX = pageWidth - margin;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...colors.light);
+
+        doc.text(`Folio: ${folio}`, rightX, 3.5, { align: 'right' });
+        doc.text(`${fecha}`, rightX, 6.5, { align: 'right' });
+        doc.text(`${sucursal}`, rightX, 9.5, { align: 'right' });
+
+        // Línea divisoria inferior
+        doc.setDrawColor(...colors.secondary);
+        doc.setLineWidth(0.6);
+        doc.line(0, headerHeight, pageWidth, headerHeight);
+    }
+
+    // ============ FUNCIÓN: CARGAR IMAGEN ============
+    function loadImageFactura(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = url;
+        });
+    }
+
+    // ============ FUNCIÓN: TARJETAS DE INFORMACIÓN ============
+    function drawInfoCardsFactura(doc, colors, margin, pageWidth, y, tipoFactura, getTomSelectText, getValue, formatCurrency) {
+        const cardHeight = 22;
+        const cardWidth = (pageWidth - 3 * margin) / 2;
+
+        // TARJETA 1: CLIENTE
+        drawCardFactura(doc, colors, margin, y, cardWidth, cardHeight);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...colors.primary);
+        doc.text('CLIENTE', margin + 3, y + 4);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...colors.text);
+
+        const clienteName = getValue('vn-fac-cliente');
+        const clienteDisplay = clienteName.length > 40 ? clienteName.substring(0, 40) + '...' : clienteName;
+
+        doc.text(clienteDisplay, margin + 3, y + 8);
+        doc.text(`RFC: ${getValue('vn-fac-rfc')}`, margin + 3, y + 11);
+        doc.text(`Vendedor: ${getTomSelectText('vn-fac-vendedor')}`, margin + 3, y + 14);
+
+        const conceptoVal = getValue('vn-fac-concepto');
+        const conceptoDisplay = conceptoVal.length > 25 ? conceptoVal.substring(0, 25) + '...' : conceptoVal;
+        doc.text(`Concepto: ${conceptoDisplay}`, margin + 3, y + 17);
+        doc.text(`Uso CFDI: ${getTomSelectText('vn-fac-uso-cfdi')}`, margin + 3, y + 20);
+
+        // TARJETA 2: PARÁMETROS
+        const card2X = margin + cardWidth + margin;
+        drawCardFactura(doc, colors, card2X, y, cardWidth, cardHeight);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...colors.primary);
+        doc.text('PARÁMETROS', card2X + 3, y + 4);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...colors.text);
+
+        doc.text(`Moneda: ${getTomSelectText('vn-fac-moneda')}`, card2X + 3, y + 8);
+        doc.text(`Incoterm: ${getTomSelectText('vn-fac-incoterm')}`, card2X + 3, y + 11);
+
+        if (tipoFactura === 'credito') {
+            doc.text(`Plazo: ${getValue('vn-fac-plazo')} días`, card2X + 3, y + 14);
+            doc.text(`Vencimiento: ${getValue('vn-fac-fecha-pago')}`, card2X + 3, y + 17);
+        } else if (tipoFactura === 'anticipo') {
+            doc.text(`Monto: ${formatCurrency(getValue('vn-fac-monto-anticipo'))}`, card2X + 3, y + 14);
+        }
+
+        doc.text(`Forma de Pago: ${getTomSelectText('vn-fac-forma-pago')}`, card2X + 3, y + 20);
+
+        return y + cardHeight + margin + 3;
+    }
+
+    // ============ FUNCIÓN: DIBUJAR TARJETA BASE ============
+    function drawCardFactura(doc, colors, x, y, width, height) {
+        doc.setDrawColor(...colors.border);
+        doc.setLineWidth(0.5);
+        doc.setFillColor(...colors.white);
+        doc.roundedRect(x, y, width, height, 2, 2, 'FD');
+    }
+
+    // ============ FUNCIÓN: SECCIÓN DE PRODUCTOS ============
+    async function drawProductsSectionFactura(doc, colors, margin, pageWidth, y, tipoFactura, getValue, formatCurrency) {
+        if (tipoFactura === 'anticipo') {
+            return drawAnticipoSectionFactura(doc, colors, margin, pageWidth, y, getValue, formatCurrency);
+        } else {
+            return await drawProductsTableFactura(doc, colors, margin, pageWidth, y, formatCurrency);
+        }
+    }
+
+    // ============ FUNCIÓN: BANNER DE ANTICIPO ============
+    function drawAnticipoSectionFactura(doc, colors, margin, pageWidth, y, getValue, formatCurrency) {
+        doc.setFillColor(...colors.highlight);
+        doc.roundedRect(margin, y, pageWidth - 2 * margin, 12, 2, 2, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...colors.white);
+        doc.text('ANTICIPO REQUERIDO', pageWidth / 2, y + 4.5, { align: 'center' });
+
+        doc.setFontSize(13);
+        doc.text(formatCurrency(getValue('vn-fac-monto-anticipo')), pageWidth / 2, y + 9, { align: 'center' });
+
+        return y + 14;
+    }
+
+    // ============ FUNCIÓN: TABLA DE PRODUCTOS ============
+    async function drawProductsTableFactura(doc, colors, margin, pageWidth, y, formatCurrency) {
+        // Título
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...colors.primary);
+        doc.text('ARTÍCULOS', margin, y);
+
+        doc.setDrawColor(...colors.secondary);
+        doc.setLineWidth(1.2);
+        doc.line(margin, y + 1.2, margin + 25, y + 1.2);
+        y += 5;
+
+        // Obtener datos de productos
+        const rows = getProductRowsFactura(formatCurrency);
+
+        // Generar tabla
+        doc.autoTable({
+            startY: y,
+            head: [['Artículo', 'Descripción', 'Cant.', 'Unidad', 'P. Unitario', 'Desc %', 'Importe']],
+            body: rows,
+            theme: 'grid',
+            headStyles: {
+                fillColor: colors.primary,
+                textColor: colors.white,
+                fontSize: 7,
+                fontStyle: 'bold',
+                halign: 'center',
+                valign: 'middle',
+                cellPadding: 2.5,
+                lineColor: colors.secondary,
+                lineWidth: 0.5
+            },
+            bodyStyles: {
+                fontSize: 7,
+                textColor: colors.text,
+                cellPadding: 2,
+                lineColor: colors.border,
+                lineWidth: 0.2
+            },
+            alternateRowStyles: {
+                fillColor: [253, 254, 255]
+            },
+            columnStyles: {
+                0: { halign: 'left', cellWidth: 20 },
+                1: { halign: 'left' },
+                2: { halign: 'center', cellWidth: 12 },
+                3: { halign: 'center', cellWidth: 12 },
+                4: { halign: 'right', cellWidth: 18 },
+                5: { halign: 'center', cellWidth: 12 },
+                6: { halign: 'right', fontStyle: 'bold', textColor: colors.secondary, cellWidth: 18 }
+            },
+            margin: { left: margin, right: margin }
+        });
+
+        return doc.lastAutoTable.finalY + 6;
+    }
+
+    // ============ FUNCIÓN: OBTENER FILAS DE PRODUCTOS ============
+    function getProductRowsFactura(formatCurrency) {
+        const productosTable = document.getElementById('vn-fac-productosTable');
+        const rows = [];
+
+        if (productosTable) {
+            Array.from(productosTable.querySelectorAll('tr')).forEach(row => {
+                if (!row.classList.contains('vn-fac-empty-state')) {
+                    const cols = row.querySelectorAll('td');
+                    if (cols.length >= 8) {
+                        rows.push([
+                            cols[0]?.textContent?.trim() || '-',
+                            cols[1]?.textContent?.trim() || '-',
+                            cols[3]?.querySelector('input')?.value || '0',
+                            cols[4]?.textContent?.trim() || '-',
+                            formatCurrency(cols[5]?.querySelector('input')?.value),
+                            cols[6]?.querySelector('input')?.value || '0' + '%',
+                            cols[7]?.textContent?.trim() || formatCurrency(0)
+                        ]);
+                    }
+                }
+            });
+        }
+
+        if (rows.length === 0) {
+            rows.push(['Sin artículos agregados', '', '', '', '', '', '']);
+        }
+
+        return rows;
+    }
+
+    // ============ FUNCIÓN: RESUMEN FINANCIERO ============
+    function drawFinancialSummaryFactura(doc, colors, margin, pageWidth, y) {
+        const summaryX = pageWidth - margin - 58;
+        const summaryWidth = 54;
+
+        // Caja de resumen
+        doc.setFillColor(...colors.light);
+        doc.setDrawColor(...colors.border);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(summaryX - 1.5, y - 1, summaryWidth + 3, 38, 1.5, 1.5, 'FD');
+
+        // Items del resumen
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+
+        let summaryY = y + 2;
+        const items = [
+            { label: 'Subtotal:', id: 'vn-fac-total-subtotal1-display' },
+            { label: 'Descuento:', id: 'vn-fac-total-descuento-display' },
+            { label: 'Flete:', id: 'vn-fac-total-flete-display' },
+            { label: 'Subtotal 2:', id: 'vn-fac-total-subtotal2-display' },
+            { label: 'IVA (16%):', id: 'vn-fac-iva-display' }
+        ];
+
+        items.forEach(item => {
+            doc.setTextColor(...colors.text);
+            doc.text(item.label, summaryX + 1.5, summaryY);
+            doc.setTextColor(...colors.dark);
+            doc.text(
+                document.getElementById(item.id)?.textContent || '$0.00',
+                summaryX + summaryWidth - 1.5,
+                summaryY,
+                { align: 'right' }
+            );
+            summaryY += 3.2;
+        });
+
+        // Línea separadora
+        doc.setDrawColor(...colors.secondary);
+        doc.setLineWidth(0.8);
+        doc.line(summaryX + 0.5, summaryY - 0.5, summaryX + summaryWidth - 0.5, summaryY - 0.5);
+        summaryY += 1.5;
+
+        // Total destacado con fondo
+        doc.setFillColor(...colors.secondary);
+        doc.roundedRect(summaryX - 0.5, summaryY - 2.5, summaryWidth + 1, 4, 0.5, 0.5, 'F');
+
+        doc.setTextColor(...colors.white);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('TOTAL:', summaryX + 1.5, summaryY);
+        doc.text(
+            document.getElementById('vn-fac-importe-display')?.textContent || '$0.00',
+            summaryX + summaryWidth - 1.5,
+            summaryY,
+            { align: 'right' }
+        );
+    }
+
+    // ============ FUNCIÓN: CONDICIONES DE PAGO ============
+    function drawPaymentConditionsFactura(doc, colors, margin, pageWidth, y, tipoFactura, getTomSelectText, getValue) {
+        const getSelectedText = (id, defaultVal = '-') => {
+            const el = document.getElementById(id);
+            if (!el) return defaultVal;
+            const selected = el.options[el.selectedIndex];
+            return selected?.text?.trim() || defaultVal;
+        };
+
+        // Título
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...colors.primary);
+        doc.text('CONDICIONES', margin, y);
+
+        doc.setDrawColor(...colors.secondary);
+        doc.setLineWidth(1.2);
+        doc.line(margin, y + 1.2, margin + 30, y + 1.2);
+        y += 5;
+
+        // Caja de condiciones
+        const condHeight = tipoFactura === 'credito' ? 12 : 9;
+        doc.setFillColor(...colors.white);
+        doc.setDrawColor(...colors.border);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(margin, y, pageWidth - 2 * margin, condHeight, 1.5, 1.5, 'FD');
+
+        y += 3;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...colors.text);
+
+        if (tipoFactura === 'contado') {
+            drawLabelValueFactura(doc, colors, 'Forma de Pago:', getTomSelectText('vn-fac-forma-pago'), margin + 2.5, y);
+            drawLabelValueFactura(doc, colors, 'Método:', getSelectedText('vn-fac-metodo-pago'), margin + 55, y);
+            drawLabelValueFactura(doc, colors, 'CFDI:', getTomSelectText('vn-fac-uso-cfdi'), pageWidth - margin - 45, y);
+
+        } else if (tipoFactura === 'credito') {
+            drawLabelValueFactura(doc, colors, 'Forma de Pago:', getTomSelectText('vn-fac-forma-pago'), margin + 2.5, y);
+            drawLabelValueFactura(doc, colors, 'Método:', getSelectedText('vn-fac-metodo-pago'), margin + 55, y);
+            drawLabelValueFactura(doc, colors, 'Plazo:', `${getValue('vn-fac-plazo')} días`, pageWidth - margin - 45, y);
+
+            y += 3.5;
+
+            drawLabelValueFactura(doc, colors, 'Vencimiento:', getValue('vn-fac-fecha-pago'), margin + 2.5, y);
+            drawLabelValueFactura(doc, colors, 'CFDI:', getTomSelectText('vn-fac-uso-cfdi'), pageWidth - margin - 45, y);
+
+        } else if (tipoFactura === 'anticipo') {
+            drawLabelValueFactura(doc, colors, 'Forma de Pago:', getTomSelectText('vn-fac-forma-pago'), margin + 2.5, y);
+            drawLabelValueFactura(doc, colors, 'Método:', getSelectedText('vn-fac-metodo-pago'), margin + 55, y);
+            drawLabelValueFactura(doc, colors, 'CFDI:', getTomSelectText('vn-fac-uso-cfdi'), pageWidth - margin - 45, y);
+        }
+
+        return y + condHeight - 1;
+    }
+
+    // ============ FUNCIÓN: DIBUJAR LABEL Y VALOR ============
+    function drawLabelValueFactura(doc, colors, label, value, x, y) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...colors.primary);
+        doc.text(label, x, y);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...colors.text);
+        doc.text(value, x + doc.getTextWidth(label) + 2, y);
+    }
+
+    // ============ FUNCIÓN: COMENTARIOS ============
+    function drawCommentsFactura(doc, colors, margin, pageWidth, pageHeight, y, getValue) {
+        const comentarios = getValue('vn-fac-comentarios', '');
+
+        if (comentarios && y < pageHeight - 18) {
+            y += 4;
+
+            // Título
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(...colors.primary);
+            doc.text('NOTAS', margin, y);
+
+            doc.setDrawColor(...colors.secondary);
+            doc.setLineWidth(1.2);
+            doc.line(margin, y + 1.2, margin + 15, y + 1.2);
+            y += 4;
+
+            // Caja de comentarios
+            const splitComments = doc.splitTextToSize(comentarios, pageWidth - 2 * margin - 4);
+            const commentHeight = Math.min(splitComments.length * 3 + 3, pageHeight - y - 12);
+
+            doc.setFillColor(...colors.white);
+            doc.setDrawColor(...colors.border);
+            doc.setLineWidth(0.4);
+            doc.roundedRect(margin, y, pageWidth - 2 * margin, commentHeight, 1.5, 1.5, 'FD');
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(...colors.text);
+            doc.text(splitComments, margin + 2, y + 3, { maxWidth: pageWidth - 2 * margin - 4 });
+        }
+
+        return y;
+    }
+
+    // ============ FUNCIÓN: FOOTER ============
+    function drawFooterFactura(doc, colors, margin, pageWidth, pageHeight) {
+        doc.setDrawColor(...colors.primary);
+        doc.setLineWidth(0.6);
+        doc.line(0, pageHeight - 8, pageWidth, pageHeight - 8);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6);
+        doc.setTextColor(...colors.text);
+        doc.text('Generado automáticamente • Confidencial', margin, pageHeight - 4);
+        doc.text(
+            new Date().toLocaleString('es-MX'),
+            pageWidth - margin,
+            pageHeight - 4,
+            { align: 'right' }
+        );
+    }
+</script>
+
+<script>
+    const chkOrdenCompraFac = document.getElementById("vn-fac-orden-compra-check");
+    const inputOrdenCompraFac = document.getElementById("vn-fac-orden-compra-val");
+
+    chkOrdenCompraFac.addEventListener("change", () => {
+        if (chkOrdenCompraFac.checked) {
+            inputOrdenCompraFac.classList.remove("d-none");
+        } else {
+            inputOrdenCompraFac.classList.add("d-none");
+            inputOrdenCompraFac.value = "";
+        }
+    });
+</script>

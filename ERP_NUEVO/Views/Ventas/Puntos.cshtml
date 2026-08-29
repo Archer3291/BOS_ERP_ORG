@@ -1,0 +1,1349 @@
+﻿@{
+    ViewBag.Title = "Puntos Socio Tiburón";
+    ViewBag.PageTitle = "Puntos Socio Tiburón";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link href="~/content/compras-nacionales.css" rel="stylesheet" />
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+    <style>
+        .header-section {
+            background: linear-gradient(135deg, #0f3b57 0%, #12628c 100%);
+            color: #fff; padding: 22px 25px; border-radius: 10px; margin-bottom: 22px;
+        }
+
+        .panel {
+            background: var(--bg-light); border-radius: 10px; padding: 20px;
+            box-shadow: var(--shadow); margin-bottom: 20px;
+        }
+
+        .buscador { position: relative; }
+
+        .resultados {
+            position: absolute; z-index: 30; top: 100%; left: 0; right: 0;
+            max-height: 250px; overflow-y: auto; background: var(--bg-light);
+            border: 1px solid var(--border-light); border-radius: 8px;
+            box-shadow: var(--shadow-lg); display: none;
+        }
+
+            .resultados.abierto { display: block; }
+
+        .resultado-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); }
+
+            .resultado-item:hover { background: var(--very-light-blue); }
+
+        .dato {
+            background: #fff; border: 1px solid var(--border-light);
+            border-radius: 10px; padding: 12px 18px; min-width: 130px;
+        }
+
+            .dato .valor { font-size: 1.45rem; font-weight: 700; line-height: 1.1; }
+
+            .dato .etiqueta { font-size: .72rem; color: var(--text-light); text-transform: uppercase; letter-spacing: .4px; }
+
+        .fila-datos { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+
+        table.datos { width: 100%; font-size: .84rem; }
+
+            table.datos th {
+                background: #12628c; color: #fff; font-size: .72rem;
+                text-transform: uppercase; padding: 8px; text-align: left;
+            }
+
+            table.datos td { padding: 7px 8px; border-bottom: 1px solid var(--border-light); }
+
+        .num { text-align: right; white-space: nowrap; }
+
+        tr.excluido { color: var(--text-light); background: #fafafa; }
+        tr.ya-otorgado { background: #fff8e1; }
+
+        .etq {
+            display: inline-block; padding: 2px 8px; border-radius: 999px;
+            font-size: .67rem; font-weight: 700; text-transform: uppercase;
+        }
+
+        .etq-nuevo { background: #dcfce7; color: #166534; }
+        .etq-ya { background: #fef3c7; color: #92400e; }
+        .etq-no { background: #f1f5f9; color: #64748b; }
+        .etq-kepler { background: #e0e7ff; color: #3730a3; }
+        .etq-erp { background: #cffafe; color: #155e75; }
+
+        /* Un color por evento: de un vistazo se ve si el saldo subió por vender de
+           contado, por cobrar lo que se debía, o si bajó por una devolución. */
+        .ev-factura_contado, .ev-contado { background: #dbeafe; color: #1e40af; }
+        .ev-complemento_pago { background: #d1fae5; color: #065f46; }
+        .ev-anticipo { background: #ede9fe; color: #5b21b6; }
+        .ev-nota_credito { background: #ffe4e6; color: #9f1239; }
+        .ev-cancelacion { background: #fee2e2; color: #991b1b; }
+        .ev-credito { background: #fef3c7; color: #92400e; }
+        .ev-omitir { background: #f1f5f9; color: #64748b; }
+
+        tr.resta { background: #fff5f5; }
+
+
+        .sel-clase {
+            font-size: .74rem; padding: 2px 4px; border-radius: 5px;
+            border: 1px solid var(--border-light); max-width: 140px;
+        }
+
+        .vacio { text-align: center; color: var(--text-light); padding: 30px; }
+
+        .aviso {
+            background: #eff6ff; border-left: 3px solid #1976d2;
+            padding: 10px 14px; border-radius: 6px; font-size: .83rem; margin-bottom: 16px;
+        }
+
+        .aviso-fuerte {
+            background: #fff8e1; border-left: 3px solid #ffc107;
+            padding: 10px 14px; border-radius: 6px; font-size: .83rem; margin-bottom: 16px;
+        }
+
+        .origenes {
+            display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+            background: #f8fafc; border: 1px solid var(--border-light);
+            border-radius: 8px; padding: 10px 14px;
+        }
+    </style>
+}
+
+<div class="header-section">
+    <h3 class="mb-1"><i class="fas fa-star me-2"></i>Puntos Socio Tiburón</h3>
+    <p class="mb-0" style="opacity:.9; font-size:.9rem;">
+        Cálculo y otorgamiento de puntos a partir de los documentos de venta
+    </p>
+</div>
+
+@Html.AntiForgeryToken()
+
+
+<div class="aviso">
+    <i class="fas fa-circle-info me-1"></i>
+    Los puntos siguen al <strong>dinero recibido</strong>, no a la facturación. Se calculan
+    <strong>por documento</strong> sobre el importe <strong>sin IVA</strong>, con el escalón
+    que corresponde a ese importe, y un mismo hecho sólo se registra una vez: repetir el
+    periodo no duplica nada.
+    <div class="mt-2" style="font-size:.79rem;">
+        <span class="etq ev-factura_contado">Factura de contado</span> otorga al emitirse ·
+        <span class="etq ev-complemento_pago">Complemento de pago</span> otorga cuando entra el pago
+        (una factura a crédito no otorga por sí sola) ·
+        <span class="etq ev-anticipo">Anticipo</span> otorga al recibirse, y la factura que lo
+        aplica descuenta esa parte para no pagarla dos veces ·
+        <span class="etq ev-nota_credito">Nota de crédito</span> resta lo que su factura otorgó ·
+        <span class="etq ev-cancelacion">Cancelación</span> deshace los puntos del documento.
+    </div>
+</div>
+
+<div class="panel">
+            <div class="origenes mb-3">
+                <strong style="font-size:.85rem;">Origen de las ventas:</strong>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="usarKepler" checked />
+                    <label class="form-check-label" for="usarKepler">
+                        Kepler <small class="text-muted">(SELLOSOP — histórico)</small>
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="usarErp" checked />
+                    <label class="form-check-label" for="usarErp">
+                        ERP <small class="text-muted">(facturas del sistema nuevo)</small>
+                    </label>
+                </div>
+
+                <small class="text-muted">
+                    Durante la transición conviven ambos; marca los dos para no dejar huecos.
+                </small>
+            </div>
+
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4 buscador">
+                    @* El estado va dentro de la etiqueta y no debajo del campo: la fila
+                       alinea por abajo, así que una línea nueva bajo el input movería
+                       todos los controles cada vez que se elige un cliente. *@
+                    <label class="form-label">
+                        Cliente <span id="estadoSocio" class="etq" style="display:none;"></span>
+                    </label>
+                    <input type="text" id="buscaCliente" class="form-control" placeholder="Clave o nombre…" autocomplete="off" />
+                    <div class="resultados" id="resultadosCliente"></div>
+                    <input type="hidden" id="clienteId" value="0" />
+                    <input type="hidden" id="cveCli" value="" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Desde</label>
+                    <input type="date" id="desde" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" id="hasta" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">
+                        Clasificación <span id="origenClasif" class="etq" style="display:none;"></span>
+                    </label>
+                    <select id="clasificacion" class="form-select"></select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-primary w-100" id="btnCalcular">
+                        <i class="fas fa-calculator me-1"></i>Calcular
+                    </button>
+                </div>
+            </div>
+        </div>
+
+<div id="zonaResultado" style="display:none;">
+            <div class="panel">
+                <div class="fila-datos" id="resumen"></div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success" id="btnOtorgar">
+                        <i class="fas fa-check me-1"></i>Registrar movimientos nuevos
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnEstado">
+                        <i class="fas fa-list me-1"></i>Estado de cuenta
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h6 class="fw-bold mb-0">Movimientos del periodo</h6>
+
+                    <span id="avisoRecalculo" class="text-muted" style="font-size:.8rem; display:none;">
+                        <i class="fas fa-spinner fa-spin me-1"></i>Recalculando con la nueva clasificación…
+                    </span>
+                </div>
+
+                <div id="avisoKepler" class="aviso-fuerte" style="display:none;">
+                    <i class="fas fa-triangle-exclamation me-1"></i>
+                    <strong>Los documentos de Kepler hay que clasificarlos a mano.</strong>
+                    SELLOSOP no guarda si una venta fue de contado o a crédito, ni registró
+                    complementos de pago ni anticipos, así que el sistema no puede deducirlo.
+                    Sin tocar nada se tratan como <strong>contado</strong>, que es como se
+                    venían otorgando. Cambia el selector de cada renglón antes de registrar:
+                    una vez guardado, ese documento ya no vuelve a aparecer y corregirlo
+                    obliga a un ajuste manual.
+                    <div class="mt-1">
+                        Puedes ir por tandas: <strong>desmarca la casilla</strong> de los que
+                        todavía no quieras otorgar y se quedan pendientes para la próxima
+                        corrida. Las casillas sólo aplican a Kepler — lo del ERP se registra
+                        completo, porque dejar fuera una nota de crédito o una cancelación
+                        mientras se guarda su factura descuadraría el saldo.
+                    </div>
+                </div>
+
+                <!-- La tabla la arma TableBuilder: paginación, orden y buscador por folio
+                     vienen con él. Se alimenta de Puntos/Movimientos, que pagina sobre lo
+                     último calculado y guardado en sesión, sin volver a consultar Kepler. -->
+                <div id="tablaMovs"></div>
+            </div>
+        </div>
+    </div>
+
+
+<div class="panel">
+    <h6 class="fw-bold mb-2"><i class="fas fa-cloud-arrow-up me-1"></i>Publicar en Socio Tiburón</h6>
+    <p class="text-muted" style="font-size:.83rem;">
+        Escribe el saldo del ERP en la tabla que la página ya consulta. La página no se
+        modifica: cambia quién escribe, no quién lee. Al otorgar u ajustar puntos esto
+        ocurre solo para ese cliente; el botón sirve para publicar a todos de una vez.
+    </p>
+
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-primary" id="btnComparar">
+            <i class="fas fa-scale-balanced me-1"></i>Comparar antes de publicar
+        </button>
+        <button type="button" class="btn btn-warning" id="btnPublicar">
+            <i class="fas fa-cloud-arrow-up me-1"></i>Publicar todos los saldos
+        </button>
+    </div>
+
+    <div id="zonaComparacion" style="display:none; margin-top:16px;">
+        <div class="fila-datos" id="resumenComparacion"></div>
+        <div class="table-responsive" style="max-height:340px; overflow-y:auto;">
+            <table class="datos">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th class="num">Saldo ERP</th>
+                        <th class="num">Saldo en la web</th>
+                        <th class="num">Diferencia</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoComparacion"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* ── Estado de cuenta ─────────────────────────────────────────────── *@
+<div class="modal fade" id="modalEstado" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Estado de cuenta de puntos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="fila-datos" id="resumenEstado"></div>
+
+                <div class="row g-2 align-items-end mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label mb-1">Ajuste manual</label>
+                        <input type="number" id="ajustePuntos" class="form-control form-control-sm"
+                               placeholder="Ej. -50 o 100" step="1" />
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label mb-1">Motivo</label>
+                        <input type="text" id="ajusteMotivo" class="form-control form-control-sm"
+                               placeholder="Por qué se ajusta" />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-sm btn-outline-warning w-100" id="btnAjustar">
+                            Registrar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="datos">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th class="num">Puntos</th>
+                                <th>Documento</th>
+                                <th class="num">Base</th>
+                                <th>Comentario</th>
+                                <th>Registrado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoMovs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Alta del cliente en Socio Tiburón ─────────────────────────────
+   Se abre solo al elegir un cliente que no está allá. Los datos vienen del
+   ERP y se pueden corregir antes de guardar: es la única oportunidad de
+   revisarlos, porque una vez creado el usuario del portal el correo es su
+   identificador y cambiarlo ya no se hace desde aquí. *@
+<div class="modal fade" id="modalAltaSocio" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-1"></i>Dar de alta en Socio Tiburón
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="aviso-fuerte">
+                    <i class="fas fa-triangle-exclamation me-1"></i>
+                    <strong id="altaMotivo">Este cliente no existe en Socio Tiburón.</strong>
+                    Sin darlo de alta, los puntos se guardan en el ERP pero el sitio no
+                    tiene a quién mostrárselos. Revisa los datos —vienen del ERP— y
+                    corrígelos si hace falta.
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label mb-1">Cliente</label>
+                    <input type="text" id="altaCve" class="form-control" readonly />
+                    <small class="text-muted">
+                        Es la clave con la que Socio Tiburón identifica al cliente; no se edita.
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label mb-1">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" id="altaNombre" class="form-control" maxlength="255" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label mb-1">Teléfono</label>
+                    <input type="text" id="altaTelefono" class="form-control" maxlength="45" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label mb-1">Correo <span class="text-danger">*</span></label>
+                    <input type="email" id="altaCorreo" class="form-control" maxlength="255" />
+                    <small class="text-muted">
+                        Es con lo que el cliente entra al portal, así que no puede quedar
+                        vacío ni repetirse con el de otro socio.
+                    </small>
+                </div>
+
+                @* Se muestra en claro a propósito: es una contraseña inicial que el
+                   operador le va a dictar al cliente, no un secreto que se esté
+                   recuperando. Ocultarla sólo obligaría a un botón de "ver". *@
+                <div class="mb-2">
+                    <label class="form-label mb-1">Contraseña inicial</label>
+                    <input type="text" id="altaContrasena" class="form-control" maxlength="72"
+                           value="@BOS_ERP.Services.PuntosSyncService.ClaveInicial" />
+                    <small class="text-muted">
+                        Se guarda cifrada. Es con la que el cliente entra la primera vez;
+                        anótala o cámbiala aquí antes de dar de alta.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Ahora no
+                </button>
+                <button type="button" class="btn btn-success" id="btnAltaSocio">
+                    <i class="fas fa-user-plus me-1"></i>Dar de alta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
+            const num = v => (Number(v) || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 });
+            const money = v => '$' + (Number(v) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const token = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            let ultimoCalculo = null;
+            const r0 = d => d.resumen || {};
+
+            async function postear(url, datos) {
+                const fd = new FormData();
+                Object.entries(datos).forEach(([k, v]) => fd.append(k, v));
+                const t = token();
+                if (t) fd.append('__RequestVerificationToken', t);
+
+                const r = await fetch(url, { method: 'POST', body: fd });
+                if (!r.ok) throw new Error(`El servidor respondió ${r.status}`);
+                return await r.json();
+            }
+
+            // ── Clasificaciones y fechas por omisión ─────────────────
+            // La promesa se guarda porque la preselección por membresía la necesita: un
+            // cliente elegido antes de que llegue el catálogo intentaría seleccionar una
+            // opción en un <select> todavía vacío y se quedaría en silencio con la
+            // clasificación que no era.
+            const clasificacionesListas = (async function () {
+                try {
+                    const r = await fetch('@Url.Action("Clasificaciones", "Puntos")');
+                    const d = await r.json();
+                    document.getElementById('clasificacion').innerHTML = d.success
+                        ? d.clasificaciones.map(c => `<option value="${esc(c.nombre)}">${esc(c.nombre)}</option>`).join('')
+                        : '<option value="">Error al cargar</option>';
+                } catch {
+                    document.getElementById('clasificacion').innerHTML = '<option value="">Error al cargar</option>';
+                }
+            })();
+
+            const hoy = new Date();
+            document.getElementById('desde').value = `${hoy.getFullYear()}-01-01`;
+            document.getElementById('hasta').value = hoy.toISOString().slice(0, 10);
+
+            // ── Buscador de clientes ─────────────────────────────────
+            const input = document.getElementById('buscaCliente');
+            const panel = document.getElementById('resultadosCliente');
+            let timer = null;
+
+            input.addEventListener('input', () => {
+                clearTimeout(timer);
+                document.getElementById('clienteId').value = 0;
+                document.getElementById('cveCli').value = '';
+                document.getElementById('estadoSocio').style.display = 'none';
+                document.getElementById('origenClasif').style.display = 'none';
+
+                const term = input.value.trim();
+                if (term.length < 2) { panel.classList.remove('abierto'); return; }
+
+                timer = setTimeout(async () => {
+                    try {
+                        const r = await fetch(`@Url.Action("BuscarClientes", "Puntos")?term=${encodeURIComponent(term)}`);
+                        const d = await r.json();
+
+                        panel.innerHTML = d.success && d.clientes.length
+                            ? d.clientes.map(c => `
+                                <div class="resultado-item" data-id="${c.id}" data-cve="${esc(c.clave)}"
+                                     data-etq="${esc(c.clave)} — ${esc(c.nombre)}">
+                                    <div style="font-weight:700;font-size:.85rem;">${esc(c.clave)} — ${esc(c.nombre)}</div>
+                                    <div style="font-size:.76rem;color:var(--text-light);">Saldo actual: ${num(c.saldo)} puntos</div>
+                                </div>`).join('')
+                            : '<div class="resultado-item text-muted">Sin coincidencias</div>';
+
+                        panel.classList.add('abierto');
+                    } catch {
+                        panel.innerHTML = '<div class="resultado-item text-danger">Error al buscar</div>';
+                        panel.classList.add('abierto');
+                    }
+                }, 300);
+            });
+
+            panel.addEventListener('click', e => {
+                const item = e.target.closest('.resultado-item[data-id]');
+                if (!item) return;
+                document.getElementById('clienteId').value = item.dataset.id;
+                document.getElementById('cveCli').value = item.dataset.cve;
+                input.value = item.dataset.etq;
+                panel.classList.remove('abierto');
+
+                // Cambiar de cliente borra lo decidido sobre el anterior: ni la
+                // clasificación ni las casillas de un cliente significan nada para otro, y
+                // arrastrarlas es la vía más fácil a otorgar puntos donde no tocaba.
+                Object.keys(clasesKepler).forEach(k => delete clasesKepler[k]);
+                seleccionKepler = new Set();
+                clavesVistas = new Set();
+
+                // Aquí es donde se pregunta si el cliente existe en Socio Tiburón: al
+                // principio del trabajo, cuando dar de alta es un paso más, y no al
+                // final con los puntos ya calculados y el operador con prisa.
+                verificarSocio(true);
+            });
+
+            document.addEventListener('click', e => {
+                if (!panel.contains(e.target) && e.target !== input) panel.classList.remove('abierto');
+            });
+
+            // ── Alta en Socio Tiburón ────────────────────────────────
+            // El saldo se publica allá bajo la clave del cliente. Si esa clave no
+            // está en su padrón, el número se escribe y no lo ve nadie: no hay a
+            // quién colgarlo. Por eso el alta se pide al elegir al cliente y no al
+            // final, cuando los movimientos ya se registraron y deshacerlos cuesta
+            // un ajuste manual.
+            const dlgAlta = document.getElementById('modalAltaSocio');
+
+            // Qué se retoma cuando el alta sale bien. Lo pone quien fue interrumpido
+            // —hoy sólo "Otorgar"— para que el operador no tenga que volver a pulsar
+            // el botón que ya había pulsado.
+            let alGuardarAlta = null;
+
+            function pintarEstadoSocio(d) {
+                const etq = document.getElementById('estadoSocio');
+
+                // Sin respuesta del servidor externo no se pinta nada: decir "falta
+                // darlo de alta" cuando lo que pasó es que no se pudo preguntar
+                // mandaría al operador a crear algo que quizá ya existe.
+                if (!d || !d.consultado) { etq.style.display = 'none'; return; }
+
+                const parcial = d.enClientes && !d.enUsuarios;
+
+                etq.style.display = '';
+                etq.className = 'etq ' + (d.existe ? 'etq-nuevo' : parcial ? 'etq-ya' : 'etq-no');
+                etq.textContent = d.existe ? 'En Socio Tiburón'
+                    : parcial ? 'Sin usuario del portal'
+                        : 'Falta darlo de alta';
+            }
+
+            // La inicial la manda el servidor para que el valor viva en un solo lugar:
+            // es la misma con la que nacen los usuarios de la publicación masiva, donde
+            // no hay operador que la escriba.
+            const CLAVE_INICIAL = '@BOS_ERP.Services.PuntosSyncService.ClaveInicial';
+
+            // Deja el selector de clasificación en la membresía que el cliente tiene en
+            // Socio Tiburón; sin membresía asignada, en la de entrada. El servidor ya
+            // tradujo el nombre —allá el nivel base se llama CLASICA y aquí CLASICO— y
+            // sólo manda clasificaciones que existen en el catálogo de tarifas.
+            //
+            // Se muestra de dónde salió el valor: el operador puede cambiarlo, y si lo
+            // hace sin saber que venía de la membresía del cliente estaría otorgando con
+            // otra tarifa sin darse cuenta.
+            async function preseleccionarClasificacion(d) {
+                const etq = document.getElementById('origenClasif');
+                etq.style.display = 'none';
+
+                if (!d || !d.consultado || !d.clasificacion) return;
+
+                await clasificacionesListas;
+
+                const sel = document.getElementById('clasificacion');
+                if (![...sel.options].some(o => o.value === d.clasificacion)) return;
+
+                sel.value = d.clasificacion;
+
+                if (d.membresia) {
+                    etq.className = 'etq etq-kepler';
+                    etq.textContent = `Socio Tiburón: ${d.membresia}`;
+                    etq.style.display = '';
+                }
+            }
+
+            function abrirAlta(datos, motivo) {
+                datos = datos || {};
+                document.getElementById('altaCve').value = datos.cveCli || '';
+                document.getElementById('altaNombre').value = datos.nombre || '';
+                document.getElementById('altaTelefono').value = datos.telefono || '';
+                document.getElementById('altaCorreo').value = datos.correo || '';
+
+                // Se repone en cada apertura: el modal es el mismo elemento, y dejar la
+                // contraseña que se tecleó para otro cliente la daría de alta sin que
+                // nadie la vuelva a mirar.
+                document.getElementById('altaContrasena').value = CLAVE_INICIAL;
+
+                document.getElementById('altaMotivo').textContent = motivo;
+                bootstrap.Modal.getOrCreateInstance(dlgAlta).show();
+            }
+
+            async function verificarSocio(abrirSiFalta) {
+                const clienteId = document.getElementById('clienteId').value;
+                const cve = document.getElementById('cveCli').value;
+
+                document.getElementById('estadoSocio').style.display = 'none';
+                document.getElementById('origenClasif').style.display = 'none';
+                if (!cve) return null;
+
+                try {
+                    const r = await fetch('@Url.Action("EstadoSocioTiburon", "Puntos")'
+                        + `?clienteId=${encodeURIComponent(clienteId)}&cveCli=${encodeURIComponent(cve)}`);
+                    const d = await r.json();
+                    if (!d.success) return null;
+
+                    pintarEstadoSocio(d);
+                    await preseleccionarClasificacion(d);
+
+                    if (abrirSiFalta && d.consultado && !d.existe) {
+                        alGuardarAlta = null;
+                        abrirAlta(d.datos, d.enClientes
+                            ? 'Este cliente está en Socio Tiburón pero no tiene usuario del portal.'
+                            : 'Este cliente no existe en Socio Tiburón.');
+                    }
+
+                    return d;
+                } catch {
+                    // Que no se pueda consultar no interrumpe nada: el cálculo y el
+                    // registro en el ERP no dependen de Socio Tiburón.
+                    return null;
+                }
+            }
+
+            document.getElementById('btnAltaSocio').addEventListener('click', async e => {
+                const boton = e.currentTarget;
+                const nombre = document.getElementById('altaNombre').value.trim();
+                const correo = document.getElementById('altaCorreo').value.trim();
+
+                if (!nombre) {
+                    Swal.fire({ icon: 'warning', title: 'Falta el nombre', text: 'El cliente necesita un nombre.' });
+                    return;
+                }
+
+                if (!correo) {
+                    Swal.fire({
+                        icon: 'warning', title: 'Falta el correo',
+                        text: 'Es con lo que el cliente entra al portal de Socio Tiburón; sin él no se puede crear su usuario.'
+                    });
+                    return;
+                }
+
+                boton.disabled = true;
+
+                try {
+                    const d = await postear('@Url.Action("AltaSocioTiburon", "Puntos")', {
+                        cveCli: document.getElementById('altaCve').value,
+                        nombre: nombre,
+                        telefono: document.getElementById('altaTelefono').value.trim(),
+                        correo: correo,
+                        contrasena: document.getElementById('altaContrasena').value
+                    });
+
+                    if (!d.success) {
+                        // El modal se queda abierto a propósito: casi siempre el motivo
+                        // es un correo repetido y lo que sigue es corregirlo ahí mismo.
+                        Swal.fire({ icon: 'error', title: 'No se pudo dar de alta', text: d.message });
+                        return;
+                    }
+
+                    bootstrap.Modal.getOrCreateInstance(dlgAlta).hide();
+                    await verificarSocio(false);
+
+                    await Swal.fire({ icon: 'success', title: 'Cliente dado de alta', text: d.message });
+
+                    const seguir = alGuardarAlta;
+                    alGuardarAlta = null;
+                    if (seguir) seguir();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+                } finally {
+                    boton.disabled = false;
+                }
+            });
+
+            // ── Calcular ─────────────────────────────────────────────
+            function origenes() {
+                return {
+                    usarKepler: document.getElementById('usarKepler').checked,
+                    usarErp: document.getElementById('usarErp').checked
+                };
+            }
+
+            // Clasificación manual de los documentos de Kepler, indexada por la clave del
+            // movimiento. Vive en la pantalla y viaja tanto al calcular como al registrar:
+            // el servidor recalcula todo desde cero en los dos casos, así que si no fuera
+            // en ambos envíos el guardado usaría una clasificación distinta a la revisada.
+            const clasesKepler = {};
+
+            // Documentos de Kepler marcados para registrar. Arranca con todos los pendientes
+            // en cada cálculo, para que no marcar nada siga otorgándolo todo, como antes de
+            // que existieran las casillas. Desmarcar es lo que activa el guardado parcial.
+            let seleccionKepler = new Set();
+
+            // Claves de Kepler que ya estaban en la pantalla anterior. Sirve para distinguir
+            // "el operador lo desmarcó" de "es un documento que acaba de aparecer": lo
+            // primero se respeta, lo segundo entra marcado.
+            let clavesVistas = new Set();
+
+            const pendientesKepler = () => (ultimoCalculo?.movimientos || [])
+                .filter(x => x.origen === 'kepler' && x.mueve && !x.yaRegistrado);
+
+            const ETIQUETAS_EVENTO = {
+                factura_contado: 'Contado',
+                complemento_pago: 'Pago',
+                anticipo: 'Anticipo',
+                nota_credito: 'Nota de crédito',
+                cancelacion: 'Cancelación'
+            };
+
+            const OPCIONES_KEPLER = [
+                ['contado', 'Contado — otorga'],
+                ['credito', 'Crédito — no otorga'],
+                ['anticipo', 'Anticipo — otorga'],
+                ['nota_credito', 'Nota de crédito — resta'],
+                ['omitir', 'Omitir']
+            ];
+
+            // conservarPagina: al reclasificar se recalcula, pero mandar al usuario a la
+            // página 1 y borrarle la búsqueda en medio de la revisión es un castigo gratuito.
+            async function calcular(conservarPagina) {
+                const cve = document.getElementById('cveCli').value;
+                const o = origenes();
+
+                if (!cve) {
+                    Swal.fire({ icon: 'warning', title: 'Falta el cliente', text: 'Selecciona un cliente de la lista.' });
+                    return null;
+                }
+                if (!o.usarKepler && !o.usarErp) {
+                    Swal.fire({ icon: 'warning', title: 'Falta el origen', text: 'Marca al menos Kepler o ERP.' });
+                    return null;
+                }
+
+                const d = await postear('@Url.Action("Calcular", "Puntos")', {
+                    cveCli: cve,
+                    desde: document.getElementById('desde').value,
+                    hasta: document.getElementById('hasta').value,
+                    clasificacion: document.getElementById('clasificacion').value,
+                    usarKepler: o.usarKepler,
+                    usarErp: o.usarErp,
+                    clasesKepler: JSON.stringify(clasesKepler)
+                });
+
+                if (!d.success) {
+                    Swal.fire({ icon: 'error', title: 'No se pudo calcular', text: d.message });
+                    return null;
+                }
+
+                ultimoCalculo = d;
+                pintar(d, conservarPagina);
+                document.getElementById('zonaResultado').style.display = '';
+                return d;
+            }
+
+            document.getElementById('btnCalcular').addEventListener('click', async e => {
+                const boton = e.currentTarget;
+                const html = boton.innerHTML;
+                boton.disabled = true;
+                boton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Calculando…';
+
+                try {
+                    const o = origenes();
+                    const d = await calcular();
+                    if (!d) return;
+
+                    // Un origen marcado que no devuelve nada es la confusión más fácil de
+                    // tener: la pantalla se ve "vacía" sin explicar por qué. Se dice cuál
+                    // falló y se sugiere el otro, en vez de dejar al usuario adivinando.
+                    const vacios = [];
+                    if (o.usarKepler && r0(d).deKepler === 0) vacios.push('Kepler');
+                    if (o.usarErp && r0(d).delErp === 0) vacios.push('el ERP');
+
+                    if (vacios.length && d.resumen.movimientos === 0) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Sin documentos',
+                            html: `No se encontraron ventas de este cliente en
+                                   <strong>${vacios.join(' ni ')}</strong> en ese periodo.<br><br>
+                                   <span style="font-size:.87rem;color:#6b7280;">
+                                   Revisa el rango de fechas o marca el otro origen: los clientes
+                                   nuevos suelen estar sólo en el ERP y los antiguos sólo en Kepler.</span>`
+                        });
+                    } else if (vacios.length) {
+                        toastMixin?.fire?.({
+                            icon: 'info',
+                            title: `Sin documentos en ${vacios.join(' ni ')}`
+                        });
+                    }
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+                } finally {
+                    boton.disabled = false;
+                    boton.innerHTML = html;
+                }
+            });
+
+            // ── Tabla (TableBuilder) ─────────────────────────────────
+            // Se arma UNA vez y después se recarga: createTable reemplaza el HTML del
+            // contenedor entero, así que rehacerla en cada cálculo tiraría la página y el
+            // texto del buscador que el usuario tuviera puestos.
+            let tabla = null;
+
+            // `credito` y `omitir` no son eventos del ledger —no registran nada— pero sí
+            // son clases, y son justo las que hay que poder distinguir en pantalla.
+            // Vocabulario de CLASES, que es lo que se pinta en la columna Evento. No es el
+            // de eventos: `credito` y `omitir` no registran nada, y `contado` se llama así
+            // en los dos orígenes mientras que el evento se llama `factura_contado`.
+            const ETIQUETAS_CLASE = {
+                contado: 'Contado',
+                credito: 'Crédito',
+                anticipo: 'Anticipo',
+                nota_credito: 'Nota de crédito',
+                complemento_pago: 'Pago',
+                cancelacion: 'Cancelación',
+                omitir: 'Omitir'
+            };
+
+            const marcable = x => x.origen === 'kepler' && x.mueve && !x.yaRegistrado;
+
+            function badgeEvento(row) {
+                const clase = row.clase || row.evento;
+                return `<span class="etq ev-${esc(clase)}">${esc(ETIQUETAS_CLASE[clase] || clase)}</span>`;
+            }
+
+            function selectorKepler(row) {
+                // Sólo lo de Kepler pendiente se puede reclasificar. Un documento ya
+                // registrado no admite cambio: su movimiento existe, y corregirlo es un
+                // ajuste con motivo, no reescribir el saldo.
+                if (row.origen !== 'kepler' || row.yaRegistrado) return '';
+
+                return `<select class="sel-clase mt-1" data-clave="${esc(row.clave)}">
+                            ${OPCIONES_KEPLER.map(([v, t]) =>
+                                `<option value="${v}"${row.clase === v ? ' selected' : ''}>${t}</option>`).join('')}
+                        </select>`;
+            }
+
+            function construirTabla() {
+                tabla = createTable({
+                    selector: '#tablaMovs',
+                    path: '@Url.Action("Movimientos", "Puntos")',
+                    defaultPageSize: 25,
+                    pageSizeOptions: [10, 25, 50, 100],
+                    searchPlaceholder: 'Buscar por folio…',
+                    rowKey: 'clave',
+
+                    // Las casillas son propias y NO se usa `selectable` de TableBuilder: su
+                    // mapa de selección sólo contiene filas que se hayan renderizado, así
+                    // que "todo marcado por omisión" dejaría fuera en silencio las páginas
+                    // que nadie abrió. El Set de la pantalla se siembra del cálculo
+                    // completo, que sí conoce todos los renglones.
+                    selectable: { enabled: false },
+
+                    columns: [
+                        {
+                            title: '<input type="checkbox" id="marcarTodos" class="form-check-input"'
+                                 + ' title="Marcar o desmarcar los de Kepler de esta página" />',
+                            data: null, sortable: false, className: 'text-center',
+                            formatter: (_, row) => marcable(row)
+                                ? `<input type="checkbox" class="marca form-check-input"
+                                          data-clave="${esc(row.clave)}"
+                                          ${seleccionKepler.has(row.clave) ? 'checked' : ''} />`
+                                : ''
+                        },
+                        {
+                            title: 'Origen', data: 'origen',
+                            formatter: v => v === 'erp'
+                                ? '<span class="etq etq-erp">ERP</span>'
+                                : '<span class="etq etq-kepler">Kepler</span>'
+                        },
+                        {
+                            title: 'Evento', data: 'clase',
+                            formatter: (_, row) => badgeEvento(row) + selectorKepler(row)
+                        },
+                        {
+                            title: 'Folio', data: 'folio',
+                            formatter: (v, row) => `<strong>${esc(v)}</strong>
+                                <small class="text-muted">suc ${esc(row.sucursal)}</small>`
+                                + (row.folioRelacionado
+                                    ? `<div style="font-size:.7rem;color:var(--text-light);">→ ${esc(row.folioRelacionado)}</div>`
+                                    : '')
+                        },
+                        { title: 'Fecha', data: 'fecha' },
+                        { title: 'Importe', data: 'importe', className: 'num', formatter: v => money(v) },
+                        { title: 'Base sin IVA', data: 'baseSinIva', className: 'num', formatter: v => money(v) },
+                        {
+                            title: 'Tasa', data: 'tasa', className: 'num',
+                            formatter: v => Number(v) ? (Number(v) * 100).toFixed(3) + '%' : '—'
+                        },
+                        {
+                            title: 'Puntos', data: 'puntos', className: 'num',
+                            formatter: (v, row) => {
+                                if (!row.mueve) return '<strong>—</strong>';
+                                const resta = Number(v) < 0;
+                                return `<strong style="color:${resta ? '#991b1b' : 'inherit'};">
+                                            ${resta ? '' : '+'}${num(v)}</strong>`;
+                            }
+                        },
+                        {
+                            title: 'Estado', data: null, sortable: false,
+                            formatter: (_, row) => {
+                                const resta = Number(row.puntos) < 0;
+                                const etq = !row.mueve
+                                    ? '<span class="etq etq-no">No aplica</span>'
+                                    : (row.yaRegistrado
+                                        ? '<span class="etq etq-ya">Ya registrado</span>'
+                                        : `<span class="etq etq-nuevo">${resta ? 'Por restar' : 'Por otorgar'}</span>`);
+
+                                return etq + (row.motivo
+                                    ? `<div style="font-size:.7rem;color:var(--text-light);">${esc(row.motivo)}</div>`
+                                    : '');
+                            }
+                        }
+                    ],
+
+                    GlobalEvents: {
+                        // TableBuilder no expone una clase por fila, así que el teñido se
+                        // aplica después de renderizar, buscando cada <tr> por su rowKey.
+                        onDataLoaded: resp => {
+                            (resp.data || []).forEach(row => {
+                                const tr = document.querySelector(
+                                    `#tablaMovs tr[data-row-id="${CSS.escape(row.clave)}"]`);
+                                if (!tr) return;
+
+                                if (!row.mueve) tr.classList.add('excluido');
+                                else if (row.yaRegistrado) tr.classList.add('ya-otorgado');
+                                else if (Number(row.puntos) < 0) tr.classList.add('resta');
+                            });
+
+                            sincronizarMaestro();
+                        }
+                    }
+                });
+            }
+
+            // El maestro se refiere a la PÁGINA visible, que es sobre lo que actúa. El
+            // contador del resumen sigue siendo global: los dos números difieren en cuanto
+            // hay más de una página, y así debe ser.
+            function sincronizarMaestro() {
+                const maestro = document.getElementById('marcarTodos');
+                if (!maestro) return;
+
+                const enPagina = [...document.querySelectorAll('#tablaMovs .marca')];
+                const marcados = enPagina.filter(c => c.checked).length;
+
+                maestro.disabled = enPagina.length === 0;
+                maestro.checked = enPagina.length > 0 && marcados === enPagina.length;
+                maestro.indeterminate = marcados > 0 && marcados < enPagina.length;
+            }
+
+            // Reclasificar un documento cambia el total del periodo, así que se recalcula
+            // en el servidor en vez de ajustar el renglón en pantalla: el número que se ve
+            // tiene que ser el mismo que se va a guardar. Con retardo para no lanzar una
+            // consulta por cada tecla cuando se clasifican varios renglones seguidos.
+            let temporizador = null;
+
+            document.getElementById('tablaMovs').addEventListener('change', e => {
+                // Maestro: alcanza sólo a lo que está en pantalla.
+                if (e.target.id === 'marcarTodos') {
+                    const todos = e.target.checked;
+
+                    document.querySelectorAll('#tablaMovs .marca').forEach(c => {
+                        c.checked = todos;
+                        if (todos) seleccionKepler.add(c.dataset.clave);
+                        else seleccionKepler.delete(c.dataset.clave);
+                    });
+
+                    actualizarResumen();
+                    sincronizarMaestro();
+                    return;
+                }
+
+                // Marcar y desmarcar no recalcula nada en el servidor: los puntos de un
+                // documento de Kepler no dependen de qué otros entren en la corrida, así
+                // que basta con rehacer las sumas de la pantalla.
+                const marca = e.target.closest('.marca');
+                if (marca) {
+                    if (marca.checked) seleccionKepler.add(marca.dataset.clave);
+                    else seleccionKepler.delete(marca.dataset.clave);
+
+                    actualizarResumen();
+                    sincronizarMaestro();
+                    return;
+                }
+
+                const sel = e.target.closest('.sel-clase');
+                if (!sel) return;
+
+                clasesKepler[sel.dataset.clave] = sel.value;
+
+                clearTimeout(temporizador);
+                document.getElementById('avisoRecalculo').style.display = '';
+
+                temporizador = setTimeout(async () => {
+                    // Conservando la página: reclasificar no debe mandarte a la página 1 ni
+                    // borrarte la búsqueda que tenías puesta.
+                    try { await calcular(true); }
+                    catch (err) { Swal.fire({ icon: 'error', title: 'Error', text: err.message }); }
+                    finally { document.getElementById('avisoRecalculo').style.display = 'none'; }
+                }, 600);
+            });
+
+            function tile(valor, etiqueta, color) {
+                return `<div class="dato">
+                            <div class="valor" ${color ? `style="color:${color};"` : ''}>${num(valor)}</div>
+                            <div class="etiqueta">${etiqueta}</div>
+                        </div>`;
+            }
+
+            function pintar(d, conservarPagina) {
+                // La selección se rehace contra lo que hay AHORA, conservando lo que el
+                // operador ya había decidido. Importa porque clasificar un documento
+                // dispara un recálculo: si la selección se reiniciara, desmarcar diez
+                // renglones y luego corregir un selector volvería a marcarlos todos.
+                //
+                // Sólo sobreviven las claves que siguen presentes y pendientes, así que
+                // nunca se registra algo que ya no exista. Lo que aparece por primera vez
+                // entra marcado, para que no hacer nada siga otorgándolo todo.
+                const pendientes = d.movimientos.filter(marcable).map(x => x.clave);
+
+                seleccionKepler = new Set(
+                    pendientes.filter(c => !clavesVistas.has(c) || seleccionKepler.has(c)));
+
+                clavesVistas = new Set(pendientes);
+
+                const hayKepler = d.movimientos.some(x => x.origen === 'kepler' && !x.yaRegistrado);
+                document.getElementById('avisoKepler').style.display = hayKepler ? '' : 'none';
+
+                if (!tabla) construirTabla();
+                else if (conservarPagina) tabla.refreshPage();
+                else tabla.reload();
+
+                actualizarResumen();
+            }
+
+            // Lo que se va a registrar: los del ERP van completos y los de Kepler sólo si
+            // están marcados. Es la misma regla que aplica el servidor al guardar; aquí se
+            // repite para que el número en pantalla sea el que se va a guardar.
+            //
+            // Se calcula sobre el cálculo COMPLETO y no sobre la página visible: el resumen
+            // describe lo que se guardará, no lo que se está viendo.
+            function seleccionados() {
+                return (ultimoCalculo?.movimientos || []).filter(x =>
+                    x.mueve && !x.yaRegistrado &&
+                    (x.origen !== 'kepler' || seleccionKepler.has(x.clave)));
+            }
+
+            function actualizarResumen() {
+                const d = ultimoCalculo;
+                if (!d) return;
+
+                const r = d.resumen;
+                const sel = seleccionados();
+                const neto = sel.reduce((a, x) => a + Number(x.puntos), 0);
+                const porEvento = ev => sel.filter(x => x.evento === ev)
+                                          .reduce((a, x) => a + Number(x.puntos), 0);
+
+                // El desglose por evento sólo se muestra cuando hay algo que desglosar: en
+                // un periodo de puras ventas de contado, cuatro ceros estorban más que informan.
+                const desglose = [
+                    [porEvento('factura_contado'), 'De contado', '#1e40af'],
+                    [porEvento('complemento_pago'), 'Por pagos recibidos', '#065f46'],
+                    [porEvento('anticipo'), 'Por anticipos', '#5b21b6'],
+                    [porEvento('nota_credito'), 'Notas de crédito', '#9f1239'],
+                    [porEvento('cancelacion'), 'Cancelaciones', '#991b1b']
+                ].filter(([v]) => v).map(([v, t, c]) => tile(v, t, c)).join('');
+
+                const pend = pendientesKepler().length;
+                const marcados = seleccionKepler.size;
+
+                document.getElementById('resumen').innerHTML =
+                    tile(neto, 'Neto por registrar', neto < 0 ? '#991b1b' : '#166534')
+                    + tile(r.puntosYaRegistrados, 'Ya registrado', '#92400e')
+                    + `<div class="dato"><div class="valor">${sel.length}/${r.movimientos}</div>
+                           <div class="etiqueta">Movimientos por registrar</div></div>`
+                    + `<div class="dato"><div class="valor" style="font-size:1rem;">${r.deKepler} / ${r.delErp}</div>
+                           <div class="etiqueta">Kepler / ERP</div></div>`
+                    + (pend
+                        ? `<div class="dato"><div class="valor" style="font-size:1rem;color:${marcados < pend ? '#92400e' : 'inherit'};">${marcados}/${pend}</div>
+                               <div class="etiqueta">Kepler marcados</div></div>`
+                        : '')
+                    + desglose;
+
+                document.getElementById('btnOtorgar').disabled = sel.length === 0;
+            }
+
+            // ── Otorgar ──────────────────────────────────────────────
+            document.getElementById('btnOtorgar').addEventListener('click', async e => {
+                // El botón se toma AQUÍ, antes de cualquier await: el navegador pone
+                // e.currentTarget en null al terminar el despacho del evento, así que
+                // leerlo después del Swal de confirmación daba null y reventaba antes
+                // de llegar al fetch.
+                const boton = e.currentTarget;
+
+                // El criterio es "hay algo marcado que registrar", no "el neto es positivo":
+                // un periodo puede cerrar en negativo por notas de crédito y cancelaciones,
+                // y esos movimientos también tienen que quedar guardados.
+                const sel = seleccionados();
+
+                if (!ultimoCalculo || sel.length === 0) {
+                    Swal.fire({
+                        icon: 'info', title: 'Nada que registrar',
+                        text: pendientesKepler().length
+                            ? 'No hay ningún documento marcado en este periodo.'
+                            : 'No hay movimientos nuevos en este periodo.'
+                    });
+                    return;
+                }
+
+                const neto = sel.reduce((a, x) => a + Number(x.puntos), 0);
+                const omitidos = pendientesKepler().length - seleccionKepler.size;
+                const sinClasificar = sel.filter(
+                    x => x.origen === 'kepler' && !(x.clave in clasesKepler)).length;
+
+                const confirmar = await Swal.fire({
+                    title: '¿Registrar los movimientos?',
+                    html: `Quedarán registrados <strong>${sel.length}</strong> movimiento(s), con un neto de
+                           <strong style="color:${neto < 0 ? '#991b1b' : '#166534'};">
+                           ${neto < 0 ? '' : '+'}${num(neto)}</strong> puntos.`
+                        + (sinClasificar
+                            ? `<div class="mt-2" style="font-size:.85rem;color:#92400e;">
+                                   ${sinClasificar} documento(s) de Kepler se registrarán como
+                                   <strong>contado</strong> porque no se clasificaron.</div>`
+                            : '')
+                        + (omitidos
+                            ? `<div class="mt-2" style="font-size:.85rem;color:#92400e;">
+                                   ${omitidos} documento(s) de Kepler se quedan <strong>sin marcar</strong>
+                                   y no se registran; vuelven a aparecer al recalcular.</div>`
+                            : ''),
+                    icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, registrar'
+                });
+                if (!confirmar.isConfirmed) return;
+
+                boton.disabled = true;
+
+                try {
+                    const o = origenes();
+                    const d = await postear('@Url.Action("Otorgar", "Puntos")', {
+                        clienteId: document.getElementById('clienteId').value,
+                        cveCli: document.getElementById('cveCli').value,
+                        desde: document.getElementById('desde').value,
+                        hasta: document.getElementById('hasta').value,
+                        clasificacion: document.getElementById('clasificacion').value,
+                        usarKepler: o.usarKepler,
+                        usarErp: o.usarErp,
+                        clasesKepler: JSON.stringify(clasesKepler),
+                        clavesKepler: JSON.stringify([...seleccionKepler])
+                    });
+
+                    // El servidor no deja otorgar a un cliente que no está en Socio
+                    // Tiburón. En vez de dejarlo en un error, se abre el alta y al
+                    // terminar se retoma el registro: el operador ya había confirmado
+                    // los movimientos y no tiene por qué volver a revisarlos.
+                    if (d.requiereAlta) {
+                        alGuardarAlta = () => document.getElementById('btnOtorgar').click();
+                        abrirAlta(d.datos, d.message);
+                        return;
+                    }
+
+                    await Swal.fire({
+                        icon: d.success ? 'success' : 'error',
+                        title: d.success
+                            ? (d.omitidos ? 'Registro parcial' : 'Movimientos registrados')
+                            : 'No se pudo registrar',
+                        text: d.message
+                    });
+
+                    if (d.success) document.getElementById('btnCalcular').click();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+                } finally {
+                    boton.disabled = false;
+                }
+            });
+
+            // ── Estado de cuenta ─────────────────────────────────────
+            async function cargarEstado() {
+                const r = await fetch(`@Url.Action("EstadoDeCuenta", "Puntos")?clienteId=${document.getElementById('clienteId').value}`);
+                const d = await r.json();
+
+                if (!d.success) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: d.message });
+                    return false;
+                }
+
+                // Las tres formas de perder puntos van separadas a propósito: un cliente que
+                // reclama tiene que poder ver si bajó por canjear, por devolver mercancía o
+                // porque le cancelaron una factura.
+                document.getElementById('resumenEstado').innerHTML =
+                    tile(d.saldo, 'Saldo', '#12628c')
+                    + tile(d.acumulados, 'Acumulados')
+                    + (d.porPagos ? tile(d.porPagos, 'Por pagos', '#065f46') : '')
+                    + (d.porAnticipos ? tile(d.porAnticipos, 'Por anticipos', '#5b21b6') : '')
+                    + (d.canjeados ? tile(d.canjeados, 'Canjeados') : '')
+                    + (d.devoluciones ? tile(d.devoluciones, 'Notas de crédito', '#9f1239') : '')
+                    + (d.reversos ? tile(d.reversos, 'Cancelaciones', '#991b1b') : '')
+                    + (d.ajustes ? tile(d.ajustes, 'Ajustes') : '')
+                    + `<div class="dato"><div class="valor" style="font-size:1rem;">${d.deKepler} / ${d.delErp}</div>
+                           <div class="etiqueta">Kepler / ERP</div></div>`;
+
+                document.getElementById('cuerpoMovs').innerHTML = d.movimientos.length
+                    ? d.movimientos.map(m => `
+                        <tr>
+                            <td>${esc(m.tipo)}
+                                ${m.evento ? `<span class="etq ev-${esc(m.evento)}">${esc(ETIQUETAS_EVENTO[m.evento] || m.evento)}</span>` : ''}
+                                ${m.origen ? ` <span class="etq etq-${esc(m.origen)}">${esc(m.origen)}</span>` : ''}</td>
+                            <td class="num"><strong style="color:${Number(m.puntos) < 0 ? '#991b1b' : '#166534'};">
+                                ${Number(m.puntos) > 0 ? '+' : ''}${num(m.puntos)}</strong></td>
+                            <td>${esc(m.folio) || '—'}${m.fechaDoc ? `<div style="font-size:.7rem;color:var(--text-light);">${esc(m.fechaDoc)}</div>` : ''}</td>
+                            <td class="num">${m.baseSinIva ? money(m.baseSinIva) : '—'}</td>
+                            <td style="font-size:.79rem;">${esc(m.comentario) || '—'}</td>
+                            <td style="font-size:.74rem;color:var(--text-light);">${esc(m.registrado)}<br>${esc(m.usuario) || ''}</td>
+                        </tr>`).join('')
+                    : '<tr><td colspan="6" class="vacio">Sin movimientos.</td></tr>';
+
+                return true;
+            }
+
+            document.getElementById('btnEstado').addEventListener('click', async () => {
+                if (await cargarEstado()) new bootstrap.Modal(document.getElementById('modalEstado')).show();
+            });
+
+            document.getElementById('btnAjustar').addEventListener('click', async e => {
+                const boton = e.currentTarget;   // antes de cualquier await
+                const puntos = parseFloat(document.getElementById('ajustePuntos').value);
+                const motivo = document.getElementById('ajusteMotivo').value.trim();
+
+                if (!puntos) {
+                    Swal.fire({ icon: 'warning', title: 'Falta el importe', text: 'Captura los puntos a ajustar.' });
+                    return;
+                }
+                if (motivo.length < 5) {
+                    Swal.fire({ icon: 'warning', title: 'Falta el motivo', text: 'Explica por qué se ajusta.' });
+                    return;
+                }
+
+                boton.disabled = true;
+
+                try {
+                    const d = await postear('@Url.Action("Ajustar", "Puntos")', {
+                        clienteId: document.getElementById('clienteId').value,
+                        cveCli: document.getElementById('cveCli').value,
+                        puntos, motivo
+                    });
+
+                    Swal.fire({
+                        icon: d.success ? 'success' : 'error',
+                        title: d.success ? 'Ajuste registrado' : 'No se pudo ajustar',
+                        text: d.message
+                    });
+
+                    if (d.success) {
+                        document.getElementById('ajustePuntos').value = '';
+                        document.getElementById('ajusteMotivo').value = '';
+                        cargarEstado();
+                    }
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+                } finally {
+                    boton.disabled = false;
+                }
+            });
+
+            // ── Publicación hacia Socio Tiburón ──────────────────────
+            document.getElementById('btnComparar').addEventListener('click', async e => {
+                const boton = e.currentTarget;
+                const html = boton.innerHTML;
+                boton.disabled = true;
+                boton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Comparando…';
+
+                try {
+                    const r = await fetch('@Url.Action("CompararSaldos", "Puntos")');
+                    const d = await r.json();
+
+                    if (!d.success) {
+                        Swal.fire({ icon: 'error', title: 'No se pudo comparar', text: d.message });
+                        return;
+                    }
+
+                    const s = d.resumen;
+                    document.getElementById('resumenComparacion').innerHTML = `
+                        <div class="dato"><div class="valor">${s.clientes}</div>
+                            <div class="etiqueta">Clientes</div></div>
+                        <div class="dato"><div class="valor" style="color:#92400e;">${s.diferentes}</div>
+                            <div class="etiqueta">Con diferencia</div></div>
+                        <div class="dato"><div class="valor" style="font-size:1.1rem;">${num(s.totalErp)}</div>
+                            <div class="etiqueta">Total ERP</div></div>
+                        <div class="dato"><div class="valor" style="font-size:1.1rem;">${num(s.totalWeb)}</div>
+                            <div class="etiqueta">Total en la web</div></div>`;
+
+                    document.getElementById('cuerpoComparacion').innerHTML = d.clientes.length
+                        ? d.clientes.map(c => {
+                            const dif = Number(c.diferencia) || 0;
+                            const color = dif === 0 ? 'var(--text-light)' : (dif > 0 ? '#166534' : '#991b1b');
+                            return `<tr>
+                                <td><strong>${esc(c.clave)}</strong></td>
+                                <td class="num">${num(c.saldoErp)}</td>
+                                <td class="num">${num(c.saldoWeb)}</td>
+                                <td class="num" style="color:${color};font-weight:700;">
+                                    ${dif > 0 ? '+' : ''}${num(dif)}</td>
+                            </tr>`;
+                        }).join('')
+                        : '<tr><td colspan="4" class="vacio">Sin datos que comparar.</td></tr>';
+
+                    document.getElementById('zonaComparacion').style.display = '';
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+                } finally {
+                    boton.disabled = false;
+                    boton.innerHTML = html;
+                }
+            });
+
+            document.getElementById('btnPublicar').addEventListener('click', async e => {
+                const boton = e.currentTarget;   // antes de cualquier await
+                const html = boton.innerHTML;
+
+                const confirmar = await Swal.fire({
+                    title: '¿Publicar los saldos?',
+                    html: `Se escribirá el saldo del ERP en Socio Tiburón para todos los
+                           clientes con movimientos. <strong>Es lo que verán en la página.</strong>
+                           <div class="mt-2" style="font-size:.85rem;">
+                               Los que no existan allá se dan de alta primero con sus datos
+                               del ERP; los que no tengan correo quedan en el padrón pero
+                               sin usuario del portal.
+                           </div>`,
+                    icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, publicar'
+                });
+                if (!confirmar.isConfirmed) return;
+
+                boton.disabled = true;
+                boton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Publicando…';
+
+                try {
+                    const d = await postear('@Url.Action("PublicarSaldos", "Puntos")', { claves: '' });
+
+                    Swal.fire({
+                        icon: d.success ? 'success' : 'error',
+                        title: d.success ? 'Saldos publicados' : 'No se pudo publicar',
+                        text: d.message
+                    });
+
+                    if (d.success) document.getElementById('btnComparar').click();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+                } finally {
+                    boton.disabled = false;
+                    boton.innerHTML = html;
+                }
+            });
+        })();
+    </script>
+}

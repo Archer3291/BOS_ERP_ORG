@@ -1,0 +1,717 @@
+@{
+    ViewData["Title"] = "Generar PDF de Factura";
+    ViewBag.PageTitle = "Generar PDF de Factura";
+}
+
+<div class="fpdf-wrap">
+
+    <!-- Encabezado -->
+    <div class="fpdf-header">
+        <div class="fpdf-header-icon"><i class="fas fa-file-pdf"></i></div>
+        <div>
+            <h1 class="fpdf-title">Generar PDF de Factura</h1>
+            <p class="fpdf-subtitle">
+                Reconstruye la representación impresa de cualquier CFDI ya timbrado a partir de su XML
+                <span class="fpdf-subtitle-tag">textfactura</span> o archivo en disco.
+            </p>
+        </div>
+    </div>
+
+    <div class="fpdf-grid">
+
+        <!-- Panel izquierdo: búsqueda / selección -->
+        <div class="fpdf-panel">
+            <div class="fpdf-card">
+
+                <!-- Acceso directo por UUID -->
+                <div class="fpdf-field-group">
+                    <label class="fpdf-label">Folio fiscal (UUID)</label>
+                    <div class="fpdf-input-row">
+                        <div class="fpdf-input-icon"><i class="fas fa-fingerprint"></i></div>
+                        <input type="text" id="uuidDirecto" class="fpdf-input"
+                               placeholder="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE" autocomplete="off" />
+                        <button class="fpdf-btn fpdf-btn-accent" onclick="verPdfDirecto()">
+                            <i class="fas fa-eye"></i> Ver PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div class="fpdf-divider"></div>
+
+                <!-- Búsqueda -->
+                <div class="fpdf-field-group">
+                    <label class="fpdf-label">Buscar factura</label>
+                    <div class="fpdf-input-row">
+                        <div class="fpdf-input-icon"><i class="fas fa-search"></i></div>
+                        <input type="text" id="buscador" class="fpdf-input"
+                               placeholder="Folio, serie, RFC, razón social o UUID..." autocomplete="off" />
+                        <button class="fpdf-btn fpdf-btn-primary" onclick="buscarFacturas()">Buscar</button>
+                    </div>
+                </div>
+
+                <div class="fpdf-table-scroll">
+                    <table class="fpdf-table">
+                        <thead>
+                            <tr>
+                                <th>Folio</th>
+                                <th>Cliente</th>
+                                <th class="fpdf-text-end">Total</th>
+                                <th>Estado</th>
+                                <th class="fpdf-text-center">XML</th>
+                                <th class="fpdf-text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultados">
+                            <tr class="fpdf-empty-row">
+                                <td colspan="6">
+                                    <div class="fpdf-empty">
+                                        <i class="fas fa-receipt"></i>
+                                        <span>Busca una factura para comenzar</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel derecho: previsualización -->
+        <div class="fpdf-panel">
+            <div class="fpdf-card fpdf-preview-card">
+                <div class="fpdf-preview-header">
+                    <span class="fpdf-preview-title"><i class="fas fa-eye"></i> Previsualización</span>
+                    <div id="previewActions" class="fpdf-preview-actions fpdf-hidden">
+                        <button id="btnLang" class="fpdf-icon-btn" onclick="toggleIdioma()" title="Cambiar idioma (Español / English)">
+                            <i class="fas fa-language"></i> <span id="btnLangText">EN</span>
+                        </button>
+                        <button class="fpdf-icon-btn" onclick="regenerarActual()" title="Regenerar PDF">
+                            <i class="fas fa-arrows-rotate"></i>
+                        </button>
+                        <button class="fpdf-icon-btn fpdf-icon-btn-accent" onclick="descargarPdfActual()" title="Descargar PDF">
+                            <i class="fas fa-download"></i> PDF
+                        </button>
+                        <button class="fpdf-icon-btn fpdf-icon-btn-info" onclick="descargarXmlActual()" title="Descargar XML">
+                            <i class="fas fa-code"></i> XML
+                        </button>
+                    </div>
+                </div>
+                <div class="fpdf-preview-body">
+                    <div id="previewPlaceholder" class="fpdf-placeholder">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>Selecciona o busca una factura para ver su PDF</span>
+                    </div>
+                    <iframe id="previewFrame" class="fpdf-frame fpdf-hidden"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fpdf-wrap {
+        padding: 1.5rem;
+        color: var(--text-dark);
+    }
+
+    /* Encabezado */
+    .fpdf-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .fpdf-header-icon {
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: #fff;
+        background: linear-gradient(135deg, var(--accent-purple) 0%, var(--primary-blue) 100%);
+        box-shadow: var(--shadow);
+    }
+
+    .fpdf-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        letter-spacing: -0.01em;
+    }
+
+    .fpdf-subtitle {
+        margin: 0.15rem 0 0;
+        font-size: 0.85rem;
+        color: var(--text-light);
+        line-height: 1.4;
+    }
+
+    .fpdf-subtitle-tag {
+        display: inline-block;
+        padding: 0.05rem 0.4rem;
+        border-radius: 6px;
+        background: var(--accent-purple-light);
+        color: var(--accent-purple);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.78rem;
+    }
+
+    /* Layout */
+    .fpdf-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    @@media (max-width: 991px) {
+        .fpdf-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .fpdf-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        box-shadow: var(--shadow);
+        padding: 1.25rem;
+        transition: box-shadow var(--transition-med);
+    }
+
+        .fpdf-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+    .fpdf-field-group {
+        margin-bottom: 0.9rem;
+    }
+
+    .fpdf-label {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--text-light);
+        margin-bottom: 0.4rem;
+    }
+
+    .fpdf-input-row {
+        display: flex;
+        align-items: stretch;
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--bg-gray);
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+        .fpdf-input-row:focus-within {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px var(--accent-purple-light);
+            background: var(--bg-light);
+        }
+
+    .fpdf-input-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        color: var(--text-light);
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    .fpdf-input {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        padding: 0.55rem 0.25rem;
+        font-size: 0.88rem;
+        color: var(--text-dark);
+        min-width: 0;
+    }
+
+        .fpdf-input:focus {
+            outline: none;
+        }
+
+    .fpdf-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        border: 0;
+        padding: 0 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: filter var(--transition-fast), transform var(--transition-fast);
+        white-space: nowrap;
+    }
+
+        .fpdf-btn:hover {
+            filter: brightness(1.08);
+        }
+
+        .fpdf-btn:active {
+            transform: scale(0.97);
+        }
+
+    .fpdf-btn-primary {
+        background: var(--primary-blue);
+        color: #fff;
+    }
+
+    .fpdf-btn-accent {
+        background: var(--accent-purple);
+        color: #fff;
+    }
+
+    .fpdf-divider {
+        height: 1px;
+        background: var(--border-light);
+        margin: 1.1rem 0;
+    }
+
+    /* Tabla */
+    .fpdf-table-scroll {
+        max-height: 56vh;
+        overflow: auto;
+        border-radius: 12px;
+        border: 1px solid var(--border-light);
+    }
+
+    .fpdf-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+
+        .fpdf-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--border-light);
+            text-align: left;
+        }
+
+        .fpdf-table tbody tr {
+            border-bottom: 1px solid var(--border-light);
+            transition: background var(--transition-fast);
+        }
+
+            .fpdf-table tbody tr:last-child {
+                border-bottom: 0;
+            }
+
+            .fpdf-table tbody tr:not(.fpdf-empty-row):hover {
+                background: var(--very-light-blue);
+            }
+
+        .fpdf-table td {
+            padding: 0.65rem 0.75rem;
+            vertical-align: middle;
+            color: var(--text-dark);
+        }
+
+    .fpdf-row-folio {
+        font-weight: 600;
+    }
+
+    .fpdf-row-uuid {
+        font-size: 0.68rem;
+        color: var(--text-light);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .fpdf-row-client {
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .fpdf-row-rfc {
+        display: block;
+        font-size: 0.72rem;
+        color: var(--text-light);
+    }
+
+    .fpdf-text-end {
+        text-align: right;
+    }
+
+    .fpdf-text-center {
+        text-align: center;
+    }
+
+    /* Badges de estado con barra de acento */
+    .fpdf-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: var(--badge-radius);
+        font-size: 0.7rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+        .fpdf-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+    .fpdf-status-ok {
+        background: color-mix(in srgb, var(--success-color) 14%, transparent);
+        color: var(--success-color);
+    }
+
+    .fpdf-status-cancel {
+        background: color-mix(in srgb, var(--danger-color) 14%, transparent);
+        color: var(--danger-color);
+    }
+
+    .fpdf-xml-flag {
+        font-size: 0.9rem;
+    }
+
+        .fpdf-xml-flag.is-db {
+            color: var(--success-color);
+        }
+
+        .fpdf-xml-flag.is-disk {
+            color: var(--warning-color);
+        }
+
+    /* Acciones de fila */
+    .fpdf-row-actions {
+        display: flex;
+        gap: 0.3rem;
+        justify-content: center;
+    }
+
+    .fpdf-mini-btn {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-gray);
+        color: var(--text-light);
+        cursor: pointer;
+        font-size: 0.78rem;
+        transition: all var(--transition-fast);
+    }
+
+        .fpdf-mini-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .fpdf-mini-btn.primary:hover {
+            background: var(--accent-purple);
+            color: #fff;
+            border-color: var(--accent-purple);
+        }
+
+        .fpdf-mini-btn.info:hover {
+            background: var(--accent-blue);
+            color: #fff;
+            border-color: var(--accent-blue);
+        }
+
+    /* Estado vacío / carga */
+    .fpdf-empty, .fpdf-loading, .fpdf-error {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 2.5rem 1rem;
+        color: var(--text-light);
+        font-size: 0.85rem;
+    }
+
+        .fpdf-empty i, .fpdf-loading i, .fpdf-error i {
+            font-size: 1.6rem;
+            opacity: 0.5;
+        }
+
+    .fpdf-error {
+        color: var(--danger-color);
+    }
+
+        .fpdf-error i {
+            color: var(--danger-color);
+            opacity: 0.7;
+        }
+
+    .fpdf-loading i {
+        animation: fpdf-spin 0.9s linear infinite;
+        opacity: 0.8;
+        color: var(--accent-purple);
+    }
+
+    @@keyframes fpdf-spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Panel de previsualización */
+    .fpdf-preview-card {
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .fpdf-preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.9rem 1.1rem;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+    }
+
+    .fpdf-preview-title {
+        font-weight: 700;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--text-dark);
+    }
+
+        .fpdf-preview-title i {
+            color: var(--accent-purple);
+        }
+
+    .fpdf-preview-actions {
+        display: flex;
+        gap: 0.4rem;
+    }
+
+    .fpdf-icon-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 9px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-light);
+        color: var(--text-light);
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+        .fpdf-icon-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+    .fpdf-icon-btn-accent:hover {
+        background: var(--accent-purple);
+        color: #fff;
+        border-color: var(--accent-purple);
+    }
+
+    .fpdf-icon-btn-info:hover {
+        background: var(--accent-blue);
+        color: #fff;
+        border-color: var(--accent-blue);
+    }
+
+    .fpdf-preview-body {
+        position: relative;
+        flex: 1;
+        min-height: 70vh;
+    }
+
+    .fpdf-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        color: var(--text-light);
+        font-size: 0.88rem;
+    }
+
+        .fpdf-placeholder i {
+            font-size: 2.4rem;
+            opacity: 0.35;
+            color: var(--accent-purple);
+        }
+
+    .fpdf-frame {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    .fpdf-hidden {
+        display: none !important;
+    }
+</style>
+
+<script>
+    const API = {
+        buscar: '@Url.Action("Buscar", "FacturaPdf")',
+        generar: '@Url.Action("Generar", "FacturaPdf")',
+        xml: '@Url.Action("DescargarXml", "FacturaPdf")',
+    };
+
+    let _uuidActual = null;
+    let _enActual = false;     // idioma del PDF en previsualización (false = ES, true = EN)
+    let _buscarTimeout = null;
+
+    function esc(s) {
+        return (s ?? '').toString()
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+    function fmtMoney(n) {
+        return (parseFloat(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function buscarFacturas() {
+        const q = document.getElementById('buscador').value.trim();
+        const tbody = document.getElementById('resultados');
+        tbody.innerHTML = `<tr class="fpdf-empty-row"><td colspan="6">
+                <div class="fpdf-loading"><i class="fas fa-spinner"></i><span>Buscando...</span></div>
+            </td></tr>`;
+
+        fetch(`${API.buscar}?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(res => {
+                const data = res.data ?? [];
+                if (!data.length) {
+                    tbody.innerHTML = `<tr class="fpdf-empty-row"><td colspan="6">
+                            <div class="fpdf-empty"><i class="fas fa-inbox"></i><span>Sin resultados</span></div>
+                        </td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = data.map(f => {
+                    const folio = esc(f.serie) + '-' + esc(f.folio);
+                    const cancelada = (f.statusfactura || '').toLowerCase().includes('cancel');
+                    const estadoBadge = cancelada
+                        ? `<span class="fpdf-status fpdf-status-cancel">${esc(f.statusfactura)}</span>`
+                        : `<span class="fpdf-status fpdf-status-ok">${esc(f.statusfactura)}</span>`;
+                    const xmlBadge = f.tiene_xml
+                        ? '<i class="fas fa-check-circle fpdf-xml-flag is-db" title="XML en BD"></i>'
+                        : '<i class="fas fa-hard-drive fpdf-xml-flag is-disk" title="Se buscará en disco"></i>';
+                    return `
+                            <tr>
+                                <td>
+                                    <div class="fpdf-row-folio">${folio}</div>
+                                    <div class="fpdf-row-uuid">${esc(f.uuid)}</div>
+                                </td>
+                                <td>
+                                    <div class="fpdf-row-client">${esc(f.rsocliente)}</div>
+                                    <span class="fpdf-row-rfc">${esc(f.rfccliente)}</span>
+                                </td>
+                                <td class="fpdf-text-end">
+                                    $${fmtMoney(f.total)}<br><span class="fpdf-row-rfc">${esc(f.moneda)}</span>
+                                </td>
+                                <td>${estadoBadge}</td>
+                                <td class="fpdf-text-center">${xmlBadge}</td>
+                                <td>
+                                    <div class="fpdf-row-actions">
+                                        <button class="fpdf-mini-btn primary" title="Ver PDF"
+                                                onclick="verPdf('${esc(f.uuid)}')"><i class="fas fa-eye"></i></button>
+                                        <button class="fpdf-mini-btn" title="Descargar PDF"
+                                                onclick="descargarPdf('${esc(f.uuid)}')"><i class="fas fa-download"></i></button>
+                                        <button class="fpdf-mini-btn info" title="Descargar XML"
+                                                onclick="descargarXml('${esc(f.uuid)}')"><i class="fas fa-code"></i></button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                }).join('');
+            })
+            .catch(() => {
+                tbody.innerHTML = `<tr class="fpdf-empty-row"><td colspan="6">
+                        <div class="fpdf-error"><i class="fas fa-triangle-exclamation"></i><span>Error al buscar</span></div>
+                    </td></tr>`;
+            });
+    }
+
+    function _cargarPreview() {
+        const frame = document.getElementById('previewFrame');
+        document.getElementById('previewPlaceholder').classList.add('fpdf-hidden');
+        frame.classList.remove('fpdf-hidden');
+        document.getElementById('previewActions').classList.remove('fpdf-hidden');
+        frame.src = `${API.generar}?uuid=${encodeURIComponent(_uuidActual)}&en=${_enActual}&t=${Date.now()}`;
+        // El botón muestra el idioma AL QUE se cambiará.
+        document.getElementById('btnLangText').textContent = _enActual ? 'ES' : 'EN';
+    }
+
+    function verPdf(uuid, en = false) {
+        _uuidActual = uuid;
+        _enActual = en;
+        _cargarPreview();
+    }
+
+    function verPdfDirecto() {
+        const uuid = document.getElementById('uuidDirecto').value.trim();
+        if (!uuid) { if (window.toastr) toastr.warning('Ingresa un UUID.'); return; }
+        verPdf(uuid);
+    }
+
+    function toggleIdioma() {
+        if (!_uuidActual) return;
+        _enActual = !_enActual;
+        _cargarPreview();
+    }
+
+    function regenerarActual() {
+        if (!_uuidActual) return;
+        const frame = document.getElementById('previewFrame');
+        frame.src = `${API.generar}?uuid=${encodeURIComponent(_uuidActual)}&en=${_enActual}&regenerar=true&t=${Date.now()}`;
+        if (window.toastr) toastr.info('Regenerando PDF...');
+    }
+
+    function descargarPdf(uuid, en = false) {
+        window.location = `${API.generar}?uuid=${encodeURIComponent(uuid)}&en=${en}&descargar=true`;
+    }
+    function descargarXml(uuid) {
+        window.location = `${API.xml}?uuid=${encodeURIComponent(uuid)}`;
+    }
+    function descargarPdfActual() { if (_uuidActual) descargarPdf(_uuidActual, _enActual); }
+    function descargarXmlActual() { if (_uuidActual) descargarXml(_uuidActual); }
+
+    // Enter para buscar / ver directo
+    document.getElementById('buscador').addEventListener('keydown', e => { if (e.key === 'Enter') buscarFacturas(); });
+    document.getElementById('uuidDirecto').addEventListener('keydown', e => { if (e.key === 'Enter') verPdfDirecto(); });
+</script>

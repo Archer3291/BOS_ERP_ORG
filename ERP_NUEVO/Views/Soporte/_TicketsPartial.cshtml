@@ -1,0 +1,122 @@
+﻿@*
+    Este partial vive dentro de AdministracionTicket.cshtml.
+
+    Antes traia un <head> completo copiado del modulo de Licencias, con un
+    window.document.title = 'Licencias' que renombraba la pestana del navegador en la
+    pantalla de tickets. Las hojas de estilo de DataTables se declaran ahora en la
+    vista contenedora, que es donde corresponde.
+
+    Tambien declaraba @@model IEnumerable<Licencia>, que no se usaba para nada.
+*@
+<form>
+    @Html.AntiForgeryToken()
+</form>
+<div class="card-header text-bg-primary">
+</div>
+
+<div class="card-body">
+    <div class="row">
+        <div class="accordion mb-3" id="filtrosAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingFiltros">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFiltros" aria-expanded="false" aria-controls="collapseFiltros">
+                        <i class="fas fa-filter me-2"></i>Filtros y Opciones
+                    </button>
+                </h2>
+                <div id="collapseFiltros" class="accordion-collapse collapse" aria-labelledby="headingFiltros" data-bs-parent="#filtrosAccordion">
+                    <div class="accordion-body">
+                        <form class="row g-2 align-items-end">
+                            <!-- Estado -->
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <select class="form-select" id="filtroEstado">
+                                        <option value="">Todo</option>
+                                        <option value="Abierto">Abierto</option>
+                                        <option value="Cerrado">Cerrado</option>
+                                    </select>
+                                    <label for="filtroEstado"><i class="fas fa-door-open me-1"></i>Estado</label>
+                                </div>
+                            </div>
+
+                            <!-- Prioridad -->
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    @* Se llena desde el catalogo prio en el JS. *@
+                                    <select class="form-select" id="filtroPrioridad">
+                                        <option value="">Todo</option>
+                                    </select>
+                                    <label for="filtroPrioridad"><i class="fas fa-exclamation-circle me-1"></i>Prioridad</label>
+                                </div>
+                            </div>
+
+                            <!-- Usuario -->
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    @* Se llena desde el servidor en el JS. *@
+                                    <select class="form-select" id="filtroUsuario">
+                                        <option value="">Todo</option>
+                                    </select>
+                                    <label for="filtroUsuario"><i class="fas fa-user me-1"></i>Usuario</label>
+                                </div>
+                            </div>
+
+                            <!-- Asignación -->
+                            <div class="col-md-3">
+                                <label class="form-label d-block mb-1"><i class="fas fa-user-check me-1"></i>Asignación</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="filtroAsignado" id="todos" value="" checked>
+                                    <label class="btn btn-outline-secondary" for="todos">Todos</label>
+
+                                    @* El value lo rellena el JS con el NombreUsuario real
+                                       del usuario en sesion: User.Identity.Name puede ser
+                                       el correo y no casaria con la columna Asignado. *@
+                                    <input type="radio" class="btn-check" name="filtroAsignado" id="asignadosMiUsuario" value="">
+                                    @* El value (id del usuario en sesión) lo pone el JS. *@
+                                    <label class="btn btn-outline-primary" for="asignadosMiUsuario">Asignados a mí</label>
+                                </div>
+                            </div>
+
+                            <!-- Botón limpiar -->
+                            <div class="col-md-3 mt-3">
+                                <button id="btnLimpiarFiltros" type="button" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-broom me-1"></i> Limpiar filtros
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Asignar usuario -->
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    @* Se llena desde el servidor en el JS. *@
+                                    <select class="form-select" id="nuevoResponsable">
+                                        <option value="">Selecciona un responsable</option>
+                                    </select>
+                                    <label for="nuevoResponsable"><i class="fas fa-user me-1"></i>Asignar usuario</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <button id="btnAccion" type="button" class="btn btn-primary w-100 mt-1">
+                                    <i class="fas fa-user-plus me-1"></i> Asignar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* createTable (TableBuilder) construye la tabla completa dentro de este div:
+           encabezados, buscador, paginación y exportación. Ya no hay <thead> que
+           mantener sincronizado a mano con las columnas del JS, que era justo lo que
+           hacía fallar a DataTables con "Cannot read properties of undefined". *@
+        <div id="tablaTickets"></div>
+    </div>
+</div>
+@* jQuery lo carga el layout. Volver a cargarlo aqui reemplazaba el objeto $ por una
+   instancia limpia y dejaba sin plugins a lo ya inicializado (select2, bootstrap). *@
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/Scripts/Soporte/ticket-administracion-ticket.js"></script>
+
+
+

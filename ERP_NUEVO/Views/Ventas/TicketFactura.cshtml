@@ -1,0 +1,290 @@
+﻿@model Dictionary<string, object>
+@{
+    Layout = null;
+    var cultura = new System.Globalization.CultureInfo("es-MX");
+
+    Func<object, decimal> dec = v => v == null || v == DBNull.Value ? 0m : Convert.ToDecimal(v);
+    Func<object, string> txt = v => v?.ToString() ?? "";
+    Func<decimal, string> money = v => v.ToString("C2", cultura);
+    Func<decimal, string> cant = v => v == Math.Floor(v) ? v.ToString("0") : v.ToString("0.##");
+
+    var conceptos = ViewBag.Conceptos as List<Dictionary<string, object>>
+                    ?? new List<Dictionary<string, object>>();
+
+    string uuid = txt(Model["uuid"]);
+    string serieFolio = (txt(Model["serie"]) + " " + txt(Model["folio"])).Trim();
+    bool cancelada = string.Equals(txt(Model["statusfactura"]), "Cancelada",
+                                   StringComparison.OrdinalIgnoreCase);
+
+    decimal subtotal = dec(Model["subtotal"]);
+    decimal descuento = dec(Model["descuento"]);
+    decimal iva = dec(Model["iva"]);
+    decimal total = dec(Model["total"]);
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Factura @serieFolio</title>
+    <style>
+        /* Mismo criterio que el ticket de venta: rollo de 80 mm, largo dinámico y tinta
+           sólida. La térmica quema puntos y los grises salen lavados, así que todo va en
+           negro puro; print-color-adjust impide que el navegador aclare los bloques en
+           negativo al imprimir. */
+        @@page { size: 80mm auto; margin: 0; }
+
+        html, body { margin: 0; padding: 0; height: auto; background: #fff; }
+
+        body {
+            font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+            font-size: 11.5px;
+            font-weight: 600;
+            line-height: 1.3;
+            color: #000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .hoja { width: 72mm; padding: 3mm 3mm 0; }
+
+        .centro  { text-align: center; }
+        .derecha { text-align: right; }
+        .fuerte  { font-weight: 800; }
+        .mono    { font-family: "Consolas", "Courier New", monospace; }
+
+        .separador       { border-top: 2px dotted #000; margin: 5px 0; }
+        .separador-doble { border-top: 3px solid #000;  margin: 6px 0; }
+
+        /* ── Encabezado: logo al costado del título ────────────────────────── */
+        .encabezado {
+            display: flex;
+            align-items: center;
+            gap: 3mm;
+            margin-bottom: 4px;
+        }
+        .encabezado .logo {
+            flex: 0 0 auto;
+            width: 20mm;
+        }
+        .encabezado .logo img {
+            width: 100%;
+            display: block;
+            /* La térmica no reproduce medios tonos: se sube el contraste para que el
+               logo salga como línea sólida en vez de una mancha gris. */
+            filter: grayscale(100%) contrast(180%);
+        }
+        .encabezado .emisor {
+            flex: 1 1 auto;
+            min-width: 0;
+            text-align: left;
+        }
+        .encabezado .emisor .nombre {
+            font-size: 12px; font-weight: 800; line-height: 1.15;
+            text-transform: uppercase; word-break: break-word;
+        }
+        .encabezado .emisor .rfc { font-size: 11px; }
+        .encabezado .emisor .dato { font-size: 9.5px; font-weight: 600; }
+
+        /* Franja del tipo de comprobante */
+        .banda {
+            background: #000; color: #fff;
+            text-align: center; font-weight: 800; letter-spacing: 2px;
+            font-size: 11px; padding: 3px;
+            margin: 4px 0 6px;
+        }
+
+        h2 {
+            font-size: 10.5px; font-weight: 800; margin: 8px 0 4px;
+            letter-spacing: 1px; text-transform: uppercase;
+            background: #000; color: #fff; padding: 3px 6px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        td { vertical-align: top; padding: 0; }
+
+        .datos td { padding: 1px 0; }
+        .datos .etq { width: 26mm; font-weight: 600; }
+
+        .concepto td { padding-top: 4px; }
+        .concepto .desc { word-break: break-word; font-weight: 700; }
+
+        .totales td { padding: 2px 0; }
+        .totales .etiqueta { text-align: right; padding-right: 8px; }
+        .total-final td {
+            font-size: 15px; font-weight: 800;
+            background: #000; color: #fff; padding: 4px 6px;
+        }
+        .total-final .etiqueta { padding-right: 8px; }
+
+        /* Folio fiscal: el dato que more importa conservar. Marco grueso. */
+        .uuid-caja {
+            border: 3px solid #000; padding: 5px; margin: 7px 0; text-align: center;
+        }
+        .uuid-caja .etq {
+            display: block; background: #000; color: #fff;
+            margin: -5px -5px 4px; padding: 3px;
+            font-size: 10px; font-weight: 800; letter-spacing: 1px;
+        }
+        .uuid-caja .valor {
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 10.5px; font-weight: 700; word-break: break-all; line-height: 1.35;
+        }
+
+        .qr-sat { margin: 6px 0 2px; }
+        .qr-sat img { width: 30mm; height: 30mm; image-rendering: pixelated; }
+
+        .cancelada {
+            border: 3px solid #000; padding: 5px; margin: 7px 0;
+            text-align: center; font-weight: 800; font-size: 13px; letter-spacing: 2px;
+        }
+
+        .pie { font-size: 9px; font-weight: 600; margin-top: 8px; margin-bottom: 0; }
+
+        .no-imprimir { margin: 10px 0; text-align: center; }
+        .no-imprimir button {
+            font: inherit; padding: 7px 16px; margin: 0 3px; cursor: pointer;
+            border: 2px solid #000; background: #fff; border-radius: 4px; font-weight: 700;
+        }
+
+        @@media print {
+            .no-imprimir { display: none; }
+            .hoja, table, tr, .uuid-caja { page-break-inside: avoid; }
+            .hoja > *:last-child { margin-bottom: 0; padding-bottom: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="hoja">
+
+    <div class="no-imprimir">
+        <button onclick="window.print()">Imprimir</button>
+        <button onclick="window.close()">Cerrar</button>
+    </div>
+
+    @* ── Encabezado con el logo al costado ──────────────────────────────── *@
+    <div class="encabezado">
+        @if (ViewBag.LogoDataUri != null)
+        {
+            <div class="logo"><img src="@ViewBag.LogoDataUri" alt="Logo" /></div>
+        }
+        <div class="emisor">
+            <div class="nombre">@txt(Model["rsoemisor"])</div>
+            <div class="rfc mono">RFC @txt(Model["rfcemisor"])</div>
+            <div class="dato">CP @txt(Model["cpe"])</div>
+            @if (!string.IsNullOrWhiteSpace(ViewBag.RegimenEmisor as string))
+            {
+                <div class="dato">Rég. @ViewBag.RegimenEmisor</div>
+            }
+        </div>
+    </div>
+
+    <div class="banda">COMPROBANTE FISCAL DIGITAL</div>
+
+    <table class="datos">
+        <tr><td class="etq">Serie y folio</td><td class="fuerte">@serieFolio</td></tr>
+        <tr>
+            <td class="etq">Fecha</td>
+            <td>@(Model["fechatimbrado"] == null
+                    ? Convert.ToDateTime(Model["fecha"]).ToString("dd/MM/yyyy HH:mm", cultura)
+                    : Convert.ToDateTime(Model["fechatimbrado"]).ToString("dd/MM/yyyy HH:mm", cultura))</td>
+        </tr>
+        <tr><td class="etq">Moneda</td><td>@txt(Model["moneda"])</td></tr>
+    </table>
+
+    <h2>Receptor</h2>
+    <table class="datos">
+        <tr><td colspan="2" class="fuerte">@txt(Model["rsocliente"])</td></tr>
+        <tr><td class="etq">RFC</td><td class="mono">@txt(Model["rfccliente"])</td></tr>
+        <tr><td class="etq">Uso CFDI</td><td>@txt(Model["idusocfdi"]) @txt(Model["usocfdi"])</td></tr>
+        @if (!string.IsNullOrWhiteSpace(ViewBag.RegimenReceptor as string))
+        {
+            <tr><td class="etq">Régimen</td><td>@ViewBag.RegimenReceptor</td></tr>
+        }
+        <tr><td class="etq">CP</td><td>@txt(Model["cpr"])</td></tr>
+    </table>
+
+    <h2>Conceptos</h2>
+    <table>
+        @foreach (var c in conceptos)
+        {
+            decimal cantidad = dec(c["cantidad"]);
+            decimal precio = dec(c["precio"]);
+            decimal dto = dec(c["descuento"]);
+
+            @* Dos renglones por concepto: descripción, y cantidad/unidad/precio con su
+               importe. La clave SAT del producto no se imprime: sólo interesa al validar
+               el XML, y en el rollo costaba un renglón por concepto. *@
+            <tr class="concepto">
+                <td colspan="2" class="desc">@txt(c["descripcion"])</td>
+            </tr>
+            <tr>
+                <td>@cant(cantidad) @txt(c["udm"]) x @money(precio)</td>
+                <td class="derecha">@money(cantidad * precio)</td>
+            </tr>
+            @if (dto > 0)
+            {
+                <tr>
+                    <td>&nbsp;&nbsp;Descuento</td>
+                    <td class="derecha">-@money(dto)</td>
+                </tr>
+            }
+        }
+    </table>
+
+    <div class="separador"></div>
+
+    <table class="totales">
+        <tr><td class="etiqueta">Subtotal</td><td class="derecha">@money(subtotal)</td></tr>
+        @if (descuento > 0)
+        {
+            <tr><td class="etiqueta">Descuento</td><td class="derecha">-@money(descuento)</td></tr>
+        }
+        <tr><td class="etiqueta">IVA</td><td class="derecha">@money(iva)</td></tr>
+        <tr class="total-final"><td class="etiqueta">TOTAL</td><td class="derecha">@money(total)</td></tr>
+    </table>
+
+    <table class="datos" style="margin-top:5px;">
+        <tr>
+            <td class="etq">Forma de pago</td>
+            <td>@(string.IsNullOrWhiteSpace(ViewBag.FormaPago as string)
+                    ? txt(Model["idtipopago"])
+                    : ViewBag.FormaPago)</td>
+        </tr>
+        <tr><td class="etq">Método</td><td>@txt(Model["mdpfactura"])</td></tr>
+    </table>
+
+    @* ── Folio fiscal y verificación ────────────────────────────────────── *@
+    <div class="uuid-caja">
+        <span class="etq">FOLIO FISCAL (UUID)</span>
+        <span class="valor">@uuid</span>
+    </div>
+
+    @if (ViewBag.QrSat != null)
+    {
+        <div class="centro qr-sat">
+            <img src="@ViewBag.QrSat" alt="Verificar en el SAT" />
+            <div style="font-size:9px;">Verifica este comprobante en el SAT</div>
+        </div>
+    }
+
+    @if (cancelada)
+    {
+        <div class="cancelada">*** CANCELADA ***</div>
+    }
+
+    <div class="separador-doble"></div>
+    <div class="centro pie">
+        Este ticket es una representación impresa.<br />
+        El comprobante fiscal es el archivo XML.
+    </div>
+</div>
+
+    <script>
+        // Impresión automática al abrirse desde el portal (?print=1).
+        if (new URLSearchParams(location.search).get('print') === '1') {
+            window.addEventListener('load', () => window.print());
+        }
+    </script>
+</body>
+</html>

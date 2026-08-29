@@ -1,0 +1,169 @@
+﻿@{
+    ViewBag.Title = "Administracion";
+}
+@section styles {
+    @* Las cuatro tablas de esta pantalla usan createTable (TableBuilder), que trae su
+       propia hoja de estilos. Aqui vivian los CSS de DataTables desde que se sacaron
+       del <head> que _TicketsPartial habia copiado del modulo de Licencias; ya no hace
+       falta ninguno porque el modulo no usa DataTables. *@
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+    <link href="~/css/ticketpartial.css" rel="stylesheet" />
+
+    <style>
+        body {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            min-height: 100vh;
+            padding-top: 50px;
+        }
+
+        .nav-tabs {
+            border: none;
+            justify-content: center;
+            gap: 1rem;
+            position: relative;
+        }
+
+            .nav-tabs .nav-link {
+                color: var(--bs-body-color);
+                font-weight: 500;
+                padding: 1rem 2rem;
+                border-radius: 1rem 1rem 0 0;
+                background-color: var(--bs-tertiary-bg);
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            }
+
+                .nav-tabs .nav-link:hover {
+                    color: #0d6efd;
+                    transform: translateY(-3px);
+                }
+
+                .nav-tabs .nav-link.active {
+                    color: #fff;
+                    background: linear-gradient(135deg, #0d6efd, #6610f2);
+                    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+                }
+
+        .tab-content {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            padding: 2rem;
+            border-radius: 0 0 1rem 1rem;
+            animation: fadeIn 0.5s ease-in-out;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-link i {
+            margin-right: 0.5rem;
+            transition: transform 0.3s;
+        }
+
+        .nav-link.active i {
+            transform: rotate(360deg);
+        }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #fff;
+            background: linear-gradient(270deg, #0d6efd, #6610f2, #0d6efd);
+            background-size: 600% 600%;
+            animation: gradientShift 8s ease infinite;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        @@keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+    </style>
+}
+
+@*
+    Categorías, Equipo e Informes son para quien DIRIGE un área: rol del ERP
+    'Gerente', o Sistemas. El resolvedor se queda con Tickets.
+
+    El partial no se renderiza siquiera cuando no toca. Esconder la pestaña con CSS
+    dejaría el HTML -y los scripts que la pueblan- servidos igual, y esos scripts
+    piden datos que el servidor va a rechazar con 403: la consola se llenaría de
+    errores en cada carga. La cerradura de verdad la pone [SoporteGerenteAuthorize]
+    en los tres controladores.
+*@
+@{
+    var alcanceAdmin = BOS_ERP.Helpers.SoporteAlcance.De(
+        Context.Session,
+        BOS_ERP.Helpers.SoporteAuthz.UsuarioActualId(Context.Session) ?? 0);
+
+    bool administra = alcanceAdmin.PuedeAdministrar;
+}
+
+<div class="container">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets" type="button" role="tab">
+                <i class="fas fa-ticket-alt"></i> Tickets
+            </button>
+        </li>
+        @if (administra)
+        {
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="categorias-tab" data-bs-toggle="tab" data-bs-target="#categorias" type="button" role="tab">
+                    <i class="fas fa-tags"></i> Categorías
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="equipo-tab" data-bs-toggle="tab" data-bs-target="#equipo" type="button" role="tab">
+                    <i class="fas fa-users"></i> Equipo
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="informes-tab" data-bs-toggle="tab" data-bs-target="#informes" type="button" role="tab">
+                    <i class="fas fa-chart-bar"></i> Informes
+                </button>
+            </li>
+        }
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="tickets" role="tabpanel">
+            @Html.Partial("_TicketsPartial")
+        </div>
+        @if (administra)
+        {
+            <div class="tab-pane fade" id="categorias" role="tabpanel">
+                @Html.Partial("_CategoriaPartial")
+            </div>
+            <div class="tab-pane fade" id="equipo" role="tabpanel">
+                @Html.Partial("_EquipoPartial")
+            </div>
+            <div class="tab-pane fade" id="informes" role="tabpanel">
+                @Html.Partial("_InformesPartial")
+            </div>
+        }
+    </div>
+</div>
+
+
+@section Scripts {
+
+}

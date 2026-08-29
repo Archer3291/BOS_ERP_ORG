@@ -1,0 +1,779 @@
+﻿@{
+    ViewBag.Title = "Claves por módulo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <style>
+    /* ── Layout ─────────────────────────────────────────────────────── */
+    .cm-page { padding: 1.5rem 0; }
+    .split-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @@media (max-width: 900px) { .split-layout { grid-template-columns: 1fr; } }
+
+    /* ── Cards ───────────────────────────────────────────────────────── */
+    .panel-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+    }
+    .panel-header {
+        background: var(--bg-gray);
+        border-bottom: 1px solid var(--border-light);
+        padding: .875rem 1.1rem;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-title {
+        font-size: 13px; font-weight: 700; color: var(--text-dark);
+        display: flex; align-items: center; gap: 7px; margin: 0;
+    }
+
+    /* ── Tabla ───────────────────────────────────────────────────────── */
+    .cm-table { font-size: 13px; margin: 0; width: 100%; }
+    .cm-table thead { background: var(--bg-gray); border-bottom: 1px solid var(--border-light); }
+    .cm-table thead th {
+        font-size: 11px; font-weight: 700; color: var(--text-light);
+        text-transform: uppercase; letter-spacing: .05em;
+        padding: 9px 12px; border: none; white-space: nowrap;
+    }
+    .cm-table tbody td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border-light);
+        color: var(--text-dark); vertical-align: middle;
+    }
+    .cm-table tbody tr:last-child td { border-bottom: none; }
+    .cm-table tbody tr:hover td { background: var(--bg-gray); }
+    .cm-table tbody tr.selected td { background: #eff6ff !important; }
+
+    /* ── Page header ─────────────────────────────────────────────────── */
+    .page-title { font-size: 1.2rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+    .page-subtitle { font-size: 13px; color: var(--text-light); margin: 2px 0 0; }
+
+    /* ── Badges ──────────────────────────────────────────────────────── */
+    .badge-status {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 2px 9px; border-radius: 20px;
+        font-size: 11px; font-weight: 600;
+    }
+    .badge-activo    { background: #d1fae5; color: #065f46; }
+    .badge-inactivo  { background: #f1f5f9; color: #475569; }
+    .badge-bloqueado { background: #fee2e2; color: #991b1b; }
+    .badge-count {
+        background: #dbeafe; color: var(--primary-blue);
+        border-radius: 20px; padding: 1px 8px;
+        font-size: 11px; font-weight: 700;
+    }
+
+    /* ── Pips ────────────────────────────────────────────────────────── */
+    .pips { display: flex; gap: 3px; align-items: center; }
+    .pip { width: 8px; height: 8px; border-radius: 50%; background: var(--border-light); }
+    .pip.on { background: var(--danger-color); }
+
+    /* ── Botones acción ──────────────────────────────────────────────── */
+    .btn-action {
+        width: 28px; height: 28px; padding: 0;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 7px; border: 1px solid var(--border-light);
+        background: var(--bg-light); color: var(--text-light);
+        font-size: 11px; cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+    .btn-action:hover { background: var(--bg-gray); color: var(--text-dark); }
+    .btn-action.edit:hover   { border-color: var(--accent-blue); color: var(--accent-blue); background: #eff6ff; }
+    .btn-action.reset:hover  { border-color: var(--warning-color); color: var(--warning-color); background: #fffbeb; }
+    .btn-action.toggle:hover { border-color: var(--success-color); color: var(--success-color); background: #f0fdf4; }
+    .btn-action.del:hover    { border-color: var(--danger-color); color: var(--danger-color); background: #fef2f2; }
+
+    /* ── Btn primario ────────────────────────────────────────────────── */
+    .btn-primary-custom {
+        background: var(--primary-blue); color: #fff;
+        border: none; border-radius: 8px;
+        padding: 7px 14px; font-size: 12px; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px;
+        cursor: pointer; transition: opacity var(--transition-fast);
+    }
+    .btn-primary-custom:hover { opacity: .88; color: #fff; }
+
+    /* ── Panel derecho vacío ─────────────────────────────────────────── */
+    .empty-panel {
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        min-height: 260px; padding: 2rem;
+        color: var(--text-light); text-align: center; font-size: 13px;
+    }
+    .empty-panel i { font-size: 2rem; opacity: .3; margin-bottom: .75rem; }
+
+    /* ── Modal ───────────────────────────────────────────────────────── */
+    .modal-content {
+        border: 1px solid var(--border-light);
+        border-radius: 14px; background: var(--bg-light);
+        box-shadow: var(--shadow-lg);
+    }
+    .modal-header {
+        background: var(--bg-gray);
+        border-bottom: 1px solid var(--border-light);
+        border-radius: 14px 14px 0 0; padding: .875rem 1.1rem;
+    }
+    .modal-title { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+    .modal-body  { padding: 1.1rem; }
+    .modal-footer { padding: .75rem 1.1rem; border-top: 1px solid var(--border-light); }
+
+    /* ── Form ────────────────────────────────────────────────────────── */
+    .form-label-sm {
+        font-size: 11px; font-weight: 700; color: var(--text-light);
+        text-transform: uppercase; letter-spacing: .05em;
+        margin-bottom: 4px; display: block;
+    }
+    .form-control-custom, .form-select-custom {
+        width: 100%; padding: 7px 10px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px; font-size: 13px;
+        background: var(--bg-light); color: var(--text-dark);
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .form-control-custom:focus, .form-select-custom:focus {
+        outline: none; border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .form-error { font-size: 11px; color: var(--danger-color); margin-top: 3px; }
+
+    /* ── Password ────────────────────────────────────────────────────── */
+    .input-pwd-wrap { position: relative; }
+    .input-pwd-wrap .form-control-custom { padding-right: 36px; }
+    .btn-pwd-toggle {
+        position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+        background: none; border: none; cursor: pointer;
+        color: var(--text-light); font-size: 12px; padding: 0;
+    }
+    .btn-pwd-toggle:hover { color: var(--text-dark); }
+    .pwd-strength { height: 3px; border-radius: 3px; margin-top: 5px; background: var(--border-light); overflow: hidden; }
+    .pwd-strength-bar { height: 100%; border-radius: 3px; transition: width .3s, background .3s; }
+
+    /* ── Toast ───────────────────────────────────────────────────────── */
+    .toast-custom {
+        position: fixed; bottom: 1.5rem; right: 1.5rem;
+        padding: 9px 14px; border-radius: 10px;
+        font-size: 13px; font-weight: 600;
+        z-index: 9999; opacity: 0; transform: translateY(8px);
+        transition: all .22s; pointer-events: none;
+        display: flex; align-items: center; gap: 7px;
+        min-width: 200px; box-shadow: var(--shadow-lg);
+    }
+    .toast-custom.show { opacity: 1; transform: translateY(0); }
+    .toast-custom.ok  { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .toast-custom.err { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    /* ── Filtro ──────────────────────────────────────────────────────── */
+    .filter-row { padding: .75rem 1rem; border-bottom: 1px solid var(--border-light); }
+    .filter-row input {
+        width: 100%; padding: 6px 10px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px; font-size: 12px;
+        background: var(--bg-light); color: var(--text-dark);
+    }
+    .filter-row input:focus { outline: none; border-color: var(--accent-blue); }
+
+    /* ── Mono ────────────────────────────────────────────────────────── */
+    .mono { font-family: Consolas,monospace; font-size: 12px; }
+
+    /* ── Empty state ─────────────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-light); font-size: 13px; }
+    .empty-state i { font-size: 2rem; margin-bottom: .5rem; opacity: .3; }
+
+    /* ── Selected clave info bar ─────────────────────────────────────── */
+    .clave-info-bar {
+        background: #eff6ff; border-bottom: 1px solid #bfdbfe;
+        padding: .6rem 1rem; font-size: 12px; color: var(--primary-blue);
+        display: flex; align-items: center; gap: 8px;
+    }
+    .clave-info-bar strong { font-weight: 700; }
+    </style>
+}
+
+<div class="cm-page">
+    <div class="container-fluid px-0">
+
+        @* ── Header ──────────────────────────────────────────────────────────── *@
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div>
+                <h1 class="page-title">
+                    <i class="fas fa-key me-2" style="color:var(--primary-blue)"></i>
+                    Claves de módulo
+                </h1>
+                <p class="page-subtitle">Define contraseñas compartidas por módulo y asigna los usuarios que pueden usarlas</p>
+            </div>
+            <button class="btn-primary-custom"
+                    data-bs-toggle="modal" data-bs-target="#modalClave"
+                    onclick="prepararCrear()">
+                <i class="fas fa-plus"></i> Nueva clave
+            </button>
+        </div>
+
+        @* ── Split layout ─────────────────────────────────────────────────────── *@
+        <div class="split-layout">
+
+            @* ── Panel izquierdo: Claves ──────────────────────────────────────── *@
+            <div class="panel-card">
+                <div class="panel-header">
+                    <p class="panel-title">
+                        <i class="fas fa-shield-halved" style="color:var(--primary-blue)"></i>
+                        Claves configuradas
+                    </p>
+                </div>
+                <div class="filter-row">
+                    <input type="text" id="filtro-buscar" placeholder="Buscar módulo o nombre…"
+                           oninput="cargarClaves()" />
+                </div>
+                <div class="table-responsive">
+                    <table class="table cm-table">
+                        <thead>
+                            <tr>
+                                <th>Módulo</th>
+                                <th>Nombre</th>
+                                <th>Estado</th>
+                                <th>Usuarios</th>
+                                <th style="width:80px">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-claves">
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="spinner-border spinner-border-sm text-secondary mb-2"></div>
+                                        <div>Cargando…</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            @* ── Panel derecho: Usuarios asignados ────────────────────────────── *@
+            <div class="panel-card">
+                <div class="panel-header">
+                    <p class="panel-title" id="panel-usuarios-titulo">
+                        <i class="fas fa-users" style="color:var(--primary-blue)"></i>
+                        Usuarios asignados
+                    </p>
+                    <button class="btn-primary-custom" id="btn-asignar"
+                            style="display:none" onclick="abrirAsignar()">
+                        <i class="fas fa-user-plus"></i> Asignar
+                    </button>
+                </div>
+                <div id="panel-usuarios-body">
+                    <div class="empty-panel">
+                        <i class="fas fa-hand-pointer d-block"></i>
+                        Selecciona una clave para ver y gestionar sus usuarios
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* ── Toast ────────────────────────────────────────────────────────────────── *@
+<div class="toast-custom" id="toast-custom"></div>
+
+@* ── Modal: Nueva / Editar Clave ─────────────────────────────────────────── *@
+<div class="modal fade" id="modalClave" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-key me-2" style="color:var(--primary-blue)"></i>
+                    <span id="modal-clave-titulo">Nueva clave</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="mc-id" value="0" />
+
+                <div class="mb-3">
+                    <label class="form-label-sm"><i class="fas fa-puzzle-piece me-1"></i>Módulo</label>
+                    <input type="text" class="form-control-custom" id="mc-modulo"
+                           placeholder="Ej. FACTURACION" style="text-transform:uppercase" />
+                    <div class="form-error" id="err-mc-modulo"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-sm"><i class="fas fa-tag me-1"></i>Nombre / descripción</label>
+                    <input type="text" class="form-control-custom" id="mc-nombre"
+                           placeholder="Ej. Clave de autorización de descuentos" />
+                    <div class="form-error" id="err-mc-nombre"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-sm" id="lbl-mc-pwd">
+                        <i class="fas fa-lock me-1"></i>Contraseña
+                    </label>
+                    <div class="input-pwd-wrap">
+                        <input type="password" class="form-control-custom" id="mc-password"
+                               placeholder="Mínimo 8 caracteres" oninput="evalPwd()" />
+                        <button type="button" class="btn-pwd-toggle" onclick="togglePwd()">
+                            <i class="fas fa-eye" id="ico-eye"></i>
+                        </button>
+                    </div>
+                    <div class="pwd-strength mt-1">
+                        <div class="pwd-strength-bar" id="pwd-bar" style="width:0"></div>
+                    </div>
+                    <div class="form-error" id="err-mc-pwd"></div>
+                </div>
+
+                <div>
+                    <label class="form-label-sm"><i class="fas fa-toggle-on me-1"></i>Estado</label>
+                    <select class="form-select-custom" id="mc-activo">
+                        <option value="true">Activo</option>
+                        <option value="false">Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light btn-sm" data-bs-dismiss="modal"
+                        style="border-radius:8px;font-size:13px">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button class="btn-primary-custom" onclick="guardarClave()" style="padding:6px 14px">
+                    <i class="fas fa-save me-1"></i>
+                    <span id="btn-clave-txt">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Modal: Asignar usuario ───────────────────────────────────────────────── *@
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2" style="color:var(--primary-blue)"></i>
+                    Asignar usuario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label-sm"><i class="fas fa-user me-1"></i>Usuario</label>
+                <select class="form-select-custom" id="ma-usuario">
+                    <option value="">— Seleccionar —</option>
+                </select>
+                <div class="form-error" id="err-ma-usuario"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light btn-sm" data-bs-dismiss="modal"
+                        style="border-radius:8px;font-size:13px">
+                    Cancelar
+                </button>
+                <button class="btn-primary-custom" onclick="asignarUsuario()" style="padding:6px 14px">
+                    <i class="fas fa-check me-1"></i>Asignar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.6/sweetalert2.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.6/sweetalert2.min.css" />
+
+    <script>
+const TOKEN = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)[1];
+
+const URL_CLAVES    = '@Url.Action("ObtenerClaves",            "ClaveModulo")';
+const URL_USR_CLAVE = '@Url.Action("ObtenerUsuariosClave",     "ClaveModulo")';
+const URL_USR_DISP  = '@Url.Action("ObtenerUsuariosDisponibles","ClaveModulo")';
+const URL_CREAR     = '@Url.Action("Crear",                    "ClaveModulo")';
+const URL_EDITAR    = '@Url.Action("Editar",                   "ClaveModulo")';
+const URL_ELIMINAR  = '@Url.Action("Eliminar",                 "ClaveModulo")';
+const URL_ASIGNAR   = '@Url.Action("AsignarUsuario",           "ClaveModulo")';
+const URL_QUITAR    = '@Url.Action("QuitarUsuario",            "ClaveModulo")';
+const URL_RESET     = '@Url.Action("ResetearIntentos",         "ClaveModulo")';
+const URL_TOGGLE = '@Url.Action("ToggleAsignacion",         "ClaveModulo")';
+const URL_ACCESO_DIRECTO = '@Url.Action("ToggleAccesoDirecto", "ClaveModulo")';
+
+let esEditar      = false;
+let claveActual   = null;   // { id, moduloId, nombre }
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+async function postJson(url, data) {
+    const body = new URLSearchParams({ ...data, __RequestVerificationToken: TOKEN });
+    const res  = await fetch(url, { method: 'POST', body });
+    return res.json();
+}
+let toastTimer;
+function toast(msg, ok = true) {
+    const el = document.getElementById('toast-custom');
+    el.innerHTML = `<i class="fas ${ok ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+    el.className = 'toast-custom show ' + (ok ? 'ok' : 'err');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.className = 'toast-custom', 3500);
+}
+function parseDate(v) {
+    if (!v) return null;
+    const m = String(v).match(/Date\((\d+)\)/);
+    const d = m ? new Date(+m[1]) : new Date(v);
+    return isNaN(d) ? null : d;
+}
+function fmtFecha(v) {
+    const d = parseDate(v);
+    return d ? d.toLocaleDateString('es-MX') + ' ' +
+               d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' }) : '—';
+}
+function estaBloqueado(v) { const d = parseDate(v); return d ? d > new Date() : false; }
+
+function togglePwd() {
+    const i = document.getElementById('mc-password');
+    const e = document.getElementById('ico-eye');
+    i.type = i.type === 'password' ? 'text' : 'password';
+    e.classList.toggle('fa-eye'); e.classList.toggle('fa-eye-slash');
+}
+function evalPwd() {
+    const v = document.getElementById('mc-password').value;
+    const bar = document.getElementById('pwd-bar');
+    let s = 0;
+    if (v.length >= 8) s++;
+    if (/[A-Z]/.test(v)) s++;
+    if (/[0-9]/.test(v)) s++;
+    if (/[^A-Za-z0-9]/.test(v)) s++;
+    bar.style.width = (s * 25) + '%';
+    bar.style.background = ['#e5e7eb','#ef4444','#f59e0b','#3b82f6','#10b981'][s];
+}
+
+// ── Cargar claves ────────────────────────────────────────────────────────────
+async function cargarClaves() {
+    const buscar = document.getElementById('filtro-buscar').value;
+    const res  = await fetch(`${URL_CLAVES}?buscar=${encodeURIComponent(buscar)}`);
+    const json = await res.json();
+    if (!json.exito) { toast(json.mensaje, false); return; }
+
+    const datos = json.datos || [];
+    const tbody = document.getElementById('tbody-claves');
+
+    if (!datos.length) {
+        tbody.innerHTML = `<tr><td colspan="5">
+            <div class="empty-state"><i class="fas fa-inbox d-block mb-2"></i>Sin claves configuradas.</div>
+        </td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = datos.map(c => {
+        const sel = claveActual && claveActual.id == c.id ? 'selected' : '';
+        const badge = c.activo
+            ? '<span class="badge-status badge-activo">Activo</span>'
+            : '<span class="badge-status badge-inactivo">Inactivo</span>';
+        return `<tr class="${sel}" style="cursor:pointer"
+                    onclick="seleccionarClave(${c.id},'${esc(c.moduloid)}','${esc(c.nombre)}')">
+            <td><span class="mono badge" style="background:#dbeafe;color:var(--primary-blue);border-radius:6px">${c.moduloid}</span></td>
+            <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                title="${esc(c.nombre)}">${c.nombre}</td>
+            <td>${badge}</td>
+            <td><span class="badge-count">${c.totalusuarios ?? 0}</span></td>
+            <td onclick="event.stopPropagation()">
+                <div class="d-flex gap-1">
+                    <button class="btn-action edit" title="Editar"
+                        onclick="prepararEditar(${c.id},'${esc(c.moduloid)}','${esc(c.nombre)}',${c.activo})"
+                        data-bs-toggle="modal" data-bs-target="#modalClave">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button class="btn-action del" title="Eliminar"
+                        onclick="eliminarClave(${c.id},'${esc(c.nombre)}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function esc(s) { return String(s ?? '').replace(/'/g,"\'").replace(/"/g,'&quot;'); }
+
+// ── Seleccionar clave → cargar usuarios ──────────────────────────────────────
+async function seleccionarClave(id, moduloId, nombre) {
+    claveActual = { id, moduloId, nombre };
+
+    // Marcar fila
+    document.querySelectorAll('#tbody-claves tr').forEach(tr => tr.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+
+    document.getElementById('panel-usuarios-titulo').innerHTML =
+        `<i class="fas fa-users" style="color:var(--primary-blue)"></i>
+         Usuarios — <span class="mono" style="color:var(--primary-blue)">${moduloId}</span>
+         <small style="font-weight:400;color:var(--text-light);font-size:11px">${nombre}</small>`;
+
+    document.getElementById('btn-asignar').style.display = '';
+    await cargarUsuariosClave();
+}
+
+async function cargarUsuariosClave() {
+    if (!claveActual) return;
+    const body = document.getElementById('panel-usuarios-body');
+    body.innerHTML = `<div class="empty-state">
+        <div class="spinner-border spinner-border-sm text-secondary mb-2"></div>
+        <div>Cargando usuarios…</div></div>`;
+
+    const res  = await fetch(`${URL_USR_CLAVE}?claveId=${claveActual.id}`);
+    const json = await res.json();
+    if (!json.exito) { toast(json.mensaje, false); return; }
+
+    const datos = json.datos || [];
+    if (!datos.length) {
+        body.innerHTML = `<div class="empty-panel">
+            <i class="fas fa-users-slash d-block"></i>
+            Ningún usuario asignado aún.<br>Usa el botón <strong>Asignar</strong> para agregar.
+        </div>`;
+        return;
+    }
+
+    body.innerHTML = `
+    <div class="clave-info-bar">
+        <i class="fas fa-info-circle"></i>
+        Estos usuarios pueden usar la clave del módulo <strong>${claveActual.moduloId}</strong>
+    </div>
+    <div class="table-responsive">
+    <table class="table cm-table">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Estado</th>
+                <th>Intentos</th>
+                <th>Bloqueado hasta</th>
+                <th>Acceso directo</th>  
+                <th style="width:100px">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${datos.map(u => {
+                let badge;
+                if (estaBloqueado(u.bloqueadohasta))
+                    badge = '<span class="badge-status badge-bloqueado">Bloqueado</span>';
+                else if (!u.activo)
+                    badge = '<span class="badge-status badge-inactivo">Inactivo</span>';
+                else
+                    badge = '<span class="badge-status badge-activo">Activo</span>';
+
+                return `<tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:26px;height:26px;border-radius:50%;background:#dbeafe;
+                                        display:flex;align-items:center;justify-content:center;
+                                        font-size:10px;font-weight:700;color:var(--primary-blue);flex-shrink:0">
+                                ${(u.nombreusuario ?? 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <span style="font-size:13px">${u.nombreusuario ?? '—'}</span>
+                        </div>
+                    </td>
+                    <td>${badge}</td>
+                    <td>
+                        <div class="pips">
+                            <span class="pip ${u.intentosfallidos >= 1 ? 'on':''}"></span>
+                            <span class="pip ${u.intentosfallidos >= 2 ? 'on':''}"></span>
+                            <span class="pip ${u.intentosfallidos >= 3 ? 'on':''}"></span>
+                            <span style="font-size:11px;color:var(--text-light);margin-left:3px">${u.intentosfallidos}/3</span>
+                        </div>
+                    </td>
+                    <td style="font-size:12px;color:${estaBloqueado(u.bloqueadohasta) ? 'var(--danger-color)' : 'var(--text-light)'}">
+                        ${fmtFecha(u.bloqueadohasta)}
+                    </td>
+                    <td style="text-align:center">
+                        <button class="btn-action toggle"
+                                title="${u.accesodirecto ? 'Desactivar acceso directo' : 'Activar acceso directo'}"
+                                onclick="toggleAccesoDirecto(${u.id})">
+                            <i class="fas ${u.accesodirecto
+                                            ? 'fa-bolt'
+                                            : 'fa-bolt'}" 
+                               style="color:${u.accesodirecto
+                                            ? 'var(--warning-color)'
+                                            : 'var(--border-light)'}">
+                            </i>
+                        </button>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <button class="btn-action reset" title="Resetear intentos"
+                                onclick="resetearIntentos(${u.id})">
+                                <i class="fas fa-rotate-left"></i>
+                            </button>
+                            <button class="btn-action toggle" title="${u.activo ? 'Desactivar':'Activar'}"
+                                onclick="toggleAsignacion(${u.id})">
+                                <i class="fas ${u.activo ? 'fa-toggle-on':'fa-toggle-off'}"></i>
+                            </button>
+                            <button class="btn-action del" title="Quitar"
+                                onclick="quitarUsuario(${u.id},'${esc(u.nombreusuario)}')">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('')}
+        </tbody>
+    </table>
+    </div>`;
+}
+
+// ── Modal clave ───────────────────────────────────────────────────────────────
+function prepararCrear() {
+    esEditar = false;
+    document.getElementById('modal-clave-titulo').textContent = 'Nueva clave';
+    ['mc-id','mc-modulo','mc-nombre','mc-password'].forEach(id =>
+        document.getElementById(id).value = id === 'mc-id' ? '0' : '');
+    document.getElementById('mc-activo').value = 'true';
+    document.getElementById('mc-modulo').disabled = false;
+    document.getElementById('lbl-mc-pwd').innerHTML = '<i class="fas fa-lock me-1"></i>Contraseña';
+    document.getElementById('pwd-bar').style.width = '0';
+    document.getElementById('mc-password').type = 'password';
+    document.getElementById('ico-eye').className = 'fas fa-eye';
+    ['err-mc-modulo','err-mc-nombre','err-mc-pwd'].forEach(id =>
+        document.getElementById(id).textContent = '');
+}
+
+function prepararEditar(id, moduloId, nombre, activo) {
+    esEditar = true;
+    document.getElementById('modal-clave-titulo').textContent = 'Editar clave';
+    document.getElementById('mc-id').value      = id;
+    document.getElementById('mc-modulo').value  = moduloId;
+    document.getElementById('mc-nombre').value  = nombre;
+    document.getElementById('mc-password').value = '';
+    document.getElementById('mc-activo').value  = activo ? 'true' : 'false';
+    document.getElementById('mc-modulo').disabled = false;
+    document.getElementById('lbl-mc-pwd').innerHTML =
+        '<i class="fas fa-lock me-1"></i>Nueva contraseña <span style="font-weight:400;text-transform:none;color:var(--text-light)">(vacío = sin cambios)</span>';
+    document.getElementById('pwd-bar').style.width = '0';
+    document.getElementById('mc-password').type = 'password';
+    document.getElementById('ico-eye').className = 'fas fa-eye';
+    ['err-mc-modulo','err-mc-nombre','err-mc-pwd'].forEach(id =>
+        document.getElementById(id).textContent = '');
+}
+
+async function guardarClave() {
+    ['err-mc-modulo','err-mc-nombre','err-mc-pwd'].forEach(id =>
+        document.getElementById(id).textContent = '');
+
+    const mod = document.getElementById('mc-modulo').value.trim();
+    const nom = document.getElementById('mc-nombre').value.trim();
+    const pwd = document.getElementById('mc-password').value;
+    const act = document.getElementById('mc-activo').value;
+    let ok = true;
+
+    if (!mod) { document.getElementById('err-mc-modulo').textContent = 'Requerido'; ok = false; }
+    if (!nom) { document.getElementById('err-mc-nombre').textContent = 'Requerido'; ok = false; }
+    if (!esEditar && pwd.length < 8) { document.getElementById('err-mc-pwd').textContent = 'Mínimo 8 caracteres'; ok = false; }
+    if (esEditar && pwd.length > 0 && pwd.length < 8) { document.getElementById('err-mc-pwd').textContent = 'Mínimo 8 caracteres'; ok = false; }
+    if (!ok) return;
+
+    const txt = document.getElementById('btn-clave-txt');
+    txt.textContent = 'Guardando…';
+
+    const url  = esEditar ? URL_EDITAR : URL_CREAR;
+    const data = { Id: document.getElementById('mc-id').value, ModuloId: mod, Nombre: nom, Password: pwd, Activo: act };
+    const json = await postJson(url, data);
+    txt.textContent = 'Guardar';
+
+    if (json.exito) {
+        bootstrap.Modal.getInstance(document.getElementById('modalClave')).hide();
+        toast(json.mensaje);
+        cargarClaves();
+    } else {
+        toast(json.mensaje, false);
+    }
+}
+
+async function eliminarClave(id, nombre) {
+    const r = await Swal.fire({
+        title: 'Eliminar clave',
+        html: `¿Eliminar <strong>${nombre}</strong>? Se quitarán también todas las asignaciones.`,
+        icon: 'warning', showCancelButton: true,
+        confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar'
+    });
+    if (!r.isConfirmed) return;
+    const json = await postJson(URL_ELIMINAR, { id });
+    toast(json.mensaje, json.exito);
+    if (json.exito) {
+        if (claveActual && claveActual.id == id) {
+            claveActual = null;
+            document.getElementById('panel-usuarios-body').innerHTML =
+                `<div class="empty-panel"><i class="fas fa-hand-pointer d-block"></i>
+                 Selecciona una clave para ver sus usuarios</div>`;
+            document.getElementById('btn-asignar').style.display = 'none';
+        }
+        cargarClaves();
+    }
+}
+
+// ── Asignar usuario ───────────────────────────────────────────────────────────
+async function abrirAsignar() {
+    if (!claveActual) return;
+    const sel = document.getElementById('ma-usuario');
+    sel.innerHTML = '<option value="">Cargando…</option>';
+    document.getElementById('err-ma-usuario').textContent = '';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAsignar')).show();
+
+    const res  = await fetch(`${URL_USR_DISP}?claveId=${claveActual.id}`);
+    const json = await res.json();
+    sel.innerHTML = '<option value="">— Seleccionar usuario —</option>' +
+        (json.datos || []).map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+
+    if (!json.datos || !json.datos.length)
+        sel.innerHTML = '<option value="">Sin usuarios disponibles</option>';
+}
+
+async function asignarUsuario() {
+    const uid = document.getElementById('ma-usuario').value;
+    if (!uid) { document.getElementById('err-ma-usuario').textContent = 'Selecciona un usuario'; return; }
+    const json = await postJson(URL_ASIGNAR, { claveId: claveActual.id, usuarioId: uid });
+    if (json.exito) {
+        bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
+        toast(json.mensaje);
+        cargarUsuariosClave();
+        cargarClaves(); // actualiza contador
+    } else {
+        toast(json.mensaje, false);
+    }
+}
+
+// ── Acciones sobre asignación ─────────────────────────────────────────────────
+async function resetearIntentos(asigId) {
+    const r = await Swal.fire({
+        title: 'Resetear intentos', icon: 'question',
+        text: '¿Limpiar intentos fallidos de este usuario?',
+        showCancelButton: true, confirmButtonText: 'Resetear', cancelButtonText: 'Cancelar'
+    });
+    if (!r.isConfirmed) return;
+    const json = await postJson(URL_RESET, { asignacionId: asigId });
+    toast(json.mensaje, json.exito);
+    if (json.exito) cargarUsuariosClave();
+}
+
+async function toggleAsignacion(asigId) {
+    const json = await postJson(URL_TOGGLE, { asignacionId: asigId });
+    toast(json.mensaje ?? (json.exito ? 'Estado cambiado.' : 'Error.'), json.exito);
+    if (json.exito) cargarUsuariosClave();
+}
+
+async function quitarUsuario(asigId, nombre) {
+    const r = await Swal.fire({
+        title: 'Quitar usuario',
+        html: `¿Quitar a <strong>${nombre}</strong> de esta clave?`,
+        icon: 'warning', showCancelButton: true,
+        confirmButtonText: 'Quitar', cancelButtonText: 'Cancelar'
+    });
+    if (!r.isConfirmed) return;
+    const json = await postJson(URL_QUITAR, { asignacionId: asigId });
+    toast(json.mensaje, json.exito);
+    if (json.exito) { cargarUsuariosClave(); cargarClaves(); }
+}
+async function toggleAccesoDirecto(asigId) {
+    const json = await postJson(URL_ACCESO_DIRECTO, { asignacionId: asigId });
+    toast(json.mensaje ?? (json.exito
+        ? (json.accesoDirecto ? 'Acceso directo activado.' : 'Acceso directo desactivado.')
+        : 'Error.'),
+        json.exito);
+    if (json.exito) cargarUsuariosClave();
+}
+// ── Init ──────────────────────────────────────────────────────────────────────
+cargarClaves();
+    </script>
+}

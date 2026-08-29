@@ -1,0 +1,1073 @@
+﻿@{
+    ViewBag.Title = "ReporteCartera";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* ── Panel de filtros ── */
+    .filters-panel {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 16px;
+        box-shadow: var(--shadow);
+    }
+
+    .filters-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .filter-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .filter-control {
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 7px 10px;
+        font-size: 0.82rem;
+        color: var(--text-dark);
+        width: 100%;
+        outline: none;
+        transition: border-color 0.15s;
+    }
+
+        .filter-control:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.12);
+        }
+
+    .filters-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-light);
+    }
+
+    /* ── Columnas configurables ── */
+    .col-config-panel {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 16px;
+        box-shadow: var(--shadow);
+    }
+
+    .col-config-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .col-toggle-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .col-toggle-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        color: var(--text-dark);
+        user-select: none;
+        transition: background 0.15s, border-color 0.15s;
+    }
+
+        .col-toggle-item.active {
+            background: rgba(59,130,246,0.1);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .col-toggle-item input[type=checkbox] {
+            accent-color: var(--accent-blue);
+            width: 13px;
+            height: 13px;
+        }
+
+    /* ── KPI Cards ── */
+    .kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .kpi-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: transform 0.18s;
+    }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+
+    .kpi-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+        .kpi-icon.blue {
+            background: rgba(59,130,246,0.1);
+            color: var(--accent-blue);
+        }
+
+        .kpi-icon.green {
+            background: rgba(5,150,105,0.1);
+            color: var(--success-color);
+        }
+
+        .kpi-icon.orange {
+            background: rgba(217,119,6,0.1);
+            color: var(--warning-color);
+        }
+
+        .kpi-icon.purple {
+            background: rgba(147,51,234,0.1);
+            color: #9333ea;
+        }
+
+        .kpi-icon.red {
+            background: rgba(220,38,38,0.1);
+            color: #dc2626;
+        }
+
+        .kpi-icon.cyan {
+            background: rgba(6,182,212,0.1);
+            color: #0891b2;
+        }
+
+    .kpi-label {
+        font-size: 0.7rem;
+        color: var(--text-light);
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .kpi-value {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1.2;
+    }
+
+    .kpi-sub {
+        font-size: 0.68rem;
+        color: var(--text-light);
+        margin-top: 2px;
+    }
+
+    /* ── Content Card ── */
+    .content-card {
+        background: var(--bg-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-light);
+    }
+
+    .export-bar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+
+    .export-label {
+        font-size: 0.72rem;
+        color: var(--text-light);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    /* ── Badges ── */
+    .badge-estado {
+        padding: 0.18rem 0.55rem;
+        border-radius: 10px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    .badge-pendiente {
+        background: rgba(217,119,6,0.12);
+        color: var(--warning-color);
+    }
+
+    .badge-cobrado {
+        background: rgba(5,150,105,0.12);
+        color: var(--success-color);
+    }
+
+    .badge-parcial {
+        background: rgba(59,130,246,0.12);
+        color: var(--accent-blue);
+    }
+
+    .badge-vencido {
+        background: rgba(220,38,38,0.12);
+        color: #dc2626;
+    }
+
+    .ageing-chip {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-size: 0.67rem;
+        font-weight: 600;
+    }
+
+    .ageing-0 {
+        background: rgba(5,150,105,0.1);
+        color: #059669;
+    }
+
+    .ageing-30 {
+        background: rgba(59,130,246,0.1);
+        color: #3b82f6;
+    }
+
+    .ageing-60 {
+        background: rgba(217,119,6,0.1);
+        color: #d97706;
+    }
+
+    .ageing-90 {
+        background: rgba(220,38,38,0.1);
+        color: #dc2626;
+    }
+
+    .progress-bar-wrap {
+        width: 70px;
+        height: 5px;
+        background: var(--border-light);
+        border-radius: 3px;
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+    }
+
+    /* ── Spinner overlay ── */
+    .export-spinner {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.35);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+        .export-spinner.show {
+            display: flex;
+        }
+
+    .spinner-box {
+        background: var(--bg-light);
+        border-radius: 14px;
+        padding: 28px 36px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+
+    .spinner-circle {
+        width: 44px;
+        height: 44px;
+        border: 4px solid var(--border-light);
+        border-top-color: var(--accent-blue);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 12px;
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .filters-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .kpi-strip {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .kpi-strip {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+
+<!-- ── Spinner de exportación ── -->
+<div class="export-spinner" id="exportSpinner">
+    <div class="spinner-box">
+        <div class="spinner-circle"></div>
+        <p style="font-weight:600;color:var(--text-dark);margin:0;" id="spinnerMsg">Generando reporte...</p>
+        <p style="font-size:0.78rem;color:var(--text-light);margin:4px 0 0;" id="spinnerSub">Esto puede tomar unos segundos</p>
+    </div>
+</div>
+
+<!-- ── Panel de Filtros ── -->
+<div class="filters-panel">
+    <div class="filters-title">
+        <i class="fas fa-sliders-h"></i>
+        Filtros del reporte
+        <span id="filtersAppliedBadge" class="d-none ms-2" style="background:var(--accent-blue);color:#fff;border-radius:10px;padding:1px 8px;font-size:0.65rem;">Filtros activos</span>
+    </div>
+
+    <!-- ── Toggle gráficas ── -->
+    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+        <button class="btn btn-sm btn-outline-secondary" id="btnToggleGraficas" onclick="toggleGraficas()">
+            <i class="fas fa-chart-bar me-1"></i>Ver gráficas
+        </button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         SECCIÓN DE GRÁFICAS
+    ════════════════════════════════════════════════════ -->
+    <div id="seccionGraficas" class="row g-2" style="display:none; margin-bottom:20px;">
+        <!-- Fila 1: Tendencia mensual y cartera por estado  -->
+        <div class="row g-2">
+            <!-- Grafica 1: Tendecia mensual, grafica de lineas -->
+            <div class="col-12">
+                <div class="content-card p-3 h-100">
+                    <div class="grafica-title">
+                        <i class="fas fa-chart-line me-1"></i>
+                        Tendencia mensual — emitido vs cobrado
+                    </div>
+                    <div id="gc-tendencia" style="height:320px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fila 2: Top vendedores  -->
+        <div class="row g-2">
+            <!-- Grafica 2: Top vendedores, grafica de barras dobles -->
+            <div class="col-12">
+                <div class="content-card p-3 h-100">
+                    <div class="grafica-title">
+                        <i class="fas fa-user-tie me-1"></i>
+                        Top facturas por vendedores - emitido vs cobrado
+                    </div>
+                    <div id="gc-vendedores" style="height:280px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fila 3: Clientes -->
+        <div class="row g-2">
+            <!-- Grafica 3: Top 10 clientes, grafica de barras horizontales -->
+            <div class="col-12">
+                <div class="content-card p-3">
+                    <div class="grafica-title">
+                        <i class="fas fa-building me-1"></i>
+                        Top facturas por clientes — pendientes vs vigentes
+                    </div>
+                    <div id="gc-clientes" style="height:360px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fila 4: Cartera por estado y antiguedad de cartera -->
+        <div class="row g-2">
+            <!-- Grafica 4: Cartera por estado, grafica tipo pastel -->
+            <div class="col-12 col-lg-6">
+                <div class="content-card p-3 h-100">
+                    <div class="grafica-title">
+                        <i class="fas fa-tags me-1"></i>
+                        Cartera por estado
+                    </div>
+                    <div id="gc-estados" style="height:320px;"></div>
+                </div>
+            </div>
+
+            <!-- Grafica 5: Antiguedad de cartera, grafica tipo pastel -->
+            <div class="col-12 col-lg-6">
+                <div class="content-card p-3 h-100">
+                    <div class="grafica-title">
+                        <i class="fas fa-clock me-1"></i>
+                        Antigüedad de cartera
+                    </div>
+                    <div id="gc-ageing" style="height:280px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters-grid">
+
+        <div class="filter-group">
+            <label class="filter-label">Fecha desde</label>
+            <input type="date" id="f_desde" class="filter-control" />
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Fecha hasta</label>
+            <input type="date" id="f_hasta" class="filter-control" />
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Período rápido</label>
+            <select id="f_periodo" class="filter-control" onchange="applyQuickPeriod()">
+                <option value="">Personalizado</option>
+                <option value="mes_actual">Mes actual</option>
+                <option value="mes_anterior">Mes anterior</option>
+                <option value="trimestre">Trimestre actual</option>
+                <option value="semestre">Semestre actual</option>
+                <option value="anio">Año actual</option>
+                <option value="todos">Todos</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Estado de cartera</label>
+            <select id="f_estado" class="filter-control">
+                <option value="">Todos</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="cobrado">Cobrado</option>
+                <option value="parcial">Parcial</option>
+                <option value="vencido">Vencido</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Antigüedad (días)</label>
+            <select id="f_ageing" class="filter-control">
+                <option value="">Todos</option>
+                <option value="0-30">0 – 30 días</option>
+                <option value="31-60">31 – 60 días</option>
+                <option value="61-90">61 – 90 días</option>
+                <option value="90+">Más de 90 días</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Tipo de documento</label>
+            <select id="f_tipo_doc" class="filter-control">
+                <option value="">Todos</option>
+                <option value="VNFAC">Venta Nacional (VNFAC)</option>
+                <option value="VIFAC">Venta Internacional (VIFAC)</option>
+                <option value="VSFAC">Venta Servicio (VSFAC)</option>
+                <option value="VINFAC">Venta Internacional NF (VINFAC)</option>
+                <option value="RICD">Recepcion inicial de carteras (RICD)</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Vendedor</label>
+            <select id="f_vendedor" class="filter-control">
+                <option value="">Todos</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Sucursales</label>
+            <select id="f_sucursa" class="filter-control">
+                <option value="">Todas</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Cliente</label>
+            <input type="text" id="f_cliente" class="filter-control" placeholder="Nombre o código..." />
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Monto pendiente mín.</label>
+            <input type="number" id="f_monto_min" class="filter-control" placeholder="$0.00" step="0.01" min="0" />
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Monto pendiente máx.</label>
+            <input type="number" id="f_monto_max" class="filter-control" placeholder="Sin límite" step="0.01" min="0" />
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">Agrupar reporte por</label>
+            <select id="f_agrupar" class="filter-control">
+                <option value="">Sin agrupación</option>
+                <option value="cliente">Cliente</option>
+                <option value="vendedor">Vendedor</option>
+                <option value="estado">Estado</option>
+                <option value="tipo_doc">Tipo de documento</option>
+            </select>
+        </div>
+
+    </div>
+
+    <div class="filters-actions">
+        <button class="btn btn-sm blue-500" onclick="applyFilters()">
+            <i class="fas fa-search me-1"></i>Aplicar filtros
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
+            <i class="fas fa-times me-1"></i>Limpiar
+        </button>
+        <div style="flex:1;"></div>
+        <span style="font-size:0.72rem;color:var(--text-light);">
+            <i class="fas fa-info-circle me-1"></i>
+            Doble clic en una fila para ver el detalle
+        </span>
+    </div>
+</div>
+
+<!-- ── Configurador de columnas ── -->
+<div class="col-config-panel">
+    <div class="col-config-title" onclick="toggleColConfig()">
+        <span><i class="fas fa-table-columns me-2"></i>Columnas visibles</span>
+        <i class="fas fa-chevron-down" id="colConfigChevron" style="transition:transform 0.2s;"></i>
+    </div>
+    <div id="colToggleGrid" class="col-toggle-grid" style="display:none;">
+        <!-- Se llena dinámicamente -->
+    </div>
+</div>
+
+<!-- ── KPIs ── -->
+<div class="kpi-strip" id="kpiStrip">
+    <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="fas fa-file-invoice"></i></div>
+        <div>
+            <div class="kpi-label">Total facturas</div>
+            <div class="kpi-value" id="kpi-facturas">—</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon orange"><i class="fas fa-clock"></i></div>
+        <div>
+            <div class="kpi-label">Saldo pendiente</div>
+            <div class="kpi-value" id="kpi-pendiente">—</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green"><i class="fas fa-dollar-sign"></i></div>
+        <div>
+            <div class="kpi-label">Total cobrado</div>
+            <div class="kpi-value" id="kpi-cobrado">—</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon cyan"><i class="fas fa-percent"></i></div>
+        <div>
+            <div class="kpi-label">% Cobrado</div>
+            <div class="kpi-value" id="kpi-pct">—</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+        <div>
+            <div class="kpi-label">Facturas vencidas</div>
+            <div class="kpi-value" id="kpi-vencidas">—</div>
+            <div class="kpi-sub" id="kpi-vencidas-monto">—</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon purple"><i class="fas fa-calendar-check"></i></div>
+        <div>
+            <div class="kpi-label">Días promedio cobro</div>
+            <div class="kpi-value" id="kpi-dso">—</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Tabla + exportación ── -->
+<div class="content-card">
+    <div class="export-bar">
+        <span class="export-label"><i class="fas fa-file-export me-1"></i>Exportar:</span>
+
+        <button class="btn btn-sm" style="background:rgba(34,197,94,0.12);color:#16a34a;border:1px solid rgba(34,197,94,0.3);"
+                onclick="exportReport('excel', 'facturas')">
+            <i class="fas fa-file-excel me-1"></i>Excel — Facturas
+        </button>
+
+        <button class="btn btn-sm" style="background:rgba(34,197,94,0.12);color:#16a34a;border:1px solid rgba(34,197,94,0.3);"
+                onclick="exportReport('excel', 'clientes')">
+            <i class="fas fa-file-excel me-1"></i>Excel — Por cliente
+        </button>
+
+        <button class="btn btn-sm" style="background:rgba(239,68,68,0.12);color:#dc2626;border:1px solid rgba(239,68,68,0.3);"
+                onclick="exportReportPdf('pdf', 'facturas')">
+            <i class="fas fa-file-pdf me-1"></i>PDF — Facturas
+        </button>
+
+        <button class="btn btn-sm" style="background:rgba(239,68,68,0.12);color:#dc2626;border:1px solid rgba(239,68,68,0.3);"
+                onclick="exportReportPdf('pdf', 'clientes')">
+            <i class="fas fa-file-pdf me-1"></i>PDF — Por cliente
+        </button>
+
+        <div style="flex:1;"></div>
+
+        <span style="font-size:0.72rem;color:var(--text-light);" id="recordCount"></span>
+    </div>
+
+    <div id="tablaReporte"></div>
+</div>
+
+@section scripts{
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js"></script>
+    <script src="~/Scripts/Carteras/ReporteCarteraGraficas.js"></script>
+    <script src="~/Scripts/Carteras/ReporteCarteraPdf.js"></script>
+    <script src="~/Scripts/TableBuilder.js"></script>
+}
+<script>
+    /* ══════════════════════════════════════════════════════════
+       COLUMNAS DISPONIBLES PARA EL REPORTE
+       Cada columna tiene: key, title, data, formatter, visible (default)
+    ══════════════════════════════════════════════════════════ */
+    const ALL_COLUMNS = [
+        { key: 'cliente', title: 'Cliente', data: 'n_cli', visible: true },
+        { key: 'cve_cli', title: 'Código', data: 'cve_cli', visible: true },
+        { key: 'rfc', title: 'RFC', data: 'rfc', visible: false },
+        { key: 'clave_vendedor', title: 'Clave Vendedor', data: 'clave_vendedor', visible: true },
+        { key: 'nombre_vendedor', title: 'Nombre Vendedor', data: 'nombre_vendedor', visible: true },
+        { key: 'folio', title: 'Folio', data: 'folio', visible: true },
+        { key: 'tipo_doc', title: 'Tipo Doc', data: 'nat', visible: false },
+        { key: 'tipo_proceso', title: 'Tipo Proceso', data: 'tipo_proceso', visible: true },
+        { key: 'fecha_emision', title: 'Fecha Emisión', data: 'fecha_emision', visible: true },
+        { key: 'fecha_venc', title: 'Fecha Vencimiento', data: 'fecha_vencimiento', visible: true },
+        { key: 'dias_vencido', title: 'Días Vencido', data: 'dias_vencido', visible: true },
+        { key: 'monto_total', title: 'Monto Total', data: 'monto_total', visible: true },
+        { key: 'cobrado', title: 'Cobrado', data: 'cobrado', visible: true },
+        { key: 'saldo_pend', title: 'Saldo Pendiente', data: 'saldo_pendiente', visible: true },
+        { key: 'pct_cobro', title: '% Cobro', data: null, visible: true },
+        { key: 'estado', title: 'Estado', data: 'estado', visible: true },
+        { key: 'saldo_favor', title: 'Saldo a Favor', data: 'saldo_favor', visible: false },
+        { key: 'moneda', title: 'Moneda', data: 'moneda', visible: false },
+        { key: 'dias_cobro', title: 'Días Promedio Cobro', data: 'dias_cobro', visible: false },
+        { key: 'uuid', title: 'UUID Factura', data: 'factura_uuid', visible: true },
+    ];
+
+    let visibleKeys = ALL_COLUMNS.filter(c => c.visible).map(c => c.key);
+    let tablaReporte = null;
+
+    /* ── Formatters ── */
+    const ageingChip = (dias) => {
+        if (dias == null || dias <= 0) return '<span class="ageing-chip ageing-0">Al día</span>';
+        if (dias <= 30) return `<span class="ageing-chip ageing-30">${dias} días</span>`;
+        if (dias <= 60) return `<span class="ageing-chip ageing-60">${dias} días</span>`;
+        return `<span class="ageing-chip ageing-90">${dias} días</span>`;
+    };
+
+    const estadoBadge = (v) => {
+        if (!v) return '-';
+        const map = { pendiente: 'badge-pendiente', cobrado: 'badge-cobrado', parcial: 'badge-parcial', vencido: 'badge-vencido' };
+        return `<span class="badge-estado ${map[v] || ''}">${v.toUpperCase()}</span>`;
+    };
+
+    const pctBar = (_, row) => {
+        const total = row.monto_total || 0;
+        const pct = total > 0 ? Math.min(100, Math.round(((total - (row.saldo_pendiente || 0)) / total) * 100)) : 100;
+        const color = pct >= 80 ? '#059669' : pct >= 40 ? '#3b82f6' : '#d97706';
+        return `<div style="display:flex;align-items:center;gap:5px;">
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill" style="width:${pct}%;background:${color};"></div>
+                    </div>
+                    <span style="font-size:10px;color:var(--text-light);">${pct}%</span>
+                </div>`;
+    };
+
+    /* ── Mapeo de formatters por key ── */
+    function getFormatter(key) {
+        switch (key) {
+            case 'monto_total': case 'saldo_pend': case 'cobrado': case 'saldo_favor':
+                return v => `<span style="font-weight:600;">${Currency.format(v)}</span>`;
+            case 'saldo_pend':
+                return v => `<span style="color:${v > 0 ? 'var(--warning-color)' : 'var(--success-color)'};font-weight:600;">${Currency.format(v)}</span>`;
+            case 'estado': return estadoBadge;
+            case 'dias_vencido': return ageingChip;
+            case 'pct_cobro': return pctBar;
+            case 'fecha_emision': case 'fecha_venc':
+                return v => dateFormatter(v);
+            case 'tipo_doc':
+                return v => v ? `<span style="font-size:0.7rem;font-weight:600;color:var(--accent-blue);">${v}</span>` : '-';
+            case 'uuid':
+                return v => v ? `<span style="font-family:monospace;font-size:0.68rem;color:var(--text-light);" title="${v}">${v.substring(0, 18)}…</span>` : '-';
+            default: return null;
+        }
+    }
+
+    /* ── Construir columnas activas ── */
+    function buildActiveColumns() {
+        return ALL_COLUMNS
+            .filter(c => visibleKeys.includes(c.key))
+            .map(c => {
+                const fmt = getFormatter(c.key);
+                const col = { title: c.title, data: c.data };
+                if (fmt) col.formatter = fmt;
+                if (['monto_total', 'saldo_pend', 'cobrado', 'saldo_favor'].includes(c.key)) col.className = 'text-end';
+                if (['estado', 'pct_cobro', 'tipo_doc'].includes(c.key)) col.className = 'text-center';
+                return col;
+            });
+    }
+
+    /* ── Renderizar toggles de columnas ── */
+    function renderColToggles() {
+        const grid = document.getElementById('colToggleGrid');
+        grid.innerHTML = ALL_COLUMNS.map(c => `
+            <label class="col-toggle-item ${visibleKeys.includes(c.key) ? 'active' : ''}"
+                    onclick="toggleCol('${c.key}', this)">
+                <input type="checkbox" ${visibleKeys.includes(c.key) ? 'checked' : ''} class="d-none" onclick="event.stopPropagation()">
+                ${c.title}
+            </label>
+        `).join('');
+    }
+
+    function toggleCol(key, el) {
+        if (visibleKeys.includes(key)) {
+            if (visibleKeys.length <= 2) return; // mínimo 2 columnas
+            visibleKeys = visibleKeys.filter(k => k !== key);
+            el.classList.remove('active');
+            el.querySelector('input').checked = false;
+        } else {
+            visibleKeys.push(key);
+            el.classList.add('active');
+            el.querySelector('input').checked = true;
+        }
+        rebuildTable();
+    }
+
+    function toggleColConfig() {
+        const grid = document.getElementById('colToggleGrid');
+        const chevron = document.getElementById('colConfigChevron');
+        const isOpen = grid.style.display !== 'none';
+        grid.style.display = isOpen ? 'none' : 'flex';
+        chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+    }
+
+    /* ── Período rápido ── */
+    function applyQuickPeriod() {
+        const val = document.getElementById('f_periodo').value;
+        const now = new Date();
+        let desde, hasta;
+
+        const fmt = d => d.toISOString().slice(0, 10);
+
+        switch (val) {
+            case 'mes_actual':
+                desde = new Date(now.getFullYear(), now.getMonth(), 1);
+                hasta = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                break;
+            case 'mes_anterior':
+                desde = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                hasta = new Date(now.getFullYear(), now.getMonth(), 0);
+                break;
+            case 'trimestre':
+                const q = Math.floor(now.getMonth() / 3);
+                desde = new Date(now.getFullYear(), q * 3, 1);
+                hasta = new Date(now.getFullYear(), q * 3 + 3, 0);
+                break;
+            case 'semestre':
+                const sem = now.getMonth() < 6 ? 0 : 6;
+                desde = new Date(now.getFullYear(), sem, 1);
+                hasta = new Date(now.getFullYear(), sem + 6, 0);
+                break;
+            case 'anio':
+                desde = new Date(now.getFullYear(), 0, 1);
+                hasta = new Date(now.getFullYear(), 11, 31);
+                break;
+            case 'todos':
+                document.getElementById('f_desde').value = '';
+                document.getElementById('f_hasta').value = '';
+                return;
+            default:
+                return;
+        }
+        document.getElementById('f_desde').value = fmt(desde);
+        document.getElementById('f_hasta').value = fmt(hasta);
+    }
+
+    /* ── Leer filtros actuales ── */
+    function getFilters() {
+        return {
+            desde: document.getElementById('f_desde').value,
+            hasta: document.getElementById('f_hasta').value,
+            estado: document.getElementById('f_estado').value,
+            ageing: document.getElementById('f_ageing').value,
+            tipo_doc: document.getElementById('f_tipo_doc').value,
+            vendedor: document.getElementById('f_vendedor').value,
+            sucursal: document.getElementById('f_sucursa').value,
+            cliente: document.getElementById('f_cliente').value.trim(),
+            monto_min: document.getElementById('f_monto_min').value,
+            monto_max: document.getElementById('f_monto_max').value,
+            agrupar: document.getElementById('f_agrupar').value,
+        };
+    }
+
+    /* ── Badge de filtros activos ── */
+    function updateFiltersBadge() {
+        const f = getFilters();
+        const active = Object.values(f).some(v => v && v !== '');
+        document.getElementById('filtersAppliedBadge').classList.toggle('d-none', !active);
+    }
+
+    /* ── Aplicar / limpiar filtros ── */
+    function applyFilters() {
+        updateFiltersBadge();
+        rebuildTable();
+    }
+
+    function clearFilters() {
+        ['f_desde', 'f_hasta', 'f_cliente', 'f_monto_min', 'f_monto_max'].forEach(id => document.getElementById(id).value = '');
+        ['f_periodo', 'f_estado', 'f_ageing', 'f_tipo_doc', 'f_vendedor', 'f_sucursa', 'f_agrupar'].forEach(id => document.getElementById(id).selectedIndex = 0);
+        updateFiltersBadge();
+        rebuildTable();
+        if (document.getElementById('seccionGraficas').style.display !== 'none') {
+            CarteraGraficas.load(getFilters());
+        }
+    }
+
+    /* ── Construir / reconstruir tabla ── */
+    function rebuildTable() {
+        document.getElementById('tablaReporte').innerHTML = '';
+        const filters = getFilters();
+
+        tablaReporte = createTable({
+            selector: '#tablaReporte',
+            path: '/Carteras/GetReporteCartera',
+            searchPlaceholder: 'Buscar en reporte...',
+            columns: buildActiveColumns(),
+            actions: [
+                { icon: 'fa-arrow-up-right-from-square', color: 'cyan-500', title: 'Ver Factura', onClick: row => window.open(`/CreditoCobranza/ConsultarFacturas?q=${row.folio}`, '_blank') },
+            ],
+            data: () => filters,
+            RowsEvents: {
+                onRowDblClick: row => verDetalleCliente(row),
+                onKeyPress: (e, row) => { if (e.key === 'F4') verDetalleCliente(row); }
+            },
+            GlobalEvents: {
+                onDataLoaded: resp => {
+                    updateKpis(resp.kpis || {});
+                    document.getElementById('recordCount').textContent = `${resp.total || 0} registros`;
+                },
+                onLoading: loading => {
+                    document.getElementById('tablaReporte').classList.toggle('opacity-50', loading);
+                },
+                onError: err => console.error('Error cargando reporte:', err)
+            }
+        });
+
+        window.tablaReporte = tablaReporte;
+    }
+
+    /* ── KPIs ── */
+    function updateKpis(k) {
+        document.getElementById('kpi-facturas').textContent = k.total_facturas ?? '—';
+        document.getElementById('kpi-pendiente').textContent = Currency.format(k.total_pendiente ?? 0);
+        document.getElementById('kpi-cobrado').textContent = Currency.format(k.total_cobrado ?? 0);
+        document.getElementById('kpi-vencidas').textContent = k.facturas_vencidas ?? '—';
+        document.getElementById('kpi-vencidas-monto').textContent = k.monto_vencido ? Currency.format(k.monto_vencido) : '';
+        document.getElementById('kpi-dso').textContent = k.dso != null ? `${Math.round(k.dso)} días` : '—';
+
+        const total = (k.total_pendiente || 0) + (k.total_cobrado || 0);
+        const pct = total > 0 ? Math.round(((k.total_cobrado || 0) / total) * 100) : 0;
+        document.getElementById('kpi-pct').textContent = `${pct}%`;
+    }
+
+    /* ── Ver detalle cliente (re-usa la funcionalidad existente) ── */
+    function verDetalleCliente(row) {
+        // Redirige a CarteraClientes con filtro por cliente si existe esa vista,
+        // o lanza un SweetAlert con la info resumida
+        if (row.id_cliente) {
+            window.open(`/Carteras/CarteraClientes?clienteId=${row.id_cliente}`, '_blank');
+        }
+    }
+
+    /* ── Exportación ── */
+    async function exportReport(formato, modo) {
+        const filters = getFilters();
+        const spinner = document.getElementById('exportSpinner');
+        const spinMsg = document.getElementById('spinnerMsg');
+        const spinSub = document.getElementById('spinnerSub');
+
+        spinMsg.textContent = formato === 'excel'
+            ? `Generando Excel (${modo === 'clientes' ? 'una hoja por cliente' : 'todas las facturas'})...`
+            : `Generando PDF (${modo === 'clientes' ? 'un cliente por sección' : 'todas las facturas'})...`;
+        spinSub.textContent = 'Esto puede tomar algunos segundos...';
+        spinner.classList.add('show');
+
+        try {
+            const params = new URLSearchParams({
+                ...filters,
+                formato,
+                modo,
+                columnas: visibleKeys.join(',')
+            });
+
+            const response = await fetch(`/Carteras/ExportarReporte?${params.toString()}`, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || 'Error al generar el reporte');
+            }
+
+            const disposition = response.headers.get('Content-Disposition') || '';
+            const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            const fileName = match ? match[1].replace(/['"]/g, '') : `reporte_cartera.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+
+        } catch (ex) {
+            _Swal.fire({ icon: 'error', title: 'Error al exportar', text: ex.message });
+        } finally {
+            spinner.classList.remove('show');
+        }
+    }
+
+    async function exportReportPdf(formato, modo) {
+        const datosEmpresa = await GetData({ path: '/Carteras/GetDatosEmpresa' });
+        const logoBase64 = await convertToBase64(`/Content/img/${empresa}/logo.png`);
+        const filters = getFilters();
+
+        exportarCarteraPDF(modo, filters, visibleKeys.join(','), null, datosEmpresa, `/Content/img/${empresa}/logo.png`)
+    }
+
+    /* ── Cargar combos dinámicos ── */
+    async function loadCombos() {
+        try {
+            const [vendedores, sucursales] = await Promise.all([
+                GetData({ path: '/Carteras/GetVendedoresReporte' }),
+                GetData({ path: '/Carteras/GetSucursalesReporte' }),
+            ]);
+
+            const selVend = document.getElementById('f_vendedor');
+            (vendedores || []).forEach(v => {
+                selVend.insertAdjacentHTML('beforeend', `<option value="${v.cve_vdr}">${v.nombre}</option>`);
+            });
+
+            const selSuc = document.getElementById('f_sucursa');
+            (sucursales || []).forEach(v => {
+                selSuc.insertAdjacentHTML('beforeend', `<option value="${v.id_sucursal}">${v.cve_sucursal} - ${v.descripcion}</option>`);
+            });
+        } catch (_) { /* los combos no son críticos */ }
+    }
+
+    function toggleGraficas() {
+        const sec = document.getElementById('seccionGraficas');
+        const btn = document.getElementById('btnToggleGraficas');
+        if (sec.style.display === 'none') {
+            sec.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-chart-bar me-1"></i>Ocultar gráficas';
+            CarteraGraficas.load(getFilters());
+        } else {
+            sec.style.display = 'none';
+            btn.innerHTML = '<i class="fas fa-chart-bar me-1"></i>Ver gráficas';
+        }
+    }
+
+    // También refresca gráficas cuando se aplican filtros (si están visibles)
+    function applyFilters() {
+        updateFiltersBadge();
+        rebuildTable();
+        if (document.getElementById('seccionGraficas').style.display !== 'none') {
+            CarteraGraficas.load(getFilters());
+        }
+    }
+
+    /* ── Init ── */
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Período por defecto: mes actual
+        document.getElementById('f_periodo').value = 'mes_actual';
+        applyQuickPeriod();
+
+        renderColToggles();
+        await loadCombos();
+        rebuildTable();
+
+        toggleGraficas();
+
+        toggleGraficas();
+
+        if (document.getElementById('seccionGraficas').style.display !== 'none') {
+            CarteraGraficas.load(getFilters());
+        }
+    });
+</script>

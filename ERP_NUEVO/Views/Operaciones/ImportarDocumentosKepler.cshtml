@@ -1,0 +1,1172 @@
+﻿@{
+    ViewBag.Title = "Cotización ";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .table-container {
+        background: var(--bg-light);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+    }
+
+    .filter-section {
+        background: var(--bg-gray);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-primary-custom {
+        background-color: var(--primary-blue);
+        border: none;
+        color: white;
+        transition: background-color 0.2s;
+    }
+
+        .btn-primary-custom:hover {
+            background-color: var(--primary-blue-dark);
+        }
+
+    .btn-success-custom {
+        background-color: #28a745;
+        border: none;
+        color: white;
+    }
+
+        .btn-success-custom:hover {
+            background-color: #218838;
+        }
+
+    .summary-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .client-summary-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid #fff;
+    }
+
+    .badge-exists {
+        background-color: #dc3545;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .badge-new {
+        background-color: #28a745;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .badge-factura {
+        background-color: #007bff;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .badge-otro {
+        background-color: #6c757d;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .row-exists {
+        background-color: #f8d7da !important;
+        opacity: 0.7;
+    }
+
+    .row-new {
+        background-color: #d4edda !important;
+    }
+
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary-blue);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-light);
+    }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+    .action-buttons {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-gray);
+        padding: 1rem;
+        border-top: 2px solid #e9ecef;
+        box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+    }
+
+    .ts-wrapper {
+        width: 100% !important;
+    }
+
+    .stats-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: white;
+        border-radius: 6px;
+        margin-right: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats-label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        display: block;
+    }
+
+    .stats-value {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #495057;
+    }
+
+    .form-check-custom {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: var(--accent-blue);
+        border-radius: 6px;
+        border: 2px solid #007bff;
+        transition: all 0.2s;
+    }
+
+        .form-check-custom:hover {
+            background: var(--very-light-blue);
+        }
+
+        .form-check-custom input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.75rem;
+            cursor: pointer;
+        }
+
+        .form-check-custom label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+        }
+
+    .info-icon {
+        margin-left: 0.5rem;
+        color: #6c757d;
+        cursor: help;
+    }
+
+    /* Estilos para la descripción del documento */
+    .descripcion-documento {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        display: none;
+        animation: slideIn 0.3s ease-out;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+        .descripcion-documento.show {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .descripcion-documento .icon {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        .descripcion-documento .content {
+            flex: 1;
+        }
+
+        .descripcion-documento .label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .descripcion-documento .text {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .descripcion-documento.error {
+            background: linear-gradient(135deg, #ffa751 0%, #ffe259 100%);
+        }
+
+        .descripcion-documento .close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+            .descripcion-documento .close-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Spinner pequeño para carga de descripción */
+    .mini-loader {
+        display: inline-block;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 0.8s linear infinite;
+        margin-left: 0.5rem;
+    }
+</style>
+
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/tablebuilder.css" rel="stylesheet" />
+<script src="~/Scripts/Switch.js"></script>
+
+<div class="table-container">
+    <div class="container-fluid p-4">
+        <h5 class="mb-2">Carga de Carteras desde Kepler</h5>
+        <p class="text-muted mb-4">
+            Consulta registros desde la base de datos de Kepler y cárgalos a la cartera de clientes
+        </p>
+
+        <!-- Filtros -->
+        <div class="filter-section">
+            <h6 class="mb-3">Filtros de Búsqueda</h6>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="selectSucursal" class="form-label">Sucursal *</label>
+                    <select id="selectSucursal" class="form-select" required>
+                        <option value="">Seleccione una sucursal...</option>
+                        @foreach (var suc in Model["sucursales"])
+                        {
+                            <option value="@suc["clave"]">@suc["nombre"]</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="selectGenero" class="form-label">Género *</label>
+                    <select id="selectGenero" class="form-select" required onchange="validarYBuscarDescripcion()">
+                        <option value="">Seleccione un género...</option>
+                        <option value="U">Género U</option>
+                        <option value="X">Género X</option>
+                        <option value="N">Género N</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="selectNaturaleza" class="form-label">Naturaleza *</label>
+                    <select id="selectNaturaleza" class="form-select" required onchange="validarYBuscarDescripcion()">
+                        <option value="">Seleccione una naturaleza...</option>
+                        <option value="D">Naturaleza D</option>
+                        <option value="A">Naturaleza A</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="inputGrupo" class="form-label">Grupo *</label>
+                    <input type="text" id="inputGrupo" class="form-control" placeholder="Ingrese el grupo" required onchange="validarYBuscarDescripcion()" onkeyup="validarYBuscarDescripcion()">
+                </div>
+
+                <div class="col-md-3">
+                    <label for="inputTipo" class="form-label">Tipo *</label>
+                    <input type="text" id="inputTipo" class="form-control" placeholder="Ingrese el tipo" required onchange="validarYBuscarDescripcion()" onkeyup="validarYBuscarDescripcion()">
+                </div>
+
+                <div class="col-md-3 mb-3 w-auto d-flex flex-column">
+                    <span>Usuario</span>
+                    <div class="bootstrap-toggle toggle-success">
+                        <input type="checkbox" id="tipoReporte" checked>
+                        <label for="tipoReporte" class="toggle-group">
+                            <span class="toggle-on" data-value="cliente">Clientes</span>
+                            <span class="toggle-handle"></span>
+                            <span class="toggle-off" data-value="proveedor">Proveedores</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Descripción del documento -->
+            <div id="descripcionDocumento" class="descripcion-documento">
+                <div class="icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="content">
+                    <div class="label">Tipo de Documento</div>
+                    <div class="text" id="descripcionTexto">-</div>
+                </div>
+                <button class="close-btn" onclick="ocultarDescripcion()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-md-5">
+                    <label for="selectClientes" class="form-label">Clientes *</label>
+                    <select id="selectClientes" multiple placeholder="Seleccione uno o más clientes..."></select>
+                </div>
+                
+                <div class="col-md-5 d-none">
+                    <label for="selectProveedor" class="form-label">Proveedores *</label>
+                    <select id="selectProveedor" multiple placeholder="Seleccione uno o más proveedores..."></select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="inputFolio" class="form-label">Folio</label>
+                    <input type="text" id="inputFolio" class="form-control" placeholder="Ej: 1234 (opcional)" />
+                </div>
+                <div class="col-md-2">
+                    <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                    <input type="date" id="fechaInicio" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label for="fechaFin" class="form-label">Fecha Fin</label>
+                    <input type="date" id="fechaFin" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button type="button" class="btn btn-primary-custom" onclick="consultarRegistros()">
+                        <i class="fas fa-search"></i> Buscar Registros
+                    </button>
+                    <button type="button" class="btn btn-secondary ms-2" onclick="limpiarFiltros()">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div id="summarySection" class="summary-card" style="display: none;">
+            <h6 class="mb-3">Resumen de Consulta</h6>
+            <div class="row mb-3">
+                <div class="col-auto">
+                    <div class="stats-badge">
+                        <span class="stats-label">Total Registros</span>
+                        <span class="stats-value" id="totalRegistros">0</span>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="stats-badge">
+                        <span class="stats-label">Nuevos</span>
+                        <span class="stats-value text-success" id="totalNuevos">0</span>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="stats-badge">
+                        <span class="stats-label">Ya Existentes</span>
+                        <span class="stats-value text-danger" id="totalExistentes">0</span>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="stats-badge">
+                        <span class="stats-label">Clientes</span>
+                        <span class="stats-value" id="totalClientes">0</span>
+                    </div>
+                </div>
+            </div>
+            <div id="clienteSummary"></div>
+        </div>
+
+        <!-- Loader -->
+        <div id="loaderState" class="text-center py-5" style="display: none;">
+            <div class="loader"></div>
+            <p class="text-muted">Consultando registros...</p>
+        </div>
+
+        <!-- Estado vacío -->
+        <div id="emptyState" class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+            </svg>
+            <p>No hay datos para mostrar</p>
+            <p class="small">Aplique filtros y haga clic en "Buscar Registros"</p>
+        </div>
+
+        <!-- Tabla -->
+        <div id="tableWrapper" style="display: none;">
+            <div id="keplerTableContainer"></div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div id="actionButtons" class="action-buttons" style="display: none;">
+            <div class="row">
+                <div class="col-md-6">
+                    <span id="selectionInfo" class="text-muted">
+                        <strong>0</strong> registro(s) seleccionado(s)
+                    </span>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="button" class="btn btn-success-custom" onclick="guardarSeleccionados()">
+                        <i class="fas fa-save"></i> Guardar Seleccionados
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle de Partidas -->
+<div class="modal fade" id="modalPartidas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-list-ul"></i> Partidas del Documento
+                    <small class="text-muted d-block" id="modalPartidasSubtitulo"></small>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalPartidasLoader" class="text-center py-5">
+                    <div class="loader"></div>
+                    <p class="text-muted">Cargando partidas...</p>
+                </div>
+
+                <div id="modalPartidasEmpty" class="empty-state" style="display:none;">
+                    <p>No se encontraron partidas para este documento</p>
+                </div>
+
+                <div id="modalPartidasContenido" style="display:none;">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Clave</th>
+                                    <th>Descripción</th>
+                                    <th class="text-end">Cantidad</th>
+                                    <th>Unidad</th>
+                                    <th class="text-end">Precio Unitario</th>
+                                    <th class="text-end">Importe</th>
+                                    <th>Moneda</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalPartidasTbody"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="5" class="text-end">Total:</th>
+                                    <th class="text-end" id="modalPartidasTotal">$0.00</th>
+                                    <th></th>
+                                </tr>
+                                <tr>
+                                    <th colspan="5" class="text-end">IVA:</th>
+                                    <th class="text-end" id="modalPartidasIva">$0.00</th>
+                                    <th></th>
+                                </tr>
+                                <tr>
+                                    <th colspan="5" class="text-end">Total General:</th>
+                                    <th class="text-end" id="modalPartidasTotalGeneral">$0.00</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="~/scripts/tablebuilder.js"></script>
+
+<script>
+    let clientesSelect;
+    let proveedoresSelect;
+    let keplerTable = null;
+    let timeoutDescripcion = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        clientesSelect = new TomSelect("#selectClientes", {
+            maxItems: null,
+            plugins: ['remove_button'],
+            placeholder: 'Seleccione uno o más clientes...',
+            valueField: 'codigo',
+            labelField: 'cliente',
+            searchField: ['codigo', 'nombre'],
+            render: {
+                option: function(data, escape) {
+                    return `` + 
+                        `<div>` +
+                        `   <strong>${escape(data.codigo)}</strong> - ${escape(data.nombre)}` +
+                        `   <br><small class="text-muted">Plazo: ${escape(data.plazo)} días</small>` +
+                        `</div>`;
+                },
+                item: function(data, escape) {
+                    return `<div>${escape(data.codigo)}</div>`;
+                }
+            }
+        });
+        
+        proveedoresSelect = new TomSelect("#selectProveedor", {
+            maxItems: null,
+            plugins: ['remove_button'],
+            placeholder: 'Seleccione uno o más proveedores...',
+            valueField: 'codigo',
+            labelField: 'cliente',
+            searchField: ['codigo', 'nombre'],
+            render: {
+                option: function(data, escape) {
+                    return `` + 
+                        `<div>` +
+                        `   <strong>${escape(data.codigo)}</strong> - ${escape(data.nombre)}` +
+                        `   <br><small class="text-muted">Plazo: ${escape(data.plazo)} días</small>` +
+                        `</div>`;
+                },
+                item: function(data, escape) {
+                    return `<div>${escape(data.codigo)}</div>`;
+                }
+            }
+        });
+
+        await cargarClientes();
+
+        const fechaFin = new Date();
+        const fechaInicio = new Date();
+        fechaInicio.setMonth(fechaInicio.getMonth() - 3);
+        document.getElementById('fechaInicio').valueAsDate = fechaInicio;
+        document.getElementById('fechaFin').valueAsDate = fechaFin;
+
+    });
+
+    let proveedoresCargados = false;
+
+    document.getElementById('tipoReporte').addEventListener('change', async (e) => {
+        const esCliente = e.target.checked; // true = Clientes, false = Proveedores
+
+        // Mostrar/ocultar los contenedores
+        document.getElementById('selectClientes').closest('.col-md-5').classList.toggle('d-none', !esCliente);
+        document.getElementById('selectProveedor').closest('.col-md-5').classList.toggle('d-none', esCliente);
+
+        if (esCliente) {
+            // Limpiamos la selección de proveedores para que no se envíe sin querer
+            proveedoresSelect.clear();
+            await cargarClientes();
+        } else {
+            clientesSelect.clear();
+            if (!proveedoresCargados) {
+                await cargarProveedores();
+            }
+        }
+    });
+
+    // --- Descripción del documento (igual que antes) ---
+    function validarYBuscarDescripcion() {
+        if (timeoutDescripcion) clearTimeout(timeoutDescripcion);
+        timeoutDescripcion = setTimeout(() => {
+            const genero = document.getElementById('selectGenero').value;
+            const naturaleza = document.getElementById('selectNaturaleza').value;
+            const grupo = document.getElementById('inputGrupo').value;
+            const tipo = document.getElementById('inputTipo').value;
+            if (genero && naturaleza && grupo && tipo) {
+                buscarDescripcionDocumento(genero, naturaleza, grupo, tipo);
+            } else {
+                ocultarDescripcion();
+            }
+        }, 500);
+    }
+
+    async function buscarDescripcionDocumento(genero, naturaleza, grupo, tipo) {
+        const descripcionDiv = document.getElementById('descripcionDocumento');
+        const descripcionTexto = document.getElementById('descripcionTexto');
+        descripcionDiv.classList.remove('error');
+        descripcionDiv.classList.add('show');
+        descripcionTexto.innerHTML = 'Cargando... <span class="mini-loader"></span>';
+        try {
+            const response = await GetData({
+                path: '/Operaciones/ObtenerDescripcionDocumento',
+                data: {
+                    genero,
+                    naturaleza,
+                    grupo,
+                    tipo
+                }
+            });
+            if (response.success && response.descripcion) {
+                descripcionTexto.textContent = response.descripcion;
+                descripcionDiv.classList.remove('error');
+            } else {
+                descripcionTexto.textContent = response.descripcion || 'No se encontró configuración para esta combinación';
+                descripcionDiv.classList.add('error');
+            }
+        } catch (error) {
+            console.error('Error al buscar descripción:', error);
+            descripcionTexto.textContent = 'Error al obtener la descripción';
+            descripcionDiv.classList.add('error');
+        }
+    }
+
+    function ocultarDescripcion() {
+        document.getElementById('descripcionDocumento').classList.remove('show');
+    }
+
+    async function cargarClientes() {
+        try {
+            const response = await GetData({
+                path: '/Operaciones/ObtenerClientes'
+            });
+            if (response.success && response.clientes) {
+                clientesSelect.clearOptions();
+                clientesSelect.addOptions(response.clientes);
+                clientesSelect.refreshOptions(false);
+            }
+        } catch (error) {
+            console.error('Error cargando clientes:', error);
+            _Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron cargar los clientes'
+            });
+        }
+    }
+
+    async function cargarProveedores() {
+        try {
+            const response = await GetData({
+                path: '/Operaciones/ObtenerProveedores' // ajusta el endpoint si tu backend usa otro nombre
+            });
+            if (response.success && response.proveedores) {
+                proveedoresSelect.clearOptions();
+                proveedoresSelect.addOptions(response.proveedores);
+                proveedoresSelect.refreshOptions(false);
+                proveedoresCargados = true;
+            }
+        } catch (error) {
+            console.error('Error cargando proveedores:', error);
+            _Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron cargar los proveedores'
+            });
+        }
+    }
+
+    function getSelectActivo() {
+        return document.getElementById('tipoReporte').checked ? clientesSelect : proveedoresSelect;
+    }
+
+    async function consultarRegistros() {
+        const genero = document.getElementById('selectGenero').value;
+        const naturaleza = document.getElementById('selectNaturaleza').value;
+        const grupo = document.getElementById('inputGrupo').value;
+        const tipo = document.getElementById('inputTipo').value;
+        const clientes = getSelectActivo().getValue();
+        const sucursal = document.getElementById('selectSucursal').value;
+
+        if (!genero || !naturaleza || !grupo || !tipo || !sucursal) {
+            _Swal.fire({
+                icon: 'warning',
+                title: 'Campos requeridos',
+                text: 'Debe completar Sucursal, Género, Naturaleza, Grupo y Tipo'
+            });
+            return;
+        }
+        if (!clientes || clientes.length === 0) {
+            _Swal.fire({
+                icon: 'warning',
+                title: 'Advertencia',
+                text: 'Debe seleccionar al menos un cliente'
+            });
+            return;
+        }
+
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('tableWrapper').style.display = 'block';
+
+        keplerTable = createTable({
+            selector: '#keplerTableContainer',
+            path: '/Operaciones/ConsultarRegistrosKepler',
+            searchPlaceholder: 'Buscar por usuario, folio, RFC...',
+            rowKey: 'folioKepler',
+            columns: [{
+                    title: 'Estado',
+                    data: 'yaExiste',
+                    sortable: false,
+                    formatter: (val) => val ?
+                        '<span class="badge-exists">YA EXISTE</span>' :
+                        '<span class="badge-new">NUEVO</span>'
+                },
+                {
+                    title: 'Tipo',
+                    data: 'nombreDocumento',
+                    sortable: false,
+                    formatter: (val) => `<span class="badge-otro"><i class="fas fa-file-alt"></i> ${val} </span>`
+                },
+                {
+                    title: 'Codigo Cliente',
+                    data: 'usuario',
+                    formatter: v => v || '-'
+                },
+                {
+                    title: 'Nombre Cliente',
+                    data: 'nombreCliente',
+                    formatter: v => v || '-'
+                },
+                {
+                    title: 'Folio',
+                    data: 'folioKepler'
+                },
+                {
+                    title: 'Fecha Captura',
+                    data: 'fechaCaptura',
+                    formatter: v => v.substring(0, 10)
+                },
+                {
+                    title: 'Subtotal',
+                    data: 'subtotal',
+                    formatter: v => `$${parseFloat(v || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                },
+                {
+                    title: 'Descuento',
+                    data: 'descuento',
+                    formatter: v => `$${parseFloat(v || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                },
+                {
+                    title: 'Total',
+                    data: 'total',
+                    formatter: v => `<strong>$${parseFloat(v || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>`
+                },
+                {
+                    title: 'Forma Pago',
+                    data: 'formaPago',
+                    formatter: v => v || '-'
+                },
+                {
+                    title: 'Estatus',
+                    data: 'estatus',
+                    formatter: v => v || '-'
+                },
+            ],
+            actions: [{
+                    icon: 'fa-circle-info',
+                    color: 'cyan-500',
+                    title: 'Ver Detalle',
+                    onClick: row => verDetalle(row)
+                },
+                {
+                    icon: 'fa-file-pdf',
+                    color: 'red-500',
+                    title: 'Generar pdf',
+                    onClick: row => generarPDFRegistroKepler(row)
+                },
+            ],
+            selectable: {
+                enabled: true,
+                condition: row => !row.yaExiste,
+                onChange: () => actualizarContadorSeleccion(),
+            },
+            data: () => ({
+                genero: document.getElementById('selectGenero').value,
+                naturaleza: document.getElementById('selectNaturaleza').value,
+                grupo: document.getElementById('inputGrupo').value,
+                tipo: document.getElementById('inputTipo').value,
+                clientes: (getSelectActivo().getValue() || []).join(','),
+                fechaInicio: document.getElementById('fechaInicio').value,
+                fechaFin: document.getElementById('fechaFin').value,
+                folio: document.getElementById('inputFolio').value.trim(),
+                sucursal: document.getElementById('selectSucursal').value,
+            }),
+            GlobalEvents: {
+                onLoading: (isLoading) => {
+                    document.querySelector('#keplerTableContainer').classList.toggle('opacity-50', isLoading);
+                    // document.getElementById('loaderState').style.display = isLoading ? 'block' : 'none';
+                },
+                onDataLoaded: (response) => {
+                    document.getElementById('summarySection').style.display = 'block';
+                    document.getElementById('actionButtons').style.display = 'block';
+                    document.getElementById('totalRegistros').textContent = response.total ?? 0;
+                    document.getElementById('totalNuevos').textContent = response.totalNuevos ?? 0;
+                    document.getElementById('totalExistentes').textContent = response.totalExistentes ?? 0;
+                    if (response.resumen) renderizarResumen(response.resumen);
+                    actualizarContadorSeleccion();
+                },
+                onError: (err) => {
+                    document.getElementById('tableWrapper').style.display = 'none';
+                    document.getElementById('emptyState').style.display = 'block';
+                    _Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: err.message || 'Error al consultar registros'
+                    });
+                }
+            }
+        });
+    }
+
+    function renderizarResumen(resumen) {
+        const container = document.getElementById('clienteSummary');
+        container.innerHTML = '';
+        resumen.forEach(cliente => {
+            const div = document.createElement('div');
+            div.className = 'client-summary-item';
+            div.innerHTML = `
+                <div class="row">
+                    <div class="col-md-3"><strong>${cliente.cliente}</strong></div>
+                    <div class="col-md-9">
+                        <div class="row">
+                            <div class="col-auto">Total: <strong>${cliente.totalRegistros}</strong> registros</div>
+                            <div class="col-auto"><span class="badge-new">${cliente.registrosNuevos} nuevos</span></div>
+                            <div class="col-auto"><span class="badge-exists">${cliente.registrosExistentes} existentes</span></div>
+                            <div class="col-auto">Monto total: <strong>$${cliente.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></div>
+                        </div>
+                    </div>
+                </div>`;
+            container.appendChild(div);
+        });
+        document.getElementById('totalClientes').textContent = resumen.length;
+    }
+
+    function actualizarContadorSeleccion() {
+        const seleccionados = keplerTable ? keplerTable.getSelectedRows().length : 0;
+        document.getElementById('selectionInfo').innerHTML = `<strong>${seleccionados}</strong> registro(s) seleccionado(s)`;
+    }
+
+    async function guardarSeleccionados() {
+        const seleccionados = Array.from(keplerTable.getSelectedRows());
+
+        const genero = document.getElementById('selectGenero').value;
+        const naturaleza = document.getElementById('selectNaturaleza').value;
+        const grupo = document.getElementById('inputGrupo').value;
+        const tipo = document.getElementById('inputTipo').value;
+        const clientes = getSelectActivo().getValue() || [];
+        const sucursal = document.getElementById('selectSucursal').value;
+
+        if (seleccionados.length === 0) {
+            _Swal.fire({
+                icon: 'warning',
+                title: 'Advertencia',
+                text: 'Debe seleccionar al menos un registro para guardar'
+            });
+
+            return;
+        }
+
+        const documentos = seleccionados.map(item => ({
+            idKepler: item.idKepler,
+            genero: genero,
+            naturaleza: naturaleza,
+            grupo: Number(grupo),
+            tipo: Number(tipo),
+            sucursal: sucursal,
+            cliente: item.usuario,
+            nombreCliente: item.nombreCliente
+        }));
+
+        const result = await _Swal.fire({
+            icon: 'question',
+            title: '¿Confirmar guardado?',
+            html: `Se guardarán <strong>${seleccionados.length}</strong> registro(s) en la cartera de clientes.<br><br>
+                <small class="text-danger">Esta acción no se puede deshacer</small>`,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, guardar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        _Swal.fire({
+            title: 'Guardando...',
+            html: 'Procesando registros y generando documentos...',
+            allowOutsideClick: false,
+            didOpen: () => _Swal.showLoading()
+        });
+
+        const response = await GetData({
+            path: '/Operaciones/ConvertKeplerDocuments',
+            data: {
+                documentosJson: JSON.stringify(documentos),
+                tipoReporte: document.getElementById('tipoReporte').checked ? 'cliente' : 'proveedor'
+            },
+            swalResponse: true,
+        });
+    }
+
+    function limpiarFiltros() {
+        document.getElementById('selectGenero').value = '';
+        document.getElementById('selectNaturaleza').value = '';
+        document.getElementById('inputGrupo').value = '';
+        document.getElementById('inputTipo').value = '';
+        clientesSelect.clear();
+        proveedoresSelect.clear();
+        ocultarDescripcion();
+
+        const fechaFin = new Date();
+        const fechaInicio = new Date();
+        fechaInicio.setMonth(fechaInicio.getMonth() - 3);
+        document.getElementById('fechaInicio').valueAsDate = fechaInicio;
+        document.getElementById('fechaFin').valueAsDate = fechaFin;
+        document.getElementById('inputFolio').value = '';
+
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('tableWrapper').style.display = 'none';
+        document.getElementById('summarySection').style.display = 'none';
+        document.getElementById('actionButtons').style.display = 'none';
+
+        // Reinicia la tabla por completo para la próxima búsqueda
+        keplerTable = null;
+        document.getElementById('keplerTableContainer').innerHTML = '';
+    }
+
+    async function verDetalle(row) {
+        const modalEl = document.getElementById('modalPartidas');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+        // Reset UI
+        document.getElementById('modalPartidasLoader').style.display = 'block';
+        document.getElementById('modalPartidasEmpty').style.display = 'none';
+        document.getElementById('modalPartidasContenido').style.display = 'none';
+        document.getElementById('modalPartidasTbody').innerHTML = '';
+        document.getElementById('modalPartidasSubtitulo').textContent =
+            `Folio: ${row.folioKepler ?? row.idKepler ?? '-'} | Sucursal: ${row.sucursal ?? '-'}`;
+
+        modal.show();
+
+        try {
+            const response = await GetData({
+                path: '/Operaciones/GetPartidasDocumento',
+                data: {
+                    genero: document.getElementById('selectGenero').value,
+                    naturaleza: document.getElementById('selectNaturaleza').value,
+                    grupo: document.getElementById('inputGrupo').value,
+                    tipo: document.getElementById('inputTipo').value,
+                    clientes: (getSelectActivo().getValue() || []).join(','),
+                    folio: row.idKepler,
+                    sucursal: row.sucursal,
+                }
+            });
+
+            renderizarPartidas(response.partidas || [], row);
+        } catch (error) {
+            console.error('Error al obtener partidas:', error);
+            document.getElementById('modalPartidasLoader').style.display = 'none';
+            document.getElementById('modalPartidasEmpty').style.display = 'block';
+            _Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron cargar las partidas del documento'
+            });
+        }
+    }
+
+    function renderizarPartidas(partidas, row) {
+        document.getElementById('modalPartidasLoader').style.display = 'none';
+
+        if (!partidas || partidas.length === 0) {
+            document.getElementById('modalPartidasEmpty').style.display = 'block';
+            document.getElementById('modalPartidasContenido').style.display = 'none';
+            return;
+        }
+
+        const tbody = document.getElementById('modalPartidasTbody');
+        tbody.innerHTML = '';
+        let totalGeneral = 0;
+
+        partidas.forEach(p => {
+            const importe = parseFloat(p.importe_total || 0);
+            totalGeneral += importe;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><small>${p.clave ?? '-'}</small></td>
+                <td>${p.descripcion ?? '-'}</td>
+                <td class="text-end">${parseFloat(p.cantidad || 0).toLocaleString('es-MX')}</td>
+                <td>${p.unidad ?? '-'}</td>
+                <td class="text-end">$${parseFloat(p.precio_unitario || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                <td class="text-end"><strong>$${importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></td>
+                <td>${p.moneda ?? '-'}</td>
+                `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('modalPartidasTotal').textContent = `${Currency.format(totalGeneral)}`;
+        document.getElementById('modalPartidasIva').textContent = `${Currency.format(row.totalImpuestosTraslado)}`;
+    document.getElementById('modalPartidasTotalGeneral').textContent = `${Currency.format(totalGeneral + row.totalImpuestosTraslado)}`;
+
+        document.getElementById('modalPartidasContenido').style.display = 'block';
+    }
+
+    // ============================================================
+// PDF POR REGISTRO — Carga de Carteras desde Kepler
+// Sigue el MISMO orden/formato que generarPDFSolicitud / generarPDFOrdenCompra:
+//   1) Encabezado corporativo
+//   2) Banda de folio/fecha
+//   3) Tabla de partidas
+//   4) Comentarios
+//   5) Totales (subtotal + IVA)
+// ============================================================
+
+// NOTA IMPORTANTE:
+// El endpoint /Operaciones/GetPartidasDocumento hoy solo regresa { partidas }.
+// Para que el encabezado se pinte igual que en los demás documentos, el backend
+// debe regresar también `datos_empresa` (razon_social, RFC, direccion, telefono),
+// tal como lo hace /Requisicion/gerPdfData. Si tu backend ya tiene esos datos en
+// otro endpoint (p. ej. sesión/config de sucursal), avísame y lo ajustamos para
+// no duplicar la llamada.
+
+const TITULO_KEPLER = 'DOCUMENTO KEPLER';
+
+async function generarPDFRegistroKepler(row) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const pdfWidth = doc.internal.pageSize.getWidth();
+
+    // 1) Traemos partidas (mismo endpoint que usa verDetalle) + datos_empresa
+    const _res = await GetData({
+        path: '/Operaciones/GetPartidasDocumento',
+        data: {
+            genero: document.getElementById('selectGenero').value,
+            naturaleza: document.getElementById('selectNaturaleza').value,
+            grupo: document.getElementById('inputGrupo').value,
+            tipo: document.getElementById('inputTipo').value,
+            clientes: (getSelectActivo().getValue() || []).join(','),
+            folio: row.idKepler,
+            sucursal: row.sucursal,
+        }
+    });
+
+    const partidas = _res.partidas || [];
+
+    if (partidas.length === 0) {
+        _Swal.fire({
+            icon: 'warning',
+            title: 'Sin partidas',
+            text: 'Este documento no tiene partidas para incluir en el PDF'
+        });
+        return;
+    }
+
+    // 2) Encabezado corporativo (mismo helper que el resto de documentos)
+    const logoBase64 = await convertToBase64(`/Content/img/${empresa}/logo.png`);
+    agregarEncabezadoPDF(
+        doc,
+        logoBase64,
+        TITULO_KEPLER,
+        _res.datos_empresa,
+        dateFormatter(row.fechaCaptura)
+    );
+
+    // 3) Banda folio + fecha, con extras propios de Kepler
+    agregarFolioFecha(doc, row.folioKepler ?? row.idKepler, `${row.nombreDocumento ?? TITULO_KEPLER}`, [
+        { label: 'Cliente', valor: row.usuario ?? '-' },
+        { label: 'Sucursal', valor: row.sucursal ?? '-' },
+    ]);
+
+    // 4) Tabla de partidas (mismas columnas que el modal de detalle)
+    const columns = [
+        { header: '#', dataKey: 'num' },
+        { header: 'Clave', dataKey: 'clave' },
+        { header: 'Descripción', dataKey: 'descripcion' },
+        { header: 'Cantidad', dataKey: 'cantidad' },
+        { header: 'Unidad', dataKey: 'unidad' },
+        { header: 'Precio Unit.', dataKey: 'precio' },
+        { header: 'Importe', dataKey: 'importe' },
+        { header: 'Moneda', dataKey: 'moneda' },
+    ];
+
+    const rows = partidas.map((p, i) => ({
+        num: i + 1,
+        clave: p.clave ?? '-',
+        descripcion: p.descripcion ?? '-',
+        cantidad: parseFloat(p.cantidad || 0).toLocaleString('es-MX'),
+        unidad: p.unidad ?? '-',
+        precio: Currency.format(p.precio_unitario || 0),
+        importe: Currency.format(p.importe_total || 0),
+        moneda: p.moneda ?? '-',
+    }));
+
+    agregarTabla(doc, columns, rows, 57);
+
+    // 5) Comentarios: usamos el estatus / forma de pago como referencia rápida
+    const finalY = doc.lastAutoTable.finalY + 10;
+    const comentario = `Cliente: ${row.nombreCliente ?? '-'}  |  Estatus: ${row.estatus ?? '-'}  |  Forma de pago: ${row.formaPago ?? '-'}`;
+    agregarComentarios(doc, comentario, finalY);
+
+    // 6) Totales: subtotal calculado de las partidas + IVA del documento
+    const subtotalGlobal = partidas.reduce((acc, p) => acc + parseFloat(p.importe_total || 0), 0);
+    const impuestos = row.totalImpuestosTraslado
+        ? [{ nombre: 'IVA', tasa: '', importe: parseFloat(row.totalImpuestosTraslado || 0), esRetencion: false }]
+        : [];
+
+    agregarTotales(doc, finalY, subtotalGlobal, impuestos);
+
+    // 7) Abrir en pestaña nueva (igual que los demás generadores)
+    const pdfBlob = doc.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    window.open(url, '_blank');
+}
+</script>

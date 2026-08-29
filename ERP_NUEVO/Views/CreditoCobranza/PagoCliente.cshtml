@@ -1,0 +1,1903 @@
+@{
+    ViewBag.Title = "PagoCliente";
+    ViewBag.PageTitle = "Cuentas por Cobrar";
+}
+
+@section styles {
+    <link href="~/content/Calendario.css" rel="stylesheet" />
+    <link href="~/content/Pagos/style.css" rel="stylesheet" />
+    <link href="~/content/compras-nacionales.css" rel="stylesheet" />
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --cxc-panel-w: 340px;
+            /* Altura del chrome fijo: define dónde se "pega" el panel para no
+               meterse debajo del header. Cada layout tiene su propio alto. */
+            --cxc-top-offset: 92px;
+        }
+
+        body[data-layout="topbar"] {
+            --cxc-top-offset: calc(var(--topbar-height, 58px) + 78px);
+        }
+
+        body[data-layout="hybrid"] {
+            --cxc-top-offset: 102px;
+        }
+
+        /* El panel es una columna más del contenido: nunca se encima al menú
+           ni al header, y la tabla se reparte el ancho restante. */
+        .cxc-layout {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .cxc-main {
+            flex: 1 1 auto;
+            min-width: 0; /* deja que la tabla se encoja en vez de desbordar */
+        }
+
+        .cxc-card {
+            background: var(--bg-gray);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .cxc-header {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 1.15rem 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.01));
+        }
+
+        .cxc-icon {
+            flex: 0 0 auto;
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            background: var(--very-light-blue);
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .cxc-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+        .cxc-subtitle {
+            font-size: 0.84rem;
+            color: var(--text-light);
+            margin: 0.22rem 0 0;
+        }
+
+        .cxc-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            margin: 1rem 1.25rem 0;
+            padding: 0.8rem 0.95rem;
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.16);
+            background: rgba(59, 130, 246, 0.06);
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .cxc-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin: 1rem 1.25rem;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            background: var(--bg-light);
+        }
+
+        .cxc-toolbar-hint {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Selector de vista tipo segmento, en lugar de dos botones sueltos. */
+        .cxc-toggle {
+            display: inline-flex;
+            gap: 0.25rem;
+            padding: 0.25rem;
+            border: 1px solid var(--border-light);
+            border-radius: 999px;
+            background: var(--bg-gray);
+        }
+
+        .cxc-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.9rem;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: var(--text-light);
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .cxc-toggle-btn:hover {
+            color: var(--accent-blue);
+        }
+
+        .cxc-toggle-btn.is-active {
+            background: var(--accent-blue);
+            color: #fff;
+        }
+
+        .cxc-shell {
+            padding: 0 1.25rem 1.25rem;
+            min-width: 0;
+        }
+
+        /* La tabla y el calendario van dentro de la misma "caja" blanca para
+           que las dos vistas se vean igual al alternar. */
+        .cxc-shell > .cxc-box {
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg-light);
+        }
+
+        /* TableBuilder ya trae su propio marco; aquí sobra porque lo pone .cxc-box. */
+        .cxc-shell .custom-table-container {
+            margin-top: 0 !important;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .cxc-shell .fc {
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .cxc-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.1rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-gray);
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .cxc-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .cxc-legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+        }
+
+        /* Mismos colores que usan los eventos del calendario (Calendario.css). */
+        .cxc-legend-dot.is-pending { background: #15803d; }
+        .cxc-legend-dot.is-partial { background: #0e7490; }
+        .cxc-legend-dot.is-warning { background: #c2410c; }
+        .cxc-legend-dot.is-overdue { background: #b91c1c; }
+
+        .tipo-proceso-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .tipo-proceso-badge.is-especial {
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        /* ─── Panel lateral ──────────────────────────────────────────────── */
+        .cxc-panel {
+            flex: 0 0 var(--cxc-panel-w);
+            width: var(--cxc-panel-w);
+            position: sticky;
+            top: var(--cxc-top-offset);
+            max-height: calc(100vh - var(--cxc-top-offset) - 1.5rem);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .cxc-layout.is-collapsed .cxc-panel {
+            display: none;
+        }
+
+        .cxc-rail {
+            display: none;
+            flex: 0 0 46px;
+            position: sticky;
+            top: var(--cxc-top-offset);
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.8rem 0.25rem;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            background: var(--bg-light);
+            color: var(--accent-blue);
+            box-shadow: var(--shadow);
+        }
+
+        .cxc-layout.is-collapsed .cxc-rail {
+            display: flex;
+        }
+
+        .cxc-rail-text {
+            writing-mode: vertical-rl;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            color: var(--text-light);
+        }
+
+        .cxc-panel .btn {
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .cxc-panel-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.01));
+        }
+
+        .cxc-panel-header h6 {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .cxc-panel-header small {
+            color: var(--text-light);
+            font-size: 0.78rem;
+        }
+
+        .cxc-panel-hide {
+            flex: 0 0 auto;
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            background: var(--bg-light);
+            color: var(--text-light);
+            line-height: 1;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .cxc-panel-hide:hover {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .cxc-count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 0.35rem;
+            border-radius: 999px;
+            background: var(--accent-blue);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .cxc-panel-kpis {
+            display: grid;
+            gap: 0.5rem;
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .cxc-kpi {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding: 0.55rem 0.7rem;
+            border: 1px solid var(--border-light);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 10px;
+            background: var(--bg-gray);
+        }
+
+        .cxc-kpi-label {
+            font-size: 0.76rem;
+            color: var(--text-light);
+        }
+
+        .cxc-kpi-value {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        .cxc-kpi.is-danger {
+            border-left-color: var(--danger-color);
+        }
+
+        .cxc-kpi.is-danger .cxc-kpi-value {
+            color: var(--danger-color);
+        }
+
+        .cxc-kpi.is-warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .cxc-kpi.is-warning .cxc-kpi-value {
+            color: var(--warning-color);
+        }
+
+        .cxc-panel-subtitle {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: 0.76rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .cxc-panel-list {
+            flex: 1 1 auto;
+            min-height: 0; /* sin esto el overflow del hijo flex no scrollea */
+            overflow-y: auto;
+            list-style: none;
+            margin: 0;
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .cxc-panel-empty {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.84rem;
+            padding: 2.2rem 1rem;
+        }
+
+        .cxc-panel-empty i {
+            display: block;
+            font-size: 1.8rem;
+            margin-bottom: 0.6rem;
+            opacity: 0.45;
+        }
+
+        .cxc-item {
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 0.6rem 0.7rem;
+            background: var(--bg-gray);
+        }
+
+        .cxc-item-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .cxc-item-name {
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: var(--text-dark);
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .cxc-item-desc {
+            margin: 0.2rem 0 0.45rem;
+            font-size: 0.74rem;
+            color: var(--text-light);
+        }
+
+        .cxc-item-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font-size: 0.78rem;
+            color: var(--text-dark);
+        }
+
+        .cxc-item-amount {
+            font-weight: 700;
+        }
+
+        .cxc-item-actions {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .cxc-item-btn {
+            width: 26px;
+            height: 26px;
+            border: 1px solid var(--border-light);
+            border-radius: 50%;
+            background: var(--bg-light);
+            color: var(--text-light);
+            line-height: 1;
+            font-size: 0.72rem;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .cxc-item-btn:hover {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .cxc-chip {
+            flex: 0 0 auto;
+            padding: 0.1rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .cxc-chip.is-ok {
+            background: rgba(5, 150, 105, 0.12);
+            color: var(--success-color);
+        }
+
+        .cxc-chip.is-warning {
+            background: rgba(217, 119, 6, 0.14);
+            color: var(--warning-color);
+        }
+
+        .cxc-chip.is-danger {
+            background: rgba(220, 38, 38, 0.12);
+            color: var(--danger-color);
+        }
+
+        .cxc-panel-footer {
+            border-top: 1px solid var(--border-light);
+            padding: 0.8rem 1rem 0.9rem;
+            background: var(--bg-light);
+        }
+
+        .cxc-panel-total {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.7rem;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .cxc-panel-total strong {
+            font-size: 1rem;
+            color: var(--text-dark);
+        }
+
+        /* ─── Modales ────────────────────────────────────────────────────── */
+        /* compras-nacionales.css pinta el header de TODOS los modales en azul
+           oscuro; aquí se recupera el degradado claro de la vista. */
+        .cxc-modal .modal-content {
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            background: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .cxc-modal .modal-header {
+            border-bottom: 1px solid var(--border-light);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.01));
+            color: var(--text-dark);
+        }
+
+        .cxc-modal .modal-title {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .cxc-modal .modal-footer {
+            border-top: 1px solid var(--border-light);
+            background: var(--bg-light);
+        }
+
+        .cxc-modal .modal-body {
+            background: var(--bg-gray);
+        }
+
+        .cxc-form-section {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            background: var(--bg-light);
+        }
+
+        .cxc-form-section > h6 {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin: 0 0 0.85rem;
+            padding-bottom: 0.55rem;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .cxc-form-section .form-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .cxc-upload {
+            padding: 1.6rem 1rem;
+            border: 2px dashed rgba(59, 130, 246, 0.35);
+            border-radius: 12px;
+            background: rgba(59, 130, 246, 0.05);
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .cxc-upload:hover {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.09);
+        }
+
+        .cxc-upload i {
+            color: var(--accent-blue);
+        }
+
+        @@media (max-width: 991.98px) {
+            .cxc-layout {
+                flex-direction: column;
+            }
+
+            .cxc-panel,
+            .cxc-rail {
+                position: static;
+                width: 100%;
+                flex: 1 1 auto;
+                max-height: none;
+            }
+
+            .cxc-rail {
+                flex-direction: row;
+                justify-content: center;
+            }
+
+            .cxc-rail-text {
+                writing-mode: horizontal-tb;
+            }
+
+            .cxc-panel-list {
+                max-height: 320px;
+            }
+        }
+    </style>
+}
+
+<div class="cxc-layout" id="cxcLayout">
+    <div class="cxc-main">
+        <div class="cxc-card">
+            <div class="cxc-header">
+                <div class="cxc-icon">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                </div>
+                <div>
+                    <h4 class="cxc-title">Facturas de contado por cobrar</h4>
+                    <p class="cxc-subtitle">Documentos de cliente con saldo pendiente en la sucursal actual, ordenados por fecha de vencimiento.</p>
+                </div>
+            </div>
+
+            <div class="cxc-note">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Registra el cobro desde la acción <b>Pagar</b> de cada renglón; con <b>Información</b> revisas el historial de cobros aplicados. El panel derecho resume lo vencido y lo que está por vencer.</span>
+            </div>
+
+            <div class="cxc-toolbar">
+                <div class="cxc-toggle" role="group" aria-label="Cambiar vista">
+                    <button type="button" id="btnTableView" class="cxc-toggle-btn is-active">
+                        <i class="fa-solid fa-table-list"></i> Tabla
+                    </button>
+                    <button type="button" id="btnCalendarView" class="cxc-toggle-btn">
+                        <i class="fa-solid fa-calendar-days"></i> Calendario
+                    </button>
+                </div>
+                <span class="cxc-toolbar-hint" id="hintVista">Vista de tabla: búsqueda y paginado desde el servidor.</span>
+            </div>
+
+            <div class="cxc-shell table-view active">
+                <div class="cxc-box">
+                    <div id="tablaDocumentos"></div>
+                </div>
+            </div>
+
+            <div class="cxc-shell calendar-view">
+                <div class="cxc-box">
+                    <div class="cxc-legend">
+                        <div class="cxc-legend-item">
+                            <span class="cxc-legend-dot is-pending"></span>
+                            <span>Pendiente</span>
+                        </div>
+                        <div class="cxc-legend-item">
+                            <span class="cxc-legend-dot is-partial"></span>
+                            <span>Cobro parcial</span>
+                        </div>
+                        <div class="cxc-legend-item">
+                            <span class="cxc-legend-dot is-warning"></span>
+                            <span>Vence pronto (≤7 días)</span>
+                        </div>
+                        <div class="cxc-legend-item">
+                            <span class="cxc-legend-dot is-overdue"></span>
+                            <span>Vencido</span>
+                        </div>
+                    </div>
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="btnMostrarPanel" type="button" class="cxc-rail" title="Mostrar resumen de cuentas por cobrar">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span id="badgeResumenRail" class="cxc-count-badge">0</span>
+        <span class="cxc-rail-text">Resumen por cobrar</span>
+    </button>
+
+    <aside id="panelResumen" class="cxc-panel" aria-label="Resumen de cuentas por cobrar">
+        <div class="cxc-panel-header">
+            <div>
+                <h6>
+                    Resumen por cobrar
+                    <span id="contadorDocumentos" class="cxc-count-badge">0</span>
+                </h6>
+                <small id="resumenPanel">Sin documentos pendientes</small>
+            </div>
+            <button id="btnOcultarPanel" type="button" class="cxc-panel-hide" title="Ocultar panel" aria-label="Ocultar panel">
+                <i class="fa-solid fa-angles-right"></i>
+            </button>
+        </div>
+
+        <div class="cxc-panel-kpis">
+            <div class="cxc-kpi is-danger">
+                <span class="cxc-kpi-label"><i class="fa-solid fa-triangle-exclamation me-1"></i> Vencido</span>
+                <span class="cxc-kpi-value" id="kpiVencido">$0.00</span>
+            </div>
+            <div class="cxc-kpi is-warning">
+                <span class="cxc-kpi-label"><i class="fa-solid fa-clock me-1"></i> Vence en ≤7 días</span>
+                <span class="cxc-kpi-value" id="kpiPorVencer">$0.00</span>
+            </div>
+            <div class="cxc-kpi">
+                <span class="cxc-kpi-label"><i class="fa-solid fa-calendar-check me-1"></i> A futuro</span>
+                <span class="cxc-kpi-value" id="kpiFuturo">$0.00</span>
+            </div>
+        </div>
+
+        <div class="cxc-panel-subtitle">
+            <i class="fa-solid fa-arrow-down-short-wide"></i> Próximos vencimientos
+        </div>
+
+        <ul id="listaVencimientos" class="cxc-panel-list">
+            <li class="cxc-panel-empty">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Cargando documentos...
+            </li>
+        </ul>
+
+        <div class="cxc-panel-footer">
+            <div class="cxc-panel-total">
+                <span>Total por cobrar</span>
+                <strong id="totalPorCobrar">$0.00</strong>
+            </div>
+            <div class="d-grid gap-2">
+                <button id="btnVerCalendario" type="button" class="btn btn-primary btn-sm">
+                    <i class="fa-solid fa-calendar-days me-1"></i> Ver calendario
+                </button>
+                <button id="btnActualizar" type="button" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa-solid fa-rotate me-1"></i> Actualizar datos
+                </button>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<!-- Tooltip para eventos del calendario -->
+<div class="calendar-tooltip" id="calendarTooltip"></div>
+
+<!-- Detalle del documento e historial de cobros -->
+<div class="modal fade cxc-modal" id="documentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-file-lines"></i> Detalle del documento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registro de pago -->
+<div class="modal fade cxc-modal" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Registrar pago
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Información del documento seleccionado -->
+                <div id="documentInfo" style="display: none;"></div>
+
+                <form id="paymentForm">
+                    <div class="cxc-form-section">
+                        <h6><i class="fa-solid fa-money-bill-wave"></i> Detalles del pago</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="paymentAmount" class="form-label">Monto del pago <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control lock-min lock-max" id="paymentAmount" step="0.01" placeholder="0.00" required>
+                                </div>
+                                <small id="amountHelper" class="form-text" style="color: var(--text-light);"></small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="paymentDate" class="form-label">Fecha de pago <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa-solid fa-calendar-alt"></i></span>
+                                    <input type="date" class="form-control" id="paymentDate" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cxc-form-section">
+                        <h6><i class="fa-solid fa-university"></i> Información bancaria</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="paymentBank" class="form-label">Banco <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa-solid fa-landmark"></i></span>
+                                    <select class="form-select" id="paymentBank" required>
+                                        <option value="">Seleccionar banco...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="paymentMethod" class="form-label">Método de pago <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa-solid fa-credit-card"></i></span>
+                                    <select class="form-select" id="paymentMethod" required>
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Efectivo">Efectivo</option>
+                                        <option value="Tarjeta de Crédito">Tarjeta de crédito</option>
+                                        <option value="Tarjeta de Débito">Tarjeta de débito</option>
+                                        <option value="Transferencia Bancaria">Transferencia bancaria</option>
+                                        <option value="Cheque">Cheque</option>
+                                        <option value="PayPal">PayPal</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="reference" class="form-label">Referencia del pago</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa-solid fa-hashtag"></i></span>
+                                    <input type="text" class="form-control" id="reference" placeholder="No. de transacción, cheque, etc.">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cxc-form-section">
+                        <h6><i class="fa-solid fa-file-upload"></i> Comprobantes de pago <span class="text-danger">*</span></h6>
+                        <div class="cxc-upload" id="dropComprobantes">
+                            <input type="file" id="attachmentFile" multiple accept="image/*,.pdf" style="display: none;">
+                            <i class="fa-solid fa-cloud-arrow-up fa-2x mb-2"></i>
+                            <p style="color: var(--text-dark); margin: 0; font-weight: 600;">Haz clic para seleccionar los comprobantes</p>
+                            <small style="color: var(--text-light); display: block; margin-top: 0.35rem;">
+                                Formatos aceptados: JPG, PNG, PDF • Tamaño máximo: 5 MB por archivo
+                            </small>
+                        </div>
+                        <div id="filePreview" class="file-preview mt-3"></div>
+                    </div>
+
+                    <div class="cxc-form-section mb-0">
+                        <h6><i class="fa-solid fa-sticky-note"></i> Notas adicionales</h6>
+                        <textarea class="form-control" id="notes" rows="3"
+                                  placeholder="Escribe aquí cualquier observación o comentario adicional sobre este pago..."
+                                  style="resize: vertical;"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-times me-1"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnRegistrarPago">
+                    <i class="fa-solid fa-save me-1"></i> Registrar pago
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/lib/fullcalendar/index.global.min.js"></script>
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+        const PANEL_STORAGE_KEY = 'pagoCliente.panelAbierto';
+        const MAX_VENCIMIENTOS_PANEL = 8;
+
+        let documents = [];
+        let bancos = [];
+        let selectedDocument = null;
+        let tablaDocumentos = null;
+        let calendar = null;
+        let currentAttachments = [];
+
+        // =====================================================================
+        // UTILERÍAS
+        // =====================================================================
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
+        function money(value) {
+            const num = parseFloat(value);
+            return Currency.format(Number.isFinite(num) ? num : 0);
+        }
+
+        // El backend serializa los timestamps en ISO ("2026-08-10T00:00:00").
+        // Se arma la fecha con sus componentes locales para que no se recorra
+        // un día por la zona horaria, y se acepta también "dd/mm/aa" por si
+        // algún endpoint devuelve la fecha ya formateada.
+        function parseFecha(valor) {
+            if (!valor) return null;
+            if (valor instanceof Date) return isNaN(valor.getTime()) ? null : valor;
+
+            const texto = String(valor).trim();
+
+            // Con zona horaria explícita (el now() de Postgres llega en UTC) sí
+            // es un instante: se deja que el navegador lo pase a hora local.
+            if (/^\d{4}-\d{2}-\d{2}T.*(Z|[+-]\d{2}:?\d{2})$/.test(texto)) {
+                const instante = new Date(texto);
+                return isNaN(instante.getTime()) ? null : instante;
+            }
+
+            const iso = texto.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/);
+            if (iso) {
+                const [, y, m, d, hh = 0, mm = 0] = iso;
+                return new Date(+y, +m - 1, +d, +hh, +mm);
+            }
+
+            const dmy = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T](\d{1,2}):(\d{2}))?/);
+            if (dmy) {
+                const [, d, m, y, hh = 0, mm = 0] = dmy;
+                return new Date(y.length === 2 ? 2000 + +y : +y, +m - 1, +d, +hh, +mm);
+            }
+
+            const fecha = new Date(texto);
+            return isNaN(fecha.getTime()) ? null : fecha;
+        }
+
+        function aMedianoche(fecha) {
+            const copia = new Date(fecha.getTime());
+            copia.setHours(0, 0, 0, 0);
+            return copia;
+        }
+
+        // Días que faltan para el vencimiento. La referencia por omisión es el
+        // now() que devuelve el servidor con cada renglón (current_date).
+        function diasHastaVencimiento(vencimiento, referencia) {
+            const due = parseFecha(vencimiento);
+            if (!due) return null;
+
+            const hoy = aMedianoche(parseFecha(referencia) ?? new Date());
+            return Math.ceil((aMedianoche(due) - hoy) / (1000 * 60 * 60 * 24));
+        }
+
+        function textoDias(dias) {
+            if (dias === null) return ['days-ok', 'Sin fecha'];
+            if (dias < 0) return ['days-danger', `${Math.abs(dias)} ${Math.abs(dias) === 1 ? 'día' : 'días'} de atraso`];
+            if (dias === 0) return ['days-danger', 'Vence hoy'];
+            if (dias <= 7) return ['days-warning', `${dias} ${dias === 1 ? 'día' : 'días'}`];
+            return ['days-ok', `${dias} días`];
+        }
+
+        function getDaysIndicator(vencimiento, referencia) {
+            const [clase, texto] = textoDias(diasHastaVencimiento(vencimiento, referencia));
+            return `<span class="days-indicator ${clase}">${texto}</span>`;
+        }
+
+        function fechaCorta(valor) {
+            const fecha = parseFecha(valor);
+            return fecha ? fecha.toLocaleDateString('es-MX') : 'Sin fecha';
+        }
+
+        function fechaLarga(valor) {
+            const fecha = parseFecha(valor);
+            return fecha
+                ? fecha.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+                : 'Sin fecha';
+        }
+
+        // yyyy-mm-dd con los componentes locales (toISOString usa UTC y podría
+        // mover el evento un día en el calendario).
+        function fechaISOLocal(fecha) {
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dia = String(fecha.getDate()).padStart(2, '0');
+            return `${fecha.getFullYear()}-${mes}-${dia}`;
+        }
+
+        // La consulta solo trae documentos con saldo > 0, así que el estado se
+        // deduce del saldo: si ya se abonó algo, el cobro es parcial.
+        function estadoDocumento(doc) {
+            const total = parseFloat(doc.monto_total) || 0;
+            const saldo = parseFloat(doc.saldo_pendiente) || 0;
+            if (saldo <= 0) return 'Pagado';
+            return saldo < total ? 'Parcial' : 'Pendiente';
+        }
+
+        function tipoLegible(tipo) {
+            return String(tipo ?? 'N/A').replace(/_/g, ' ').toUpperCase();
+        }
+
+        // =====================================================================
+        // CARGA DE DATOS
+        // =====================================================================
+        function loadData() {
+            return GetData({ path: '/PagosCliente/DatosSelect' })
+                .then(res => { documents = res?.facturas ?? []; })
+                .catch(error => {
+                    console.error('Error al cargar documentos:', error);
+                    documents = [];
+                });
+        }
+
+        function init() {
+            document.getElementById('paymentDate').value = fechaISOLocal(new Date());
+            initTablaDocumentos();
+            initCalendar();
+            renderResumen();
+        }
+
+        // =====================================================================
+        // TABLA
+        // =====================================================================
+        function initTablaDocumentos() {
+            tablaDocumentos = createTable({
+                selector: '#tablaDocumentos',
+                path: '/PagosCliente/GetDocumentosPaginados',
+                searchPlaceholder: 'Buscar cliente, folio...',
+                rowKey: 'id_cartera',
+                columns: [
+                    {
+                        title: 'Tipo cliente',
+                        data: 'es_especial',
+                        formatter: v => `<span class="tipo-proceso-badge ${v ? 'is-especial' : ''}">${v ? 'Especial' : 'Normal'}</span>`
+                    },
+                    { title: 'Número', data: 'folio', formatter: v => escapeHtml(v || 'N/A') },
+                    { title: 'Cliente', data: 'n_cli', formatter: v => escapeHtml(v || 'N/A') },
+                    { title: 'Monto total', data: 'monto_total', formatter: v => money(v) },
+                    {
+                        title: 'Saldo pendiente',
+                        data: 'saldo_pendiente',
+                        formatter: (v, row) => {
+                            const total = parseFloat(row.monto_total) || 0;
+                            const saldo = parseFloat(v) || 0;
+                            let color = 'var(--success-color)';
+
+                            if (total > 0) {
+                                const pct = (saldo / total) * 100;
+                                if (pct === 0) color = 'var(--success-color)';
+                                else if (pct <= 25) color = 'var(--info-color)';
+                                else if (pct <= 75) color = 'var(--warning-color)';
+                                else color = 'var(--danger-color)';
+                            }
+
+                            return `<strong style="color:${color};">${money(saldo)}</strong>`;
+                        }
+                    },
+                    {
+                        title: 'Vencimiento',
+                        data: 'fecha_vencimiento',
+                        // La referencia es el now() del servidor, no la fecha de
+                        // emisión: si no, se mostraba el plazo de crédito.
+                        formatter: (v, row) => getDaysIndicator(v, row.current_date)
+                    }
+                ],
+                actions: [
+                    {
+                        icon: 'fa-money-bill-wheat',
+                        color: 'blue-500',
+                        title: 'Pagar',
+                        onClick: row => selectDocument(row.id_cartera)
+                    },
+                    {
+                        icon: 'fa-circle-info',
+                        color: 'green-500',
+                        title: 'Información',
+                        onClick: row => showDocumentDetail(row.id_cartera)
+                    }
+                ],
+                GlobalEvents: {
+                    onLoading: isLoading => {
+                        document.querySelector('#tablaDocumentos').classList.toggle('opacity-50', isLoading);
+                    },
+                    onError: err => console.error('Error al cargar documentos:', err)
+                }
+            });
+        }
+
+        // =====================================================================
+        // CALENDARIO
+        // =====================================================================
+        function getCalendarEvents() {
+            return documents.reduce((events, doc) => {
+                const vencimiento = parseFecha(doc.fecha_vencimiento);
+                if (!vencimiento) return events;
+
+                const dias = diasHastaVencimiento(doc.fecha_vencimiento, doc.current_date);
+                const total = parseFloat(doc.monto_total) || 0;
+                const pendiente = parseFloat(doc.saldo_pendiente) || 0;
+
+                events.push({
+                    id: String(doc.id_cartera),
+                    title: doc.n_cli || 'N/A',
+                    start: `${fechaISOLocal(vencimiento)}T17:00:00`,
+                    allDay: false,
+                    extendedProps: {
+                        documentId: doc.id_cartera,
+                        type: doc.tipo_proceso || 'N/A',
+                        number: doc.folio || 'N/A',
+                        client: doc.n_cli || 'N/A',
+                        totalAmount: total,
+                        pendingAmount: pendiente,
+                        paidAmount: total - pendiente,
+                        status: estadoDocumento(doc),
+                        isOverdue: dias !== null && dias < 0,
+                        isWarning: dias !== null && dias >= 0 && dias <= 7,
+                        daysUntilDue: dias,
+                        emissionDate: doc.fecha_emision
+                    }
+                });
+
+                return events;
+            }, []);
+        }
+
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            if (calendar) calendar.destroy();
+
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'es',
+                initialView: 'dayGridMonth',
+                dayMaxEventRows: 4,
+                nowIndicator: true,
+                height: 'auto',
+                eventDisplay: 'auto',
+                displayEventTime: false,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                buttonText: {
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    day: 'Día',
+                    list: 'Lista'
+                },
+                views: {
+                    listWeek: {
+                        displayEventTime: false,
+                        displayEventEnd: false,
+                        noEventsContent: 'No hay documentos pendientes en este período'
+                    }
+                },
+                events: getCalendarEvents(),
+                eventClick: handleEventClick,
+                eventMouseEnter: showEventTooltip,
+                eventMouseLeave: hideEventTooltip,
+                eventDidMount: info => {
+                    const props = info.event.extendedProps;
+
+                    if (props.isOverdue) info.el.classList.add('event-overdue');
+                    else if (props.isWarning) info.el.classList.add('event-warning');
+                    else if (props.status === 'Parcial') info.el.classList.add('event-partial');
+                    else info.el.classList.add('event-pending');
+                }
+            });
+
+            calendar.render();
+        }
+
+        function updateCalendar() {
+            if (!calendar) return;
+            calendar.removeAllEvents();
+            calendar.addEventSource(getCalendarEvents());
+        }
+
+        function handleEventClick(info) {
+            info.jsEvent.preventDefault();
+            const props = info.event.extendedProps;
+
+            _Swal.fire({
+                icon: 'info',
+                title: escapeHtml(info.event.title),
+                html: `<p class="mb-1"><strong>Folio:</strong> ${escapeHtml(props.number)}</p>` +
+                      `<p class="mb-0"><strong>Saldo pendiente:</strong> ${money(props.pendingAmount)}</p>`,
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: 'Registrar pago',
+                denyButtonText: 'Ver pagos',
+                cancelButtonText: 'Cerrar',
+                confirmButtonColor: '#16a34a',
+                cancelButtonColor: '#dc2626',
+                denyButtonColor: '#2563eb'
+            }).then(result => {
+                if (result.isConfirmed) selectDocument(props.documentId);
+                else if (result.isDenied) showDocumentDetail(props.documentId);
+            });
+        }
+
+        function showEventTooltip(info) {
+            const tooltip = document.getElementById('calendarTooltip');
+            const props = info.event.extendedProps;
+
+            let statusColor = '#15803d';
+            let statusText = 'Pendiente';
+
+            if (props.isOverdue) {
+                statusColor = '#b91c1c';
+                statusText = `Vencido (${Math.abs(props.daysUntilDue)} días)`;
+            } else if (props.isWarning) {
+                statusColor = '#c2410c';
+                statusText = props.daysUntilDue === 0 ? 'Vence hoy' : `Vence en ${props.daysUntilDue} días`;
+            } else if (props.status === 'Parcial') {
+                statusColor = '#0e7490';
+                statusText = 'Cobro parcial';
+            }
+
+            tooltip.innerHTML =
+                `<h4>${escapeHtml(tipoLegible(props.type))}</h4>` +
+                `<div class="tooltip-row"><span class="tooltip-label">Folio:</span><span class="tooltip-value">${escapeHtml(props.number)}</span></div>` +
+                `<div class="tooltip-row"><span class="tooltip-label">Cliente:</span><span class="tooltip-value">${escapeHtml(props.client)}</span></div>` +
+                `<div class="tooltip-row"><span class="tooltip-label">Monto total:</span><span class="tooltip-value">${money(props.totalAmount)}</span></div>` +
+                `<div class="tooltip-row"><span class="tooltip-label">Cobrado:</span><span class="tooltip-value" style="color:var(--success-color);">${money(props.paidAmount)}</span></div>` +
+                `<div class="tooltip-row"><span class="tooltip-label">Pendiente:</span><span class="tooltip-value" style="color:var(--danger-color);font-weight:bold;">${money(props.pendingAmount)}</span></div>` +
+                `<div class="tooltip-row"><span class="tooltip-label">Estado:</span><span class="tooltip-value" style="color:${statusColor};font-weight:bold;">${statusText}</span></div>`;
+
+            tooltip.classList.add('active');
+
+            // Se deja que el navegador calcule el tamaño real antes de ubicarlo.
+            requestAnimationFrame(() => {
+                const rect = info.el.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const padding = 10;
+
+                let left = rect.left;
+                let top = rect.bottom + 8;
+
+                if (left + tooltipRect.width > window.innerWidth - padding) {
+                    left = window.innerWidth - tooltipRect.width - padding;
+                }
+
+                if (top + tooltipRect.height > window.innerHeight - padding) {
+                    top = rect.top - tooltipRect.height - 8;
+                }
+
+                tooltip.style.left = `${Math.max(padding, left)}px`;
+                tooltip.style.top = `${Math.max(padding, top)}px`;
+            });
+        }
+
+        function hideEventTooltip() {
+            document.getElementById('calendarTooltip').classList.remove('active');
+        }
+
+        // =====================================================================
+        // VISTAS Y PANEL LATERAL
+        // =====================================================================
+        function switchView(view) {
+            const esTabla = view === 'table';
+
+            document.querySelector('.table-view').classList.toggle('active', esTabla);
+            document.querySelector('.calendar-view').classList.toggle('active', !esTabla);
+            document.getElementById('btnTableView').classList.toggle('is-active', esTabla);
+            document.getElementById('btnCalendarView').classList.toggle('is-active', !esTabla);
+            document.getElementById('hintVista').textContent = esTabla
+                ? 'Vista de tabla: búsqueda y paginado desde el servidor.'
+                : 'Vista de calendario: cada evento es un documento en su fecha de vencimiento.';
+
+            // El calendario se dibuja oculto y necesita recalcular su tamaño.
+            if (!esTabla && calendar) {
+                requestAnimationFrame(() => {
+                    calendar.updateSize();
+                    updateCalendar();
+                });
+            }
+        }
+
+        function togglePanel(abrir) {
+            const layout = document.getElementById('cxcLayout');
+            const visible = abrir ?? layout.classList.contains('is-collapsed');
+
+            layout.classList.toggle('is-collapsed', !visible);
+            localStorage.setItem(PANEL_STORAGE_KEY, visible ? '1' : '0');
+        }
+
+        function renderResumen() {
+            const lista = document.getElementById('listaVencimientos');
+            const cantidad = documents.length;
+
+            const totales = documents.reduce((acc, doc) => {
+                const saldo = parseFloat(doc.saldo_pendiente) || 0;
+                const dias = diasHastaVencimiento(doc.fecha_vencimiento, doc.current_date);
+
+                acc.total += saldo;
+                if (dias === null) acc.futuro += saldo;
+                else if (dias < 0) acc.vencido += saldo;
+                else if (dias <= 7) acc.porVencer += saldo;
+                else acc.futuro += saldo;
+
+                return acc;
+            }, { total: 0, vencido: 0, porVencer: 0, futuro: 0 });
+
+            document.getElementById('contadorDocumentos').textContent = cantidad;
+            document.getElementById('badgeResumenRail').textContent = cantidad;
+            document.getElementById('resumenPanel').textContent = cantidad
+                ? `${cantidad} documento${cantidad === 1 ? '' : 's'} con saldo pendiente`
+                : 'Sin documentos pendientes';
+            document.getElementById('kpiVencido').textContent = money(totales.vencido);
+            document.getElementById('kpiPorVencer').textContent = money(totales.porVencer);
+            document.getElementById('kpiFuturo').textContent = money(totales.futuro);
+            document.getElementById('totalPorCobrar').textContent = money(totales.total);
+
+            if (!cantidad) {
+                lista.innerHTML = `
+                    <li class="cxc-panel-empty">
+                        <i class="fa-solid fa-circle-check"></i>
+                        No hay documentos de cliente con saldo pendiente en esta sucursal.
+                    </li>`;
+                return;
+            }
+
+            const proximos = documents
+                .map(doc => ({ doc, dias: diasHastaVencimiento(doc.fecha_vencimiento, doc.current_date) }))
+                .sort((a, b) => (a.dias ?? Infinity) - (b.dias ?? Infinity))
+                .slice(0, MAX_VENCIMIENTOS_PANEL);
+
+            lista.innerHTML = proximos.map(({ doc, dias }) => {
+                const [clase, texto] = textoDias(dias);
+                const chip = clase === 'days-danger' ? 'is-danger' : (clase === 'days-warning' ? 'is-warning' : 'is-ok');
+
+                return `
+                    <li class="cxc-item">
+                        <div class="cxc-item-top">
+                            <span class="cxc-item-name" title="${escapeHtml(doc.n_cli ?? '')}">${escapeHtml(doc.n_cli || 'Sin cliente')}</span>
+                            <span class="cxc-chip ${chip}">${escapeHtml(texto)}</span>
+                        </div>
+                        <p class="cxc-item-desc">
+                            ${escapeHtml(tipoLegible(doc.tipo_proceso))} · Folio ${escapeHtml(doc.folio || 'N/A')}
+                            <br>Vence el ${escapeHtml(fechaCorta(doc.fecha_vencimiento))}
+                        </p>
+                        <div class="cxc-item-meta">
+                            <span class="cxc-item-amount">${money(doc.saldo_pendiente)}</span>
+                            <span class="cxc-item-actions">
+                                <button type="button" class="cxc-item-btn" data-pagar="${escapeHtml(doc.id_cartera)}" title="Registrar pago">
+                                    <i class="fa-solid fa-money-bill-wheat"></i>
+                                </button>
+                                <button type="button" class="cxc-item-btn" data-detalle="${escapeHtml(doc.id_cartera)}" title="Ver pagos">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                </button>
+                            </span>
+                        </div>
+                    </li>`;
+            }).join('');
+        }
+
+        // =====================================================================
+        // REGISTRO DE PAGO
+        // =====================================================================
+        function buscarDocumento(docId) {
+            return documents.find(d => String(d.id_cartera) === String(docId));
+        }
+
+        function tarjetaEstado(dias) {
+            if (dias === null) return ['ok', 'SIN FECHA', '—', ''];
+            if (dias < 0) return ['danger', 'DÍAS DE ATRASO', '⚠️', Math.abs(dias)];
+            if (dias === 0) return ['danger', 'VENCE HOY', '⚠️', 0];
+            if (dias <= 7) return ['warning', 'DÍAS RESTANTES', '⏰', dias];
+            return ['ok', 'DÍAS RESTANTES', '✓', dias];
+        }
+
+        async function selectDocument(docId) {
+            selectedDocument = buscarDocumento(docId);
+            if (!selectedDocument) {
+                toastMixin.fire({ icon: 'error', title: 'Documento no encontrado' });
+                return;
+            }
+
+            try {
+                bancos = await GetData({ path: '/PagosCliente/GetCuentasBancos' }) || [];
+            } catch (error) {
+                console.error('Error al cargar bancos:', error);
+                bancos = [];
+            }
+
+            const pending = parseFloat(selectedDocument.saldo_pendiente) || 0;
+            const total = parseFloat(selectedDocument.monto_total) || 0;
+            const paidAmount = total - pending;
+            const dias = diasHastaVencimiento(selectedDocument.fecha_vencimiento, selectedDocument.current_date);
+            const [daysClass, daysMessage, daysIcon, daysNumber] = tarjetaEstado(dias);
+
+            document.getElementById('documentInfo').innerHTML = `
+                <div class="document-info">
+                    <h3>Documento seleccionado</h3>
+                    <div class="document-info-content">
+                        <div class="info-section">
+                            <div class="info-section-title">Identificación</div>
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-card-label">Tipo</div>
+                                    <div class="info-card-value">
+                                        <span class="tipo-documento-badge">${escapeHtml(tipoLegible(selectedDocument.tipo_proceso))}</span>
+                                    </div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Folio</div>
+                                    <div class="info-card-value">${escapeHtml(selectedDocument.folio ?? 'N/A')}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-section-title">Cliente</div>
+                            <div class="info-card">
+                                <div class="info-card-value large">${escapeHtml(selectedDocument.n_cli ?? 'N/A')}</div>
+                            </div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-section-title">Fechas</div>
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-card-label">Emisión</div>
+                                    <div class="info-card-value">${escapeHtml(fechaCorta(selectedDocument.fecha_emision))}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Vencimiento</div>
+                                    <div class="info-card-value">${escapeHtml(fechaCorta(selectedDocument.fecha_vencimiento))}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Estado</div>
+                                    <div class="info-card-value">
+                                        <div class="days-indicator-card ${daysClass}">
+                                            <div class="days-number">${daysIcon} ${daysNumber}</div>
+                                            <div class="days-label" style="font-size: 0.7em;">${daysMessage}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-section-title">Información financiera</div>
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-card-label">Monto total</div>
+                                    <div class="info-card-value large">${money(total)}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Total cobrado</div>
+                                    <div class="info-card-value large success">${money(paidAmount)}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-highlight">
+                            <div class="info-highlight-label">Saldo pendiente de cobro</div>
+                            <div class="info-highlight-value">${money(pending)}</div>
+                        </div>
+                    </div>
+                </div>`;
+
+            document.getElementById('documentInfo').style.display = 'block';
+
+            // El reset se hace antes de fijar los valores por omisión, si no los borra.
+            limpiarFormularioPago();
+            document.getElementById('paymentAmount').max = pending;
+            document.getElementById('amountHelper').textContent = `Máximo: ${money(pending)}`;
+
+            populateBankSelect();
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('paymentModal')).show();
+        }
+
+        function limpiarFormularioPago() {
+            document.getElementById('paymentForm').reset();
+            document.getElementById('paymentDate').value = fechaISOLocal(new Date());
+            document.getElementById('filePreview').innerHTML = '';
+            document.getElementById('filePreview').classList.remove('active');
+            currentAttachments = [];
+        }
+
+        function populateBankSelect() {
+            const bankSelect = document.getElementById('paymentBank');
+            bankSelect.innerHTML = '<option value="">Seleccionar banco...</option>';
+
+            bancos.forEach(banco => {
+                const option = document.createElement('option');
+                option.value = banco.id;
+                option.textContent = banco.nombre;
+                bankSelect.appendChild(option);
+            });
+        }
+
+        function submitPayment() {
+            const form = document.getElementById('paymentForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            if (!selectedDocument) {
+                toastMixin.fire({ icon: 'warning', title: 'Debes seleccionar un documento primero' });
+                return;
+            }
+
+            if (!currentAttachments.length) {
+                toastMixin.fire({ icon: 'warning', title: 'Debes adjuntar al menos un comprobante' });
+                return;
+            }
+
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const pending = parseFloat(selectedDocument.saldo_pendiente) || 0;
+
+            if (!Number.isFinite(amount) || amount <= 0) {
+                toastMixin.fire({ icon: 'warning', title: 'El monto debe ser mayor a 0' });
+                return;
+            }
+
+            if (amount > pending) {
+                toastMixin.fire({ icon: 'warning', title: `El monto no puede ser mayor al saldo pendiente (${money(pending)})` });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Registrando pago, por favor espere...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            // Con swalResponse el helper recarga la página cuando el pago se
+            // registra bien, así que aquí no hace falta refrescar las tablas.
+            GetData({
+                path: '/PagosCliente/RegistrarPagoCliente',
+                data: {
+                    documentId: selectedDocument.encabezado_id,
+                    carteraId: selectedDocument.id_cartera,
+                    documentType: selectedDocument.tipo_proceso,
+                    documentNumber: selectedDocument.folio,
+                    client: selectedDocument.n_cli,
+                    amount: amount,
+                    paymentDate: document.getElementById('paymentDate').value,
+                    paymentMethod: document.getElementById('paymentMethod').value,
+                    bankId: document.getElementById('paymentBank').value,
+                    reference: document.getElementById('reference').value,
+                    notes: document.getElementById('notes').value,
+                    files: currentAttachments.map(a => a.file)
+                },
+                swalResponse: true,
+                swalType: 'modal'
+            });
+        }
+
+        // =====================================================================
+        // DETALLE DEL DOCUMENTO
+        // =====================================================================
+        async function showDocumentDetail(docId) {
+            const doc = buscarDocumento(docId);
+            if (!doc) {
+                toastMixin.fire({ icon: 'error', title: 'Documento no encontrado' });
+                return;
+            }
+
+            let docPayments = [];
+            try {
+                docPayments = await GetData({
+                    path: '/PagosCliente/GetDetallesPagos',
+                    data: { documento_padre: docId }
+                }) || [];
+            } catch (error) {
+                console.error('Error al cargar los pagos del documento:', error);
+                toastMixin.fire({ icon: 'error', title: 'No se pudieron cargar los pagos del documento' });
+                return;
+            }
+
+            const total = parseFloat(doc.monto_total) || 0;
+            const pending = parseFloat(doc.saldo_pendiente) || 0;
+            const paidAmount = total - pending;
+            const dias = diasHastaVencimiento(doc.fecha_vencimiento, doc.current_date);
+            const [daysClass, daysMessage, daysIcon, daysNumber] = tarjetaEstado(dias);
+
+            const estado = estadoDocumento(doc);
+            let statusClass = 'status-pending';
+            let statusText = 'Pendiente';
+
+            if (estado === 'Pagado') {
+                statusClass = 'status-paid';
+                statusText = 'Pagado';
+            } else if (dias !== null && dias < 0) {
+                statusClass = 'status-overdue';
+                statusText = 'Vencido';
+            } else if (estado === 'Parcial') {
+                statusClass = 'status-partial';
+                statusText = 'Cobro parcial';
+            }
+
+            document.getElementById('modalBody').innerHTML = `
+                <div class="document-info">
+                    <h3>Información del documento</h3>
+                    <div class="document-info-content">
+                        <div class="info-section">
+                            <div class="info-section-title">Identificación</div>
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-card-label">Tipo de documento</div>
+                                    <div class="info-card-value">
+                                        <span class="tipo-documento-badge">${escapeHtml(tipoLegible(doc.tipo_proceso))}</span>
+                                    </div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Número de folio</div>
+                                    <div class="info-card-value">${escapeHtml(doc.folio ?? 'N/A')}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Estado</div>
+                                    <div class="info-card-value">
+                                        <span class="status-badge ${statusClass}">${statusText}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-section-title">Cliente</div>
+                            <div class="info-card">
+                                <div class="info-card-label">Nombre del cliente</div>
+                                <div class="info-card-value large">${escapeHtml(doc.n_cli ?? 'N/A')}</div>
+                            </div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-section-title">Fechas</div>
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-card-label">Fecha de emisión</div>
+                                    <div class="info-card-value">${escapeHtml(fechaLarga(doc.fecha_emision))}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Fecha de vencimiento</div>
+                                    <div class="info-card-value">${escapeHtml(fechaLarga(doc.fecha_vencimiento))}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Tiempo hasta vencimiento</div>
+                                    <div class="info-card-value">
+                                        <div class="days-indicator-card ${daysClass}">
+                                            <div class="days-number">${daysIcon} ${daysNumber}</div>
+                                            <div class="days-label">${daysMessage}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-section-title">Resumen financiero</div>
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-card-label">Monto total</div>
+                                    <div class="info-card-value large">${money(total)}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Total cobrado</div>
+                                    <div class="info-card-value large success">${money(paidAmount)}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Saldo pendiente</div>
+                                    <div class="info-card-value large danger">${money(pending)}</div>
+                                </div>
+                            </div>
+                        </div>
+                        ${pending > 0 ? `
+                        <div class="info-highlight">
+                            <div class="info-highlight-label">Saldo pendiente de cobro</div>
+                            <div class="info-highlight-value">${money(pending)}</div>
+                        </div>` : `
+                        <div class="info-highlight" style="background: linear-gradient(135deg, var(--success-color) 0%, #047857 100%);">
+                            <div class="info-highlight-label">Documento cobrado completamente</div>
+                            <div class="info-highlight-value">${money(total)}</div>
+                        </div>`}
+                        <div class="info-section">
+                            <div class="info-section-title">Estadísticas de cobros</div>
+                            <div class="info-grid">
+                                <div class="info-card">
+                                    <div class="info-card-label">Cobros realizados</div>
+                                    <div class="info-card-value">${docPayments.length} ${docPayments.length === 1 ? 'cobro' : 'cobros'}</div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Porcentaje cobrado</div>
+                                    <div class="info-card-value ${paidAmount >= total ? 'success' : 'warning'}">
+                                        ${(total > 0 ? (paidAmount / total) * 100 : 0).toFixed(1)}%
+                                    </div>
+                                </div>
+                                <div class="info-card">
+                                    <div class="info-card-label">Cobro promedio</div>
+                                    <div class="info-card-value">${docPayments.length ? money(paidAmount / docPayments.length) : money(0)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                ${historialPagosHtml(docPayments)}`;
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('documentModal')).show();
+        }
+
+        function historialPagosHtml(pagos) {
+            if (!pagos.length) {
+                return `
+                    <div class="payment-history-section">
+                        <div class="payment-history-header"><h3>Historial de cobros</h3></div>
+                        <div class="no-payments">
+                            <div class="no-payments-icon"><i class="fa-solid fa-receipt"></i></div>
+                            <div class="no-payments-text">No hay cobros registrados para este documento</div>
+                        </div>
+                    </div>`;
+            }
+
+            const items = pagos.map(pago => {
+                const estado = String(pago.estado ?? '').toLowerCase();
+                let estadoBadge = '';
+
+                if (estado === 'pagado') estadoBadge = '<span class="status-badge status-paid">Pagado</span>';
+                else if (estado === 'parcial') estadoBadge = '<span class="status-badge status-partial">Parcial</span>';
+                else if (pago.estado) estadoBadge = `<span class="status-badge status-pending">${escapeHtml(pago.estado)}</span>`;
+
+                return `
+                    <div class="payment-history-item">
+                        <div class="payment-header">
+                            <div class="payment-info">
+                                <div class="payment-info-row">
+                                    <span class="payment-info-icon"><i class="fa-solid fa-calendar-day"></i></span>
+                                    <span class="payment-info-label">Fecha:</span>
+                                    <span class="payment-info-value">${escapeHtml(fechaCorta(pago.fecha_cobro))}</span>
+                                </div>
+                                <div class="payment-info-row">
+                                    <span class="payment-info-icon"><i class="fa-solid fa-file-lines"></i></span>
+                                    <span class="payment-info-label">Folio:</span>
+                                    <span class="payment-info-value">${escapeHtml(pago.folio ?? 'N/A')}</span>
+                                </div>
+                                <div class="payment-info-row">
+                                    <span class="payment-info-icon"><i class="fa-solid fa-tag"></i></span>
+                                    <span class="payment-info-label">Tipo:</span>
+                                    <span class="payment-info-value">${escapeHtml(tipoLegible(pago.tipo_proceso))}</span>
+                                </div>
+                                ${pago.uuid ? `
+                                <div class="payment-info-row">
+                                    <span class="payment-info-icon"><i class="fa-solid fa-fingerprint"></i></span>
+                                    <span class="payment-info-label">UUID:</span>
+                                    <span class="payment-info-value" style="font-size: 0.85em; word-break: break-all;">${escapeHtml(pago.uuid)}</span>
+                                </div>` : ''}
+                                ${estadoBadge ? `
+                                <div class="payment-info-row">
+                                    <span class="payment-info-icon"><i class="fa-solid fa-circle-check"></i></span>
+                                    <span class="payment-info-label">Estado:</span>
+                                    <span class="payment-info-value">${estadoBadge}</span>
+                                </div>` : ''}
+                            </div>
+                            <div class="payment-amount">${money(pago.monto_pago)}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            return `
+                <div class="payment-history-section">
+                    <div class="payment-history-header">
+                        <h3>Historial de cobros</h3>
+                        <span class="payment-history-count">${pagos.length} ${pagos.length === 1 ? 'cobro' : 'cobros'}</span>
+                    </div>
+                    ${items}
+                </div>`;
+        }
+
+        // =====================================================================
+        // COMPROBANTES
+        // =====================================================================
+        function previewFiles(input) {
+            const files = Array.from(input.files ?? []);
+            if (!files.length) return;
+
+            files.forEach(file => {
+                if (file.size > 5 * 1024 * 1024) {
+                    toastMixin.fire({ icon: 'warning', title: `"${file.name}" supera los 5 MB` });
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = e => {
+                    currentAttachments.push({
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        data: e.target.result,
+                        file: file
+                    });
+                    renderFilePreview();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // El input se limpia para poder volver a elegir el mismo archivo.
+            input.value = '';
+        }
+
+        function renderFilePreview() {
+            const preview = document.getElementById('filePreview');
+            preview.classList.toggle('active', currentAttachments.length > 0);
+
+            preview.innerHTML = currentAttachments.map((attachment, index) => {
+                const kb = attachment.size / 1024;
+                const sizeText = kb > 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${kb.toFixed(2)} KB`;
+                const miniatura = attachment.type.startsWith('image/')
+                    ? `<img src="${attachment.data}" alt="Vista previa de ${escapeHtml(attachment.name)}">`
+                    : `<div style="font-size: 34px;"><i class="fa-solid fa-file-pdf"></i></div>`;
+
+                return `
+                    <div class="file-preview-item" data-index="${index}">
+                        ${miniatura}
+                        <div class="file-info">
+                            <div class="file-name">${escapeHtml(attachment.name)}</div>
+                            <div class="file-size">${sizeText}</div>
+                        </div>
+                        <button type="button" class="btn-remove-file" data-quitar="${index}">
+                            <i class="fa-solid fa-trash"></i> Eliminar
+                        </button>
+                    </div>`;
+            }).join('');
+        }
+
+        // =====================================================================
+        // EVENTOS
+        // =====================================================================
+        function setupEventListeners() {
+            document.getElementById('btnTableView').addEventListener('click', () => switchView('table'));
+            document.getElementById('btnCalendarView').addEventListener('click', () => switchView('calendar'));
+            document.getElementById('btnVerCalendario').addEventListener('click', () => switchView('calendar'));
+
+            document.getElementById('btnMostrarPanel').addEventListener('click', () => togglePanel(true));
+            document.getElementById('btnOcultarPanel').addEventListener('click', () => togglePanel(false));
+
+            document.getElementById('btnActualizar').addEventListener('click', async function () {
+                this.disabled = true;
+                await loadData();
+                renderResumen();
+                updateCalendar();
+                tablaDocumentos?.refreshPage();
+                this.disabled = false;
+                toastMixin.fire({ title: 'Datos actualizados' });
+            });
+
+            document.getElementById('listaVencimientos').addEventListener('click', e => {
+                const pagar = e.target.closest('[data-pagar]');
+                if (pagar) {
+                    selectDocument(pagar.dataset.pagar);
+                    return;
+                }
+
+                const detalle = e.target.closest('[data-detalle]');
+                if (detalle) showDocumentDetail(detalle.dataset.detalle);
+            });
+
+            document.getElementById('btnRegistrarPago').addEventListener('click', submitPayment);
+
+            document.getElementById('dropComprobantes').addEventListener('click',
+                () => document.getElementById('attachmentFile').click());
+            document.getElementById('attachmentFile').addEventListener('change', function () { previewFiles(this); });
+
+            document.getElementById('filePreview').addEventListener('click', e => {
+                const quitar = e.target.closest('[data-quitar]');
+                if (!quitar) return;
+
+                currentAttachments.splice(Number(quitar.dataset.quitar), 1);
+                renderFilePreview();
+            });
+
+            document.getElementById('paymentModal').addEventListener('hidden.bs.modal', () => {
+                selectedDocument = null;
+                limpiarFormularioPago();
+                document.getElementById('documentInfo').style.display = 'none';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            togglePanel(localStorage.getItem(PANEL_STORAGE_KEY) !== '0');
+            // Los listeners no dependen de los datos: se enlazan de inmediato para
+            // que el cambio de vista y el panel respondan aunque la carga tarde.
+            setupEventListeners();
+            loadData().then(init);
+        });
+    </script>
+}

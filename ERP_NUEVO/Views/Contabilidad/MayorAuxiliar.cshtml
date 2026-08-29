@@ -1,0 +1,1022 @@
+﻿
+@{
+    ViewBag.Title = "MayorAuxiliar";
+    ViewBag.PageTitle = "Mayor Auxiliar";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/contabilidad/MayorAuxiliar.css" rel="stylesheet" />
+
+<div class="bk-wrap">
+    <!-- Filtros -->
+    <div class="filter-bar">
+        <div class="filter-group" id="group-fecha-inicio">
+            <label>Fecha inicio</label>
+            <input type="date" id="fecha-inicio">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+        <div class="filter-group" id="group-fecha-fin">
+            <label>Fecha fin</label>
+            <input type="date" id="fecha-fin">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-group" id="group-cuenta-ini">
+            <label>Cuenta inicial</label>
+            <input type="text" id="cuenta-ini" value="1" placeholder="ej. 1-01" style="font-family:monospace;font-size:12px">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+        <div class="filter-group" id="group-cuenta-fin">
+            <label>Cuenta final</label>
+            <input type="text" id="cuenta-fin" placeholder="ej. 9-99" style="font-family:monospace;font-size:12px">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+        <div class="filter-divider"></div>
+        <!-- Toggle: usar .filter-toggle-group para alineación correcta -->
+        <div class="filter-toggle-group">
+            <span>Cuentas en cero</span>
+            <div class="bootstrap-toggle toggle-success">
+                <input type="checkbox" id="quitarCero" checked>
+                <label for="quitarCero" class="toggle-group">
+                    <span class="toggle-on">Ocultar</span>
+                    <span class="toggle-handle"></span>
+                    <span class="toggle-off">Mostrar</span>
+                </label>
+            </div>
+        </div>
+        <div class="filter-divider"></div>
+        <!-- Toggle: usar .filter-toggle-group para alineación correcta -->
+        <div class="filter-toggle-group">
+            <span>Tipo reporte</span>
+            <div class="bootstrap-toggle toggle-success">
+                <input type="checkbox" id="tipoReporte" checked>
+                <label for="tipoReporte" class="toggle-group">
+                    <span class="toggle-on">Fecha libre</span>
+                    <span class="toggle-handle"></span>
+                    <span class="toggle-off">Por año</span>
+                </label>
+            </div>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-actions">
+            <button class="btn" onclick="clearFilters()">Limpiar</button>
+            <button class="btn btn-primary" onclick="applyFilters()">Consultar</button>
+        </div>
+    </div>
+
+    <button class="btn red-500" onclick="exportarPDF()">Exportar a PDF <i class="fa-solid fa-file-pdf"></i></button>
+    <button class="btn green-500" onclick="exportarExcel()">Exportar a Excel <i class="fa-solid fa-file-excel"></i></button>
+
+    <!-- Encabezado de columnas -->
+    <div class="bk-header">
+        <span>Cuenta</span>
+        <span>Saldo Inicial</span>
+        <span>Cargos</span>
+        <span>Abonos</span>
+        <span>Saldo Final</span>
+    </div>
+
+    <!-- Árbol -->
+    <div class="card-wrap">
+        <div id="tree">
+            <div class="w-100 d-grid justify-content-center text-center p-4">
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 14 14">
+                        <path fill="#999999" fill-rule="evenodd" d="M5.5 0a1 1 0 0 0-1 1v.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1zM2.75 1h.5v.5A2.25 2.25 0 0 0 5.5 3.75h3a2.25 2.25 0 0 0 2.25-2.25V1h.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5h-8.5a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 2.75 1" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="mt-2 text-center">
+                    Da click en "Consultar", para ver los resultados
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*Modal de Detalle*@
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalle de Póliza Contable</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="display:flex;align-items:center;justify-content:center;">
+                    <i class="fa-regular fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body p-0">
+                <div class="poliza-documento">
+                    <!-- Encabezado Oficial -->
+                    <div class="poliza-header-oficial">
+                        <div class="poliza-header-content">
+                            <div class="poliza-tipo-banner">
+                                <div class="poliza-tipo-titulo">
+                                    <i class="fas fa-file-invoice me-2"></i><span id="detallePolizaTitulo">PÓLIZA</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cuerpo del Documento -->
+                    <div class="poliza-body">
+                        <!-- Grid de Información -->
+                        <div class="info-documento-grid">
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-fingerprint"></i> Identificador Único
+                                </div>
+                                <div class="info-value-documento">
+                                    <div class="uuid-display">
+                                        <span id="detalleFolioUUID">-</span>
+                                        <i class="fas fa-copy copy-btn-poliza" id="copyUUIDBtn"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-calendar-alt"></i> Fecha de Emisión
+                                </div>
+                                <div class="info-value-documento" id="detalleFechaEmision">-</div>
+                                <br />
+                                <div class="info-label-documento">
+                                    <i class="fa-regular fa-file-invoice"></i> Paridad de documento
+                                </div>
+                                <div class="info-value-documento" id="paridadDocumento">-</div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-clock"></i> Estado
+                                </div>
+                                <div class="info-value-documento" id="detalleEstadoBadge">-</div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-user"></i> Elaborado Por
+                                </div>
+                                <div class="info-value-documento" id="detalleUsuarioNombre">-</div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-hashtag"></i> Referencia
+                                </div>
+                                <div class="info-value-documento" id="detalleReferenciaNum">-</div>
+                            </div>
+
+                            <div class="info-item-documento">
+                                <div class="info-label-documento">
+                                    <i class="fas fa-tag"></i> Tipo de Póliza
+                                </div>
+                                <div class="info-value-documento" id="detalleTipoBadge">-</div>
+                            </div>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="descripcion-nota">
+                            <div class="descripcion-nota-label">
+                                <i class="fas fa-sticky-note me-1"></i> Concepto
+                            </div>
+                            <p class="descripcion-nota-texto" id="detalleDescripcionTexto">-</p>
+                        </div>
+
+                        <!-- Partidas Contables -->
+                        <div class="partidas-section">
+                            <div class="partidas-header">
+                                <i class="fas fa-list-ol"></i>
+                                <h6>Movimientos Contables</h6>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="tabla-partidas-profesional">
+                                    <thead>
+                                        <tr>
+                                            <th>CUENTA</th>
+                                            <th>NOMBRE DE LA CUENTA</th>
+                                            <th>CENTRO DE COSTOS</th>
+                                            <th class="text-end">DEBE</th>
+                                            <th class="text-end">HABER</th>
+                                            <th class="text-end">TIPO DE CAMBIO</th>
+                                            <th>CONCEPTO</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detallePartidasProfesional">
+                                        <!-- Se llenará dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Totales Footer -->
+                        <div class="totales-footer">
+                            <div class="totales-grid">
+                                <div class="total-card">
+                                    <div class="total-icon">
+                                        <i class="fas fa-hashtag"></i>
+                                    </div>
+                                    <div class="total-label-nuevo">Total Partidas</div>
+                                    <div class="total-valor" id="detalleTotalPartidasCard">0</div>
+                                </div>
+
+                                <div class="total-card debe">
+                                    <div class="total-icon">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </div>
+                                    <div class="total-label-nuevo">Total Debe</div>
+                                    <div class="total-valor" id="detalleTotalDebeCard">$0.00</div>
+                                </div>
+
+                                <div class="total-card haber">
+                                    <div class="total-icon">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </div>
+                                    <div class="total-label-nuevo">Total Haber</div>
+                                    <div class="total-valor" id="detalleTotalHaberCard">$0.00</div>
+                                </div>
+
+                                <div class="total-card balance">
+                                    <div class="total-icon">
+                                        <i class="fas fa-check-double"></i>
+                                    </div>
+                                    <div class="total-label-nuevo">Estado Balance</div>
+                                    <div class="total-valor" id="detalleBalanceCard">CUADRADO ✓</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer del Documento -->
+                    <div class="documento-footer">
+                        <div class="documento-footer-info">
+                            <span><i class="fas fa-calendar me-1"></i> Fecha de consulta: <span id="fechaConsulta"></span></span>
+                            <span><i class="fas fa-user me-1"></i> Usuario: <span id="usuarioConsulta"></span></span>
+                        </div>
+                        <span><i class="fas fa-file-alt me-1"></i> Documento oficial</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cerrar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="generarPDFPoliza(polizaActualDetalle.uuid)">
+                    <i class="fas fa-file-pdf me-2"></i>Generar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/Scripts/Switch.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script>
+    // ─────────────────────────────────────────────────────────────────────────────
+    // REEMPLAZA el bloque <script> completo en tu vista con este contenido
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    let _EXPORT_DATA = [];
+    let _ENTERPRISE_DATA = {};
+    let _CUENTAS = [];
+    let tomManager;
+    let polizaActualDetalle;
+
+    const capitalizeLetter = (tipo) => {
+        if (!tipo) return '';
+        return tipo.charAt(0).toUpperCase() + tipo.slice(1).toLowerCase();
+    }
+
+    /**
+     * Construye el árbol jerárquico a partir del arreglo plano.
+     * Ahora las propiedades vienen en PascalCase: Codigo, Nombre, EsPadre, Detalle, etc.
+     */
+    function buildTree(nodes) {
+        const map = {}, roots = [];
+        nodes.forEach(n => { map[n.codigo] = { ...n, children: [] }; });
+        nodes.forEach(n => {
+            const parts = n.codigo.split('-');
+            if (parts.length === 1) { roots.push(map[n.codigo]); return; }
+            let parentCode = null;
+            for (let i = parts.length - 1; i >= 1; i--) {
+                const c = parts.slice(0, i).join('-');
+                if (map[c] && c !== n.codigo) { parentCode = c; break; }
+            }
+            if (parentCode) map[parentCode].children.push(map[n.codigo]);
+            else roots.push(map[n.codigo]);
+        });
+        return roots;
+    }
+
+    function toggleNode(uid) {
+        const ch = document.getElementById('ch-' + uid);
+        const row = document.querySelector('#' + uid + '>.node-row');
+        const chev = row ? row.querySelector('.chevron') : null;
+        if (!ch) return;
+        const isOpen = ch.style.display !== 'none';
+        ch.style.display = isOpen ? 'none' : 'block';
+        if (chev) chev.classList.toggle('open', !isOpen);
+    }
+
+    /**
+     * Expande/colapsa el sub-listado de movimientos de una cuenta hoja.
+     */
+    function toggleDetalle(uid) {
+        const el = document.getElementById('det-' + uid);
+        if (!el) return;
+        const isOpen = el.style.display !== 'none';
+        el.style.display = isOpen ? 'none' : 'block';
+        const btn = document.getElementById('det-btn-' + uid);
+        if (btn) btn.classList.toggle('open', !isOpen);
+    }
+
+    /**
+     * Genera el HTML de las sub-filas de movimiento (Detalle).
+     */
+    function renderDetalle(detalle, uid) {
+        if (!detalle || !detalle.length) return '';
+
+        // Antes: '140px 1fr 90px 100px 100px 100px 60px'
+        // Folio fijo | Doc·Desc flexible con mínimo | Fecha más amplia | Tipo compacto | Cargos | Abonos | Acciones
+        const COL = '120px 70px 105px minmax(160px, 1fr) 90px 90px 48px';
+        const BASE = `display:grid;grid-template-columns:${COL};gap:0 8px;align-items:center;`;
+        const CELL_HDR = `font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);`;
+        const BL = `border-left:2px solid var(--accent-blue);`;
+
+        const header = `
+            <div style="${BASE}padding:5px 12px 5px 28px;${BL}border-radius:var(--row-radius) var(--row-radius) 0 0;margin-bottom:1px;" class="header-poliza">
+                <span style="${CELL_HDR}">Folio</span>
+                <span style="${CELL_HDR}">Tipo</span>
+                <span style="${CELL_HDR}">Fecha</span>
+                <span style="${CELL_HDR}">Doc · Descripción</span>
+                <span style="${CELL_HDR}text-align:right;">Cargos</span>
+                <span style="${CELL_HDR}text-align:right;">Abonos</span>
+                <span style="${CELL_HDR}text-align:right;">Acciones</span>
+            </div>`;
+
+        const rows = detalle.map((d, i) => {
+            const fecha = dateFormatter(d.fecha);
+            const debeClass = d.debe > 0 ? 'saldo-pos' : 'node-amt';
+            const haberClass = d.haber > 0 ? 'saldo-neg' : 'node-amt';
+            const bg = i % 2 === 0 ? 'var(--bg-gray)' : 'var(--bg-light)';
+
+            return `
+                <div style="${BASE}padding:4px 12px 4px 28px;background:${bg};${BL}margin-bottom:1px;border-radius:0;">
+                    <span style="font-family:monospace;font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.poliza.slice(-5) ?? '—'}</span>
+                    <span style="font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.clasificacion?.toUpperCase() ?? '—'}</span>
+                    <span style="font-size:11px;color:var(--text-light);white-space:nowrap;">${fecha}</span>
+                    <div style="display:flex;flex-direction:column;gap:1px;overflow:hidden;">
+                        <span style="font-size:11px;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.documento ?? '—'}</span>
+                        <span style="font-size:10px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.descripcion ?? ''}</span>
+                    </div>
+                    <span class="node-amt ${debeClass}"  style="font-size:11px;text-align:right;">${d.debe > 0 ? Currency.format(d.debe) : '—'}</span>
+                    <span class="node-amt ${haberClass}" style="font-size:11px;text-align:right;">${d.haber > 0 ? Currency.format(d.haber) : '—'}</span>
+                    <span style="display:flex;justify-content:flex-end;">
+                        <button class="btn btn-sm blue-500" onclick="verDetallePoliza('${d.polizaId}')">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </button>
+                    </span>
+                </div>`;
+        }).join('');
+
+        return `<div id="det-${uid}" style="display:none;padding-left:16px;">${header}${rows}</div>`;
+    }
+
+    /**
+     * Renderiza un nodo del árbol (recursivo).
+     * Usa PascalCase para acceder a las propiedades del objeto.
+     */
+    function renderNode(node, depth) {
+        const hasChildren = node.children && node.children.length > 0;
+        const hasDetalle = !node.esPadre && node.detalle && node.detalle.length > 0;
+        // Es "hoja visual" si no tiene hijos en el árbol
+        const isLeaf = !hasChildren;
+
+        const uid = 'n-' + node.codigo.replace(/[^a-z0-9]/gi, '_');
+        const depthClass = 'depth-' + Math.min(depth, 4);
+        const saldoClass = node.saldoFinal >= 0 ? 'saldo-pos' : 'saldo-neg';
+        const saldoIniClass = node.saldoInicial >= 0 ? 'saldo-pos' : 'saldo-neg';
+
+        // Chevron del árbol (expandir hijos)
+        const chevron = hasChildren
+            ? `<svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 4 10 8 6 12"/></svg>`
+            : `<span class="chevron-ph"></span>`;
+
+        // Botón de detalle (solo cuentas hoja con movimientos)
+        const detBtn = hasDetalle
+            ? `<svg id="det-btn-${uid}" onclick="event.stopPropagation();toggleDetalle('${uid}')"
+                class="chevron" style="cursor:pointer;color:var(--accent-blue);"
+                viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"
+                title="Ver movimientos">
+                <polyline points="6 4 10 8 6 12"/>
+           </svg>`
+            : '';
+
+        // Sub-árbol de hijos
+        const childrenHtml = hasChildren
+            ? `<div class="children" id="ch-${uid}" style="display:none">
+               ${node.children.map(c => renderNode(c, depth + 1)).join('')}
+           </div>`
+            : '';
+
+        // Sub-lista de movimientos
+        const detalleHtml = hasDetalle ? renderDetalle(node.detalle, uid) : '';
+
+        return `
+        <div class="node ${depthClass}" id="${uid}">
+            <div class="node-row${isLeaf ? ' leaf leaf-row' : ''}"
+                 onclick="${hasChildren ? `toggleNode('${uid}')` : (hasDetalle ? `toggleDetalle('${uid}')` : '')}">
+                <div class="node-name">
+                    ${chevron}
+                    ${detBtn}
+                    <span class="code">${node.codigo}</span>
+                    <span class="label">${node.nombre}</span>
+                </div>
+                <span class="node-saldo ${saldoIniClass}">${Currency.format(node.saldoInicial)}</span>
+                <span class="node-amt">${Currency.format(node.debe)}</span>
+                <span class="node-amt">${Currency.format(node.haber)}</span>
+                <span class="node-saldo ${saldoClass}">${Currency.format(node.saldoFinal)}</span>
+            </div>
+            ${detalleHtml}
+            ${childrenHtml}
+        </div>`;
+    }
+
+    function renderTree(data) {
+        const tree = buildTree(data);
+        document.getElementById('tree').innerHTML =`
+            <button class="btn blue-500" onclick="expandAll()">Expandir todo <i class="fa-solid fa-chevrons-down"></i></button>
+            <button class="btn" onclick="collapseAll()">Colapsar todo <i class="fa-solid fa-chevrons-up"></i></button><br><br>
+            ${tree.map(n => renderNode(n, 0)).join('<div class="spacer"></div>')}`;
+    }
+
+    function expandAll() {
+        // Expande todos los nodos del árbol (hijos)
+        document.querySelectorAll('[id^="ch-"]').forEach(el => {
+            el.style.display = 'block';
+        });
+
+        // Expande todos los acordeones de movimientos
+        document.querySelectorAll('[id^="det-"]').forEach(el => {
+            el.style.display = 'block';
+        });
+
+        // Rota todos los chevrons del árbol para que apunten abajo
+        document.querySelectorAll('.chevron').forEach(el => {
+            el.classList.add('open');
+        });
+    }
+
+    function collapseAll() {
+        document.querySelectorAll('[id^="ch-"]').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        document.querySelectorAll('[id^="det-"]').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        document.querySelectorAll('.chevron').forEach(el => {
+            el.classList.remove('open');
+        });
+    }
+    // ── Fechas ─────────────────────────────────────────────────────────────────
+
+    function initDates() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const last = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
+        document.getElementById('fecha-inicio').value = `${year}-${month}-01`;
+        document.getElementById('fecha-fin').value = `${year}-${month}-${last}`;
+    }
+
+    function fechaAnio() {
+        const year = new Date().getFullYear();
+        document.getElementById('fecha-inicio').value = `${year}-01-01`;
+        document.getElementById('fecha-fin').value = `${year}-12-31`;
+    }
+
+    // ── Consultar ──────────────────────────────────────────────────────────────
+
+    function applyFilters() {
+        const fechaIni = document.getElementById('fecha-inicio');
+        const fechaFin = document.getElementById('fecha-fin');
+        const groupIni = document.getElementById('group-fecha-inicio');
+        const groupFin = document.getElementById('group-fecha-fin');
+        const cuentaIni = document.getElementById('cuenta-ini');
+        const groupCtaIni = document.getElementById('group-cuenta-ini');
+        const cuentaFin = document.getElementById('cuenta-fin');
+        const groupCtaFin = document.getElementById('group-cuenta-fin');
+
+        let isValid = true;
+
+        [
+            [fechaIni, groupIni],
+            [fechaFin, groupFin],
+            [cuentaIni, groupCtaIni],
+        ].forEach(([input, group]) => {
+            if (!input.value.trim()) {
+                group.classList.add('field-error');
+                isValid = false;
+            } else {
+                group.classList.remove('field-error');
+            }
+        });
+
+        if (!isValid) return;
+
+        GetData({
+            path: '/Contabilidad/GetMayorAuxiliar',
+            data: {
+                fechaInicio: fechaIni.value,
+                fechaFin: fechaFin.value,
+                cuentaIni: cuentaIni.value.trim(),
+                cuentaFin: cuentaFin.value.trim(),
+                quitarCero: document.getElementById('quitarCero').checked,
+                tipoReporte: document.getElementById('tipoReporte').checked,
+            }
+        }).then(data => {
+            _EXPORT_DATA = data.resumen ?? data; // compatibilidad si el backend devuelve array directo
+            _ENTERPRISE_DATA = data.datos_empresa ?? {};
+            renderTree(_EXPORT_DATA);
+        });
+    }
+
+    function clearFilters() {
+        initDates();
+        document.getElementById('cuenta-ini').value = '1';
+        document.getElementById('cuenta-fin').value = '';
+        document.getElementById('quitarCero').checked = true;
+        document.getElementById('tipoReporte').checked = true;
+
+        tomManager.instances.get('cuenta-inicial').setValue('1');
+        tomManager.instances.get('cuenta-fin').setValue('');
+
+        if (typeof initNormalToggles === 'function') initNormalToggles();
+
+        document.getElementById('fecha-inicio').removeAttribute('disabled');
+        document.getElementById('fecha-fin').removeAttribute('disabled');
+        applyFilters();
+    }
+
+    // ── Exports ────────────────────────────────────────────────────────────────
+
+    /**
+     * Construye una matriz plana para exportar:
+     * - Fila resumen por cada cuenta (padre o hoja)
+     * - Si la cuenta hoja tiene Detalle, agrega sub-filas de movimiento indentadas
+     */
+    function buildExportMatrix(data) {
+        if (!data || !data.length) return [[]];
+
+        const header = ['Cuenta', 'Nombre', 'Saldo Inicial', 'Cargos', 'Abonos', 'Saldo Final'];
+        const body = [];
+
+        data.forEach(row => {
+            // Fila principal de la cuenta
+            body.push([
+                row.codigo,
+                row.nombre,
+                row.saldoInicial,
+                row.debe,
+                row.haber,
+                row.saldoFinal,
+            ]);
+
+            // Sub-filas de movimientos (solo cuentas hoja con detalle)
+            if (!row.esPadre && row.detalle && row.detalle.length) {
+                row.detalle.forEach(d => {
+                    body.push([
+                        `  ${d.poliza ?? ''}`,           // indentado visual en texto
+                        d.documento ?? '',
+                        dateFormatter(d.fecha),
+                        d.debe ?? 0,
+                        d.haber ?? 0,
+                        '',                              // Saldo Final no aplica en movimiento
+                    ]);
+                });
+            }
+        });
+
+        return [header, ...body];
+    }
+
+    function exportarExcel() {
+        if (_EXPORT_DATA.length === 0) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'Primero filtra los resultados para exportar'
+            })
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+        const matrix = buildExportMatrix(_EXPORT_DATA);
+        const ws = XLSX.utils.aoa_to_sheet(matrix);
+
+        // Ancho de columnas
+        ws['!cols'] = [
+            { wch: 22 }, // Cuenta
+            { wch: 40 }, // Nombre
+            { wch: 16 }, // Saldo Inicial
+            { wch: 14 }, // Cargos
+            { wch: 14 }, // Abonos
+            { wch: 16 }, // Saldo Final
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Mayor Auxiliar');
+        XLSX.writeFile(wb, 'Mayor_Auxiliar.xlsx');
+    }
+
+    // ─── Tipos de fila ───────────────────────────────────────────────────────────
+    const RT = {
+        PADRE: 'padre',
+        HOJA: 'hoja',
+        ACC_HEAD: 'acc-head',   // header del bloque acordeón
+        ACC_ROW: 'acc-row',    // movimiento dentro del acordeón
+        ACC_FOOT: 'acc-foot',   // última fila del bloque (para cerrar el borde)
+    };
+
+    // ─── Paleta ──────────────────────────────────────────────────────────────────
+    const C = {
+        padre: [21, 43, 95],
+        padreText: [255, 255, 255],
+        accHead: [199, 218, 243],
+        accHeadText: [21, 43, 95],
+        accRow: [237, 245, 255],
+        accBorder: [100, 149, 210],   // borde del panel acordeón
+        hoja: [255, 255, 255],
+        hojaAlt: [247, 249, 252],
+    };
+
+    // ─── Construcción del body ───────────────────────────────────────────────────
+    function buildBody(data) {
+        const rows = [];
+
+        data.forEach((cuenta, ci) => {
+            // Fila de cuenta
+            rows.push({
+                _type: RT.HOJA,
+                _idx: ci,
+                data: [
+                    cuenta.codigo,
+                    cuenta.nombre,
+                    Currency.format(cuenta.saldoInicial),
+                    Currency.format(cuenta.debe),
+                    Currency.format(cuenta.haber),
+                    Currency.format(cuenta.saldoFinal),
+                ],
+            });
+
+            // Bloque acordeón solo si hay movimientos
+            if (!cuenta.esPadre && cuenta.detalle?.length > 0) {
+                const movs = cuenta.detalle;
+
+                // Header del acordeón
+                rows.push({
+                    _type: RT.ACC_HEAD,
+                    _cuentaIdx: ci,
+                    data: ['Póliza', 'Documento', 'Tipo', 'Fecha', 'Cargos', 'Abonos'],
+                });
+
+                movs.forEach((mov, mi) => {
+                    const isLast = mi === movs.length - 1;
+                    rows.push({
+                        _type: RT.ACC_ROW,
+                        _cuentaIdx: ci,
+                        data: [
+                            mov.poliza ?? '',
+                            `${mov.documento} - ${mov.descripcion.replace('\n', ' - ')}` ?? '',
+                            mov.clasificacion.toUpperCase() ?? '',
+                            //mov.Descripcion ?? '',
+                            dateFormatter(mov.fecha),
+                            Currency.format(mov.debe),
+                            Currency.format(mov.haber),
+                        ],
+                    });
+                });
+            }
+        });
+
+        return rows;
+    }
+
+    async function exportarPDF() {
+        if (_EXPORT_DATA.length === 0) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'Primero filtra los resultados para exportar'
+            })
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const fechaIni = document.getElementById('fecha-inicio').value;
+        const fechaFin = document.getElementById('fecha-fin').value;
+        const fechaStr = fechaIni && fechaFin
+            ? `${fechaIni.split('-').reverse().join('/')} — ${fechaFin.split('-').reverse().join('/')}`
+            : new Date().toLocaleDateString('es-MX');
+        const logoBase64 = await convertToBase64(`/Content/img/${empresa}/logo.png`);
+
+        const bodyRows = buildBody(_EXPORT_DATA);
+        const tableBody = bodyRows.map(r => r.data);
+
+        // Para el borde del acordeón necesitamos trackear posición Y por bloque
+        // Guardamos { top, bottom, page } por _cuentaIdx
+        const acordeonBounds = {};  // clave: _cuentaIdx → { x, y, w, h, page }
+
+        doc.autoTable({
+            startY: 55,
+            margin: { left: 10, right: 10, top: 55 },
+
+            head: [['Código', 'Nombre', 'Saldo Inicial', 'Cargos', 'Abonos', 'Saldo Final']],
+            body: tableBody,
+
+            styles: {
+                fontSize: 8,
+                font: 'helvetica',
+                lineColor: [210, 210, 210],
+                lineWidth: 0.1,
+                textColor: [40, 40, 40],
+                cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 },
+                overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: PDF_THEME.primary,
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                halign: 'center',
+                fontSize: 8,
+            },
+            columnStyles: {
+                0: { cellWidth: 'auto' },
+                1: { cellWidth: 'auto' },
+                2: { cellWidth: 'auto' },
+                3: { halign: 'right', cellWidth: 'auto' },
+                4: { halign: 'right', cellWidth: 'auto' },
+                5: { halign: 'right', cellWidth: 'auto' },
+            },
+
+            // ── Estilos por tipo ────────────────────────────────────────────────
+            didParseCell: ({ section, row, cell, column }) => {
+                if (section !== 'body') return;
+                const meta = bodyRows[row.index];
+                if (!meta) return;
+
+                switch (meta._type) {
+                    case RT.PADRE:
+                        cell.styles.fillColor = C.padre;
+                        cell.styles.textColor = C.padreText;
+                        cell.styles.fontStyle = 'bold';
+                        cell.styles.lineWidth = 0;
+                        if (column.index >= 2) cell.styles.halign = 'right';
+                        break;
+
+                    case RT.HOJA:
+                        cell.styles.fillColor = row.index % 2 === 0 ? C.hoja : C.hojaAlt;
+                        if (column.index >= 2) cell.styles.halign = 'right';
+                        break;
+
+                    case RT.ACC_HEAD:
+                        cell.styles.fillColor = C.accHead;
+                        cell.styles.textColor = C.accHeadText;
+                        cell.styles.fontStyle = 'bold';
+                        cell.styles.fontSize = 7;
+                        cell.styles.lineWidth = 0;          // sin grid interno
+                        cell.styles.cellPadding = { top: 2, bottom: 2, left: 8, right: 4 };
+                        if (column.index >= 4) cell.styles.halign = 'right';
+                        break;
+
+                    case RT.ACC_ROW:
+                    case RT.ACC_FOOT:
+                        cell.styles.fillColor = C.accRow;
+                        cell.styles.fontSize = 7;
+                        cell.styles.lineWidth = 0;          // sin grid interno
+                        cell.styles.cellPadding = { top: 2, bottom: 2, left: 8, right: 4 };
+                        if (column.index >= 4) cell.styles.halign = 'right';
+                        break;
+                }
+            },
+
+            // ── Captura bounds del acordeón para dibujar el borde ───────────────
+            didDrawCell: ({ section, row, cell, column, pageNumber }) => {
+                if (section !== 'body') return;
+                const meta = bodyRows[row.index];
+                if (!meta) return;
+
+                const isAccBlock = [RT.ACC_HEAD, RT.ACC_ROW, RT.ACC_FOOT].includes(meta._type);
+                if (!isAccBlock) return;
+
+                const key = meta._cuentaIdx;
+                const cellRight = cell.x + cell.width;
+                const cellBottom = cell.y + cell.height;
+
+                if (!acordeonBounds[key]) {
+                    // Primera celda del bloque: registra apertura
+                    acordeonBounds[key] = {
+                        x: cell.x,
+                        y: cell.y,
+                        xEnd: cellRight,
+                        yEnd: cellBottom,
+                        page: pageNumber,
+                    };
+                } else {
+                    // Actualiza el extremo inferior/derecho
+                    const b = acordeonBounds[key];
+                    if (cellRight > b.xEnd) b.xEnd = cellRight;
+                    if (cellBottom > b.yEnd) { b.yEnd = cellBottom; b.page = pageNumber; }
+                }
+
+                // Cuando es la última celda de la última fila del bloque,
+                // dibuja el rectángulo borde del "panel acordeón"
+                if (meta._type === RT.ACC_FOOT && column.index === 5) {
+                    const b = acordeonBounds[key];
+                    doc.setDrawColor(...C.accBorder);
+                    doc.setLineWidth(0.6);
+                    doc.rect(b.x, b.y, b.xEnd - b.x, b.yEnd - b.y, 'S');
+                    doc.setLineWidth(0.1);  // restaurar
+                }
+            },
+
+            didDrawPage: async (data) => {
+                agregarEncabezadoPDF(doc, logoBase64, 'MAYOR AUXILIAR', _ENTERPRISE_DATA, fechaStr);
+                agregarFolioFecha(doc, 'N/A', 'Reporte Mayor Auxiliar');
+
+                const W = doc.internal.pageSize.getWidth();
+                const H = doc.internal.pageSize.getHeight();
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(...PDF_THEME.textLight);
+                doc.text(
+                    `Página ${data.pageNumber} de ${doc.internal.getNumberOfPages()}`,
+                    W - 10, H - 6, { align: 'right' }
+                );
+                doc.text(
+                    `Documento generado automáticamente el ${new Date().toLocaleDateString()}`,
+                    10, H - 6
+                );
+            },
+        });
+
+        window.open(URL.createObjectURL(doc.output('blob')), '_blank');
+    }
+
+    async function verDetallePoliza(poliza) {
+        if (!poliza) return;
+
+        polizaActualDetalle = await GetData({
+            path: '/Contabilidad/GetPolizaData',
+            data: {
+                poliza: poliza
+            }
+        });
+
+        // Header del documento
+        document.getElementById('detallePolizaTitulo').textContent = `PÓLIZA DE ${polizaActualDetalle.tipo.toUpperCase()}`;
+        //document.getElementById('detalleFolioHeader').textContent = polizaActualDetalle.folio || 'N/A';
+
+        // Grid de información
+        document.getElementById('detalleFolioUUID').textContent = polizaActualDetalle.folio_poliza;
+        document.getElementById('detalleFechaEmision').textContent = dateFormatter(polizaActualDetalle.fecha);
+        document.getElementById('paridadDocumento').textContent = Currency.format(polizaActualDetalle.par);
+
+        // Badge de estado
+        const estadoBadge = `<span class="badge-profesional badge-${polizaActualDetalle.estado}">
+            <i class="fas fa-check-circle"></i> ${capitalizeLetter(polizaActualDetalle.estado)}
+        </span>`;
+        document.getElementById('detalleEstadoBadge').innerHTML = estadoBadge;
+
+        document.getElementById('detalleUsuarioNombre').textContent = polizaActualDetalle.usuario;
+        document.getElementById('detalleReferenciaNum').textContent = polizaActualDetalle.folio || 'N/A';
+
+        // Badge de tipo
+        const tipoBadge = `<span class="badge-profesional badge-${polizaActualDetalle.tipo}">
+            <i class="fas fa-book"></i> ${capitalizeLetter(polizaActualDetalle.tipo)}
+        </span>`;
+        document.getElementById('detalleTipoBadge').innerHTML = tipoBadge;
+
+        document.getElementById('detalleDescripcionTexto').innerHTML = polizaActualDetalle.descripcion.replace(/\n/g, '<br>').replace('_', ' ');
+
+        // Footer info
+        const fechaHoy = new Date().toLocaleDateString('es-MX');
+        document.getElementById('fechaConsulta').textContent = fechaHoy;
+        document.getElementById('usuarioConsulta').textContent = polizaActualDetalle.usuario;
+
+        // Copiar UUID
+        document.getElementById('copyUUIDBtn').onclick = function () {
+            const icon = this;
+            icon.classList.remove('fa-copy');
+            icon.classList.add('fa-check');
+            icon.style.color = '#10b981';
+            navigator.clipboard.writeText(polizaActualDetalle.folio_poliza);
+            setTimeout(() => {
+                icon.classList.remove('fa-check');
+                icon.classList.add('fa-copy');
+                icon.style.color = '';
+            }, 2000);
+        };
+
+        // Cargar detalles de partidas
+        const data = await GetData({
+            path: '/Contabilidad/GetDetallesPoliza',
+            data: { uuid: polizaActualDetalle.uuid }
+        });
+
+        const detalles = data.detalles;
+
+        // Renderizar partidas con el nuevo diseño
+        const partidasHtml = detalles.map(p => `
+            <tr>
+                <td class="col-cuenta">${p.codigo}</td>
+                <td class="col-nombre-cuenta">${p.nombrecuenta}</td>
+                <td class="col-centro">${p.nombre_costos || 'N/A'}</td>
+                <td class="col-monto ${p.debe > 0 ? 'monto-debe' : ''}">${p.debe === 0 ? '' : Currency.format(p.debe)}</td>
+                <td class="col-monto ${p.haber > 0 ? 'monto-haber' : ''}">${p.haber === 0 ? '' : Currency.format(p.haber)}</td>
+                <td class="col-centro"> ${p.ccy}</td>
+                <td class="col-descripcion">${p.descripcion}</td>
+            </tr>
+        `).join('');
+        document.getElementById('detallePartidasProfesional').innerHTML = partidasHtml;
+
+        // Calcular totales
+        const totalDebe = detalles.reduce((sum, p) => sum + p.debe, 0);
+        const totalHaber = detalles.reduce((sum, p) => sum + p.haber, 0);
+        const totalPartidas = detalles.length;
+        const diferencia = Math.abs(totalDebe - totalHaber);
+
+        document.getElementById('detalleTotalPartidasCard').textContent = totalPartidas;
+        document.getElementById('detalleTotalDebeCard').textContent = Currency.format(totalDebe);
+        document.getElementById('detalleTotalHaberCard').textContent = Currency.format(totalHaber);
+
+        // Balance
+        // Balance
+        const balanceCard = document.querySelector('.total-card.balance');
+        const balanceValor = document.getElementById('detalleBalanceCard');
+
+        if (diferencia < 0.01) {
+            balanceCard.classList.remove('warning');
+            balanceValor.innerHTML = 'CUADRADO <i class="fas fa-check"></i>';
+        } else {
+            balanceCard.classList.add('warning');
+            balanceValor.innerHTML = `DIF: ${Currency.format(diferencia)}`;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+        modal.show();
+    }
+
+    // ── DOMContentLoaded ───────────────────────────────────────────────────────
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        initDates();
+        initNormalToggles();
+
+        ['fecha-inicio', 'fecha-fin'].forEach(id => {
+            document.getElementById(id).addEventListener('change', function () {
+                if (this.value) this.closest('.filter-group').classList.remove('field-error');
+            });
+        });
+
+        document.getElementById('tipoReporte').addEventListener('click', (e) => {
+            if (!e.target.checked) {
+                fechaAnio();
+                document.getElementById('fecha-inicio').setAttribute('disabled', true);
+                document.getElementById('fecha-fin').setAttribute('disabled', true);
+            } else {
+                initDates();
+                document.getElementById('fecha-inicio').removeAttribute('disabled');
+                document.getElementById('fecha-fin').removeAttribute('disabled');
+            }
+        });
+
+        tomManager = new TomSelectManager();
+        _CUENTAS = await GetData({ path: '/Contabilidad/GetCuentasFinanzas' });
+
+        const tomConfig = (selector) => ({
+            selector,
+            options: _CUENTAS,
+            valueField: 'codigo',
+            searchField: ['codigo', 'descripcion', 'nombre'],
+            placeholder: 'Selecciona una cuenta...',
+            maxItems: 1,
+            create: false,
+            render: {
+                option: (data, escape) =>
+                    `<div style="color:dark;font-size:11px;">${escape(data.codigo)} - ${escape(data.nombre)}</div>`,
+                item: (data, escape) =>
+                    `<div><span style="color:dark;font-size:11px;">${escape(data.codigo)} - ${escape(data.nombre)}</span></div>`,
+            },
+        });
+
+        tomManager.create('cuenta-inicial', tomConfig('#cuenta-ini'));
+        tomManager.create('cuenta-fin', tomConfig('#cuenta-fin'));
+    });
+</script>

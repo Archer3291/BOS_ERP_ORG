@@ -1,0 +1,300 @@
+@*
+    Modal de EDICIÓN de cliente nacional.
+    Sólo arma el contenedor con sus pestañas y sabe cómo
+    llenar el formulario y guardarlo. Cada pestaña vive en su
+    propio parcial dentro de Tabs/.
+*@
+<div class="modal fade cli-modal" id="modalEditarClienteNacional" tabindex="-1" aria-labelledby="modalEditarClienteNacionalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="cli-icon">
+                    <i class="fa-solid fa-flag"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title" id="modalEditarClienteNacionalLabel">Editar cliente nacional</h5>
+                    <span class="modal-subtitle">Datos generales, contacto, financiero, facturación y addendas CFDI.</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav cli-tabs" id="tabsEditarClienteNacional" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="datos-tab-nacional" data-bs-toggle="tab" data-bs-target="#datos-generales-nacional" type="button" role="tab">
+                            <i class="fa-solid fa-user"></i>Datos Generales
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="contacto-tab-nacional" data-bs-toggle="tab" data-bs-target="#contacto-nacional" type="button" role="tab">
+                            <i class="fa-solid fa-address-book"></i>Contacto
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="financiero-tab-nacional" data-bs-toggle="tab" data-bs-target="#financiero-nacional" type="button" role="tab">
+                            <i class="fa-solid fa-money-bill"></i>Financiero
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="facturacion-tab-nacional" data-bs-toggle="tab" data-bs-target="#facturacion-nacional" type="button" role="tab">
+                            <i class="fa-solid fa-file-invoice"></i>Facturación
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="addendas-tab" data-bs-toggle="tab" data-bs-target="#addendas-section" type="button" role="tab">
+                            <i class="fa-solid fa-file-code"></i>Addendas CFDI
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="tabsEditarClienteNacionalContent">
+                    @Html.Partial("ClientesParcial/Tabs/_TabDatosGeneralesNacional")
+                    @Html.Partial("ClientesParcial/Tabs/_TabContacto", "Nacional")
+                    @Html.Partial("ClientesParcial/Tabs/_TabFinanciero", "Nacional")
+                    @Html.Partial("ClientesParcial/Tabs/_TabFacturacionNacional")
+                    @Html.Partial("ClientesParcial/Tabs/_TabAddendas")
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cli-btn cli-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>Cancelar
+                </button>
+                <button type="button" class="cli-btn cli-btn-success" onclick="guardarClienteNacionalEdit()">
+                    <i class="fa-solid fa-floppy-disk"></i>Guardar cliente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        const val = id => document.getElementById(id).value.trim();
+
+        // Los niveles de la cascada (municipio, cp, colonia) sólo tienen
+        // Tom Select montado si el usuario llegó a ese nivel: un cliente
+        // sin dirección fiscal previa deja los de facturación sin montar.
+        // Se devuelve '' y la validación de abajo se encarga de avisar.
+        const tom = id => document.getElementById(id)?.tomselect?.getValue() ?? '';
+
+        /* ── Tarjeta de sólo lectura con la dirección actual ───────── */
+        function renderResumenDireccion(cliente) {
+            const campos = [
+                ['Dirección', cliente.dir],
+                ['Colonia', cliente.col],
+                ['Municipio', cliente.municipio],
+                ['Estado', cliente.pob],
+                ['Código Postal', cliente.cp],
+                ['Número Interior', cliente.numero_int_domicilio],
+                ['Número Exterior', cliente.numero_ext_domiclio],
+            ];
+
+            document.getElementById('detalles_direccion_nacional').innerHTML = `
+                <div class="cli-summary">
+                    ${campos.map(([etiqueta, valor]) => `
+                        <div class="cli-summary-item">
+                            <span class="cli-summary-label">${etiqueta}</span>
+                            <span class="cli-summary-value">${valor || '—'}</span>
+                        </div>`).join('')}
+                </div>`;
+        }
+
+        /* ── Llena las pestañas con el detalle del cliente ─────────── */
+        window.cargarDatosEdicionNacional = async function (data) {
+            const cliente = data.cliente[0];
+            const facturacion = data.datosFiscales[0] || {};
+
+            ClientesState.tom.editarNacional = new TomSelectManager();
+            const manager = ClientesState.tom.editarNacional;
+
+            ClientesState.limpiarSelectsDeModal(
+                '#modalEditarClienteNacional',
+                '#edit_clasificacion_nacional, #edit_estatus_nacional'
+            );
+
+            // Datos generales
+            document.getElementById('edit_id_cliente_nacional').value = cliente.id_cliente || '';
+            document.getElementById('edit_cve_cli_nacional').value = cliente.cve_cli || '';
+            document.getElementById('edit_n_cli_nacional').value = cliente.n_cli || '';
+            document.getElementById('edit_rfc_nacional').value = cliente.rfc || '';
+            document.getElementById('edit_curp_cli_nacional').value = cliente.curp_cli || '';
+            document.getElementById('edit_dir_nacional').value = cliente.dir || '';
+            document.getElementById('edit_num_int_nacional').value = cliente.numero_int_domicilio || '';
+            document.getElementById('edit_num_ext_nacional').value = cliente.numero_ext_domiclio || '';
+            document.getElementById('edit_clasificacion_nacional').value = cliente.clasificacion || 'regular';
+            document.getElementById('edit_estatus_nacional').value = cliente.estatus_cliente || 'activo';
+
+            renderResumenDireccion(cliente);
+
+            // Cascada de dirección + vendedores
+            await cargarDireccion(direccionConfigNacional, cliente, "edit", "estado", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigNacional, cliente, "edit", "vendedores", null, { instanceName: manager });
+
+            // Asignaciones
+            document.getElementById('edit_cve_gpo_nacional').value = cliente.cve_gpo || '';
+            document.getElementById('edit_lim_crd_datos_nacional').value = cliente.lim_crd || 0;
+            document.getElementById('edit_pl_dias_nacional').value = cliente.pl_crd || 0;
+
+            // Pestaña Financiero
+            document.getElementById('edit_lim_crd_nacional').value = cliente.lim_crd || 0;
+            document.getElementById('edit_pl_crd_nacional').value = cliente.pl_crd || 0;
+            document.getElementById('edit_com_por_nacional').value = cliente.com_por || 0;
+            document.getElementById('edit_dto_nacional').value = cliente.dto || '';
+            document.getElementById('edit_dto2_nacional').value = cliente.dto2 || '';
+            document.getElementById('edit_bco_cli1_nacional').value = cliente.bco_cli1 || '';
+            document.getElementById('edit_cta_bco_cli1_nacional').value = cliente.cta_bco_cli1 || '';
+            document.getElementById('edit_bco_cli2_nacional').value = cliente.bco_cli2 || '';
+            document.getElementById('edit_cta_bco_cli2_nacional').value = cliente.cta_bco_cli2 || '';
+            document.getElementById('edit_bco_cli3_nacional').value = cliente.bco_cli3 || '';
+            document.getElementById('edit_cta_bco_cli3_nacional').value = cliente.cta_bco_cli3 || '';
+            document.getElementById('edit_coment1_nacional').value = cliente.coment1 || '';
+
+            // Pestaña Contacto
+            ClientesState.correos = data.correos || [];
+            actualizarListaCorreos('Nacional');
+
+            ClientesState.telefonos = data.telefonos || [];
+            actualizarListaTelefonos('Nacional');
+
+            // Catálogos fiscales (se inyectan como opciones de la config)
+            const datosFiscales = await GetData({ path: '/Clientes/GetDatosFiscales' });
+
+            Object.assign(direccionConfigNacional.edit, {
+                fact_regimen: { ...direccionConfigNacional.edit.fact_regimen, options: datosFiscales.regimen },
+                fact_cfdi: { ...direccionConfigNacional.edit.fact_cfdi, options: datosFiscales.cfdi },
+                fact_pago: { ...direccionConfigNacional.edit.fact_pago, options: datosFiscales.fpago }
+            });
+
+            // Pestaña Datos de Facturación
+            document.getElementById('fact_raz_soc_nacional').value = facturacion.razon_social || '';
+            document.getElementById('fact_dir_nacional').value = facturacion.calle || '';
+            document.getElementById('fact_num_int_nacional').value = facturacion.no_interior || '';
+            document.getElementById('fact_num_ext_nacional').value = facturacion.no_exterior || '';
+
+            await cargarDireccion(direccionConfigNacional, facturacion, "edit", "fact_regimen", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigNacional, facturacion, "edit", "fact_cfdi", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigNacional, facturacion, "edit", "fact_pago", null, { instanceName: manager });
+            await cargarDireccion(direccionConfigNacional, facturacion, "edit", "fact_estado", null, { instanceName: manager });
+
+            // Pestaña Addendas
+            cargarAddendas(cliente.id_cliente);
+        };
+
+        /* ── Arma el payload de las 4 pestañas ────────────────────── */
+        function construirPayload() {
+            return {
+                // Datos generales
+                id_cliente: val('edit_id_cliente_nacional'),
+                cve_cli: val('edit_cve_cli_nacional'),
+                n_cli: val('edit_n_cli_nacional'),
+                rfc: val('edit_rfc_nacional'),
+                curp_cli: val('edit_curp_cli_nacional'),
+                estado: tom('edit_cve_est_nacional'),
+                municipio: tom('edit_mpio_nacional'),
+                cp: tom('edit_cp_nacional'),
+                colonia: tom('edit_col_nacional'),
+                dir: val('edit_dir_nacional'),
+                numero_int: val('edit_num_int_nacional'),
+                numero_ext: val('edit_num_ext_nacional'),
+                cve_vdr: tom('edit_cve_vdr_nacional'),
+                cve_gpo: val('edit_cve_gpo_nacional'),
+                es_internacional: false,
+                clasificacion: document.getElementById('edit_clasificacion_nacional').value,
+                estatus_cliente: document.getElementById('edit_estatus_nacional').value,
+
+                // Contacto
+                correos: JSON.stringify(ClientesState.correos),
+                telefonos: JSON.stringify(ClientesState.telefonos),
+
+                // Financiero
+                lim_crd: val('edit_lim_crd_nacional'),
+                pl_crd: val('edit_pl_crd_nacional'),
+                com_por: val('edit_com_por_nacional'),
+                dto: val('edit_dto_nacional'),
+                dto2: val('edit_dto2_nacional'),
+                bco_cli1: val('edit_bco_cli1_nacional'),
+                cta_bco_cli1: val('edit_cta_bco_cli1_nacional'),
+                bco_cli2: val('edit_bco_cli2_nacional'),
+                cta_bco_cli2: val('edit_cta_bco_cli2_nacional'),
+                bco_cli3: val('edit_bco_cli3_nacional'),
+                cta_bco_cli3: val('edit_cta_bco_cli3_nacional'),
+                coment1: val('edit_coment1_nacional'),
+
+                // Facturación
+                fact_estado: tom('fact_cve_est_nacional'),
+                fact_municipio: tom('fact_mpio_nacional'),
+                fact_cp: tom('fact_cp_nacional'),
+                fact_colonia: tom('fact_col_nacional'),
+                fact_dir: val('fact_dir_nacional'),
+                fact_numero_int: val('fact_num_int_nacional'),
+                fact_numero_ext: val('fact_num_ext_nacional'),
+                fact_razon_social: val('fact_raz_soc_nacional'),
+                fact_regimen_fiscal: tom('fact_reg_soc_nacional'),
+                fact_uso_cfdi: tom('fact_uso_sug_nacional'),
+                fact_forma_pago: tom('fact_forma_pago_nacional'),
+            };
+        }
+
+        /* ── Valida y envía ───────────────────────────────────────── */
+        window.guardarClienteNacionalEdit = function () {
+            const data = construirPayload();
+
+            const errores = ClientesValidaciones.validarCamposObligatorios(data, {
+                cve_cli: 'Código del cliente',
+                n_cli: 'Nombre del cliente',
+                rfc: 'RFC',
+                curp_cli: 'CURP',
+                estado: 'Estado',
+                municipio: 'Municipio',
+                cp: 'Código Postal',
+                colonia: 'Colonia',
+                dir: 'Dirección',
+                numero_ext: 'Número exterior'
+            });
+
+            if (data.rfc && data.rfc.length < 12) {
+                errores.push('El RFC debe tener al menos 12 caracteres');
+            }
+
+            if (errores.length > 0) {
+                ClientesValidaciones.mostrarErrores('Faltan campos o datos inválidos:', errores);
+                return;
+            }
+
+            const erroresFin = ClientesValidaciones.validarFinanciero(data);
+            if (erroresFin.length > 0) {
+                ClientesValidaciones.mostrarErrores('Errores en sección financiera:', erroresFin);
+                return;
+            }
+
+            // El servidor exige la dirección fiscal completa: se valida aquí
+            // para poder decir exactamente qué falta y en qué pestaña.
+            const erroresFact = ClientesValidaciones.validarCamposObligatorios(data, {
+                fact_razon_social: 'Razón social',
+                fact_regimen_fiscal: 'Régimen fiscal',
+                fact_uso_cfdi: 'Uso sugerido',
+                fact_forma_pago: 'Forma de pago',
+                fact_estado: 'Estado',
+                fact_municipio: 'Municipio',
+                fact_cp: 'Código Postal',
+                fact_colonia: 'Colonia',
+                fact_dir: 'Dirección',
+                fact_numero_ext: 'Número exterior',
+            });
+
+            if (erroresFact.length > 0) {
+                ClientesValidaciones.mostrarErrores(
+                    'Faltan datos en la pestaña <b>Datos de Facturación</b>:', erroresFact);
+                return;
+            }
+
+            GetData({
+                path: '/Clientes/ActualizarCliente',
+                data: data,
+                swalResponse: true,
+                swalPath: '/CreditoCobranza/Clientes',
+                swalType: 'modal'
+            });
+        };
+    })();
+</script>

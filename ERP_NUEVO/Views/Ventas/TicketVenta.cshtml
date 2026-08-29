@@ -1,0 +1,398 @@
+﻿@model BOS_ERP.Models.TicketVenta
+@{
+    Layout = null;
+    var cultura = new System.Globalization.CultureInfo("es-MX");
+    Func<decimal, string> money = v => v.ToString("C2", cultura);
+    Func<decimal, string> cant = v => v == Math.Floor(v) ? v.ToString("0") : v.ToString("0.##");
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ticket @Model.Folio</title>
+    <style>
+        /* ─────────────────────────────────────────────────────────────────────
+           Rollo térmico de 80 mm (área imprimible ~72 mm).
+
+           Impresión OSCURA: la térmica quema puntos, y los grises salen lavados o
+           moteados. Todo se define en negro puro y con trazos gruesos; se activa
+           print-color-adjust para que el navegador no "optimice" los fondos negros
+           convirtiéndolos en gris o quitándolos.
+
+           Largo DINÁMICO: `size: 80mm auto` corta el papel donde termina el contenido.
+           Para que funcione, ni html ni body pueden tener alto fijo, margen propio ni
+           relleno inferior; el relleno vive en .hoja.
+           ───────────────────────────────────────────────────────────────────── */
+        @@page { size: 80mm auto; margin: 0; }
+
+        html, body {
+            margin: 0; padding: 0; height: auto;
+            background: #fff;
+        }
+
+        body {
+            /* Arial Black / Helvetica pesada imprime mucho más sólido que una
+               monoespaciada fina; se conserva la monoespaciada sólo para cifras. */
+            font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.3;
+            color: #000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .hoja { width: 72mm; padding: 3mm 3mm 0; }
+
+        .centro   { text-align: center; }
+        .derecha  { text-align: right; }
+        .fuerte   { font-weight: 800; }
+        .mayus    { text-transform: uppercase; }
+        .cifra    { font-family: "Consolas", "Courier New", monospace; font-weight: 700; }
+
+        /* Separadores gruesos: una línea de 1px sale entrecortada en térmica. */
+        .separador       { border-top: 2px dotted #000; margin: 5px 0; }
+        .separador-doble { border-top: 3px solid #000;  margin: 6px 0; }
+
+        h1 {
+            font-size: 17px; font-weight: 800; margin: 0 0 3px;
+            letter-spacing: 2px;
+        }
+
+        /* Encabezado de sección en negativo: barra negra con texto blanco. Es lo que
+           más ayuda a separar bloques de un vistazo y sale perfectamente sólido. */
+        h2 {
+            font-size: 11px; font-weight: 800; margin: 8px 0 4px;
+            letter-spacing: 1px; text-transform: uppercase;
+            background: #000; color: #fff;
+            padding: 3px 6px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        td { vertical-align: top; padding: 0; }
+
+        .partida td { padding-top: 4px; }
+        .partida .desc { word-break: break-word; font-weight: 700; }
+
+        .totales td { padding: 2px 0; }
+        .totales .etiqueta { text-align: right; padding-right: 8px; }
+
+        /* Total en negativo: el dato que el cliente busca primero. */
+        .total-final td {
+            font-size: 15px; font-weight: 800;
+            background: #000; color: #fff;
+            padding: 4px 6px;
+        }
+        .total-final .etiqueta { padding-right: 8px; }
+
+        /* Aviso de estado de pago/entrega: marco grueso, imposible de pasar por alto. */
+        .aviso {
+            border: 3px solid #000;
+            padding: 6px 5px;
+            margin: 8px 0;
+            text-align: center;
+            font-weight: 800;
+        }
+        .aviso .titulo {
+            display: block; font-size: 13px; letter-spacing: 1px;
+            background: #000; color: #fff;
+            margin: -6px -5px 5px; padding: 3px;
+        }
+        .aviso .detalle { font-weight: 600; font-size: 10.5px; line-height: 1.35; }
+
+        /* ── Códigos ────────────────────────────────────────────────────────── */
+        /* El Code 128 ocupa todo el ancho útil: cuanto más ancha la barra estrecha,
+           más tolerante es el lector. El SVG ya trae su zona muda. */
+        .codigo-barras { margin: 5px 0 1px; }
+        .codigo-barras svg { width: 100%; height: 14mm; display: block; }
+        .codigo-barras .folio-legible {
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 11px; font-weight: 700; letter-spacing: 2px;
+            margin-top: 1px;
+        }
+
+        .qr-autofactura { margin: 6px 0 3px; }
+        .qr-autofactura img {
+            width: 32mm; height: 32mm;
+            image-rendering: pixelated;   /* sin suavizado: los módulos salen definidos */
+        }
+
+        .pie { font-size: 9.5px; font-weight: 600; margin-top: 8px; margin-bottom: 0; }
+
+        .no-imprimir { margin: 10px 0; text-align: center; }
+        .no-imprimir button {
+            font: inherit; padding: 7px 16px; margin: 0 3px; cursor: pointer;
+            border: 2px solid #000; background: #fff; border-radius: 4px; font-weight: 700;
+        }
+
+        @@media print {
+            .no-imprimir { display: none; }
+            .hoja, table, tr, .aviso { page-break-inside: avoid; }
+            .hoja > *:last-child { margin-bottom: 0; padding-bottom: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="hoja">
+
+    <div class="no-imprimir">
+        <button onclick="window.print()">Imprimir</button>
+        <button onclick="window.close()">Cerrar</button>
+    </div>
+
+    <div class="centro">
+        <h1 class="mayus">Ticket de venta</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Sucursal))
+        {
+            <div>@Model.Sucursal</div>
+        }
+        <div>@Model.Fecha.ToString("dd/MM/yyyy HH:mm", cultura)</div>
+
+        @* Code 128 del folio, para no teclearlo al buscar la venta ni al facturar.
+           Debajo va el folio en texto: si el escáner falla o el papel se raya, sigue
+           siendo capturable a mano. Es la práctica habitual en tickets. *@
+        <div class="codigo-barras">
+            @Html.Raw(BOS_ERP.Helpers.Code128.ComoSvg(Model.Folio))
+            <div class="folio-legible">@Model.Folio</div>
+        </div>
+    </div>
+
+    <div class="separador"></div>
+
+    <table>
+        <tr><td>Cliente:</td><td class="derecha fuerte">@Model.ClienteClave</td></tr>
+        <tr><td colspan="2">@Model.ClienteNombre</td></tr>
+        @if (!string.IsNullOrWhiteSpace(Model.ClienteRfc))
+        {
+            <tr><td>RFC:</td><td class="derecha">@Model.ClienteRfc</td></tr>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Cajero))
+        {
+            <tr><td>Atendió:</td><td class="derecha">@Model.Cajero</td></tr>
+        }
+    </table>
+
+    <div class="separador"></div>
+
+    @* ── Lo que el cliente se lleva ─────────────────────────────────────── *@
+    <table>
+        @foreach (var p in Model.Partidas)
+        {
+            <tr class="partida">
+                <td colspan="2" class="desc">@p.Clave — @p.Descripcion</td>
+            </tr>
+            <tr>
+                <td>@cant(p.Cantidad) @p.Unidad x @money(p.PrecioUnitario)</td>
+                <td class="derecha">@money(p.Importe + p.Descuento)</td>
+            </tr>
+            @if (p.Descuento > 0)
+            {
+                <tr>
+                    <td>&nbsp;&nbsp;Descuento</td>
+                    <td class="derecha">-@money(p.Descuento)</td>
+                </tr>
+            }
+        }
+    </table>
+
+    <div class="separador"></div>
+
+    <table class="totales">
+        <tr><td class="etiqueta">Subtotal</td><td class="derecha">@money(Model.Subtotal + Model.Descuento)</td></tr>
+        @if (Model.Descuento > 0)
+        {
+            <tr><td class="etiqueta">Descuentos</td><td class="derecha">-@money(Model.Descuento)</td></tr>
+        }
+        <tr><td class="etiqueta">IVA 16%</td><td class="derecha">@money(Model.Iva)</td></tr>
+        <tr class="total-final"><td class="etiqueta">TOTAL</td><td class="derecha">@money(Model.Total)</td></tr>
+    </table>
+
+    <div class="separador"></div>
+
+    @* ── Cómo se pagó ───────────────────────────────────────────────────── *@
+    @if (Model.EsCredito)
+    {
+        @* A crédito no entró dinero a la caja: lo que se imprime es la deuda. *@
+        <h2>VENTA A CRÉDITO</h2>
+        <table>
+            <tr>
+                <td class="fuerte">Saldo a cargo</td>
+                <td class="derecha fuerte">@money(Model.Total)</td>
+            </tr>
+            @if (Model.PlazoDias > 0)
+            {
+                <tr>
+                    <td class="etiqueta">Plazo</td>
+                    <td class="derecha">@Model.PlazoDias días</td>
+                </tr>
+                <tr>
+                    <td class="etiqueta">Vence</td>
+                    <td class="derecha">@Model.Fecha.AddDays(Model.PlazoDias).ToString("dd/MM/yyyy")</td>
+                </tr>
+            }
+        </table>
+    }
+    else
+    {
+        <h2>FORMA DE PAGO</h2>
+        <table>
+            @foreach (var pago in Model.Pagos)
+            {
+                <tr>
+                    <td>@pago.Metodo @pago.Nombre</td>
+                    <td class="derecha">@money(pago.Monto)</td>
+                </tr>
+            }
+            @if (Model.Cambio > 0)
+            {
+                <tr><td class="fuerte">Cambio</td><td class="derecha fuerte">@money(Model.Cambio)</td></tr>
+            }
+        </table>
+    }
+
+    @* ── Estado de pago y entrega ───────────────────────────────────────── *@
+    @if (Model.EsCredito)
+    {
+        <div class="aviso">
+            <span class="titulo">CARGO A CRÉDITO</span>
+            <span class="detalle">
+                Esta venta NO se pagó en caja.<br />
+                El importe quedó en la cuenta del cliente<br />
+                y se cobra en Crédito y Cobranza.
+                @if (Model.HayPendientes)
+                {
+                    <text><br />Queda material PENDIENTE DE ENTREGA.</text>
+                }
+            </span>
+        </div>
+
+        @if (Model.HayPendientes)
+        {
+            <h2>PENDIENTE DE ENTREGAR</h2>
+            <table>
+                @foreach (var p in Model.Pendientes)
+                {
+                    <tr class="partida">
+                        <td colspan="2" class="desc">@p.Clave — @p.Descripcion</td>
+                    </tr>
+                    <tr>
+                        <td>@cant(p.Cantidad) @p.Unidad</td>
+                        <td class="derecha">@money(p.Importe)</td>
+                    </tr>
+                }
+            </table>
+        }
+    }
+    else if (Model.HayPendientes)
+    {
+        <div class="aviso">
+            @if (Model.PagadoCompleto)
+            {
+                <span class="titulo">PAGADO EN SU TOTALIDAD</span>
+                <span class="detalle">
+                    Queda material PENDIENTE DE ENTREGA.<br />
+                    No se cobrará nada al recogerlo.<br />
+                    Presente este ticket para recibirlo.
+                </span>
+            }
+            else
+            {
+                <span class="titulo">PAGO PARCIAL</span>
+                <span class="detalle">
+                    Se cobró únicamente el material entregado.<br />
+                    Al recoger lo pendiente se cobrará<br />
+                    <span class="fuerte">@money(Model.SaldoPorCobrar)</span> (IVA incluido).
+                </span>
+            }
+        </div>
+
+        <h2>PENDIENTE DE ENTREGAR</h2>
+        <table>
+            @foreach (var p in Model.Pendientes)
+            {
+                <tr class="partida">
+                    <td colspan="2" class="desc">@p.Clave — @p.Descripcion</td>
+                </tr>
+                <tr>
+                    <td>@cant(p.Cantidad) @p.Unidad</td>
+                    <td class="derecha">@(Model.PagadoCompleto ? "PAGADO" : money(p.Importe))</td>
+                </tr>
+            }
+        </table>
+    }
+    else
+    {
+        <div class="aviso">
+            <span class="titulo">PAGADO Y ENTREGADO</span>
+            <span class="detalle">Venta liquidada. No hay material pendiente.</span>
+        </div>
+    }
+
+    @* ── Facturación ────────────────────────────────────────────────────── *@
+    @if (Model.TieneFactura)
+    {
+        <div class="separador"></div>
+        <h2>FACTURA</h2>
+        <table>
+            <tr><td>Folio</td><td class="derecha">@Model.FolioFactura</td></tr>
+        </table>
+        <div style="word-break: break-all;">UUID: @Model.UuidFactura</div>
+        @if (Model.FacturaCancelada)
+        {
+            <div class="centro fuerte">*** FACTURA CANCELADA ***</div>
+        }
+    }
+    else
+    {
+        @* El motivo de existir del ticket: el folio con el que el cliente se autofactura.
+           Va en grande porque es lo único que necesita capturar en el portal. *@
+        <div class="separador"></div>
+        <div class="aviso">
+            <span class="titulo">¿NECESITAS FACTURA?</span>
+            <span class="detalle">
+                Factura en línea con este folio:
+            </span>
+            <div style="font-size: 16px; letter-spacing: 1px; margin: 4px 0;">@Model.Folio</div>
+
+            @* QR para la cámara del teléfono. El Code 128 de arriba es para el lector
+               láser del mostrador; los teléfonos no leen códigos de barras 1D. *@
+            @if (ViewBag.QrAutofacturacion != null)
+            {
+                <div class="qr-autofactura">
+                    <img src="@ViewBag.QrAutofacturacion" alt="QR para facturar" />
+                </div>
+                <span class="detalle">Escanea el código con tu teléfono</span><br />
+            }
+
+            <span class="detalle">
+                @if (!string.IsNullOrWhiteSpace(ViewBag.UrlAutofacturacion as string))
+                {
+                    @ViewBag.UrlAutofacturacion<br />
+                }
+                Tienes <strong>72 horas</strong> a partir de esta compra.
+            </span>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.Observaciones))
+    {
+        <div class="separador"></div>
+        <div>@Model.Observaciones</div>
+    }
+
+    <div class="separador-doble"></div>
+    <div class="centro pie">
+        Este ticket no es un comprobante fiscal.<br />
+        Conserve este comprobante.
+    </div>
+</div>
+
+    <script>
+        // Impresión automática al abrirse desde el punto de venta (?print=1).
+        if (new URLSearchParams(location.search).get('print') === '1') {
+            window.addEventListener('load', () => window.print());
+        }
+    </script>
+</body>
+</html>

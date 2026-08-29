@@ -1,0 +1,1311 @@
+﻿@*Codigo A - Con modal Bootstrap nativo y responsividad Bootstrap*@
+@{
+    ViewBag.Title = "Consulta de Documentos de Venta";
+    ViewBag.PageTitle = "Documentos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .cd-page {
+        background: var(--bg-gray);
+        min-height: 100vh;
+        padding-bottom: 48px;
+        animation: cdFadeIn .35s ease both;
+    }
+
+    @@keyframes cdFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    /* ── Header ── */
+    .cd-header {
+        background: var(--primary-blue);
+        border-bottom: 3px solid var(--accent-blue);
+        padding: 24px 32px 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .cd-header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(59,130,246,.12) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+    .cd-header-inner {
+        position: relative;
+        z-index: 1;
+    }
+
+    .cd-eyebrow {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        color: var(--accent-blue);
+        margin-bottom: 4px;
+    }
+
+    .cd-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin: 0 0 4px;
+    }
+
+    .cd-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: rgba(241,245,249,.55);
+    }
+
+        .cd-breadcrumb a {
+            color: rgba(241,245,249,.6);
+            text-decoration: none;
+            transition: color .15s;
+        }
+
+            .cd-breadcrumb a:hover {
+                color: #f1f5f9;
+            }
+
+    /* ── Stats bar ── */
+    .cd-stats {
+        background: var(--bg-light);
+        border-bottom: 1px solid var(--border-light);
+        box-shadow: var(--shadow);
+    }
+
+    .cd-stat-item {
+        padding: 16px 28px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-right: 1px solid var(--border-light);
+        transition: background .15s;
+    }
+
+        .cd-stat-item:last-child {
+            border-right: none;
+        }
+
+        .cd-stat-item:hover {
+            background: var(--bg-gray);
+        }
+
+    .cd-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+        flex-shrink: 0;
+        transition: transform .2s;
+    }
+
+    .cd-stat-item:hover .cd-stat-icon {
+        transform: scale(1.08);
+    }
+
+    .si-cot {
+        background: rgba(59,130,246,.12);
+        color: var(--accent-blue);
+    }
+
+    .si-ped {
+        background: rgba(5,150,105,.12);
+        color: var(--success-color);
+    }
+
+    .si-rem {
+        background: rgba(217,119,6,.12);
+        color: var(--warning-color);
+    }
+
+    .cd-stat-val {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cd-stat-lbl {
+        font-size: 11px;
+        color: var(--text-light);
+        margin-top: 2px;
+        letter-spacing: .03em;
+    }
+
+    /* ── Skeleton ── */
+    .cd-skeleton {
+        display: inline-block;
+        width: 36px;
+        height: 18px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, var(--border-light) 25%, var(--bg-gray) 50%, var(--border-light) 75%);
+        background-size: 200% 100%;
+        animation: cdShimmer 1.2s infinite;
+        vertical-align: middle;
+    }
+
+    @@keyframes cdShimmer {
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    /* ── Tabs NAT ── */
+    .cd-tabs {
+        background: var(--bg-light);
+        border-bottom: 2px solid var(--border-light);
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+        overflow-x: auto;
+    }
+
+    .cd-tab-btn {
+        padding: 14px 22px;
+        border: none;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-light);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        border-radius: 6px 6px 0 0;
+        transition: all .2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+        .cd-tab-btn:hover {
+            color: var(--primary-blue);
+            background: var(--very-light-blue);
+        }
+
+        .cd-tab-btn.active {
+            color: var(--primary-blue);
+            border-bottom-color: var(--primary-blue);
+            background: var(--very-light-blue);
+        }
+
+    /* ── Estatus toggle ── */
+    .cd-estatus-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .cd-estatus-lbl {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-light);
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        margin-right: 4px;
+    }
+
+    .cd-estatus-btn {
+        padding: 5px 14px;
+        border-radius: 20px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-light);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-light);
+        cursor: pointer;
+        transition: all .18s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .cd-estatus-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .cd-estatus-btn.active-activos {
+            background: rgba(5,150,105,.1);
+            color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .cd-estatus-btn.active-cancelados {
+            background: rgba(220,38,38,.1);
+            color: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .cd-estatus-btn.active-todos {
+            background: rgba(30,58,95,.1);
+            color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+
+    /* ── Card ── */
+    .cd-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        margin-top: 24px;
+    }
+
+    .cd-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .cd-card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .cd-card-title i {
+            color: var(--primary-blue);
+        }
+
+    .cd-card-body {
+        padding: 20px;
+    }
+
+    /* ── DataTable overrides ── */
+    .cd-dt-wrap .dataTables_filter input,
+    .cd-dt-wrap .dataTables_length select {
+        background: var(--bg-gray) !important;
+        border: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        border-radius: 7px !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+        .cd-dt-wrap .dataTables_filter input:focus,
+        .cd-dt-wrap .dataTables_length select:focus {
+            outline: none !important;
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15) !important;
+        }
+
+    .cd-dt-wrap .dataTables_filter label,
+    .cd-dt-wrap .dataTables_length label,
+    .cd-dt-wrap .dataTables_info {
+        color: var(--text-light) !important;
+        font-size: 12.5px !important;
+    }
+
+    .cd-dt-wrap .dataTables_paginate .paginate_button {
+        color: var(--text-light) !important;
+        border-radius: 7px !important;
+        border: none !important;
+        font-size: 12.5px !important;
+        transition: all .15s !important;
+    }
+
+        .cd-dt-wrap .dataTables_paginate .paginate_button.current,
+        .cd-dt-wrap .dataTables_paginate .paginate_button.current:hover {
+            background: var(--primary-blue) !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(30,58,95,.3) !important;
+        }
+
+        .cd-dt-wrap .dataTables_paginate .paginate_button:not(.current):hover {
+            background: var(--bg-gray) !important;
+            color: var(--text-dark) !important;
+        }
+
+    .cd-dt-wrap table {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+    }
+
+        .cd-dt-wrap table thead th {
+            background: var(--bg-gray) !important;
+            color: var(--text-light) !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: .08em !important;
+            text-transform: uppercase !important;
+            border: none !important;
+            border-bottom: 2px solid var(--border-light) !important;
+            padding: 12px 14px !important;
+            white-space: nowrap;
+        }
+
+            .cd-dt-wrap table thead th.sorting_asc,
+            .cd-dt-wrap table thead th.sorting_desc {
+                color: var(--primary-blue) !important;
+            }
+
+        .cd-dt-wrap table tbody tr {
+            transition: background .12s;
+        }
+
+            .cd-dt-wrap table tbody tr:hover td {
+                background: var(--very-light-blue) !important;
+            }
+
+        .cd-dt-wrap table tbody td {
+            background: var(--bg-light) !important;
+            color: var(--text-dark) !important;
+            font-size: 13px !important;
+            border: none !important;
+            border-bottom: 1px solid var(--border-light) !important;
+            padding: 13px 14px !important;
+            vertical-align: middle !important;
+        }
+
+    /* ── Estatus badge en tabla ── */
+    .estatus-activo {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(5,150,105,.1);
+        color: var(--success-color);
+        border: 1px solid rgba(5,150,105,.2);
+    }
+
+    .estatus-cancelado {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(220,38,38,.1);
+        color: #dc2626;
+        border: 1px solid rgba(220,38,38,.2);
+    }
+
+    /* ── Nat badges ── */
+    .nat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .04em;
+    }
+
+    .nat-VICOT {
+        background: rgba(59,130,246,.12);
+        color: var(--accent-blue);
+        border: 1px solid rgba(59,130,246,.2);
+    }
+
+    .nat-VIPED {
+        background: rgba(5,150,105,.12);
+        color: var(--success-color);
+        border: 1px solid rgba(5,150,105,.2);
+    }
+
+    .nat-VIREM {
+        background: rgba(217,119,6,.12);
+        color: var(--warning-color);
+        border: 1px solid rgba(217,119,6,.2);
+    }
+
+    .nat-VINCOT {
+        background: rgba(139,92,246,.12);
+        color: #7c3aed;
+        border: 1px solid rgba(139,92,246,.2);
+    }
+
+    /* ── Folio pill ── */
+    .cd-folio {
+        font-size: 12.5px;
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+        color: var(--primary-blue);
+        background: rgba(30,58,95,.07);
+        border: 1px solid rgba(30,58,95,.15);
+        padding: 3px 9px;
+        border-radius: 5px;
+        display: inline-block;
+    }
+
+        .cd-folio.cancelado {
+            color: #b91c1c;
+            background: rgba(220,38,38,.08);
+            border-color: rgba(220,38,38,.2);
+            text-decoration: line-through;
+            text-decoration-color: rgba(220,38,38,.5);
+        }
+
+    /* ── Panel ── */
+    .cd-panel {
+        display: none;
+    }
+
+        .cd-panel.active {
+            display: block;
+        }
+
+    /* ── Modal Bootstrap overrides ── */
+    .cd-modal .modal-content {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    }
+
+    .cd-modal .modal-header {
+        background: var(--bg-gray);
+        border-bottom: 1px solid var(--border-light);
+        padding: 16px 20px;
+        align-items: center;
+    }
+
+    .cd-modal .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+        .cd-modal .modal-title i {
+            color: var(--primary-blue);
+        }
+
+    /* Botón cerrar Bootstrap 5 */
+    .cd-modal .btn-close {
+        filter: none;
+        opacity: .6;
+        transition: opacity .15s;
+    }
+
+        .cd-modal .btn-close:hover {
+            opacity: 1;
+        }
+
+    .cd-modal .modal-body {
+        padding: 20px;
+    }
+
+    .cd-modal .modal-footer {
+        border-top: 1px solid var(--border-light);
+        background: var(--bg-gray);
+        padding: 12px 20px;
+    }
+
+    /* ── Info grid (Bootstrap cols internamente) ── */
+    .cd-info-item {
+        background: rgba(59,130,246,.06);
+        border: 1px solid rgba(59,130,246,.15);
+        border-left: 3px solid var(--accent-blue);
+        border-radius: 8px;
+        padding: 12px 14px;
+        height: 100%;
+    }
+
+        .cd-info-item.cancel-mode {
+            background: rgba(220,38,38,.05);
+            border-color: rgba(220,38,38,.12);
+            border-left-color: #dc2626;
+        }
+
+    .cd-info-lbl {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 5px;
+    }
+
+    .cd-info-val {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+        word-break: break-word;
+    }
+
+    /* ── Alerta cancelado ── */
+    .cd-cancel-alert {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(220,38,38,.08);
+        border: 1px solid rgba(220,38,38,.2);
+        border-left: 4px solid #dc2626;
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+    }
+
+        .cd-cancel-alert i {
+            font-size: 18px;
+            color: #dc2626;
+            flex-shrink: 0;
+        }
+
+    .cd-cancel-alert-text {
+        font-size: 12.5px;
+        color: #7f1d1d;
+        font-weight: 600;
+    }
+
+    /* ── Partidas ── */
+    .cd-partidas-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--border-light);
+    }
+
+    .cd-partidas-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .cd-partidas-title i {
+            color: var(--accent-blue);
+        }
+
+    .cd-partidas-count {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 20px;
+        background: rgba(59,130,246,.12);
+        color: var(--accent-blue);
+        border: 1px solid rgba(59,130,246,.2);
+    }
+
+    .cd-partidas-table-wrap {
+        border: 1px solid var(--border-light);
+        border-radius: 10px 10px 0 0;
+        overflow: hidden;
+        max-height: 340px;
+        overflow-y: auto;
+    }
+
+        .cd-partidas-table-wrap::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .cd-partidas-table-wrap::-webkit-scrollbar-track {
+            background: var(--bg-gray);
+        }
+
+        .cd-partidas-table-wrap::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 3px;
+        }
+
+    .cd-partidas-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+
+        .cd-partidas-table thead th {
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--border-light);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .cd-partidas-table tbody tr {
+            transition: background .1s;
+        }
+
+            .cd-partidas-table tbody tr:hover td {
+                background: var(--very-light-blue) !important;
+            }
+
+        .cd-partidas-table tbody td {
+            padding: 10px 12px;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-light);
+            vertical-align: middle;
+        }
+
+        .cd-partidas-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cd-partidas-table .col-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+    .exist-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .exist-ok {
+        background: rgba(5,150,105,.1);
+        color: var(--success-color);
+        border: 1px solid rgba(5,150,105,.2);
+    }
+
+    .exist-low {
+        background: rgba(217,119,6,.1);
+        color: var(--warning-color);
+        border: 1px solid rgba(217,119,6,.2);
+    }
+
+    .exist-out {
+        background: rgba(220,38,38,.1);
+        color: #dc2626;
+        border: 1px solid rgba(220,38,38,.2);
+    }
+
+    .cd-cve {
+        font-family: 'Courier New', monospace;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--primary-blue);
+        background: rgba(30,58,95,.07);
+        border: 1px solid rgba(30,58,95,.12);
+        padding: 2px 7px;
+        border-radius: 4px;
+    }
+
+    .cd-dto {
+        font-size: 12px;
+        color: var(--text-light);
+    }
+
+    .cd-partidas-totals {
+        display: flex;
+        justify-content: flex-end;
+        gap: 24px;
+        flex-wrap: wrap;
+        padding: 12px 16px;
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        font-size: 12.5px;
+    }
+
+    .cd-total-item {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .cd-total-lbl {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-light);
+        margin-bottom: 2px;
+    }
+
+    .cd-total-val {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-dark);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .cd-total-val.highlight {
+            color: var(--success-color);
+        }
+
+    .cd-modal-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 0;
+        gap: 12px;
+    }
+
+        .cd-modal-loader i {
+            font-size: 2em;
+            color: var(--primary-blue);
+        }
+
+        .cd-modal-loader p {
+            color: var(--text-light);
+            font-size: 13px;
+            margin: 0;
+        }
+
+    /* ── Botón cerrar genérico ── */
+    .cd-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .2s ease;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .cd-btn-secondary {
+        background: transparent;
+        color: var(--text-light);
+        border-color: var(--border-light);
+    }
+
+        .cd-btn-secondary:hover {
+            color: var(--text-dark);
+            border-color: var(--secondary-blue);
+            background: var(--bg-gray);
+        }
+
+    /* ── Responsivo Bootstrap helpers ── */
+    @@media (max-width: 575.98px) {
+        .cd-header {
+            padding: 16px 14px 12px;
+        }
+
+        .cd-title {
+            font-size: 16px;
+        }
+
+        .cd-tabs {
+            padding: 0 8px;
+        }
+
+        .cd-tab-btn {
+            padding: 10px 12px;
+            font-size: 11px;
+            gap: 5px;
+        }
+
+        .cd-card-body {
+            padding: 10px;
+        }
+
+        .cd-card-head {
+            padding: 12px 14px;
+        }
+
+        .cd-stat-item {
+            padding: 12px 14px;
+            border-right: none;
+            border-bottom: 1px solid var(--border-light);
+        }
+    }
+</style>
+
+<div class="cd-page">
+
+    <div class="cd-header">
+        <div class="cd-header-inner">
+            <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                <div>
+                    <div class="cd-eyebrow"><i class="fas fa-file-lines me-1"></i> Sistema de Ventas &middot; SRS</div>
+                    <h1 class="cd-title">
+                        <i class="fas fa-folder-open" style="color:var(--accent-blue);font-size:16px;margin-right:8px;"></i>
+                        Consulta de <strong>Documentos de Venta</strong>
+                    </h1>
+                </div>
+                <nav class="cd-breadcrumb mt-1">
+                    <a href="/"><i class="fas fa-house-chimney"></i></a>
+                    <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                    <a href="#">Ventas</a>
+                    <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                    <span>Documentos</span>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="cd-stats d-none">
+        <div class="row g-0">
+            <div class="col-12 col-sm-4">
+                <div class="cd-stat-item">
+                    <div class="cd-stat-icon si-cot"><i class="fas fa-file-text"></i></div>
+                    <div>
+                        <div class="cd-stat-val" id="statVICOT"><span class="cd-skeleton"></span></div>
+                        <div class="cd-stat-lbl">Cotizaciones</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="cd-stat-item">
+                    <div class="cd-stat-icon si-ped"><i class="fas fa-cart-shopping"></i></div>
+                    <div>
+                        <div class="cd-stat-val" id="statVIPED"><span class="cd-skeleton"></span></div>
+                        <div class="cd-stat-lbl">Pedidos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-4">
+                <div class="cd-stat-item">
+                    <div class="cd-stat-icon si-rem"><i class="fas fa-truck"></i></div>
+                    <div>
+                        <div class="cd-stat-val" id="statVIREM"><span class="cd-skeleton"></span></div>
+                        <div class="cd-stat-lbl">Remisiones</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cd-tabs">
+        <button class="cd-tab-btn active" onclick="cambiarTab('VICOT', this)">
+            <i class="fas fa-file-text"></i>
+            <span class="d-none d-sm-inline">Cotizaciones</span>
+            <span class="d-inline d-sm-none">Cot.</span>
+        </button>
+        <button class="cd-tab-btn" onclick="cambiarTab('VIPED', this)">
+            <i class="fas fa-cart-shopping"></i>
+            <span class="d-none d-sm-inline">Pedidos</span>
+            <span class="d-inline d-sm-none">Ped.</span>
+        </button>
+        <button class="cd-tab-btn" onclick="cambiarTab('VIREM', this)">
+            <i class="fas fa-truck"></i>
+            <span class="d-none d-sm-inline">Remisiones</span>
+            <span class="d-inline d-sm-none">Rem.</span>
+        </button>
+    </div>
+
+    <div class="container-fluid px-2 px-md-4">
+
+        <div class="cd-card cd-panel active" id="panel-VICOT">
+            <div class="cd-card-head">
+                <div class="cd-card-title"><i class="fas fa-file-text"></i> Cotizaciones</div>
+                <div class="cd-estatus-bar">
+                    <span class="cd-estatus-lbl d-none d-md-inline"><i class="fas fa-filter"></i> Ver:</span>
+                    <button class="cd-estatus-btn active-activos" onclick="cambiarEstatus('VICOT','activos',this)"><i class="fas fa-circle-check"></i> Activos</button>
+                    <button class="cd-estatus-btn" onclick="cambiarEstatus('VICOT','cancelados',this)"><i class="fas fa-ban"></i> Cancelados</button>
+                    <button class="cd-estatus-btn" onclick="cambiarEstatus('VICOT','todos',this)"><i class="fas fa-list"></i> Todos</button>
+                </div>
+            </div>
+            <div class="cd-card-body cd-dt-wrap">
+                <div id="tblVICOT"></div>
+            </div>
+        </div>
+
+        <div class="cd-card cd-panel" id="panel-VIPED">
+            <div class="cd-card-head">
+                <div class="cd-card-title"><i class="fas fa-cart-shopping"></i> Pedidos</div>
+                <div class="cd-estatus-bar">
+                    <span class="cd-estatus-lbl d-none d-md-inline"><i class="fas fa-filter"></i> Ver:</span>
+                    <button class="cd-estatus-btn active-activos" onclick="cambiarEstatus('VIPED','activos',this)"><i class="fas fa-circle-check"></i> Activos</button>
+                    <button class="cd-estatus-btn" onclick="cambiarEstatus('VIPED','cancelados',this)"><i class="fas fa-ban"></i> Cancelados</button>
+                    <button class="cd-estatus-btn" onclick="cambiarEstatus('VIPED','todos',this)"><i class="fas fa-list"></i> Todos</button>
+                </div>
+            </div>
+            <div class="cd-card-body cd-dt-wrap">
+                <div id="tblVIPED"></div>
+            </div>
+        </div>
+
+        <div class="cd-card cd-panel" id="panel-VIREM">
+            <div class="cd-card-head">
+                <div class="cd-card-title"><i class="fas fa-truck"></i> Remisiones</div>
+                <div class="cd-estatus-bar">
+                    <span class="cd-estatus-lbl d-none d-md-inline"><i class="fas fa-filter"></i> Ver:</span>
+                    <button class="cd-estatus-btn active-activos" onclick="cambiarEstatus('VIREM','activos',this)"><i class="fas fa-circle-check"></i> Activos</button>
+                    <button class="cd-estatus-btn" onclick="cambiarEstatus('VIREM','cancelados',this)"><i class="fas fa-ban"></i> Cancelados</button>
+                    <button class="cd-estatus-btn" onclick="cambiarEstatus('VIREM','todos',this)"><i class="fas fa-list"></i> Todos</button>
+                </div>
+            </div>
+            <div class="cd-card-body cd-dt-wrap">
+                <div id="tblVIREM"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade cd-modal" id="modalDetalle"
+     tabindex="-1"
+     aria-labelledby="modalDetalleTitle"
+     aria-modal="true"
+     role="dialog">
+
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalleTitle">
+                    <i class="fas fa-file-lines"></i> Detalle del documento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body" id="modalDetalleBody">
+                <div class="cd-modal-loader">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando documento...</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-xmark me-1"></i> Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+
+/* ── URLs ─────────────────────────────────────────────────────────── */
+var urlBuscarDocumento = '@Url.Action("BuscarDocumento", "ConsultaDocumentos")';
+
+var urlBase = {
+    VICOT: '@Url.Action("GetVICOT", "ConsultaDocumentos")',
+    VIPED: '@Url.Action("GetVIPED", "ConsultaDocumentos")',
+    VIREM: '@Url.Action("GetVIREM", "ConsultaDocumentos")'
+};
+
+/* ── Estado ───────────────────────────────────────────────────────── */
+var estatusActual = { VICOT: 'activos', VIPED: 'activos', VIREM: 'activos' };
+var instancias    = {};
+
+/* ── Bootstrap 5 modal instance ──────────────────────────────────── */
+var _modalDetalle = null;
+function getModal() {
+    if (!_modalDetalle) {
+        _modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'), {
+            backdrop: 'static',  // evita cierre accidental al cargar
+            keyboard: true
+        });
+    }
+    return _modalDetalle;
+}
+
+/* ── Formatters ───────────────────────────────────────────────────── */
+function fmtMoney(v) {
+    var n = parseFloat(v) || 0;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function fmtFolio(v, row) {
+    var cancelado = isCancelado(row);
+    return '<span class="cd-folio' + (cancelado ? ' cancelado' : '') + '">' + (v || '—') + '</span>';
+}
+
+function fmtCliente(v, row) {
+    return row.n_cli || row.cli_prov || '—';
+}
+
+function fmtImporte(v, row) {
+    var color = isCancelado(row) ? '#dc2626' : 'var(--success-color)';
+    return '<span style="color:' + color + ';font-weight:600;">' + fmtMoney(v) + '</span>';
+}
+
+function fmtEstatus(v, row) {
+    if (isCancelado(row))
+        return '<span class="estatus-cancelado"><i class="fas fa-ban"></i> Cancelado</span>';
+    return '<span class="estatus-activo"><i class="fas fa-circle-check"></i> Activo</span>';
+}
+
+function isCancelado(row) {
+    return row.estatus_id == 27 || row.estatus_label === 'CANCELADO';
+}
+
+/* ── Existencia badge ─────────────────────────────────────────────── */
+function fmtExistencia(existencia, cantidad) {
+    var exist = parseFloat(existencia) || 0;
+    var cant  = parseFloat(cantidad)   || 0;
+    var cls  = exist <= 0 ? 'exist-out' : exist < cant ? 'exist-low' : 'exist-ok';
+    var icon = exist <= 0 ? 'fa-circle-xmark' : exist < cant ? 'fa-circle-exclamation' : 'fa-circle-check';
+    return '<span class="exist-badge ' + cls + '"><i class="fas ' + icon + '"></i> ' + exist.toFixed(0) + '</span>';
+}
+
+/* ── Totales ──────────────────────────────────────────────────────── */
+function calcularTotales(productos) {
+    var sub = 0, iva = 0, ieps = 0;
+    (productos || []).forEach(function(p) {
+        sub  += parseFloat(p.importe) || 0;
+        iva  += parseFloat(p.iva)     || 0;
+        ieps += parseFloat(p.ieps)    || 0;
+    });
+    return { subtotal: sub, iva: iva, ieps: ieps, total: sub + iva + ieps };
+}
+
+/* ── Renderizar partidas ──────────────────────────────────────────── */
+function renderPartidas(productos, esCancelado) {
+    if (!productos || productos.length === 0) {
+        return '<div class="text-center py-4" style="color:var(--text-light);">' +
+               '<i class="fas fa-box-open" style="font-size:2em;opacity:.4;display:block;margin-bottom:8px;"></i>' +
+               'Sin partidas registradas</div>';
+    }
+
+    var rows = '';
+    productos.forEach(function(p, i) {
+        var dto = parseFloat(p.descuento) || 0;
+        var dtoHtml = dto > 0 ? ' <span class="cd-dto">(-' + dto.toFixed(0) + '%)</span>' : '';
+        var importeColor = esCancelado ? '#b91c1c' : 'var(--success-color)';
+
+        rows +=
+            '<tr>' +
+            '<td class="text-center" style="color:var(--text-light);font-size:12px;">' + (i + 1) + '</td>' +
+            '<td><span class="cd-cve">' + (p.producto_id || '—') + '</span></td>' +
+            '<td>' + (p.descripcion || '—') + '</td>' +
+            '<td class="col-num">' + (parseFloat(p.cantidad) || 0).toFixed(2) +
+                ' <small style="color:var(--text-light)">' + (p.unidad || '') + '</small></td>' +
+            '<td class="col-num">' + fmtMoney(p.precio) + dtoHtml + '</td>' +
+            '<td class="col-num" style="color:' + importeColor + ';font-weight:600;">' + fmtMoney(p.importe) + '</td>' +
+            (!esCancelado ? '<td class="col-num">' + fmtExistencia(p.existencia, p.cantidad) + '</td>' : '') +
+            '</tr>';
+    });
+
+    var totales = calcularTotales(productos);
+    var totalCls = esCancelado ? '' : 'highlight';
+
+    var thead =
+        '<th style="width:36px;">#</th><th>Clave</th><th>Descripción</th>' +
+        '<th class="col-num">Cantidad</th><th class="col-num">Precio</th><th class="col-num">Importe</th>' +
+        (!esCancelado ? '<th class="col-num">Existencia</th>' : '');
+
+    return '<div class="cd-partidas-table-wrap">' +
+           '<table class="cd-partidas-table"><thead><tr>' + thead + '</tr></thead>' +
+           '<tbody>' + rows + '</tbody></table></div>' +
+           '<div class="cd-partidas-totals">' +
+           '<div class="cd-total-item"><div class="cd-total-lbl">Subtotal</div><div class="cd-total-val">' + fmtMoney(totales.subtotal) + '</div></div>' +
+           (totales.ieps > 0 ? '<div class="cd-total-item"><div class="cd-total-lbl">IEPS</div><div class="cd-total-val">' + fmtMoney(totales.ieps) + '</div></div>' : '') +
+           '<div class="cd-total-item"><div class="cd-total-lbl">IVA</div><div class="cd-total-val">' + fmtMoney(totales.iva) + '</div></div>' +
+           '<div class="cd-total-item"><div class="cd-total-lbl">Total</div><div class="cd-total-val ' + totalCls + '">' + fmtMoney(totales.total) + '</div></div>' +
+           '</div>';
+}
+
+/* ── Modal detalle ────────────────────────────────────────────────── */
+function mostrarDetalle(row) {
+    // Resetear contenido y abrir
+    document.getElementById('modalDetalleBody').innerHTML =
+        '<div class="cd-modal-loader"><i class="fas fa-spinner fa-spin"></i><p>Cargando documento...</p></div>';
+    document.getElementById('modalDetalleTitle').innerHTML =
+        '<i class="fas fa-file-lines"></i> Detalle del documento';
+
+    getModal().show();
+
+    $.ajax({
+        url: urlBuscarDocumento,
+        type: 'GET',
+        data: { id: row.id_encabezado },
+        success: function(resp) {
+            if (!resp || !resp.success) {
+                document.getElementById('modalDetalleBody').innerHTML =
+                    '<div class="text-center py-4" style="color:#dc2626;">' +
+                    '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                    (resp && resp.message ? resp.message : 'Error al cargar el documento.') + '</div>';
+                return;
+            }
+
+            var d = resp.data;
+            var nat = d.nat || '';
+            var esCancelado = (d.estatus_id == 27 || d.estatus_label === 'CANCELADO');
+            var cm = esCancelado ? ' cancel-mode' : '';
+
+            document.getElementById('modalDetalleTitle').innerHTML =
+                '<i class="fas fa-file-lines"></i> ' +
+                '<span class="nat-badge nat-' + nat + ' ms-1">' + nat + '</span>' +
+                '&nbsp;<span style="font-weight:400;font-size:13px;color:var(--text-light);">' + (d.folio || '') + '</span>' +
+                (esCancelado ? '&nbsp;<span class="estatus-cancelado ms-1" style="font-size:11px;"><i class="fas fa-ban"></i> CANCELADO</span>' : '');
+
+            var cancelAlert = esCancelado
+                ? '<div class="cd-cancel-alert"><i class="fas fa-ban"></i>' +
+                  '<div><div class="cd-cancel-alert-text">Este documento está cancelado y no tiene validez comercial.</div></div></div>'
+                : '';
+
+            var productos   = d.productos || [];
+            var partidasCnt = productos.length;
+
+            // Grilla de info usando row/col de Bootstrap
+            var infoGrid =
+                '<div class="row g-2 mb-3">' +
+                mkCol(cm, 'Folio',    '<span class="cd-folio' + (esCancelado ? ' cancelado' : '') + '">' + (d.folio || '—') + '</span>') +
+                mkCol(cm, 'Fecha',    dateFormatter(d.fch0) || '—') +
+                mkCol(cm, 'Cliente',  d.n_cli || d.cli_prov || '—') +
+                mkCol(cm, 'RFC',      d.rfc   || '—') +
+                extrasToGrid(d, cm) +
+                mkCol(cm, 'Capturó',  d.usr0  || '—') +
+                '</div>';
+
+            var html = cancelAlert + infoGrid +
+                '<div class="cd-partidas-header">' +
+                '<div class="cd-partidas-title"><i class="fas fa-list-ul"></i> Partidas del documento</div>' +
+                '<span class="cd-partidas-count">' + partidasCnt + ' artículo' + (partidasCnt !== 1 ? 's' : '') + '</span>' +
+                '</div>' +
+                renderPartidas(productos, esCancelado);
+
+            document.getElementById('modalDetalleBody').innerHTML = html;
+        },
+        error: function(xhr) {
+            document.getElementById('modalDetalleBody').innerHTML =
+                '<div class="text-center py-4" style="color:#dc2626;">' +
+                '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                'Error de conexión (' + xhr.status + '). Intente de nuevo.</div>';
+        }
+    });
+}
+
+/* helpers para la grilla Bootstrap del modal */
+function mkCol(cm, lbl, val) {
+    return '<div class="col-6 col-md-4 col-lg-3">' +
+           '<div class="cd-info-item' + cm + '">' +
+           '<div class="cd-info-lbl">' + lbl + '</div>' +
+           '<div class="cd-info-val">' + val + '</div>' +
+           '</div></div>';
+}
+
+function extrasToGrid(d, cm) {
+    var out = '';
+    if (d.ccy)         out += mkCol(cm, 'Moneda',          d.ccy);
+    if (d.incoterm)    out += mkCol(cm, 'Incoterm',        d.incoterm);
+    if (d.ordenCompra) out += mkCol(cm, 'Orden de compra', d.ordenCompra);
+    if (d.coment1)     out += mkCol(cm, 'Comentario',      d.coment1);
+    return out;
+}
+
+/* ── Cambiar estatus toggle ───────────────────────────────────────── */
+function cambiarEstatus(nat, nuevoEstatus, btn) {
+    var panel = document.getElementById('panel-' + nat);
+    panel.querySelectorAll('.cd-estatus-btn').forEach(function(b) {
+        b.classList.remove('active-activos', 'active-cancelados', 'active-todos');
+    });
+    btn.classList.add('active-' + nuevoEstatus);
+    estatusActual[nat] = nuevoEstatus;
+
+    if (instancias[nat]) {
+        document.getElementById('tbl' + nat).innerHTML = '';
+        instancias[nat] = null;
+    }
+
+    iniciarTabla(nat);
+}
+
+/* ── Inicializar tabla ────────────────────────────────────────────── */
+function iniciarTabla(nat) {
+    var tieneIncoterm = (nat !== 'VICOT');
+
+    var columns = [
+        { title: 'Folio',   data: 'folio',        formatter: fmtFolio },
+        { title: 'Fecha',   data: 'fch' },
+        { title: 'Cliente', data: 'n_cli',         formatter: fmtCliente },
+        { title: 'Importe', data: 'imp',           formatter: fmtImporte },
+        { title: 'Estatus', data: 'estatus_label', formatter: fmtEstatus }
+    ];
+
+    if (tieneIncoterm) columns.push({ title: 'Incoterm', data: 'incoterm' });
+    columns.push({ title: 'Capturó', data: 'usr0' });
+
+    instancias[nat] = createTable({
+        selector: '#tbl' + nat,
+        path:     urlBase[nat],
+        searchPlaceholder: 'Buscar folio, cliente...',
+        columns:  columns,
+        data: function() { return { estatus: estatusActual[nat] }; },
+        actions: [
+            {
+                icon:    'fa-eye',
+                color:   'btn-outline-primary',
+                title:   'Ver detalle',
+                onClick: function(row) { mostrarDetalle(row); }
+            },
+            {
+                icon:    'fa-file-arrow-down',
+                color:   'btn-outline-secondary',
+                title:   'Descargar',
+                onClick: function(row) { GenerarPDFGeneral(row.id_encabezado); }
+            }
+        ],
+        onLoad: function(data) {
+            document.getElementById('stat' + nat).textContent = data.length || 0;
+        }
+    });
+}
+
+/* ── Cambio de pestaña NAT — lazy init ───────────────────────────── */
+function cambiarTab(nat, btn) {
+    document.querySelectorAll('.cd-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+
+    document.querySelectorAll('.cd-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('panel-' + nat).classList.add('active');
+
+    if (!instancias[nat]) iniciarTabla(nat);
+}
+
+/* ── Arranque ─────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+    iniciarTabla('VICOT');
+});
+
+    </script>
+}

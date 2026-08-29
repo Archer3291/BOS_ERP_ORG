@@ -1,0 +1,796 @@
+﻿@{
+    ViewBag.Title = "Zonas";
+    ViewBag.PageTitle = "Aplicacion Notas de Credito";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+    <link href="~/css/aplicacionnotacredito.css" rel="stylesheet" />
+}
+
+<!-- ================================================
+     FORMULARIO PRINCIPAL
+     ================================================ -->
+<form id="vi-nc-formAplicacion" class="vi-nc-formAplicacion" method="post">
+    <div class="vi-fac-form-container">
+        <div class="vi-fac-form-grid">
+
+            <!-- ======================================
+                 SECCIÓN 1: INFORMACIÓN GENERAL
+                 ====================================== -->
+            <div class="vi-nc-section">
+                <div class="vi-nc-section-header">
+                    <div class="vi-nc-section-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <h2 class="vi-nc-section-title">Información General</h2>
+                </div>
+                <div class="vi-nc-form-row">
+                    <div class="vi-nc-form-field">
+                        <label class="vi-nc-form-label">
+                            <i class="fas fa-building"></i>Sucursal
+                        </label>
+                        <select class="vi-nc-form-select form-select" id="vi-nc-sucursal" name="sucursal"></select>
+                    </div>
+                    <div class="vi-nc-form-field">
+                        <label class="vi-nc-form-label">
+                            <i class="fas fa-warehouse"></i>Almacén
+                        </label>
+                        <select class="vi-nc-form-select form-select" id="vi-nc-almacen" name="almacen"></select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================
+                 SECCIÓN 2: CLIENTE
+                 ====================================== -->
+            <div class="vi-nc-section">
+                <div class="vi-nc-section-header">
+                    <div class="vi-nc-section-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h2 class="vi-nc-section-title">Información del Cliente</h2>
+                </div>
+                <div class="vi-nc-form-row">
+                    <div class="vi-nc-form-field" style="grid-column: span 2;">
+                        <label class="vi-nc-form-label">
+                            <i class="fas fa-search"></i>Cliente
+                        </label>
+                        <div class="vi-nc-search-group">
+                            <input type="text" name="cliente" class="vi-nc-form-control" id="vi-nc-cliente"
+                                   placeholder="Buscar cliente..." readonly>
+                            <button class="vi-nc-btn-search" type="button"
+                                    data-bs-toggle="modal" data-bs-target="#vi-nc-modalBuscarCliente">
+                                <i class="fas fa-search me-1"></i>Buscar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="vi-nc-form-field">
+                        <label class="vi-nc-form-label">
+                            <i class="fas fa-id-card"></i>RFC
+                        </label>
+                        <input type="text" name="rfc" id="vi-nc-rfc" class="vi-nc-form-control" readonly autocomplete="off">
+                    </div>
+                </div>
+                <div class="vi-nc-form-field">
+                    <label class="vi-nc-form-label">
+                        <i class="fas fa-info-circle"></i>Información del Cliente
+                    </label>
+                    <textarea class="vi-nc-form-control" id="vi-nc-info-cliente" rows="4" readonly autocomplete="off"></textarea>
+                </div>
+                <div class="vi-nc-form-row">
+                    <div class="vi-nc-form-field">
+                        <label class="vi-nc-form-label">
+                            <i class="fas fa-dollar-sign"></i>Moneda
+                        </label>
+                        <select class="vi-nc-form-select form-select" name="moneda" id="vi-nc-moneda"></select>
+                    </div>
+                    <div class="vi-nc-form-field">
+                        <label class="vi-nc-form-label">
+                            <i class="fas fa-exchange-alt"></i>Paridad
+                        </label>
+                        <input type="text" id="vi-nc-paridad" name="paridad"
+                               class="vi-nc-form-control" value="1" autocomplete="off">
+                    </div>
+                </div>
+                <div class="vi-nc-form-row">
+                    <div class="vi-nc-form-field" style="grid-column: span 2;">
+                        <label class="vi-nc-form-label">
+                            <i class="fas fa-comment"></i>Referencia / Concepto
+                        </label>
+                        <input type="text" id="vi-nc-concepto" name="concepto"
+                               class="vi-nc-form-control" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================
+                 SECCIÓN 3: NOTAS DE CRÉDITO
+                 ====================================== -->
+            <div class="vi-nc-section" id="vi-nc-seccion-notas">
+                <div class="vi-nc-section-header">
+                    <div class="vi-nc-section-icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <h2 class="vi-nc-section-title">Notas de Crédito a Aplicar</h2>
+                </div>
+
+                <div class="vi-nc-products-section">
+                    <div class="vi-nc-products-header">
+                        <h3 class="vi-nc-products-title">
+                            <i class="fas fa-list me-2"></i>Notas / Documentos
+                        </h3>
+                        <!-- Botón Auto-llenar - OCULTO POR DEFECTO -->
+                        <div class="d-none" id="vi-nc-container-autollenar">
+                            <button type="button"
+                                    class="vi-nc-ticket-btn vi-nc-btn-primary vi-nc-btn-autollenar"
+                                    id="vi-nc-btn-autollenar">
+                                <i class="fas fa-fill-drip me-1"></i> Auto-llenar al Máximo
+                            </button>
+                        </div>
+                        <button type="button" class="vi-nc-btn-add"
+                                data-bs-toggle="modal" data-bs-target="#vi-nc-modalBuscarNotas">
+                            <i class="fas fa-plus me-1"></i>Agregar Nota
+                        </button>
+                    </div>
+
+                    <div class="vi-nc-table-container">
+                        <table class="vi-nc-product-table table-responsive">
+                            <thead>
+                                <tr>
+                                    <th>Serie/Folio</th>
+                                    <th>UUID</th>
+                                    <th>Tipo</th>
+                                    <th>Fecha</th>
+                                    <th>Total NC</th>
+                                    <th>Saldo Anterior</th>
+                                    <th>Importe Aplicado</th>
+                                    <th>Saldo Restante</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vi-nc-notasTable" style="background: var(--very-light-blue)">
+                                <tr class="vi-nc-empty-state">
+                                    <td colspan="9">
+                                        <i class="fas fa-file-invoice-dollar d-block"></i>
+                                        <div>No hay notas de crédito agregadas</div>
+                                        <small>Haz clic en "Agregar Nota" para comenzar</small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================
+                 SECCIÓN 4: FACTURAS A AFECTAR
+                 ====================================== -->
+            <div class="vi-nc-section" id="vi-nc-seccion-facturas">
+                <div class="vi-nc-section-header">
+                    <div class="vi-nc-section-icon">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <h2 class="vi-nc-section-title">Facturas a Afectar</h2>
+                </div>
+
+                <div class="vi-nc-products-section">
+                    <div class="vi-nc-products-header">
+                        <h3 class="vi-nc-products-title">
+                            <i class="fas fa-list me-2"></i>Facturas Seleccionadas
+                        </h3>
+                        <button type="button" class="vi-nc-btn-add"
+                                data-bs-toggle="modal" data-bs-target="#vi-nc-modalBuscarFacturas">
+                            <i class="fas fa-plus me-1"></i>Agregar Factura
+                        </button>
+                    </div>
+
+                    <div class="vi-nc-table-container">
+                        <table class="vi-nc-product-table table-responsive">
+                            <thead>
+                                <tr>
+                                    <th>Serie/Folio</th>
+                                    <th>UUID</th>
+                                    <th>Fecha</th>
+                                    <th>Total Factura</th>
+                                    <th>Saldo Anterior</th>
+                                    <th>Importe Aplicado</th>
+                                    <th>Saldo Restante</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vi-nc-facturasTable" style="background: var(--very-light-blue)">
+                                <tr class="vi-nc-empty-state">
+                                    <td colspan="8">
+                                        <i class="fas fa-file-invoice d-block"></i>
+                                        <div>No hay facturas seleccionadas</div>
+                                        <small>Haz clic en "Agregar Factura" para comenzar</small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden -->
+            <input type="hidden" id="vi-nc-total-final" name="totalFinal" value="0">
+
+            <!-- ======================================
+                 LAYOUT 50/50: CONDICIONES + RESUMEN
+                 ====================================== -->
+            <div class="vi-nc-payment-summary-container">
+
+                <!-- CONDICIONES DE APLICACIÓN -->
+                <div class="vi-nc-section">
+                    <div class="vi-nc-section-header">
+                        <div class="vi-nc-section-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <h2 class="vi-nc-section-title">Condiciones de Aplicación</h2>
+                    </div>
+
+                    <div class="vi-nc-form-row">
+                        <div class="vi-nc-form-field" style="grid-column: span 2;">
+                            <label class="vi-nc-form-label">
+                                <i class="fas fa-calendar-alt"></i>Fecha de Aplicación <span style="color:red">*</span>
+                            </label>
+                            <input type="datetime-local"
+                                   id="vi-nc-fecha-aplicacion"
+                                   name="fechaAplicacion"
+                                   class="vi-nc-form-control"
+                                   required>
+                        </div>
+
+                        <div class="vi-nc-form-field" style="grid-column: span 2;">
+                            <label class="vi-nc-form-label">
+                                <i class="fas fa-file-invoice"></i>Uso CFDI
+                            </label>
+                            <select class="vi-nc-form-select form-select" id="vi-nc-uso-cfdi" name="usoCfdi"></select>
+                        </div>
+
+                        <div class="vi-nc-form-field" style="grid-column: span 2;">
+                            <label class="vi-nc-form-label">
+                                <i class="fas fa-tags"></i>Tipo de Aplicación
+                            </label>
+                            <select class="vi-nc-form-select form-select" id="vi-nc-tipo-aplicacion" name="tipoAplicacion">
+                                <option value="" disabled selected>Seleccione tipo...</option>
+                                <option value="TOTAL">Aplicación Total</option>
+                                <option value="PARCIAL">Aplicación Parcial</option>
+                                <option value="CRUCE">Cruce de Documentos</option>
+                            </select>
+                        </div>
+
+                        <div class="vi-nc-form-field" style="grid-column: span 2;">
+                            <label class="vi-nc-form-label">
+                                <i class="fas fa-university"></i>Cuenta de Banco
+                            </label>
+                            <select class="vi-nc-form-select form-select" id="vi-nc-banco" name="banco"></select>
+                        </div>
+                    </div>
+
+                    <div class="vi-nc-form-field">
+                        <label class="vi-nc-form-label">
+                            <i class="fas fa-comment-dots"></i>Comentarios Adicionales
+                        </label>
+                        <textarea class="vi-nc-form-control" id="vi-nc-comentarios"
+                                  name="comentarios" rows="3"></textarea>
+                    </div>
+
+                    <div class="vi-nc-actions-section">
+                        <button type="button" class="vi-nc-footer-btn vi-nc-btn-submit" id="vi-nc-btn-generar">
+                            <i class="fas fa-paper-plane"></i> Generar Aplicación
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SIDEBAR: RESUMEN -->
+                <div class="vi-nc-ticket-container vi-nc-sidebar-totals">
+                    <div class="vi-nc-ticket-header">
+                        <div class="vi-nc-ticket-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="vi-nc-ticket-title">Resumen de Aplicación</div>
+                    </div>
+
+                    <div class="vi-nc-ticket-body">
+                        <div class="vi-nc-ticket-line">
+                            <span>Total Notas de Crédito:</span>
+                            <span id="vi-nc-total-notas-display">$0.00</span>
+                        </div>
+                        <div class="vi-nc-ticket-line">
+                            <span>Saldo Disponible NC:</span>
+                            <span id="vi-nc-saldo-nc-display">$0.00</span>
+                        </div>
+
+                        <hr class="vi-nc-ticket-separator">
+
+                        <div class="vi-nc-ticket-line">
+                            <span>Total Facturas:</span>
+                            <span id="vi-nc-total-facturas-display">$0.00</span>
+                        </div>
+                        <div class="vi-nc-ticket-line">
+                            <span>Saldo Pendiente:</span>
+                            <span id="vi-nc-saldo-facturas-display">$0.00</span>
+                        </div>
+
+                        <hr class="vi-nc-ticket-separator">
+
+                        <div class="vi-nc-ticket-line">
+                            <span><i class="fas fa-coins"></i> Monto Aplicado:</span>
+                            <strong id="vi-nc-monto-aplicado-display" class="text-success">$0.00</strong>
+                        </div>
+
+                        <div class="vi-nc-ticket-line">
+                            <span>Saldo NC Restante:</span>
+                            <span id="vi-nc-saldo-nc-restante-display">$0.00</span>
+                        </div>
+
+                        <div class="vi-nc-ticket-line">
+                            <span>Saldo Fac. Restante:</span>
+                            <span id="vi-nc-saldo-fac-restante-display">$0.00</span>
+                        </div>
+
+                        <hr class="vi-nc-ticket-separator">
+
+                        <!-- Alerta si hay diferencia -->
+                        <div id="vi-nc-alerta-diferencia" class="d-none">
+                            <div class="alert alert-warning py-2 px-3 mb-2" style="font-size:0.85rem; border-radius:10px;">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Diferencia: <strong id="vi-nc-diferencia-display">$0.00</strong>
+                            </div>
+                        </div>
+
+                        <div class="vi-nc-ticket-total">
+                            <div class="vi-nc-total-amount">
+                                <span><i class="fas fa-check-circle"></i> Total Aplicado:</span>
+                                <strong id="vi-nc-total-aplicacion-display" class="text-success">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="vi-nc-total-aplicacion" name="totalAplicacion" value="0.00">
+
+                    <div class="vi-nc-perforation">
+                        <div class="vi-nc-perforation-hole"></div>
+                        <div class="vi-nc-perforation-hole"></div>
+                        <div class="vi-nc-perforation-hole"></div>
+                        <div class="vi-nc-perforation-hole"></div>
+                        <div class="vi-nc-perforation-hole"></div>
+                    </div>
+                </div>
+
+            </div><!-- fin grid 50/50 -->
+
+        </div>
+    </div>
+</form>
+
+<!-- ================================================
+     MODAL: BUSCAR CLIENTE
+     ================================================ -->
+<div class="modal fade" id="vi-nc-modalBuscarCliente" tabindex="-1"
+     aria-labelledby="vi-nc-modalBuscarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header vi-nc-modal-header">
+                <h5 class="modal-title" id="vi-nc-modalBuscarClienteLabel">
+                    <i class="fas fa-search me-2"></i> Buscar Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vi-nc-inputBuscarCliente"
+                           class="form-control" placeholder="Nombre o RFC">
+                    <button type="button" class="btn btn-outline-warning" id="vi-nc-btnLimpiarClientes">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-group list-group-flush" id="vi-nc-listaResultadosClientes"
+                    style="max-height: 400px; overflow-y: auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap mb-2">
+                    <span>
+                        Mostrando <strong id="vi-nc-recordsFromClientes">0</strong>
+                        a <strong id="vi-nc-recordsToClientes">0</strong>
+                        de <strong id="vi-nc-totalRecordsClientes">0</strong>
+                    </span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select id="vi-nc-pageSizeClientes" class="form-select form-select-sm">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <div id="vi-nc-spinnerClientes"
+                             class="spinner-border text-primary d-none" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vi-nc-paginationClientes"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================
+     MODAL: BUSCAR NOTAS DE CRÉDITO
+     ================================================ -->
+<div class="modal fade" id="vi-nc-modalBuscarNotas" tabindex="-1"
+     aria-labelledby="vi-nc-modalBuscarNotasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #059669, #10b981); color: white;">
+                <h5 class="modal-title" id="vi-nc-modalBuscarNotasLabel">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    Buscar Notas de Crédito
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- TABS -->
+                <ul class="nav nav-tabs mb-3" id="notasTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="buscar-nota-tab"
+                                data-bs-toggle="tab" data-bs-target="#buscar-nota-panel" type="button">
+                            <i class="fas fa-search me-2"></i>Buscar Nota de Crédito
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="manual-nota-tab"
+                                data-bs-toggle="tab" data-bs-target="#manual-nota-panel" type="button">
+                            <i class="fas fa-edit me-2"></i>Ingresar Manualmente
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- PANEL BÚSQUEDA -->
+                    <div class="tab-pane fade show active" id="buscar-nota-panel">
+                        <div class="input-group mb-3">
+                            <input type="text" id="vi-nc-inputBuscarNota" class="form-control"
+                                   placeholder="Buscar por folio, UUID, cliente, fecha o monto">
+                            <button type="button" class="btn btn-outline-secondary"
+                                    id="vi-nc-btnLimpiarNotas">
+                                <i class="fas fa-eraser"></i> Limpiar
+                            </button>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-success"></thead>
+                                <tbody id="vi-nc-listaResultadosNotas">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            <i class="fas fa-file-invoice-dollar d-block fs-2 mb-2"></i>
+                                            Seleccione un cliente para buscar notas de crédito
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PANEL MANUAL -->
+                    <div class="tab-pane fade" id="manual-nota-panel">
+                        <div class="card">
+                            <div class="card-body">
+                                <form id="vi-nc-formNotaManual">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">
+                                                <i class="fas fa-hashtag text-success me-1"></i>
+                                                Serie <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control"
+                                                   id="vi-nc-manual-serie" placeholder="Ej: NC, A, B"
+                                                   maxlength="10" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">
+                                                <i class="fas fa-file-invoice text-success me-1"></i>
+                                                Folio <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control"
+                                                   id="vi-nc-manual-folio" placeholder="Ej: 1234" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">
+                                                <i class="fas fa-tags text-success me-1"></i>
+                                                Tipo <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select" id="vi-nc-manual-tipo" required>
+                                                <option value="NC">NC - Nota de Crédito</option>
+                                                <option value="ND">ND - Nota de Devolución</option>
+                                                <option value="DEV">DEV - Devolución</option>
+                                                <option value="BON">BON - Bonificación</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">
+                                                <i class="fas fa-hashtag text-success me-1"></i>
+                                                UUID <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control"
+                                                   id="vi-nc-manual-uuid"
+                                                   placeholder="Ej: 12345678-1234-1234-1234-123456789012"
+                                                   maxlength="36" required>
+                                            <small class="text-muted">36 caracteres</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">
+                                                <i class="fas fa-calendar text-success me-1"></i>
+                                                Fecha <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="date" class="form-control"
+                                                   id="vi-nc-manual-fecha" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">
+                                                <i class="fas fa-money-bill-wave text-success me-1"></i>
+                                                Total NC <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="number" class="form-control"
+                                                   id="vi-nc-manual-total"
+                                                   placeholder="0.00" step="0.01" min="0.01" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">
+                                                <i class="fas fa-dollar-sign text-success me-1"></i>
+                                                Saldo Disponible <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="number" class="form-control"
+                                                   id="vi-nc-manual-saldo"
+                                                   placeholder="0.00" step="0.01" min="0.01" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">
+                                                <i class="fas fa-coins text-success me-1"></i>
+                                                Moneda <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-select" id="vi-nc-manual-moneda" required>
+                                                <option value="MXN">MXN - Peso Mexicano</option>
+                                                <option value="USD">USD - Dólar Americano</option>
+                                                <option value="EUR">EUR - Euro</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">
+                                                <i class="fas fa-file-alt text-success me-1"></i>
+                                                UUID Factura Relacionada
+                                            </label>
+                                            <input type="text" class="form-control"
+                                                   id="vi-nc-manual-uuid-factura"
+                                                   placeholder="Opcional - UUID de factura original"
+                                                   maxlength="36">
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                <strong>Nota:</strong> Estos datos se usarán para generar
+                                                la aplicación. Asegúrate de que coincidan con el CFDI original.
+                                            </div>
+                                        </div>
+                                        <div class="col-12 text-end">
+                                            <button type="button" class="btn btn-secondary me-2"
+                                                    id="vi-nc-btn-limpiar-manual-nota">
+                                                <i class="fas fa-eraser me-1"></i>Limpiar
+                                            </button>
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-plus me-1"></i>Agregar Nota Manual
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer con paginación -->
+            <div class="modal-footer flex-column">
+                <div class="w-100 d-flex justify-content-between align-items-center mb-2">
+                    <span>
+                        Mostrando <strong id="vi-nc-recordsFromNotas">0</strong>
+                        a <strong id="vi-nc-recordsToNotas">0</strong>
+                        de <strong id="vi-nc-totalRecordsNotas">0</strong>
+                    </span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select id="vi-nc-pageSizeNotas" class="form-select form-select-sm">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <div id="vi-nc-spinnerNotas"
+                             class="spinner-border spinner-border-sm text-success d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vi-nc-paginationNotas"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================
+     MODAL: BUSCAR FACTURAS A AFECTAR
+     ================================================ -->
+<div class="modal fade" id="vi-nc-modalBuscarFacturas" tabindex="-1"
+     aria-labelledby="vi-nc-modalBuscarFacturasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header vi-nc-modal-header">
+                <h5 class="modal-title" id="vi-nc-modalBuscarFacturasLabel">
+                    <i class="fas fa-file-invoice me-2"></i>
+                    Buscar Facturas a Afectar
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vi-nc-inputBuscarFactura" class="form-control"
+                           placeholder="Buscar por folio, UUID, fecha o monto">
+                    <button type="button" class="btn btn-outline-secondary"
+                            id="vi-nc-btnLimpiarFacturas">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-primary"></thead>
+                        <tbody id="vi-nc-listaResultadosFacturas">
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    <i class="fas fa-file-invoice d-block fs-2 mb-2"></i>
+                                    Seleccione un cliente para buscar facturas
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer flex-column">
+                <div class="w-100 d-flex justify-content-between align-items-center mb-2">
+                    <span>
+                        Mostrando <strong id="vi-nc-recordsFromFacturas">0</strong>
+                        a <strong id="vi-nc-recordsToFacturas">0</strong>
+                        de <strong id="vi-nc-totalRecordsFacturas">0</strong>
+                    </span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <select id="vi-nc-pageSizeFacturas" class="form-select form-select-sm">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <div id="vi-nc-spinnerFacturas"
+                             class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0"
+                        id="vi-nc-paginationFacturas"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/Credito_Cobranza/aplicacion_notas_credito.js"></script>
+    <script src="~/Scripts/Facturas/manejo-respuestas.js"></script>
+    <script>
+        let tomManagerNC;
+        tomManagerNC = new TomSelectManager();
+
+        GetData({ path: '/DatosGenerales/DatosSelect' }).then((_res) => {
+            const monedas    = _res.monedas;
+            const cfdi       = _res.usocfdi;
+            const sucursales = _res.sucursales;
+            const almacenes  = _res.almacenes;
+            const bancos     = _res.bancos;
+            const tasas      = _res.tasas;
+
+            // MONEDA
+            tomManagerNC.create('vi-nc-moneda', {
+                selector: '#vi-nc-moneda',
+                options: monedas,
+                valueField: 'id', displayField: 'nombre',
+                searchField: ['id', 'nombre'],
+                placeholder: 'Seleccione una moneda...',
+                maxItems: 1, create: false,
+                render: {
+                    option: (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)} (${e(d.id)})</div>`,
+                    item:   (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)}</div>`
+                },
+                onChange: (value) => {
+                    let v = value === "PESOS" ? "peso" : value === "EURO" ? "euro" : value === "DLLS" ? "dolar" : null;
+                    const tasaData = tasas?.[0];
+                    if (!tasaData || !v) { document.getElementById('vi-nc-paridad').value = ''; return; }
+                    const tasa = tasaData[v];
+                    document.getElementById('vi-nc-paridad').value = tasa !== undefined ? tasa : '';
+                }
+            });
+
+            // USO CFDI
+            tomManagerNC.create('vi-nc-uso-cfdi', {
+                selector: '#vi-nc-uso-cfdi',
+                options: cfdi,
+                valueField: 'id', displayField: 'nombre',
+                searchField: ['id', 'nombre'],
+                placeholder: 'Seleccione el CFDI...',
+                maxItems: 1, create: false,
+                render: {
+                    option: (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)} (${e(d.id)})</div>`,
+                    item:   (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)}</div>`
+                }
+            });
+
+            // BANCO
+            tomManagerNC.create('vi-nc-banco', {
+                selector: '#vi-nc-banco',
+                options: bancos,
+                valueField: 'id', displayField: 'nombre',
+                searchField: ['id', 'nombre'],
+                placeholder: 'Seleccione banco...',
+                maxItems: 1, create: false,
+                render: {
+                    option: (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)} (${e(d.id)})</div>`,
+                    item:   (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)}</div>`
+                }
+            });
+
+            // SUCURSAL
+            tomManagerNC.create('vi-nc-sucursal', {
+                selector: '#vi-nc-sucursal',
+                options: sucursales,
+                valueField: 'id', displayField: 'nombre',
+                searchField: ['id', 'nombre'],
+                placeholder: 'Seleccione sucursal...',
+                maxItems: 1, create: false,
+                render: {
+                    option: (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)} (${e(d.id)})</div>`,
+                    item:   (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)}</div>`
+                },
+                onChange: (sucursalId) => {
+                    const filtrados = almacenes.filter(a => a.sucursal_id == sucursalId);
+                    const inst = tomManagerNC.getInstance('vi-nc-almacen');
+                    if (!inst) return;
+                    inst.clear();
+                    inst.clearOptions();
+                    inst.addOptions(filtrados);
+                    inst.refreshOptions(false);
+                }
+            });
+
+            // ALMACÉN
+            tomManagerNC.create('vi-nc-almacen', {
+                selector: '#vi-nc-almacen',
+                options: [],
+                valueField: 'id', displayField: 'nombre',
+                searchField: ['id', 'nombre'],
+                placeholder: 'Seleccione almacén...',
+                maxItems: 1, create: false,
+                render: {
+                    option: (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)} (${e(d.id)})</div>`,
+                    item:   (d, e) => `<div style="color:var(--text-dark)">${e(d.nombre)}</div>`
+                }
+            });
+
+            // Valores por defecto
+            tomManagerNC.getInstance('vi-nc-sucursal').setValue(@Context.Session.GetInt32("Sucursal"), false);
+            tomManagerNC.getInstance('vi-nc-almacen').setValue("1", false);
+            tomManagerNC.getInstance('vi-nc-moneda').setValue("PESOS", false);
+            tomManagerNC.getInstance('vi-nc-uso-cfdi').setValue("CP01", false);
+        });
+    </script>
+}

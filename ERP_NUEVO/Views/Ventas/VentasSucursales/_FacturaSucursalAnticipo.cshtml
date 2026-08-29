@@ -1,0 +1,568 @@
+﻿@using BOS_ERP.Controllers
+@model BOS_ERP.Models.FolioInfo
+
+@{
+    var role = Utilities.GetUserRole(User.Identity.Name, "ERP_SRS");
+}
+
+@*<style>
+   
+    .vi-page {
+        background: var(--vi-gray-100);
+        min-height: 100vh;
+        padding: 2rem 0 4rem;
+    }
+
+    .vi-card {
+        background: var(--bg-light, #fff);
+        border-radius: var(--vi-radius-lg);
+        border: 1px solid var(--vi-gray-200);
+        box-shadow: var(--vi-shadow-md);
+        overflow: hidden;
+    }
+
+    .vi-section-header {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding-bottom: .75rem;
+        border-bottom: 2px solid var(--vi-blue-50);
+        margin-bottom: 1.25rem;
+    }
+
+    .vi-section-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 10px;
+        background: var(--vi-blue-600);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .vi-section-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--vi-gray-800);
+        margin: 0;
+    }
+
+    .vi-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--vi-gray-600);
+        margin-bottom: .3rem;
+        display: block;
+    }
+
+        .vi-label i {
+            color: #3b82f6;
+            margin-right: .3rem;
+        }
+
+    .vi-control {
+        border: 1.5px solid var(--vi-gray-200);
+        border-radius: var(--vi-radius);
+        padding: .65rem 1rem;
+        font-size: .9rem;
+        background: var(--vi-gray-50);
+        color: var(--vi-gray-800);
+        width: 100%;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .vi-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            outline: none;
+            background: var(--bg-light, #fff);
+        }
+
+        .vi-control[readonly] {
+            background: var(--vi-gray-100);
+            cursor: default;
+        }
+
+        .vi-control.disabled-field {
+            background: #C2C2C2 !important;
+            cursor: not-allowed !important;
+            opacity: .7;
+            color: #333;
+        }
+
+    /* Etiqueta fija Anticipo */
+    .vi-ant-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .5rem 1rem;
+        border-radius: var(--vi-radius);
+        background: var(--vi-amber-50);
+        border: 1px solid #fde68a;
+        color: var(--vi-amber-600);
+        font-weight: 600;
+        font-size: .9rem;
+    }
+
+    /* Botones */
+    .vi-btn {
+        border: none;
+        border-radius: var(--vi-radius);
+        padding: .6rem 1.25rem;
+        font-weight: 600;
+        font-size: .85rem;
+        cursor: pointer;
+        transition: transform .2s, box-shadow .2s, background .2s;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+    }
+
+        .vi-btn:hover {
+            transform: translateY(-1px);
+        }
+
+    .vi-btn-primary {
+        background: var(--vi-blue-600);
+        color: #fff;
+    }
+
+        .vi-btn-primary:hover {
+            background: var(--vi-blue-700);
+            box-shadow: 0 4px 14px rgba(30,58,95,.3);
+        }
+
+    .vi-btn-success {
+        background: var(--vi-green-600);
+        color: #fff;
+    }
+
+        .vi-btn-success:hover {
+            background: var(--vi-green-700);
+            box-shadow: 0 4px 14px rgba(5,150,105,.3);
+        }
+
+    .vi-btn-ghost {
+        background: transparent;
+        color: var(--vi-red-600);
+        border: 1.5px solid var(--vi-red-600);
+    }
+
+        .vi-btn-ghost:hover {
+            background: var(--vi-red-600);
+            color: #fff;
+        }
+
+    /* Ticket resumen */
+    .vi-ticket {
+        border: 1px solid var(--vi-gray-200);
+        border-radius: var(--vi-radius-lg);
+        overflow: hidden;
+        box-shadow: var(--vi-shadow);
+    }
+
+    .vi-ticket-head {
+        background: var(--vi-blue-600);
+        color: #fff;
+        padding: 1.1rem 1.4rem;
+        text-align: center;
+    }
+
+    .vi-ticket-head-icon {
+        font-size: 1.5rem;
+        opacity: .9;
+        display: block;
+        margin-bottom: .2rem;
+    }
+
+    .vi-ticket-head-label {
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+    }
+
+    .vi-ticket-body {
+        padding: 1.1rem 1.4rem;
+        background: var(--bg-light, #fff);
+    }
+
+    .vi-ticket-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: .55rem 0;
+        border-bottom: 1px dashed var(--vi-gray-200);
+        font-size: .85rem;
+        color: var(--vi-gray-800);
+    }
+
+        .vi-ticket-row:last-child {
+            border-bottom: none;
+        }
+
+    .vi-ticket-row-label {
+        color: var(--vi-gray-600);
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vi-ticket-row-val {
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+        color: var(--vi-gray-800);
+    }
+
+    .vi-ticket-footer {
+        background: var(--vi-blue-50);
+        border-top: 2px dashed var(--vi-blue-100);
+        padding: 1.1rem 1.4rem;
+    }
+
+    .vi-ticket-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .vi-ticket-total-label {
+        font-size: .85rem;
+        color: var(--vi-blue-600);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vi-ticket-total-val {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--vi-blue-600);
+        font-family: 'Courier New', monospace;
+    }
+
+    /* Modal header */
+    .vi-modal-header {
+        background: var(--vi-blue-600);
+        color: #fff;
+        border-radius: 0;
+    }
+
+        .vi-modal-header .btn-close {
+            filter: invert(1);
+        }
+
+    /* Separador */
+    .vi-sep {
+        border: none;
+        border-top: 1px dashed var(--vi-gray-200);
+        margin: 1.25rem 0;
+    }
+</style>*@
+
+<div class="vi-page">
+    <div class="container-xl">
+
+        <!-- Encabezado de página -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="vi-section-icon" style="width:2.75rem;height:2.75rem;border-radius:12px;">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div>
+                <h1 class="h4 mb-0 fw-bold" style="color:var(--vi-gray-800)">Nuevo Anticipo</h1>
+                <p class="mb-0 small" style="color:var(--vi-gray-600)">Complete los datos para generar la factura de anticipo</p>
+            </div>
+        </div>
+
+        <form id="vs-fac-ant-formCotizacion" method="post">
+            <input type="hidden" name="tipo" value="anticipo">
+
+            <div class="row g-4">
+
+                <!-- ========== COLUMNA IZQUIERDA ========== -->
+                <div class="col-12 col-xl-8">
+
+                    <!-- TARJETA: Tipo fijo Anticipo -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                            <h2 class="vi-section-title">Tipo de Factura</h2>
+                        </div>
+                        <span class="vi-ant-badge">
+                            <i class="fas fa-clock"></i> Anticipo
+                        </span>
+                    </div>
+
+                    <!-- TARJETA: Información General -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-info-circle"></i></div>
+                            <h2 class="vi-section-title">Información General</h2>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-hashtag"></i>Folio</label>
+                                <input type="text" id="vs-fac-ant-folio" value="@Model.Folio" name="folio"
+                                       class="vi-control" readonly autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Información del Cliente -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-user"></i></div>
+                            <h2 class="vi-section-title">Información del Cliente</h2>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Buscador cliente -->
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-search"></i>Cliente</label>
+                                <div class="input-group" style="flex-wrap:nowrap">
+                                    <button class="vi-btn vi-btn-primary" type="button"
+                                            data-bs-toggle="modal" data-bs-target="#vs-fac-ant-modalBuscarCliente">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                    <input type="text" name="cliente" class="vi-control" id="vs-fac-ant-cliente"
+                                           placeholder="Seleccione un cliente…" disabled
+                                           style="border-radius:0 var(--vi-radius) var(--vi-radius) 0; border-left:none;">
+                                </div>
+                            </div>
+
+                            <!-- RFC -->
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-id-card"></i>RFC</label>
+                                <input type="text" name="rfc" id="vs-fac-ant-rfc" class="vi-control" autocomplete="off">
+                            </div>
+
+                            <!-- Info adicional -->
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-info-circle"></i>Información del Cliente</label>
+                                <textarea class="vi-control" id="vs-fac-ant-info-proveedor" rows="3" readonly autocomplete="off"></textarea>
+                            </div>
+
+                            <!-- Vendedor + Moneda + Paridad -->
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-user-tie"></i>Vendedor</label>
+                                <select class="vi-control form-select" name="vendedor" id="vs-fac-ant-vendedor">
+                                    <option selected disabled>Seleccionar vendedor</option>
+                                    <option value="1">Carlos Mendoza</option>
+                                    <option value="2">Ana García</option>
+                                    <option value="3">Luis Fernández</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-dollar-sign"></i>Moneda</label>
+                                <select class="vi-control form-select" name="moneda" id="vs-fac-ant-moneda">
+                                    <option selected disabled>Seleccione una moneda</option>
+                                    <option>PESOS</option>
+                                    <option>DOLARES</option>
+                                    <option>EUROS</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-exchange-alt"></i>Paridad</label>
+                                <input type="text" id="vs-fac-ant-paridad" name="paridad" class="vi-control" value="1" autocomplete="off">
+                            </div>
+
+                            <!-- Referencia -->
+                            <div class="col-12 col-sm-8">
+                                <label class="vi-label"><i class="fas fa-comment"></i>Referencia</label>
+                                <input type="text" id="vs-fac-ant-concepto" name="concepto" class="vi-control" autocomplete="off">
+                            </div>
+
+                            <!-- Adendas (oculto por defecto) -->
+                            <div class="col-12" id="vs-fac-ant-seccion-adendas" style="display:none;">
+                                <label class="vi-label"><i class="fas fa-file-contract"></i>Seleccionar Adenda</label>
+                                <div id="vs-fac-ant-adendas-container" class="adendas-radio-group"
+                                     style="display:flex;flex-direction:column;gap:.75rem;padding:1rem;background:var(--vi-gray-50);border-radius:var(--vi-radius);border:1px solid var(--vi-gray-200);max-height:380px;overflow-y:auto;">
+                                </div>
+                                <input type="hidden" id="vs-fac-ant-adenda-seleccionada" name="adenda-seleccionada">
+                            </div>
+                        </div>
+                    </div><!-- /tarjeta cliente -->
+                    <!-- TARJETA: Condiciones del Anticipo -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-credit-card"></i></div>
+                            <h2 class="vi-section-title">Condiciones del Anticipo</h2>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-dollar-sign"></i>Monto Anticipo</label>
+                                <input type="number" id="vs-fac-ant-monto-anticipo" name="monto-anticipo"
+                                       class="vi-control" placeholder="0.00" autocomplete="off">
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-calendar"></i>Fecha de Anticipo</label>
+                                <input type="date" id="vs-fac-ant-fecha-anticipo" name="fecha-anticipo" class="vi-control">
+                            </div>
+
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-money-bill"></i>Método de Pago</label>
+                                <select class="vi-control form-select disabled-field"
+                                        id="vs-fac-ant-metodo-pago" name="metodo-pago" disabled>
+                                    <option value="PUE" selected>PUE - Pago en una sola exhibición</option>
+                                </select>
+                                <input type="hidden" id="vs-fac-ant-metodo-pago-hidden" name="metodo-pago-hidden" value="PUE">
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-money-bill"></i>Forma de Pago</label>
+                                <select class="vi-control form-select" id="vs-fac-ant-forma-pago" name="forma-pago">
+                                    <option value="01">01 - Efectivo</option>
+                                    <option value="02">02 - Cheque nominativo</option>
+                                    <option value="03">03 - Transferencia electrónica</option>
+                                    <option value="04">04 - Tarjeta de crédito</option>
+                                    <option value="28">28 - Tarjeta de débito</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-file-invoice"></i>Uso CFDI</label>
+                                <select class="vi-control form-select" id="vs-fac-ant-uso-cfdi" name="uso-cfdi">
+                                    <option selected>G03 - Gastos en general</option>
+                                    <option value="D01">D01 - Honorarios médicos</option>
+                                    <option value="D02">D02 - Gastos médicos por incapacidad</option>
+                                    <option value="P01">P01 - Por definir</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Comentarios -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-comment-dots"></i></div>
+                            <h2 class="vi-section-title">Comentarios Adicionales</h2>
+                        </div>
+                        <textarea class="vi-control" id="vs-fac-ant-comentarios" name="comentarios" rows="4"
+                                  placeholder="Observaciones, condiciones especiales, etc."></textarea>
+                    </div>
+
+                </div><!-- /col izquierda -->
+                <!-- ========== COLUMNA DERECHA: RESUMEN ========== -->
+                <div class="col-12 col-xl-4">
+                    <div class="sticky-top" style="top:5rem; z-index:0;">
+
+                        <!-- Ticket resumen -->
+                        <div class="vi-ticket mb-3">
+                            <div class="vi-ticket-head">
+                                <i class="fas fa-calculator vi-ticket-head-icon"></i>
+                                <div class="vi-ticket-head-label">Resumen de Anticipo</div>
+                            </div>
+                            <div class="vi-ticket-body">
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">Subtotal</span>
+                                    <span class="vi-ticket-row-val" id="vs-fac-ant-total-subtotal1-display">$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">IVA (16%)</span>
+                                    <span class="vi-ticket-row-val" id="vs-fac-ant-iva-display">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="vi-ticket-footer">
+                                <div class="vi-ticket-total-row">
+                                    <span class="vi-ticket-total-label"><i class="fas fa-money-bill-wave me-1"></i>Total</span>
+                                    <strong class="vi-ticket-total-val" id="vs-fac-ant-total-final-display">$0.00</strong>
+                                </div>
+                            </div>
+
+                            <!-- Hidden inputs -->
+                            <input type="hidden" id="vs-fac-ant-total-subtotal1" name="total-subtotal1" value="0.00">
+                            <input type="hidden" id="vs-fac-ant-iva" name="iva" value="0.00">
+                            <input type="hidden" id="vs-fac-ant-importe" name="importe" value="0.00">
+                            <input type="hidden" id="vs-fac-ant-total-final-h" name="total-final" value="0.00">
+                            <input type="hidden" id="vs-fac-ant-total-anticipos" name="totalAnticipos" value="0">
+                            <input type="hidden" id="vs-fac-ant-total-final" name="totalFinal" value="0">
+                            <input type="hidden" id="vs-fac-ant-documentid" name="documentid">
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="d-grid gap-2">
+                            <button type="button" class="vi-btn vi-btn-success vs-fac-ant-btn-submit"
+                                    style="width:100%;justify-content:center;padding:.85rem;">
+                                <i class="fas fa-paper-plane"></i> Generar Anticipo
+                            </button>
+                            <a href="#" class="vi-btn vi-btn-ghost"
+                               style="width:100%;justify-content:center;text-decoration:none;">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+
+                    </div>
+                </div><!-- /col derecha -->
+
+            </div><!-- /row -->
+        </form>
+    </div><!-- /container -->
+</div><!-- /vi-page -->
+<!-- ===== MODAL: BUSCAR CLIENTE ===== -->
+<div class="modal fade" id="vs-fac-ant-modalBuscarCliente" tabindex="-1"
+     aria-labelledby="vs-fac-ant-modalBuscarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title" id="vs-fac-ant-modalBuscarClienteLabel">
+                    <i class="fas fa-search me-2"></i> Buscar Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vs-fac-ant-inputBuscarCliente" class="form-control" placeholder="Nombre o RFC…">
+                    <button type="button" class="btn btn-outline-secondary" id="vs-fac-ant-btnLimpiarClientes">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-unstyled" id="vs-fac-ant-listaResultadosClientes" style="max-height:400px;overflow-y:auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vs-fac-ant-recordsFromClientes">0</strong> a
+                        <strong id="vs-fac-ant-recordsToClientes">0</strong> de
+                        <strong id="vs-fac-ant-totalRecordsClientes">0</strong> registros
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vs-fac-ant-pageSizeClientes" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25 / pág</option>
+                            <option value="50" selected>50 / pág</option>
+                            <option value="100">100 / pág</option>
+                        </select>
+                        <div id="vs-fac-ant-spinnerClientes" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vs-fac-ant-paginationClientes"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ===== CÁLCULO DE TOTALES ===== */
+    document.getElementById('vs-fac-ant-monto-anticipo')?.addEventListener('input', calcularTotalesAnticipo);
+
+    function calcularTotalesAnticipo() {
+        const monto = parseFloat(document.getElementById('vs-fac-ant-monto-anticipo')?.value) || 0;
+        const iva = Math.round(monto * 0.16 * 100) / 100;
+        const total = monto + iva;
+
+        const fmt = v => '$' + v.toFixed(2);
+        document.getElementById('vs-fac-ant-total-subtotal1-display').textContent = fmt(monto);
+        document.getElementById('vs-fac-ant-iva-display').textContent = fmt(iva);
+        document.getElementById('vs-fac-ant-total-final-display').textContent = fmt(total);
+
+        document.getElementById('vs-fac-ant-total-subtotal1').value = monto.toFixed(2);
+        document.getElementById('vs-fac-ant-iva').value = iva.toFixed(2);
+        document.getElementById('vs-fac-ant-importe').value = total.toFixed(2);
+        document.getElementById('vs-fac-ant-total-final-h').value = total.toFixed(2);
+        document.getElementById('vs-fac-ant-total-anticipos').value = '0.00';
+        document.getElementById('vs-fac-ant-total-final').value = total.toFixed(2);
+    }
+</script>

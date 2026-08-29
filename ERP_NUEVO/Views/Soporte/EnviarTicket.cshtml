@@ -1,0 +1,453 @@
+﻿@model List<Dictionary<string, object>>
+@{
+    ViewBag.Title = "Enviar Ticket";
+    ViewData["PageTitle"] = "Enviar ticket";
+
+    var categorias = Model ?? new List<Dictionary<string, object>>();
+
+    // Paleta de acentos. Cada tarjeta toma un color del ciclo segun su posicion, asi que
+    // el catalogo puede crecer sin tocar la vista: al llegar al final se vuelve a empezar.
+    // El hex y el rgba van por separado a proposito (nada de color-mix) para no depender
+    // de soporte reciente del navegador.
+    var acentos = new[]
+    {
+        new[] { "#3b82f6", "rgba(59,130,246,.12)" },
+        new[] { "#22c55e", "rgba(34,197,94,.12)"  },
+        new[] { "#7c5cfc", "rgba(124,92,252,.12)" },
+        new[] { "#f59e0b", "rgba(245,158,11,.13)" },
+        new[] { "#4f6bf6", "rgba(79,107,246,.12)" },
+        new[] { "#ec4899", "rgba(236,72,153,.12)" },
+        new[] { "#14b8a6", "rgba(20,184,166,.13)" }
+    };
+
+    // Cuando sobra una tarjeta en la ultima fila de tres, esa se dibuja ancha y centrada
+    // en lugar de dejar dos huecos.
+    bool ultimaAncha = categorias.Count > 3 && categorias.Count % 3 == 1;
+
+    // Motas de color del fondo: top, left, tamano en px, color, opacidad.
+    var motas = new[]
+    {
+        new object[] { "6%",  "8%",  10, "#7c5cfc", ".35" },
+        new object[] { "3%",  "78%", 8,  "#f59e0b", ".40" },
+        new object[] { "14%", "3%",  6,  "#3b82f6", ".30" },
+        new object[] { "12%", "93%", 9,  "#ec4899", ".28" },
+        new object[] { "22%", "88%", 6,  "#22c55e", ".35" },
+        new object[] { "34%", "2%",  8,  "#ec4899", ".25" },
+        new object[] { "45%", "96%", 7,  "#7c5cfc", ".30" },
+        new object[] { "58%", "5%",  10, "#f59e0b", ".28" },
+        new object[] { "63%", "91%", 6,  "#3b82f6", ".32" },
+        new object[] { "78%", "9%",  8,  "#22c55e", ".28" },
+        new object[] { "84%", "84%", 9,  "#f59e0b", ".30" },
+        new object[] { "92%", "26%", 7,  "#7c5cfc", ".25" },
+        new object[] { "88%", "62%", 6,  "#3b82f6", ".28" },
+        new object[] { "70%", "97%", 8,  "#14b8a6", ".30" }
+    };
+}
+
+@functions {
+    // Las filas llegan como Dictionary<string, object> desde RunQuery: cualquier columna
+    // puede faltar o venir nula, asi que todo se lee por aqui.
+    static string Texto(Dictionary<string, object> fila, string clave)
+    {
+        if (fila == null || !fila.ContainsKey(clave) || fila[clave] == null) return "";
+        return fila[clave].ToString().Trim();
+    }
+
+    static string Icono(Dictionary<string, object> fila)
+    {
+        var icono = Texto(fila, "icon_class");
+        return string.IsNullOrEmpty(icono) ? "fa-regular fa-circle-question" : icono;
+    }
+
+    // "descripcion" es una columna opcional de tkts_categorias: si algun dia se agrega,
+    // el texto de la tarjeta sale del catalogo; mientras tanto se arma con el nombre.
+    static string Descripcion(Dictionary<string, object> fila)
+    {
+        var descripcion = Texto(fila, "descripcion");
+        if (!string.IsNullOrEmpty(descripcion)) return descripcion;
+
+        var nombre = Texto(fila, "n_cat");
+        return string.IsNullOrEmpty(nombre)
+            ? "Solicita asistencia al área de soporte."
+            : $"Solicita asistencia relacionada con {nombre}.";
+    }
+}
+
+@section styles {
+    <style>
+        .tks-wrap {
+            position: relative;
+            padding: 1.5rem 0 3rem;
+            font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+        }
+
+        /* Motas decorativas del fondo. Van detras de todo y no reciben clics. */
+        .tks-deco {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+            .tks-deco span {
+                position: absolute;
+                border-radius: 50%;
+            }
+
+            .tks-deco .tks-arc {
+                background: none;
+                border: 1px solid var(--border-light);
+                opacity: .5;
+            }
+
+        .tks-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        /* ── Encabezado ─────────────────────────────────────────────── */
+        .tks-hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .tks-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: .75rem;
+            margin: 0 0 1.25rem;
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: #7c5cfc;
+        }
+
+            .tks-eyebrow i {
+                font-size: .3rem;
+            }
+
+        .tks-title {
+            margin: 0 0 .85rem;
+            font-size: clamp(1.9rem, 4vw, 3.1rem);
+            font-weight: 700;
+            letter-spacing: -.02em;
+            color: var(--text-dark);
+        }
+
+        .tks-sub {
+            margin: 0;
+            font-size: 1.05rem;
+            color: var(--text-light);
+        }
+
+        /* ── Rejilla ────────────────────────────────────────────────── */
+        .tks-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1.5rem;
+        }
+
+        .tks-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 240px;
+            padding: 1.75rem 1.75rem 1.5rem 2rem;
+            overflow: hidden;
+            border-radius: 16px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, .06);
+            text-decoration: none;
+            transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+        }
+
+            /* Barra de acento del borde izquierdo. */
+            .tks-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 5px;
+                background: var(--c);
+            }
+
+            .tks-card:hover,
+            .tks-card:focus-visible {
+                transform: translateY(-6px);
+                box-shadow: 0 18px 36px rgba(15, 23, 42, .12);
+                border-color: var(--c-soft);
+                text-decoration: none;
+            }
+
+            .tks-card:focus-visible {
+                outline: 2px solid var(--c);
+                outline-offset: 3px;
+            }
+
+        .tks-card__head {
+            display: flex;
+            align-items: center;
+            gap: 1.15rem;
+        }
+
+        .tks-card__icon {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: var(--c-soft);
+            color: var(--c);
+            font-size: 1.7rem;
+            transition: transform .25s ease;
+        }
+
+        .tks-card:hover .tks-card__icon {
+            transform: scale(1.06);
+        }
+
+        .tks-card__name {
+            margin: 0;
+            font-size: 1.22rem;
+            font-weight: 700;
+            line-height: 1.25;
+            color: var(--text-dark);
+        }
+
+        /* Guion corto bajo el titulo, del color de la tarjeta. */
+        .tks-card__rule {
+            width: 30px;
+            height: 3px;
+            margin: 1rem 0 0;
+            border-radius: 2px;
+            background: var(--c);
+        }
+
+        .tks-card__foot {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: auto;
+            padding-top: 1.25rem;
+        }
+
+        .tks-card__desc {
+            margin: 0;
+            font-size: .93rem;
+            line-height: 1.5;
+            color: var(--text-light);
+        }
+
+        .tks-card__go {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--c-soft);
+            color: var(--c);
+            font-size: .8rem;
+            transition: background .25s ease, color .25s ease, transform .25s ease;
+        }
+
+        .tks-card:hover .tks-card__go {
+            background: var(--c);
+            color: #fff;
+            transform: translateX(3px);
+        }
+
+        /* ── Tarjeta ancha (la que sobra en la ultima fila) ─────────── */
+        .tks-card--ancha {
+            grid-column: 1 / -1;
+            justify-self: center;
+            width: calc((100% - 3rem) / 3 * 2 + 1.5rem);
+            min-height: 0;
+            padding: 1.6rem 1.75rem 1.6rem 2rem;
+        }
+
+            .tks-card--ancha .tks-card__head {
+                align-items: flex-start;
+            }
+
+            .tks-card--ancha .tks-card__cuerpo {
+                display: flex;
+                flex: 1 1 auto;
+                flex-direction: column;
+            }
+
+            .tks-card--ancha .tks-card__rule {
+                margin-top: .75rem;
+            }
+
+            .tks-card--ancha .tks-card__foot {
+                padding-top: .75rem;
+            }
+
+        /* ── Sin categorias ─────────────────────────────────────────── */
+        .tks-vacio {
+            grid-column: 1 / -1;
+            padding: 3rem 1rem;
+            text-align: center;
+            color: var(--text-light);
+            border: 1px dashed var(--border-light);
+            border-radius: 16px;
+        }
+
+        /* ── Tema oscuro ────────────────────────────────────────────── */
+        [data-theme="dark"] .tks-card {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+        }
+
+            [data-theme="dark"] .tks-card:hover {
+                box-shadow: 0 18px 36px rgba(0, 0, 0, .45);
+            }
+
+            /* Sobre una superficie oscura el tinte de color queda casi invisible: el
+               circulo se aclara con blanco y el icono conserva el acento. */
+            [data-theme="dark"] .tks-card__icon,
+            [data-theme="dark"] .tks-card__go {
+                background: rgba(255, 255, 255, .07);
+            }
+
+        [data-theme="dark"] .tks-card:hover .tks-card__go {
+            background: var(--c);
+        }
+
+        [data-theme="dark"] .tks-deco {
+            opacity: .55;
+        }
+
+        /* ── Responsivo ─────────────────────────────────────────────── */
+        @@media (max-width: 992px) {
+            .tks-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .tks-card--ancha {
+                grid-column: auto;
+                justify-self: stretch;
+                width: auto;
+                min-height: 240px;
+                padding: 1.75rem 1.75rem 1.5rem 2rem;
+            }
+        }
+
+        @@media (max-width: 640px) {
+            .tks-grid {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 1.15rem;
+            }
+
+            .tks-card,
+            .tks-card--ancha {
+                min-height: 0;
+                padding: 1.4rem 1.4rem 1.25rem 1.65rem;
+            }
+
+            .tks-card__icon {
+                width: 56px;
+                height: 56px;
+                font-size: 1.4rem;
+            }
+
+            .tks-deco {
+                display: none;
+            }
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .tks-card,
+            .tks-card__icon,
+            .tks-card__go {
+                transition: none;
+            }
+
+                .tks-card:hover {
+                    transform: none;
+                }
+        }
+    </style>
+}
+
+<div class="tks-wrap">
+    <div class="tks-deco" aria-hidden="true">
+        @foreach (var mota in motas)
+        {
+            <span style="top:@mota[0];left:@mota[1];width:@(mota[2])px;height:@(mota[2])px;background:@mota[3];opacity:@mota[4]"></span>
+        }
+        <span class="tks-arc" style="top:-140px;right:-120px;width:340px;height:340px"></span>
+        <span class="tks-arc" style="bottom:-160px;left:-140px;width:380px;height:380px"></span>
+    </div>
+
+    <div class="tks-inner">
+        <div class="tks-hero">
+            <p class="tks-eyebrow">
+                <i class="fa-solid fa-circle"></i>
+                Centro de soporte
+                <i class="fa-solid fa-circle"></i>
+            </p>
+            <h2 class="tks-title">¿En qué podemos ayudarte?</h2>
+            <p class="tks-sub">Selecciona un área para solicitar asistencia</p>
+        </div>
+
+        <div class="tks-grid">
+            @if (categorias.Count == 0)
+            {
+                <div class="tks-vacio">
+                    <i class="fa-regular fa-folder-open fa-2x d-block mb-3"></i>
+                    No hay categorías de soporte activas. Pide a un administrador que dé de alta al menos una.
+                </div>
+            }
+            else
+            {
+                for (int i = 0; i < categorias.Count; i++)
+                {
+                    var cat = categorias[i];
+                    var acento = acentos[i % acentos.Length];
+                    var ancha = ultimaAncha && i == categorias.Count - 1;
+
+                    <a class="tks-card @(ancha ? "tks-card--ancha" : "")"
+                       style="--c:@acento[0];--c-soft:@acento[1]"
+                       href="@Url.Action("FormularioTicket", "Soporte", new { categoria = cat["id_cat"] })">
+                        <div class="tks-card__head">
+                            <span class="tks-card__icon"><i class="@Icono(cat)"></i></span>
+                            @if (ancha)
+                            {
+                                <div class="tks-card__cuerpo">
+                                    <h3 class="tks-card__name">@Texto(cat, "n_cat")</h3>
+                                    <span class="tks-card__rule"></span>
+                                    <div class="tks-card__foot">
+                                        <p class="tks-card__desc">@Descripcion(cat)</p>
+                                        <span class="tks-card__go"><i class="fa-solid fa-chevron-right"></i></span>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <h3 class="tks-card__name">@Texto(cat, "n_cat")</h3>
+                            }
+                        </div>
+
+                        @if (!ancha)
+                        {
+                            <span class="tks-card__rule"></span>
+                            <div class="tks-card__foot">
+                                <p class="tks-card__desc">@Descripcion(cat)</p>
+                                <span class="tks-card__go"><i class="fa-solid fa-chevron-right"></i></span>
+                            </div>
+                        }
+                    </a>
+                }
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,655 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora de Tickets de Venta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <style>
+        :root {
+            --sidebar-width: 285px;
+            --bg-logo: #1e3a5f;
+            --active-link: #0f1729;
+            --icon-color: #64748b;
+            --primary-blue: #1e3a5f;
+            --primary-blue-dark: #0f1729;
+            --secondary-blue: #475569;
+            --light-blue: #e1e7ef;
+            --very-light-blue: #f8fafc;
+            --dark-blue: #0f1729;
+            --accent-blue: #3b82f6;
+            --text-dark: #0f172a;
+            --text-light: #64748b;
+            --border-light: #e2e8f0;
+            --bg-light: #ffffff;
+            --bg-gray: #f8fafc;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --dt-row-selected: 204, 213, 224;
+            --dt-row-selected-text: 0, 0, 0;
+            --disabled-color: #8191a72e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-gray);
+            color: var(--text-dark);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            box-shadow: var(--shadow-lg);
+            padding: 1.2rem 0;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .navbar-brand i {
+            font-size: 1.8rem;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            border: none;
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            border: none;
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-success:hover {
+            background: #047857;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid var(--accent-blue);
+            color: var(--accent-blue);
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--accent-blue);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .stats-card {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-blue);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stats-card.success::before {
+            background: var(--success-color);
+        }
+
+        .stats-card.warning::before {
+            background: var(--warning-color);
+        }
+
+        .stats-card.info::before {
+            background: var(--accent-blue);
+        }
+
+        .stats-card.primary::before {
+            background: var(--primary-blue);
+        }
+
+        .stats-card .icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-card.success .icon-wrapper {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--success-color);
+        }
+
+        .stats-card.warning .icon-wrapper {
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--warning-color);
+        }
+
+        .stats-card.info .icon-wrapper {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .stats-card.primary .icon-wrapper {
+            background: rgba(30, 58, 95, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .stats-card h6 {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-card h3 {
+            color: var(--text-dark);
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .main-card {
+            background: var(--bg-light);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+
+        .main-card .card-header {
+            background: var(--very-light-blue);
+            border-bottom: 1px solid var(--border-light);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .main-card .card-header h5 {
+            color: var(--text-dark);
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .table {
+            margin: 0;
+        }
+
+        .table thead th {
+            background: var(--very-light-blue);
+            color: var(--text-dark);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-light);
+            padding: 1rem;
+        }
+
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background: var(--very-light-blue);
+        }
+
+        .table tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .badge {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.completado {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--success-color);
+        }
+
+        .badge.proceso {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .badge.pendiente {
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--warning-color);
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            margin: 0 0.2rem;
+        }
+
+        .btn-outline-primary.btn-sm {
+            border-width: 1.5px;
+        }
+
+        .btn-outline-danger {
+            border: 1.5px solid var(--danger-color);
+            color: var(--danger-color);
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-danger:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .form-label {
+            color: var(--text-dark);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 1.5px solid var(--border-light);
+            border-radius: 8px;
+            padding: 0.65rem 1rem;
+            transition: all 0.3s ease;
+            color: var(--text-dark);
+            background: var(--bg-light);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            border: 1.5px solid var(--border-light);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin-left: 0.5rem;
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            border: 1.5px solid var(--border-light);
+            border-radius: 8px;
+            padding: 0.4rem 2rem 0.4rem 0.8rem;
+            margin: 0 0.5rem;
+        }
+
+        .page-link {
+            color: var(--accent-blue);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            margin: 0 0.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .page-link:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .page-item.active .page-link {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: flex-start;
+            gap: 0.5rem;
+        }
+
+        @@media (max-width: 768px) {
+            .stats-card {
+                margin-bottom: 1rem;
+            }
+
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn-sm {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <span class="navbar-brand">
+                <i class="bi bi-receipt-cutoff"></i>
+                Bitácora de Tickets de Venta
+            </span>
+            <button class="btn theme-toggle" onclick="toggleTheme()">
+                <i class="bi bi-moon-stars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <!-- Filtros -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <label class="form-label"><i class="bi bi-calendar"></i> Fecha Inicio</label>
+                <input type="date" class="form-control" id="fechaInicio" onchange="aplicarFiltros()">
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <label class="form-label"><i class="bi bi-calendar-check"></i> Fecha Fin</label>
+                <input type="date" class="form-control" id="fechaFin" onchange="aplicarFiltros()">
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <label class="form-label"><i class="bi bi-flag"></i> Estado</label>
+                <select class="form-select" id="filtroEstado" onchange="aplicarFiltros()">
+                    <option value="">Todos los estados</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="proceso">En Proceso</option>
+                    <option value="completado">Completado</option>
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <label class="form-label"><i class="bi bi-person"></i> Cliente</label>
+                <input type="text" class="form-control" id="filtroCliente" placeholder="Buscar cliente..." onkeyup="aplicarFiltros()">
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <button class="btn btn-outline-primary" onclick="limpiarFiltros()">
+                    <i class="bi bi-x-circle"></i> Limpiar Filtros
+                </button>
+                <button class="btn btn-outline-primary ms-2" onclick="exportarDatos()">
+                    <i class="bi bi-download"></i> Exportar
+                </button>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card success">
+                    <div class="icon-wrapper">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <h6>Completados</h6>
+                    <h3 id="completados">0</h3>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card warning">
+                    <div class="icon-wrapper">
+                        <i class="bi bi-clock-fill"></i>
+                    </div>
+                    <h6>Pendientes</h6>
+                    <h3 id="pendientes">0</h3>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card info">
+                    <div class="icon-wrapper">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                    <h6>En Proceso</h6>
+                    <h3 id="proceso">0</h3>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card primary">
+                    <div class="icon-wrapper">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h6>Total Ventas</h6>
+                    <h3 id="totalVentas">$0</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de tickets -->
+        <div class="main-card">
+            <div class="card-header">
+                <h5>
+                    <i class="bi bi-list-ul"></i>
+                    Lista de Tickets
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table id="tablaTickets" class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        let tickets = [];
+        let ticketsFiltrados = [];
+        let idCounter = 1;
+        let dataTable;
+
+        function cargarTickets() {
+            if (dataTable) {
+                dataTable.clear();
+            }
+
+            const data = ticketsFiltrados.map(ticket => {
+                return [
+                    '<strong>#' + ticket.id + '</strong>',
+                    ticket.cliente,
+                    ticket.fecha,
+                    '<strong>$' + ticket.monto.toFixed(2) + '</strong>',
+                    '<span class="badge ' + ticket.estado + '">' + ticket.estado + '</span>',
+                    '<div class="action-buttons">' +
+                    '<button class="btn btn-sm btn-outline-primary" onclick="verTicket(' + ticket.id + ')" title="Ver detalles">' +
+                    '<i class="bi bi-eye"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-sm btn-outline-danger" onclick="eliminarTicket(' + ticket.id + ')" title="Eliminar">' +
+                    '<i class="bi bi-trash"></i>' +
+                    '</button>' +
+                    '</div>'
+                ];
+            });
+
+            if (dataTable) {
+                dataTable.rows.add(data).draw();
+            } else {
+                dataTable = $('#tablaTickets').DataTable({
+                    data: data,
+                    order: [[0, 'desc']],
+                    pageLength: 10,
+                    responsive: true,
+                    columnDefs: [
+                        { orderable: false, targets: 5 }
+                    ]
+                });
+            }
+
+            actualizarEstadisticas();
+        }
+
+        function aplicarFiltros() {
+            const fechaInicio = document.getElementById('fechaInicio').value;
+            const fechaFin = document.getElementById('fechaFin').value;
+            const estado = document.getElementById('filtroEstado').value;
+            const cliente = document.getElementById('filtroCliente').value.toLowerCase();
+
+            ticketsFiltrados = tickets.filter(ticket => {
+                if (fechaInicio || fechaFin) {
+                    const partesFecha = ticket.fecha.split('/');
+                    const fechaTicket = new Date(partesFecha[2], partesFecha[1] - 1, partesFecha[0]);
+
+                    if (fechaInicio) {
+                        const inicio = new Date(fechaInicio);
+                        if (fechaTicket < inicio) return false;
+                    }
+
+                    if (fechaFin) {
+                        const fin = new Date(fechaFin);
+                        if (fechaTicket > fin) return false;
+                    }
+                }
+
+                if (estado && ticket.estado !== estado) {
+                    return false;
+                }
+
+                if (cliente && !ticket.cliente.toLowerCase().includes(cliente)) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            cargarTickets();
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('fechaInicio').value = '';
+            document.getElementById('fechaFin').value = '';
+            document.getElementById('filtroEstado').value = '';
+            document.getElementById('filtroCliente').value = '';
+            ticketsFiltrados = tickets.slice();
+            cargarTickets();
+        }
+
+        function eliminarTicket(id) {
+            if (confirm('¿Estás seguro de eliminar este ticket?')) {
+                tickets = tickets.filter(t => t.id !== id);
+                aplicarFiltros();
+            }
+        }
+
+        function verTicket(id) {
+            const ticket = tickets.find(t => t.id === id);
+            alert('Ticket #' + ticket.id + '\n\nCliente: ' + ticket.cliente + '\nMonto: $' + ticket.monto.toFixed(2) + '\nFecha: ' + ticket.fecha + '\nEstado: ' + ticket.estado + '\nDescripción: ' + (ticket.descripcion || 'Sin descripción'));
+        }
+
+        function actualizarEstadisticas() {
+            const completados = ticketsFiltrados.filter(t => t.estado === 'completado').length;
+            const pendientes = ticketsFiltrados.filter(t => t.estado === 'pendiente').length;
+            const proceso = ticketsFiltrados.filter(t => t.estado === 'proceso').length;
+            const totalVentas = ticketsFiltrados.reduce((sum, t) => sum + t.monto, 0);
+
+            document.getElementById('completados').textContent = completados;
+            document.getElementById('pendientes').textContent = pendientes;
+            document.getElementById('proceso').textContent = proceso;
+            document.getElementById('totalVentas').textContent = '$' + totalVentas.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function exportarDatos() {
+            alert('Función de exportación en desarrollo. Se exportarán ' + ticketsFiltrados.length + ' tickets filtrados.');
+        }
+
+        function toggleTheme() {
+            alert('Función de cambio de tema en desarrollo.');
+        }
+
+        tickets = [
+            { id: idCounter++, cliente: 'Juan Pérez García', monto: 1500.00, estado: 'completado', descripcion: 'Venta de producto premium A', fecha: '27/11/2025' },
+            { id: idCounter++, cliente: 'María García López', monto: 2300.50, estado: 'proceso', descripcion: 'Venta de paquete empresarial B', fecha: '27/11/2025' },
+            { id: idCounter++, cliente: 'Carlos López Méndez', monto: 890.00, estado: 'pendiente', descripcion: 'Venta de servicio básico C', fecha: '26/11/2025' },
+            { id: idCounter++, cliente: 'Ana Martínez Ruiz', monto: 3450.75, estado: 'completado', descripcion: 'Venta de solución integral', fecha: '26/11/2025' },
+            { id: idCounter++, cliente: 'Roberto Sánchez Torres', monto: 1200.00, estado: 'proceso', descripcion: 'Renovación de contrato anual', fecha: '25/11/2025' },
+            { id: idCounter++, cliente: 'Laura Fernández Ortiz', monto: 5600.00, estado: 'completado', descripcion: 'Consultoría empresarial', fecha: '24/11/2025' },
+            { id: idCounter++, cliente: 'Pedro Ramírez Castro', monto: 780.50, estado: 'pendiente', descripcion: 'Producto básico D', fecha: '23/11/2025' },
+            { id: idCounter++, cliente: 'Sofía Morales Díaz', monto: 4200.00, estado: 'completado', descripcion: 'Servicio premium anual', fecha: '22/11/2025' }
+        ];
+
+        ticketsFiltrados = tickets.slice();
+        cargarTickets();
+    </script>
+</body>
+</html>

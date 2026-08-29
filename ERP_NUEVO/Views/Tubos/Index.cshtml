@@ -1,0 +1,1026 @@
+﻿@using BOS_ERP.Controllers
+@model BOS_ERP.Models.FolioInfoGroup
+@{
+    ViewBag.Title = "Tubos";
+    ViewBag.PageTitle = "Ventas de Tubos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <style>
+        /* ── WIZARD BAR ─────────────────────────────────────── */
+        .vt-wizard-bar {
+            display: flex;
+            align-items: center;
+            background: var(--primary-blue-dark);
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            padding: 0 1.25rem;
+            height: 52px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 0;
+        }
+
+        .vt-wizard-steps-group {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            flex: 1;
+        }
+
+        .vt-wizard-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 1rem;
+            height: 52px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: border-color var(--transition-fast), color var(--transition-fast);
+            user-select: none;
+        }
+
+            .vt-wizard-step:hover .vt-step-label {
+                color: var(--accent-blue);
+            }
+
+            .vt-wizard-step.active {
+                border-bottom-color: var(--accent-blue);
+            }
+
+                .vt-wizard-step.active .vt-step-num {
+                    background: var(--accent-blue);
+                    color: #fff;
+                }
+
+                .vt-wizard-step.active .vt-step-label {
+                    color: var(--accent-blue);
+                    font-weight: 600;
+                }
+
+            .vt-wizard-step.done .vt-step-num {
+                background: var(--success-color);
+                color: #fff;
+            }
+
+            .vt-wizard-step.done .vt-step-label {
+                color: rgba(255,255,255,.55);
+            }
+
+        .vt-step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.12);
+            color: rgba(255,255,255,.6);
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background var(--transition-fast), color var(--transition-fast);
+        }
+
+        .vt-step-label {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: rgba(255,255,255,.45);
+            transition: color var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .vt-wizard-divider {
+            width: 24px;
+            height: 1px;
+            background: rgba(255,255,255,.15);
+            flex-shrink: 0;
+            margin: 0 0.25rem;
+        }
+
+        /* ── RESUMEN DROPDOWN EN WIZARD BAR ─────────────────── */
+        .vt-wb-resumen {
+            position: relative;
+            margin-left: auto;
+        }
+
+        .vt-wb-resumen-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.35rem 0.85rem;
+            border-radius: 7px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12);
+            color: rgba(255,255,255,.75);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background var(--transition-fast), border-color var(--transition-fast);
+            white-space: nowrap;
+        }
+
+            .vt-wb-resumen-btn:hover {
+                background: rgba(255,255,255,.13);
+                border-color: rgba(255,255,255,.2);
+            }
+
+            .vt-wb-resumen-btn i.chevron {
+                font-size: 0.65rem;
+                transition: transform var(--transition-med);
+                color: rgba(255,255,255,.4);
+            }
+
+            .vt-wb-resumen-btn.open i.chevron {
+                transform: rotate(180deg);
+            }
+
+        .vt-wb-resumen-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success-color);
+            flex-shrink: 0;
+        }
+
+        .vt-wb-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 240px;
+            background: var(--primary-blue);
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: var(--table-radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 200;
+            overflow: hidden;
+        }
+
+            .vt-wb-dropdown.open {
+                display: block;
+            }
+
+        .vt-wb-dd-header {
+            background: var(--primary-blue-dark);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+
+        .vt-wb-dd-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: rgba(255,255,255,.9);
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .vt-wb-dd-title i {
+                color: var(--warning-color);
+                font-size: 0.7rem;
+            }
+
+        .vt-wb-dd-badge {
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: var(--badge-radius);
+            background: rgba(255,255,255,.1);
+            color: rgba(255,255,255,.6);
+            letter-spacing: .05em;
+        }
+
+        .vt-wb-dd-body {
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .vt-wb-dd-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+        }
+
+        .vt-wb-dd-lbl {
+            color: rgba(255,255,255,.4);
+        }
+
+        .vt-wb-dd-val {
+            color: rgba(255,255,255,.85);
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .vt-wb-dd-sep {
+            height: 1px;
+            background: rgba(255,255,255,.07);
+        }
+
+        .vt-wb-dd-step-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.5rem 0.75rem;
+            border-radius: 7px;
+            background: rgba(255,255,255,.05);
+        }
+
+        .vt-wb-dd-step-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .vt-wb-dd-step-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: rgba(255,255,255,.85);
+        }
+
+        .vt-wb-dd-step-sub {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,.4);
+        }
+
+        .vt-wb-dd-footer {
+            padding: 0.6rem 1rem;
+            border-top: 1px solid rgba(255,255,255,.08);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .vt-wb-dd-btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 0.48rem;
+            border-radius: 7px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: opacity var(--transition-fast);
+        }
+
+            .vt-wb-dd-btn-primary:hover {
+                opacity: .88;
+            }
+
+        .vt-wb-dd-btn-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 0.44rem;
+            border-radius: 7px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            background: transparent;
+            color: rgba(255,255,255,.5);
+            border: 1px solid rgba(255,255,255,.1);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+            .vt-wb-dd-btn-secondary:hover {
+                background: rgba(255,255,255,.07);
+                color: rgba(255,255,255,.75);
+            }
+
+        /* ── LAYOUT ─────────────────────────────────────────── */
+        .vt-layout {
+            padding: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+            transition: max-width var(--transition-med);
+        }
+
+            /* Cuando estamos en paso 2 en adelante, ancho libre */
+            .vt-layout.vt-layout--wide {
+                max-width: unset;
+            }
+
+        /* ── PANEL ──────────────────────────────────────────── */
+        .vt-panel {
+            display: none;
+        }
+
+            .vt-panel.active {
+                display: block;
+            }
+
+        /* ── SECTION CARD ───────────────────────────────────── */
+        .vt-section-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--table-radius);
+            margin-bottom: 1.25rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .vt-section-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .vt-section-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: var(--very-light-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+
+        .vt-section-title {
+            font-size: 0.93rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+        .vt-section-sub {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        .vt-section-body {
+            padding: 1.25rem;
+            background: var(--bg-gray);
+        }
+
+        /* ── PRODUCT CARDS ──────────────────────────────────── */
+        .vt-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.875rem;
+        }
+
+        .vt-type-card {
+            background: var(--primary-blue-dark);
+            border: 1.5px solid var(--primary-blue);
+            border-radius: var(--table-radius);
+            padding: 1.1rem 1.15rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+            .vt-type-card:hover {
+                border-color: var(--accent-blue);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(59,130,246,.18);
+            }
+
+            .vt-type-card.selected {
+                border-color: var(--accent-blue);
+                background: var(--dark-blue);
+                box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            }
+
+            .vt-type-card input[type="radio"] {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+            }
+
+        .vt-card-icon-sm {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.7rem;
+            transition: background var(--transition-fast);
+        }
+
+        .vt-type-card.selected .vt-card-icon-sm {
+            background: var(--accent-blue);
+        }
+
+        .vt-card-icon-sm svg {
+            fill: var(--accent-blue);
+            transition: fill var(--transition-fast);
+        }
+
+        .vt-type-card.selected .vt-card-icon-sm svg {
+            fill: #fff;
+        }
+
+        .vt-card-title {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #f9fafb;
+            margin-bottom: 0.3rem;
+        }
+
+        .vt-card-desc {
+            font-size: 0.76rem;
+            color: var(--very-light-blue);
+            line-height: 1.45;
+            margin-bottom: 0.75rem;
+        }
+
+        .vt-card-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: var(--badge-radius);
+            letter-spacing: .02em;
+        }
+
+        .vt-chip-oferta {
+            background: rgba(249,115,22,.15);
+            color: #fb923c;
+        }
+
+        .vt-chip-produccion {
+            background: rgba(139,92,246,.15);
+            color: var(--accent-purple);
+        }
+
+        .vt-chip-entrega {
+            background: rgba(236,72,153,.15);
+            color: #f472b6;
+        }
+
+        .vt-chip-cobro {
+            background: rgba(16,185,129,.15);
+            color: var(--success-color);
+        }
+
+        .vt-card-check {
+            position: absolute;
+            top: 0.7rem;
+            right: 0.8rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vt-type-card.selected .vt-card-check {
+            display: flex;
+        }
+
+        .vt-card-check i {
+            color: #fff;
+            font-size: 0.6rem;
+        }
+
+        /* ── STEP NAV ───────────────────────────────────────── */
+        .vt-step-nav {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 1rem 0 0;
+            margin-top: 0.5rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .vt-btn-step {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0.5rem 1.35rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border-light);
+            background: var(--bg-light);
+            color: var(--text-dark);
+            transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+        }
+
+            .vt-btn-step:hover {
+                background: var(--very-light-blue);
+                border-color: var(--accent-blue);
+                color: var(--accent-blue);
+            }
+
+            .vt-btn-step.next {
+                background: var(--primary-blue-dark);
+                border-color: var(--primary-blue-dark);
+                color: #fff;
+            }
+
+                .vt-btn-step.next:hover {
+                    background: var(--accent-blue);
+                    border-color: var(--accent-blue);
+                }
+
+            .vt-btn-step.finish {
+                background: var(--success-color);
+                border-color: var(--success-color);
+                color: #fff;
+            }
+
+                .vt-btn-step.finish:hover {
+                    opacity: .88;
+                }
+
+        /* ── TOP BAR ────────────────────────────────────────── */
+        .vt-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 1.25rem;
+            background: var(--primary-blue-dark);
+            border-bottom: 1px solid rgba(255,255,255,.07);
+        }
+
+        .vt-top-brand {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #f9fafb;
+        }
+
+        .vt-pill {
+            background: var(--accent-blue);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 5px;
+            letter-spacing: .04em;
+        }
+
+        .vt-top-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,.45);
+        }
+
+        .vt-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success-color);
+        }
+
+        .vt-chip-anticipo {
+            background: rgba(234, 179, 8, .15);
+            color: #facc15;
+        }
+        /* Contenedor parciales */
+        #vt-step2-contenido .vt-partial-wrap {
+            display: none;
+        }
+
+            #vt-step2-contenido .vt-partial-wrap.active {
+                display: block;
+            }
+
+        /* ── RESPONSIVE ─────────────────────────────────────── */
+        @@media (max-width: 700px) {
+            .vt-type-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .vt-wizard-step .vt-step-label {
+                display: none;
+            }
+
+            .vt-layout {
+                padding: 1rem;
+            }
+        }
+    </style>
+}
+
+<link href="~/lib/tom-select/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+
+<!-- TOP BAR -->
+<div class="vt-top-bar">
+    <div class="vt-top-brand">
+        <span class="vt-pill">VT</span>
+        Ventas de Tubos
+    </div>
+    <div class="vt-top-meta">
+        <span class="vt-status-dot"></span>
+        <span>NUEVO PROCESO</span>
+        <span id="vt-tb-proceso">—</span>
+    </div>
+</div>
+
+<!-- WIZARD BAR -->
+<div class="vt-wizard-bar">
+    <div class="vt-wizard-steps-group">
+        <div class="vt-wizard-step active" data-step="1" onclick="vtGotoStep(1)">
+            <div class="vt-step-num">1</div>
+            <span class="vt-step-label">Tipo de proceso</span>
+        </div>
+        <div class="vt-wizard-divider"></div>
+        <div class="vt-wizard-step" data-step="2" onclick="vtGotoStep(2)">
+            <div class="vt-step-num">2</div>
+            <span class="vt-step-label">Configuración</span>
+        </div>
+    </div>
+
+    <!-- Resumen colapsado -->
+    <div class="vt-wb-resumen">
+        <button type="button" class="vt-wb-resumen-btn" id="vt-resumen-toggle" onclick="vtToggleResumen()">
+            <span class="vt-wb-resumen-dot"></span>
+            <span>Resumen</span>
+            <span id="vt-wb-tipo-mini">Sin seleccionar</span>
+            <i class="fas fa-chevron-down chevron"></i>
+        </button>
+        <div class="vt-wb-dropdown" id="vt-wb-dropdown">
+            <div class="vt-wb-dd-header">
+                <div class="vt-wb-dd-title">
+                    <i class="fas fa-ruler-combined"></i> Resumen VT
+                </div>
+                <span class="vt-wb-dd-badge">NUEVO</span>
+            </div>
+            <div class="vt-wb-dd-body">
+                <div class="vt-wb-dd-row">
+                    <span class="vt-wb-dd-lbl">Tipo de proceso</span>
+                    <span class="vt-wb-dd-val" id="dd-tipo-name">Sin seleccionar</span>
+                </div>
+                <div class="vt-wb-dd-sep"></div>
+                <div class="vt-wb-dd-row">
+                    <span class="vt-wb-dd-lbl">Usuario</span>
+                    <span class="vt-wb-dd-val" id="dd-vendedor">—</span>
+                </div>
+                <div class="vt-wb-dd-row">
+                    <span class="vt-wb-dd-lbl">Sucursal</span>
+                    <span class="vt-wb-dd-val" id="dd-sucursal">—</span>
+                </div>
+                <div class="vt-wb-dd-sep"></div>
+                <div class="vt-wb-dd-step-row">
+                    <div class="vt-wb-dd-step-num" id="dd-paso-num">1</div>
+                    <div>
+                        <div class="vt-wb-dd-step-name" id="dd-paso-name">Tipo de proceso</div>
+                        <div class="vt-wb-dd-step-sub" id="dd-paso-sub">Selecciona el proceso de tubería</div>
+                    </div>
+                </div>
+            </div>
+            <div class="vt-wb-dd-footer">
+                <button type="button" class="vt-wb-dd-btn-primary" onclick="vtEnviarFormulario()">
+                    <i class="fas fa-paper-plane" style="font-size:11px"></i> Guardar y procesar
+                </button>
+                <button type="button" class="vt-wb-dd-btn-secondary" onclick="vtGotoStep(1); vtToggleResumen(true)">
+                    <i class="fas fa-redo" style="font-size:10px"></i> Reiniciar selección
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="vt-layout" id="vt-layout">
+    <form id="vt-form-1" novalidate>
+        @Html.AntiForgeryToken()
+
+        <!-- PASO 1 -->
+        <div class="vt-panel active" id="vt-panel-1">
+            <div class="vt-section-card">
+                <div class="vt-section-head">
+                    <div class="vt-section-icon"><i class="fas fa-ruler-combined"></i></div>
+                    <div>
+                        <div class="vt-section-title">Selecciona el tipo de proceso de tubería</div>
+                        <div class="vt-section-sub">Elige la opción que mejor describa el documento que necesitas configurar</div>
+                    </div>
+                </div>
+                <div class="vt-section-body">
+                    <fieldset aria-required="true">
+                        <legend class="visually-hidden">Tipo de proceso de tubería</legend>
+                        <div class="vt-type-grid">
+
+                            <!-- Cotización de Tubos -->
+                            <div class="vt-type-card" data-option="cotizacion-tubos" onclick="vtSelectCard(this)">
+                                <input type="radio" value="cotizacionTubosV" class="proceso" name="proceso" id="cotizacion-tubos" autocomplete="off" required>
+                                <div class="vt-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vt-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" fill="none" stroke-width="0" />
+                                        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 3.2a6.8 6.8 0 1 1-6.8 6.8A6.8 6.8 0 0 1 12 5.2z" />
+                                        <circle cx="12" cy="12" r="3.4" />
+                                    </svg>
+                                </div>
+                                <div class="vt-card-title">Cotización de tubos</div>
+                                <div class="vt-card-desc">Especificaciones técnicas de tubería (diámetro, cédula, material) y tiempos de entrega.</div>
+                                <span class="vt-card-chip vt-chip-oferta">Etapa: oferta</span>
+                            </div>
+
+                            <!-- Pedido de Tubos -->
+                            <div class="vt-type-card" data-option="pedido-tubos" onclick="vtSelectCard(this)">
+                                <input type="radio" value="pedidoTubosV" class="proceso" name="proceso" id="pedido-tubos" autocomplete="off" required>
+                                <div class="vt-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vt-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                                        <path d="M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
+                                    </svg>
+                                </div>
+                                <div class="vt-card-title">Pedido de tubos</div>
+                                <div class="vt-card-desc">Órdenes de compra de tubería con corte a medida, certificaciones y tiempos de fabricación.</div>
+                                <span class="vt-card-chip vt-chip-produccion">Etapa: producción</span>
+                            </div>
+
+                            <!-- Remisión de Tubos -->
+                            <div class="vt-type-card" data-option="remision-tubos" onclick="vtSelectCard(this)">
+                                <input type="radio" value="remisionTubosV" class="proceso" name="proceso" id="remision-tubos" autocomplete="off" required>
+                                <div class="vt-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vt-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+                                    </svg>
+                                </div>
+                                <div class="vt-card-title">Remisión de tubos</div>
+                                <div class="vt-card-desc">Despacho de tubería con documentación técnica, certificados de calidad y guías de manejo.</div>
+                                <span class="vt-card-chip vt-chip-entrega">Etapa: entrega</span>
+                            </div>
+
+                            <!-- Facturación de Tubos -->
+                            <div class="vt-type-card" data-option="facturacion-tubos" onclick="vtSelectCard(this)">
+                                <input type="radio" value="facturacionTubosV" class="proceso" name="proceso" id="facturacion-tubos" autocomplete="off" required>
+                                <div class="vt-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vt-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                                        <path d="M14 2v6h6M16 11a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1z" />
+                                        <circle cx="11" cy="11" r="1" />
+                                        <path d="M9 16h6v1H9zM9 18h4v1H9z" />
+                                    </svg>
+                                </div>
+                                <div class="vt-card-title">Facturación de tubos</div>
+                                <div class="vt-card-desc">Facturación con manejo de anticipos, retenciones especiales y garantías de material.</div>
+                                <span class="vt-card-chip vt-chip-cobro">Etapa: cobro</span>
+                            </div>
+
+                            <!-- Facturación Anticipo de Tubos -->
+                            <div class="vt-type-card" data-option="anticipo-tubos" onclick="vtSelectCard(this)">
+                                <input type="radio" value="facturacionTubosVAnticipo" class="proceso" name="proceso" id="facturacion-tubos-anticipo" autocomplete="off" required>
+                                <div class="vt-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vt-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                                        <path d="M14 2v6h6M16 11a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1z" />
+                                        <circle cx="11" cy="11" r="1" />
+                                        <path d="M9 16h6v1H9zM9 18h4v1H9z" />
+                                    </svg>
+                                </div>
+                                <div class="vt-card-title">Anticipo de tubos</div>
+                                <div class="vt-card-desc">Registro de pagos anticipados vinculados a pedidos de tubería con control de saldo pendiente.</div>
+                                <span class="vt-card-chip vt-chip-anticipo">Etapa: anticipo</span>
+                            </div>
+
+                        </div><!-- /.vt-type-grid -->
+                    </fieldset>
+                </div>
+            </div>
+
+            <div class="vt-step-nav">
+                <button type="button" class="vt-btn-step next" onclick="vtGotoStep(2)">
+                    Siguiente <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div><!-- /#vt-panel-1 -->
+        <!-- PASO 2 — contenedores parciales -->
+        <div class="vt-panel" id="vt-panel-2">
+            <div id="vt-step2-contenido">
+
+                <!--
+                    Sugerencia de campos típicos para _CotizacionTubos:
+                    - Diámetro nominal (pulg / mm)
+                    - Cédula / Schedule (SCH 40, 80, XS, STD...)
+                    - Material (acero al carbón, acero inoxidable, PVC, HDPE, cobre...)
+                    - Norma / especificación (ASTM A53, A106, API 5L...)
+                    - Tipo de extremo (liso, roscado, biselado, ranurado)
+                    - Recubrimiento (galvanizado, pintura epóxica, sin recubrimiento)
+                    - Clase de presión (Class 150, 300...)
+                    - Longitud por tramo y longitud total
+                    - Cantidad de piezas/tramos
+                    - Unidad y precio (por metro, por pieza, por tonelada)
+                    - Proyecto/obra destino y tiempo de entrega estimado
+                -->
+                <div class="vt-partial-wrap" id="cotizacion-tubos-contenedor">
+                    @Html.Partial("VentasTubos/_CotizacionTubos")
+                </div>
+
+                <div class="vt-partial-wrap" id="pedido-tubos-contenedor">
+                    @Html.Partial("VentasTubos/_PedidoTubos", Model.ParcialA)
+                </div>
+
+                <div class="vt-partial-wrap" id="remision-tubos-contenedor">
+                    @* @Html.Partial("VentasTubos/_RemisionTubos", Model.ParcialB) *@
+                </div>
+
+                <div class="vt-partial-wrap" id="facturacion-tubos-contenedor">
+                    @* @Html.Partial("VentasTubos/_FacturaTubos", Model.ParcialC) *@
+                    @* @Html.Partial("VentasTubos/_ModalRemisionesParciales") *@
+                </div>
+                <div class="vt-partial-wrap" id="anticipo-tubos-contenedor">
+                    @* @Html.Partial("VentasTubos/_FacturaTubosAnticipo", Model.ParcialC) *@
+                </div>
+
+            </div>
+
+            <div class="vt-step-nav" style="justify-content: space-between;">
+                <button type="button" class="vt-btn-step" onclick="vtGotoStep(1)">
+                    <i class="fas fa-arrow-left"></i> Anterior
+                </button>
+            </div>
+        </div><!-- /#vt-panel-2 -->
+
+    </form>
+</div><!-- /.vt-layout -->
+@section scripts {
+    <script>
+        const rol           = "@Utilities.GetUserRole(User.Identity.Name, "ERP_SRS")";
+        const vendedor      = "@User.Identity.Name";
+            const sucursal      = @Convert.ToInt32(Context.Session.GetInt32("Sucursal"));
+        const sucursalText  = "@Utilities.GetSucursalName(User.Identity.Name)";
+            const sucursalUsuario = @Convert.ToInt32(Context.Session.GetInt32("Sucursal"));
+        let suc; let alm;
+    </script>
+    @*  <script src="~/lib/jquery/jquery.min.js"></script> *@
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/Ventas/Tubos/partial-vt-cotizacion.js"></script>
+    <script src="~/Scripts/Ventas/Tubos/partial-vt-pedido.js"></script>
+    @*    <script src="~/Scripts/Ventas/Tubos/partial-vt-remision.js"></script>
+    <script src="~/Scripts/Ventas/Tubos/partial-vt-factura.js"></script>
+    <script src="~/Scripts/Ventas/Tubos/partial-vt-factura-anticipo.js"></script>
+    <script src="~/Scripts/Ventas/Tubos/facturacion-remisiones-parciales.js"></script> *@
+    <script>
+        /* ── CONFIG DE PASOS ──────────────────────────────── */
+        const VT_STEPS = {
+        1: { name: 'Tipo de proceso', sub: 'Selecciona el proceso de tubería' },
+        2: { name: 'Configuración', sub: 'Completa los datos del proceso' }
+        };
+
+        const VT_TIPOS = {
+        cotizacionTubosV: { label: 'Cotización de Tubos', sub: 'Especificaciones y plazos', contenedor: 'cotizacion-tubos-contenedor' },
+        pedidoTubosV: { label: 'Pedido de Tubos', sub: 'Órdenes y certificaciones', contenedor: 'pedido-tubos-contenedor' },
+        remisionTubosV: { label: 'Remisión de Tubos', sub: 'Despacho con documentación', contenedor: 'remision-tubos-contenedor' },
+        facturacionTubosV: { label: 'Facturación de Tubos', sub: 'Anticipos y retenciones', contenedor: 'facturacion-tubos-contenedor' },
+        facturacionTubosVAnticipo: { label: 'Anticipo de Tubos', sub: 'Pagos anticipados y saldos', contenedor: 'anticipo-tubos-contenedor' },
+        };
+
+        let vtCurrentStep = 1;
+
+        /* ── ANCHO DEL LAYOUT POR PASO ────────────────────── */
+        function vtUpdateLayout(step) {
+        const layout = document.getElementById('vt-layout');
+        if (step >= 2) {
+        layout.classList.add('vt-layout--wide');
+        } else {
+        layout.classList.remove('vt-layout--wide');
+        }
+        }
+
+        /* ── DROPDOWN RESUMEN ─────────────────────────────── */
+        function vtToggleResumen(forceClose) {
+        const btn = document.getElementById('vt-resumen-toggle');
+        const dd = document.getElementById('vt-wb-dropdown');
+        const isOpen = dd.classList.contains('open');
+        if (forceClose || isOpen) {
+        dd.classList.remove('open');
+        btn.classList.remove('open');
+        } else {
+        dd.classList.add('open');
+        btn.classList.add('open');
+        }
+        }
+
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', function (e) {
+        const wrap = document.querySelector('.vt-wb-resumen');
+        if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('vt-wb-dropdown').classList.remove('open');
+        document.getElementById('vt-resumen-toggle').classList.remove('open');
+        }
+        });
+
+        /* ── NAVEGACIÓN ───────────────────────────────────── */
+        function vtGotoStep(targetStep) {
+        if (targetStep > vtCurrentStep) {
+        if (!vtValidateStep(vtCurrentStep)) return;
+        }
+
+        document.querySelectorAll('.vt-panel').forEach((p, i) => {
+        p.classList.toggle('active', i + 1 === targetStep);
+        });
+
+        document.querySelectorAll('.vt-wizard-step').forEach(s => {
+        const n = parseInt(s.dataset.step);
+        s.classList.remove('active', 'done');
+        if (n === targetStep) s.classList.add('active');
+        if (n < targetStep) s.classList.add('done');
+        });
+
+        vtCurrentStep = targetStep;
+        vtUpdateLayout(targetStep);
+        vtUpdateSidebar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ── VALIDACIÓN ───────────────────────────────────── */
+        function vtValidateStep(step) {
+        if (step === 1) {
+        const sel = document.querySelector('input[name="proceso"]:checked');
+        if (!sel) {
+        if (typeof toastMixin !== 'undefined') {
+        toastMixin.fire({ icon: 'error', title: 'Debes seleccionar el tipo de proceso de tubería.' });
+        } else {
+        alert('Debes seleccionar el tipo de proceso de tubería.');
+        }
+        return false;
+        }
+        return true;
+        }
+        if (step === 2) {
+        if (typeof validarDatos === 'function') {
+        return validarDatos();
+        }
+        }
+        return true;
+        }
+
+        /* ── SELECCIÓN DE CARD ────────────────────────────── */
+        function vtSelectCard(card) {
+        document.querySelectorAll('.vt-type-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+
+        const valor = radio?.value;
+        document.querySelectorAll('.vt-partial-wrap').forEach(w => w.classList.remove('active'));
+        if (valor && VT_TIPOS[valor]) {
+        document.getElementById(VT_TIPOS[valor].contenedor)?.classList.add('active');
+        }
+
+        document.getElementById('vt-tb-proceso').textContent = VT_TIPOS[valor]?.label ?? '—';
+        vtUpdateSidebar();
+        }
+
+        /* ── ACTUALIZAR RESUMEN ───────────────────────────── */
+        function vtUpdateSidebar() {
+        const paso = VT_STEPS[vtCurrentStep];
+        const sel = document.querySelector('input[name="proceso"]:checked');
+        const tipoLabel = sel && VT_TIPOS[sel.value] ? VT_TIPOS[sel.value].label : 'Sin seleccionar';
+
+        document.getElementById('vt-wb-tipo-mini').textContent = tipoLabel;
+        document.getElementById('dd-paso-num').textContent = vtCurrentStep;
+        document.getElementById('dd-paso-name').textContent = paso?.name ?? '—';
+        document.getElementById('dd-paso-sub').textContent = paso?.sub ?? '';
+        document.getElementById('dd-vendedor').textContent = vendedor ?? '—';
+        document.getElementById('dd-sucursal').textContent = sucursalText ?? '—';
+        document.getElementById('dd-tipo-name').textContent = tipoLabel;
+        }
+
+        /* ── INIT ─────────────────────────────────────────── */
+        vtUpdateSidebar();
+        vtUpdateLayout(vtCurrentStep);
+    </script>
+}

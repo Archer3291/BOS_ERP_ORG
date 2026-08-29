@@ -1,0 +1,1438 @@
+﻿@{
+    ViewBag.Title = "Cancelación de Documentos";
+    ViewBag.PageTitle = "Cancelaciones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .cn-page {
+        background: var(--bg-gray);
+        min-height: 100vh;
+        padding-bottom: 48px;
+        animation: cnFadeIn .35s ease both;
+    }
+
+    @@keyframes cnFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    /* ── Header ── */
+    .cn-header {
+        background: #1a0a0a;
+        border-bottom: 3px solid #dc2626;
+        padding: 24px 32px 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .cn-header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(220,38,38,.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+    .cn-header-inner {
+        position: relative;
+        z-index: 1;
+    }
+
+    .cn-eyebrow {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        color: #f87171;
+        margin-bottom: 4px;
+    }
+
+    .cn-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin: 0 0 4px;
+    }
+
+    .cn-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: rgba(241,245,249,.55);
+    }
+
+        .cn-breadcrumb a {
+            color: rgba(241,245,249,.6);
+            text-decoration: none;
+            transition: color .15s;
+        }
+
+            .cn-breadcrumb a:hover {
+                color: #f1f5f9;
+            }
+
+    /* ── Warning ── */
+    .cn-warning {
+        background: rgba(220,38,38,.08);
+        border-bottom: 1px solid rgba(220,38,38,.2);
+        padding: 10px 32px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12.5px;
+        color: #b91c1c;
+        font-weight: 600;
+        flex-wrap: wrap;
+    }
+
+        .cn-warning i {
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+    /* ── Tabs ── */
+    .cn-tabs {
+        background: var(--bg-light);
+        border-bottom: 2px solid var(--border-light);
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+        .cn-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+    .cn-tab-btn {
+        padding: 14px 22px;
+        border: none;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-light);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        border-radius: 6px 6px 0 0;
+        transition: all .2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+        .cn-tab-btn:hover {
+            color: #dc2626;
+            background: rgba(220,38,38,.05);
+        }
+
+        .cn-tab-btn.active {
+            color: #dc2626;
+            border-bottom-color: #dc2626;
+            background: rgba(220,38,38,.05);
+        }
+
+    /* ── Panel / Card ── */
+    .cn-panel {
+        display: none;
+    }
+
+        .cn-panel.active {
+            display: block;
+        }
+
+    .cn-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        margin-top: 24px;
+    }
+
+    .cn-card-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+    }
+
+    .cn-card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .cn-card-title i {
+            color: #dc2626;
+        }
+
+    .cn-card-body {
+        padding: 20px;
+    }
+
+    /* ── DataTable overrides ── */
+    .cn-dt-wrap .dataTables_filter input,
+    .cn-dt-wrap .dataTables_length select {
+        background: var(--bg-gray) !important;
+        border: 1px solid var(--border-light) !important;
+        color: var(--text-dark) !important;
+        border-radius: 7px !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+        .cn-dt-wrap .dataTables_filter input:focus,
+        .cn-dt-wrap .dataTables_length select:focus {
+            outline: none !important;
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 3px rgba(220,38,38,.12) !important;
+        }
+
+    .cn-dt-wrap .dataTables_filter label,
+    .cn-dt-wrap .dataTables_length label,
+    .cn-dt-wrap .dataTables_info {
+        color: var(--text-light) !important;
+        font-size: 12.5px !important;
+    }
+
+    .cn-dt-wrap .dataTables_paginate .paginate_button {
+        color: var(--text-light) !important;
+        border-radius: 7px !important;
+        border: none !important;
+        font-size: 12.5px !important;
+        transition: all .15s !important;
+    }
+
+        .cn-dt-wrap .dataTables_paginate .paginate_button.current,
+        .cn-dt-wrap .dataTables_paginate .paginate_button.current:hover {
+            background: #dc2626 !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(220,38,38,.3) !important;
+        }
+
+        .cn-dt-wrap .dataTables_paginate .paginate_button:not(.current):hover {
+            background: var(--bg-gray) !important;
+            color: var(--text-dark) !important;
+        }
+
+    .cn-dt-wrap table {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+    }
+
+        .cn-dt-wrap table thead th {
+            background: var(--bg-gray) !important;
+            color: var(--text-light) !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: .08em !important;
+            text-transform: uppercase !important;
+            border: none !important;
+            border-bottom: 2px solid var(--border-light) !important;
+            padding: 12px 14px !important;
+            white-space: nowrap;
+        }
+
+            .cn-dt-wrap table thead th.sorting_asc,
+            .cn-dt-wrap table thead th.sorting_desc {
+                color: #dc2626 !important;
+            }
+
+        .cn-dt-wrap table tbody tr {
+            transition: background .12s;
+        }
+
+            .cn-dt-wrap table tbody tr:hover td {
+                background: rgba(220,38,38,.04) !important;
+            }
+
+        .cn-dt-wrap table tbody td {
+            background: var(--bg-light) !important;
+            color: var(--text-dark) !important;
+            font-size: 13px !important;
+            border: none !important;
+            border-bottom: 1px solid var(--border-light) !important;
+            padding: 13px 14px !important;
+            vertical-align: middle !important;
+        }
+
+    /* ── Badges ── */
+    .nat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .04em;
+    }
+
+    .nat-VICOT {
+        background: rgba(59,130,246,.12);
+        color: var(--accent-blue);
+        border: 1px solid rgba(59,130,246,.2);
+    }
+
+    .nat-VIPED {
+        background: rgba(5,150,105,.12);
+        color: var(--success-color);
+        border: 1px solid rgba(5,150,105,.2);
+    }
+
+    .nat-VIREM {
+        background: rgba(217,119,6,.12);
+        color: var(--warning-color);
+        border: 1px solid rgba(217,119,6,.2);
+    }
+
+    .nat-VINCOT {
+        background: rgba(139,92,246,.12);
+        color: #7c3aed;
+        border: 1px solid rgba(139,92,246,.2);
+    }
+
+    .cn-folio {
+        font-size: 12.5px;
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+        color: var(--primary-blue);
+        background: rgba(30,58,95,.07);
+        border: 1px solid rgba(30,58,95,.15);
+        padding: 3px 9px;
+        border-radius: 5px;
+        display: inline-block;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       MODAL Bootstrap 5 — tema oscuro (header rojo)
+    ══════════════════════════════════════════════════════ */
+    .cn-modal .modal-content {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+
+    /* Header oscuro con acento rojo */
+    .cn-modal .modal-header {
+        background: #1a0a0a;
+        border-bottom: 2px solid rgba(220,38,38,.35);
+        padding: 18px 24px;
+        /* BS5: alinear título y botón cierre */
+        align-items: center;
+    }
+
+    .cn-modal .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .cn-modal .modal-title i {
+            color: #f87171;
+        }
+
+    /* Botón × de Bootstrap 5 sobre fondo oscuro */
+    .cn-modal .btn-close {
+        filter: invert(1) brightness(1.4);
+        opacity: .7;
+        transition: opacity .15s;
+    }
+
+        .cn-modal .btn-close:hover {
+            opacity: 1;
+        }
+
+    .cn-modal .modal-body {
+        padding: 24px;
+    }
+
+    .cn-modal .modal-footer {
+        border-top: 1px solid var(--border-light);
+        padding: 16px 24px;
+        background: var(--bg-gray);
+        justify-content: flex-end;
+        gap: 10px;
+        /* BS5 ya pone flex; sólo ajustamos gap */
+    }
+
+    /* ── Info grid ── */
+    .cn-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .cn-info-item {
+        background: rgba(59,130,246,.06);
+        border: 1px solid rgba(59,130,246,.15);
+        border-left: 3px solid var(--accent-blue);
+        border-radius: 8px;
+        padding: 12px 14px;
+    }
+
+    .cn-info-lbl {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 5px;
+    }
+
+    .cn-info-val {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-dark);
+        word-break: break-word;
+    }
+
+    /* ── Motivo ── */
+    .cn-motivo-section {
+        background: rgba(220,38,38,.05);
+        border: 1px solid rgba(220,38,38,.2);
+        border-left: 4px solid #dc2626;
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-top: 20px;
+    }
+
+    .cn-motivo-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #991b1b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+        .cn-motivo-title i {
+            color: #dc2626;
+        }
+
+    .cn-motivo-textarea {
+        width: 100%;
+        min-height: 90px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(220,38,38,.3);
+        background: var(--bg-light);
+        color: var(--text-dark);
+        font-size: 13px;
+        resize: vertical;
+        transition: border-color .15s, box-shadow .15s;
+        font-family: inherit;
+    }
+
+        .cn-motivo-textarea:focus {
+            outline: none;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220,38,38,.12);
+        }
+
+        .cn-motivo-textarea::placeholder {
+            color: var(--text-light);
+            opacity: .7;
+        }
+
+    /* ── Sección extra VIREM ── */
+    .cn-rem-section {
+        background: rgba(217,119,6,.05);
+        border: 1px solid rgba(217,119,6,.25);
+        border-left: 4px solid var(--warning-color);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-top: 16px;
+    }
+
+    .cn-rem-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #92400e;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+        .cn-rem-section-title i {
+            color: var(--warning-color);
+        }
+
+    .cn-rem-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .cn-rem-field label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        margin-bottom: 6px;
+    }
+
+        .cn-rem-field label span {
+            color: #dc2626;
+        }
+
+    .cn-rem-input, .cn-rem-select {
+        width: 100%;
+        padding: 9px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(217,119,6,.3);
+        background: var(--bg-light);
+        color: var(--text-dark);
+        font-size: 13px;
+        transition: border-color .15s, box-shadow .15s;
+        font-family: inherit;
+    }
+
+        .cn-rem-input:focus, .cn-rem-select:focus {
+            outline: none;
+            border-color: var(--warning-color);
+            box-shadow: 0 0 0 3px rgba(217,119,6,.15);
+        }
+
+    .cn-rem-info-note {
+        font-size: 11.5px;
+        color: var(--text-light);
+        background: var(--bg-gray);
+        border-radius: 6px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        margin-top: 4px;
+    }
+
+        .cn-rem-info-note i {
+            color: var(--warning-color);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+    /* ── Partidas ── */
+    .cn-partidas-wrap {
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        overflow: hidden;
+        max-height: 280px;
+        overflow-y: auto;
+        margin-bottom: 4px;
+    }
+
+        .cn-partidas-wrap::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .cn-partidas-wrap::-webkit-scrollbar-track {
+            background: var(--bg-gray);
+        }
+
+        .cn-partidas-wrap::-webkit-scrollbar-thumb {
+            background: var(--border-light);
+            border-radius: 3px;
+        }
+
+    /* Scroll horizontal en móvil */
+    .cn-partidas-scroll-x {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .cn-partidas-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+        min-width: 480px;
+    }
+
+        .cn-partidas-table thead th {
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--border-light);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .cn-partidas-table tbody td {
+            padding: 10px 12px;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-light);
+            vertical-align: middle;
+        }
+
+        .cn-partidas-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cn-partidas-table .col-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+    .cn-cve {
+        font-family: 'Courier New', monospace;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--primary-blue);
+        background: rgba(30,58,95,.07);
+        border: 1px solid rgba(30,58,95,.12);
+        padding: 2px 7px;
+        border-radius: 4px;
+    }
+
+    .cn-totals {
+        display: flex;
+        justify-content: flex-end;
+        gap: 24px;
+        padding: 10px 14px;
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        font-size: 12px;
+        flex-wrap: wrap;
+    }
+
+    .cn-total-item {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .cn-total-lbl {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-light);
+        margin-bottom: 2px;
+    }
+
+    .cn-total-val {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-dark);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cn-partidas-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .cn-partidas-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .cn-partidas-title i {
+            color: var(--accent-blue);
+        }
+
+    .cn-partidas-count {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 20px;
+        background: rgba(59,130,246,.12);
+        color: var(--accent-blue);
+        border: 1px solid rgba(59,130,246,.2);
+    }
+
+    /* ── Loader ── */
+    .cn-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 0;
+        gap: 12px;
+    }
+
+        .cn-loader i {
+            font-size: 2em;
+            color: #dc2626;
+        }
+
+        .cn-loader p {
+            color: var(--text-light);
+            font-size: 13px;
+            margin: 0;
+        }
+
+    /* ── Botones ── */
+    .cn-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .2s ease;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .cn-btn-danger {
+        background: #dc2626;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(220,38,38,.3);
+    }
+
+        .cn-btn-danger:hover {
+            background: #b91c1c;
+            box-shadow: 0 4px 12px rgba(220,38,38,.4);
+            transform: translateY(-1px);
+        }
+
+        .cn-btn-danger:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+    .cn-btn-secondary {
+        background: transparent;
+        color: var(--text-light);
+        border-color: var(--border-light);
+    }
+
+        .cn-btn-secondary:hover {
+            color: var(--text-dark);
+            border-color: var(--secondary-blue);
+            background: var(--bg-gray);
+        }
+
+    /* ── Responsive ── */
+    @@media (max-width: 767px) {
+        .cn-header {
+            padding: 16px 16px 12px;
+        }
+
+        .cn-title {
+            font-size: 16px;
+        }
+
+        .cn-warning {
+            padding: 10px 16px;
+            font-size: 11.5px;
+        }
+
+        .cn-tabs {
+            padding: 0 10px;
+        }
+
+        .cn-tab-btn {
+            padding: 12px 14px;
+            font-size: 12px;
+            gap: 6px;
+        }
+
+        .cn-card-body {
+            padding: 12px;
+        }
+
+        .cn-info-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .cn-rem-row {
+            grid-template-columns: 1fr;
+        }
+
+        .cn-totals {
+            gap: 12px;
+        }
+        /* Modal full-height en móvil */
+        .cn-modal .modal-dialog {
+            margin: 0 !important;
+            max-width: 100% !important;
+            height: 100% !important;
+        }
+
+        .cn-modal .modal-content {
+            border-radius: 0 !important;
+            height: 100%;
+            border: none !important;
+        }
+
+        .cn-modal .modal-body {
+            padding: 16px !important;
+            overflow-y: auto;
+        }
+
+        .cn-modal .modal-header {
+            padding: 14px 16px !important;
+        }
+
+        .cn-modal .modal-footer {
+            padding: 12px 16px !important;
+            flex-wrap: wrap;
+        }
+
+        .cn-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .cn-modal .modal-footer {
+            flex-direction: column-reverse;
+        }
+    }
+
+    @@media (min-width: 768px) and (max-width: 991px) {
+        .cn-info-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .cn-modal .modal-dialog {
+            max-width: 90% !important;
+        }
+    }
+</style>
+
+<div class="cn-page">
+
+    <div class="cn-header">
+        <div class="cn-header-inner">
+            <div class="d-flex align-items-start justify-content-between flex-wrap" style="gap:12px">
+                <div>
+                    <div class="cn-eyebrow">
+                        <i class="fas fa-ban me-1"></i> Sistema de Ventas &middot; SRS
+                    </div>
+                    <h1 class="cn-title">
+                        <i class="fas fa-file-circle-xmark" style="color:#f87171;font-size:16px;margin-right:8px;"></i>
+                        Cancelación de <strong>Documentos</strong>
+                    </h1>
+                </div>
+                <nav class="cn-breadcrumb mt-1">
+                    <a href="/"><i class="fas fa-house-chimney"></i></a>
+                    <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                    <a href="#">Ventas</a>
+                    <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                    <span>Cancelaciones</span>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="cn-warning">
+        <i class="fas fa-triangle-exclamation"></i>
+        Este módulo permite cancelar documentos activos. La cancelación cambia el estatus a
+        <strong>Cancelado (27)</strong> y es <strong>irreversible</strong>.
+    </div>
+
+    <div class="cn-tabs">
+        <button class="cn-tab-btn active" onclick="cambiarTab('VICOT', this)">
+            <i class="fas fa-file-text"></i>
+            <span>Cotizaciones</span>
+        </button>
+        <button class="cn-tab-btn" onclick="cambiarTab('VIPED', this)">
+            <i class="fas fa-cart-shopping"></i>
+            <span>Pedidos</span>
+        </button>
+        <button class="cn-tab-btn" onclick="cambiarTab('VIREM', this)">
+            <i class="fas fa-truck"></i>
+            <span>Remisiones</span>
+        </button>
+    </div>
+
+    <div class="container-fluid px-3 px-md-4">
+
+        <div class="cn-card cn-panel active" id="panel-VICOT">
+            <div class="cn-card-head">
+                <div class="cn-card-title">
+                    <i class="fas fa-file-text"></i> Cotizaciones activas — selecciona una para cancelar
+                </div>
+            </div>
+            <div class="cn-card-body cn-dt-wrap">
+                <div id="tblVICOT"></div>
+            </div>
+        </div>
+
+        <div class="cn-card cn-panel" id="panel-VIPED">
+            <div class="cn-card-head">
+                <div class="cn-card-title">
+                    <i class="fas fa-cart-shopping"></i> Pedidos activos — selecciona uno para cancelar
+                </div>
+            </div>
+            <div class="cn-card-body cn-dt-wrap">
+                <div id="tblVIPED"></div>
+            </div>
+        </div>
+
+        <div class="cn-card cn-panel" id="panel-VIREM">
+            <div class="cn-card-head">
+                <div class="cn-card-title">
+                    <i class="fas fa-truck"></i> Remisiones activas — selecciona una para cancelar
+                </div>
+            </div>
+            <div class="cn-card-body cn-dt-wrap">
+                <div id="tblVIREM"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade cn-modal"
+     id="modalCancelacion"
+     tabindex="-1"
+     aria-labelledby="modalCancelTitle"
+     aria-modal="true"
+     role="dialog">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCancelTitle">
+                    <i class="fas fa-file-circle-xmark"></i> Cancelar documento
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body" id="modalCancelBody">
+                <div class="cn-loader">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando documento...</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="cn-btn cn-btn-secondary"
+                        data-bs-dismiss="modal">
+                    <i class="fas fa-xmark"></i> Cerrar
+                </button>
+                <button type="button"
+                        class="cn-btn cn-btn-danger"
+                        id="btnConfirmarCancelacion"
+                        disabled>
+                    <i class="fas fa-ban"></i> Confirmar cancelación
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade cn-modal"
+     id="modalCancelRemision"
+     tabindex="-1"
+     aria-labelledby="modalCancelRemTitle"
+     aria-modal="true"
+     role="dialog">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCancelRemTitle">
+                    <i class="fas fa-truck"></i> Cancelar remisión
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body" id="modalCancelRemBody">
+                <div class="cn-loader">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando remisión...</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="cn-btn cn-btn-secondary"
+                        data-bs-dismiss="modal">
+                    <i class="fas fa-xmark"></i> Cerrar
+                </button>
+                <button type="button"
+                        class="cn-btn cn-btn-danger"
+                        id="btnConfirmarCancelRemision"
+                        disabled>
+                    <i class="fas fa-ban"></i> Confirmar cancelación
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+
+    /* ── URLs ── */
+    var urlBuscarDoc   = '@Url.Action("BuscarDocumento",             "CancelacionDocumentos")';
+    var urlCancelar    = '@Url.Action("EjecutarCancelacion",         "CancelacionDocumentos")';
+    var urlCancelarRem = '@Url.Action("EjecutarCancelacionRemision", "CancelacionDocumentos")';
+
+    var urlBase = {
+        VICOT: '@Url.Action("BuscarActivosCot", "CancelacionDocumentos")',
+        VIPED: '@Url.Action("BuscarActivosPed", "CancelacionDocumentos")',
+        VIREM: '@Url.Action("BuscarActivosRem", "CancelacionDocumentos")'
+    };
+
+    var token      = $('input[name="__RequestVerificationToken"]').val();
+    var idDocActual = null;
+    var idRemActual = null;
+    var instancias  = {};
+
+    /* ── Bootstrap 5 Modal instances ── */
+    var bsModalCancelacion  = null;
+    var bsModalRemision     = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        bsModalCancelacion = new bootstrap.Modal(document.getElementById('modalCancelacion'));
+        bsModalRemision    = new bootstrap.Modal(document.getElementById('modalCancelRemision'));
+    });
+
+    /* ── Formatters ── */
+    function fmtMoney(v) {
+        var n = parseFloat(v) || 0;
+        return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    function fmtFolio(v) {
+        return '<span class="cn-folio">' + (v || '—') + '</span>';
+    }
+    function fmtCliente(v, row) { return row.n_cli || row.cli_prov || '—'; }
+    function fmtNat(v) {
+        return '<span class="nat-badge nat-' + (v || '') + '">' + (v || '—') + '</span>';
+    }
+
+    /* ── Totales ── */
+    function calcTotales(productos) {
+        var sub = 0, iva = 0, ieps = 0;
+        (productos || []).forEach(function(p) {
+            sub  += parseFloat(p.importe) || 0;
+            iva  += parseFloat(p.iva)     || 0;
+            ieps += parseFloat(p.ieps)    || 0;
+        });
+        return { subtotal: sub, iva: iva, ieps: ieps, total: sub + iva + ieps };
+    }
+
+    /* ── Partidas ── */
+    function renderPartidas(productos) {
+        if (!productos || productos.length === 0) {
+            return '<div style="text-align:center;padding:20px;color:var(--text-light);">' +
+                   '<i class="fas fa-box-open" style="font-size:1.8em;opacity:.4;display:block;margin-bottom:8px;"></i>' +
+                   'Sin partidas</div>';
+        }
+        var rows = '';
+        productos.forEach(function(p, i) {
+            rows +=
+                '<tr>' +
+                '<td style="text-align:center;color:var(--text-light);font-size:12px;">' + (i + 1) + '</td>' +
+                '<td><span class="cn-cve">' + (p.producto_id || '—') + '</span></td>' +
+                '<td>' + (p.descripcion || '—') + '</td>' +
+                '<td class="col-num">' + (parseFloat(p.cantidad) || 0).toFixed(2) +
+                    ' <small style="color:var(--text-light)">' + (p.unidad || '') + '</small></td>' +
+                '<td class="col-num">' + fmtMoney(p.precio) + '</td>' +
+                '<td class="col-num" style="font-weight:600;">' + fmtMoney(p.importe) + '</td>' +
+                '</tr>';
+        });
+        var t = calcTotales(productos);
+        return '<div class="cn-partidas-wrap cn-partidas-scroll-x">' +
+               '<table class="cn-partidas-table">' +
+               '<thead><tr>' +
+               '<th style="width:32px;">#</th><th>Clave</th><th>Descripción</th>' +
+               '<th class="col-num">Cantidad</th><th class="col-num">Precio</th><th class="col-num">Importe</th>' +
+               '</tr></thead>' +
+               '<tbody>' + rows + '</tbody>' +
+               '</table></div>' +
+               '<div class="cn-totals">' +
+               '<div class="cn-total-item"><div class="cn-total-lbl">Subtotal</div><div class="cn-total-val">' + fmtMoney(t.subtotal) + '</div></div>' +
+               (t.ieps > 0 ? '<div class="cn-total-item"><div class="cn-total-lbl">IEPS</div><div class="cn-total-val">' + fmtMoney(t.ieps) + '</div></div>' : '') +
+               '<div class="cn-total-item"><div class="cn-total-lbl">IVA</div><div class="cn-total-val">' + fmtMoney(t.iva) + '</div></div>' +
+               '<div class="cn-total-item"><div class="cn-total-lbl">Total</div><div class="cn-total-val">' + fmtMoney(t.total) + '</div></div>' +
+               '</div>';
+    }
+
+    function renderInfoGrid(d) {
+        return '<div class="cn-info-grid">' +
+            '<div class="cn-info-item"><div class="cn-info-lbl">Folio</div><div class="cn-info-val"><span class="cn-folio">' + (d.folio || '—') + '</span></div></div>' +
+            '<div class="cn-info-item"><div class="cn-info-lbl">Fecha</div><div class="cn-info-val">' + (dateFormatter(d.fch0) || '—') + '</div></div>' +
+            '<div class="cn-info-item"><div class="cn-info-lbl">Cliente</div><div class="cn-info-val">' + (d.n_cli || d.cli_prov || '—') + '</div></div>' +
+            '<div class="cn-info-item"><div class="cn-info-lbl">RFC</div><div class="cn-info-val">' + (d.rfc || '—') + '</div></div>' +
+            (d.ccy         ? '<div class="cn-info-item"><div class="cn-info-lbl">Moneda</div><div class="cn-info-val">'         + d.ccy         + '</div></div>' : '') +
+            (d.incoterm    ? '<div class="cn-info-item"><div class="cn-info-lbl">Incoterm</div><div class="cn-info-val">'       + d.incoterm    + '</div></div>' : '') +
+            (d.ordenCompra ? '<div class="cn-info-item"><div class="cn-info-lbl">Orden de compra</div><div class="cn-info-val">'+ d.ordenCompra + '</div></div>' : '') +
+            (d.coment1     ? '<div class="cn-info-item"><div class="cn-info-lbl">Comentario</div><div class="cn-info-val">'     + d.coment1     + '</div></div>' : '') +
+            '<div class="cn-info-item"><div class="cn-info-lbl">Importe total</div><div class="cn-info-val" style="color:var(--success-color);">' + fmtMoney(d.imp) + '</div></div>' +
+            '<div class="cn-info-item"><div class="cn-info-lbl">Capturó</div><div class="cn-info-val">' + (d.usr0 || '—') + '</div></div>' +
+            '</div>';
+    }
+
+    function renderPartidasHeader(cnt) {
+        return '<div class="cn-partidas-header">' +
+               '<div class="cn-partidas-title"><i class="fas fa-list-ul"></i> Partidas del documento</div>' +
+               '<span class="cn-partidas-count">' + cnt + ' artículo' + (cnt !== 1 ? 's' : '') + '</span>' +
+               '</div>';
+    }
+
+    /* ── Toast ── */
+    function mostrarToast(msg) {
+        var toast = $('<div style="position:fixed;top:24px;right:24px;z-index:9999;' +
+            'background:#166534;color:#fff;padding:14px 20px;border-radius:10px;' +
+            'font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);' +
+            'display:flex;align-items:center;gap:10px;">' +
+            '<i class="fas fa-circle-check"></i> ' + msg + '</div>');
+        $('body').append(toast);
+        setTimeout(function() { toast.fadeOut(400, function() { toast.remove(); }); }, 3500);
+    }
+
+    /* ══════════════════════════════════════════════════════
+       MODAL: COTIZACIONES Y PEDIDOS
+    ══════════════════════════════════════════════════════ */
+    function iniciarCancelacion(row) {
+        idDocActual = null;
+        $('#btnConfirmarCancelacion').prop('disabled', true);
+        $('#modalCancelBody').html(
+            '<div class="cn-loader"><i class="fas fa-spinner fa-spin"></i><p>Cargando documento...</p></div>'
+        );
+        $('#modalCancelTitle').html('<i class="fas fa-file-circle-xmark"></i> Cancelar documento');
+
+        bsModalCancelacion.show();   // ← Bootstrap 5
+
+        $.ajax({
+            url: urlBuscarDoc, type: 'GET', data: { id: row.id_encabezado },
+            success: function(resp) {
+                if (!resp || !resp.success) {
+                    $('#modalCancelBody').html(
+                        '<div style="text-align:center;padding:32px;color:#dc2626;">' +
+                        '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                        (resp && resp.message ? resp.message : 'Error al cargar el documento.') + '</div>'
+                    );
+                    return;
+                }
+                var d = resp.data;
+                idDocActual = d.id_encabezado;
+
+                $('#modalCancelTitle').html(
+                    '<i class="fas fa-file-circle-xmark"></i> ' +
+                    '<span class="nat-badge nat-' + (d.nat || '') + ' ms-1">' + (d.nat || '') + '</span>' +
+                    ' &nbsp;<span style="font-weight:400;font-size:13px;color:rgba(241,245,249,.7);">' + (d.folio || '') + '</span>'
+                );
+
+                var productos   = d.productos || [];
+                var partidasCnt = productos.length;
+
+                var html = renderInfoGrid(d) +
+                    renderPartidasHeader(partidasCnt) +
+                    renderPartidas(productos) +
+                    '<div class="cn-motivo-section">' +
+                    '<div class="cn-motivo-title"><i class="fas fa-message-lines"></i> Motivo de cancelación <span style="color:#dc2626">*</span></div>' +
+                    '<textarea id="txtMotivo" class="cn-motivo-textarea" maxlength="500"' +
+                    ' placeholder="Describe el motivo por el cual se cancela este documento..."></textarea>' +
+                    '<div style="text-align:right;font-size:11px;color:var(--text-light);margin-top:4px;">' +
+                    '<span id="motivoContador">0</span>/500 caracteres</div>' +
+                    '</div>';
+
+                $('#modalCancelBody').html(html);
+
+                $(document).on('input.cancelModal', '#txtMotivo', function() {
+                    $('#motivoContador').text($(this).val().length);
+                    $('#btnConfirmarCancelacion').prop('disabled', $(this).val().trim().length === 0);
+                });
+            },
+            error: function(xhr) {
+                $('#modalCancelBody').html(
+                    '<div style="text-align:center;padding:32px;color:#dc2626;">' +
+                    '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                    'Error de conexión (' + xhr.status + '). Intente de nuevo.</div>'
+                );
+            }
+        });
+    }
+
+    $('#btnConfirmarCancelacion').on('click', function() {
+        var motivo = $('#txtMotivo').val().trim();
+        if (!motivo) { alert('Debes ingresar un motivo de cancelación.'); return; }
+        if (!idDocActual) { return; }
+
+        var btn = $(this);
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Cancelando...');
+
+        $.ajax({
+            url: urlCancelar, type: 'POST',
+            data: { id: idDocActual, motivo: motivo, __RequestVerificationToken: token },
+            success: function(resp) {
+                if (resp && resp.success) {
+                    bsModalCancelacion.hide();
+                    mostrarToast('Documento cancelado correctamente.');
+                    if (instancias[tabActivo]) instancias[tabActivo].reload();
+                } else {
+                    btn.prop('disabled', false).html('<i class="fas fa-ban"></i> Confirmar cancelación');
+                    alert(resp && resp.message ? resp.message : 'Error al cancelar. Intente de nuevo.');
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html('<i class="fas fa-ban"></i> Confirmar cancelación');
+                alert('Error de conexión (' + xhr.status + '). Intente de nuevo.');
+            }
+        });
+    });
+
+    document.getElementById('modalCancelacion').addEventListener('hidden.bs.modal', function() {
+        idDocActual = null;
+        $(document).off('input.cancelModal');
+        $('#btnConfirmarCancelacion').prop('disabled', true)
+            .html('<i class="fas fa-ban"></i> Confirmar cancelación');
+    });
+
+    /* ══════════════════════════════════════════════════════
+       MODAL: REMISIONES
+    ══════════════════════════════════════════════════════ */
+    function iniciarCancelacionRemision(row) {
+        idRemActual = null;
+        $('#btnConfirmarCancelRemision').prop('disabled', true);
+        $('#modalCancelRemBody').html(
+            '<div class="cn-loader"><i class="fas fa-spinner fa-spin"></i><p>Cargando remisión...</p></div>'
+        );
+        $('#modalCancelRemTitle').html('<i class="fas fa-truck"></i> Cancelar remisión');
+
+        bsModalRemision.show();   // ← Bootstrap 5
+
+        $.ajax({
+            url: urlBuscarDoc, type: 'GET', data: { id: row.id_encabezado },
+            success: function(resp) {
+                if (!resp || !resp.success) {
+                    $('#modalCancelRemBody').html(
+                        '<div style="text-align:center;padding:32px;color:#dc2626;">' +
+                        '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                        (resp && resp.message ? resp.message : 'Error al cargar la remisión.') + '</div>'
+                    );
+                    return;
+                }
+
+                var d = resp.data;
+                idRemActual = d.id_encabezado;
+
+                $('#modalCancelRemTitle').html(
+                    '<i class="fas fa-truck"></i> ' +
+                    '<span class="nat-badge nat-VIREM ms-1">VIREM</span>' +
+                    ' &nbsp;<span style="font-weight:400;font-size:13px;color:rgba(241,245,249,.7);">' + (d.folio || '') + '</span>'
+                );
+
+                var productos   = d.productos || [];
+                var partidasCnt = productos.length;
+
+                var seccionExtra =
+                    '<div class="cn-rem-section">' +
+                    '<div class="cn-rem-section-title">' +
+                    '<i class="fas fa-truck-ramp-box"></i> Información adicional de la remisión' +
+                    '</div>' +
+                    '<div class="cn-rem-row">' +
+                    '<div class="cn-rem-info-note">' +
+                    '<i class="fas fa-circle-info"></i>' +
+                    '<span>Al cancelar esta remisión, el inventario afectado será ajustado automáticamente ' +
+                    'según el tipo de devolución seleccionado.</span>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+
+                var html = renderInfoGrid(d) +
+                    renderPartidasHeader(partidasCnt) +
+                    renderPartidas(productos) +
+                    seccionExtra +
+                    '<div class="cn-motivo-section">' +
+                    '<div class="cn-motivo-title"><i class="fas fa-message-lines"></i> Motivo de cancelación <span style="color:#dc2626">*</span></div>' +
+                    '<textarea id="txtMotivoRem" class="cn-motivo-textarea" maxlength="500"' +
+                    ' placeholder="Describe el motivo por el cual se cancela esta remisión..."></textarea>' +
+                    '<div style="text-align:right;font-size:11px;color:var(--text-light);margin-top:4px;">' +
+                    '<span id="motivoRemContador">0</span>/500 caracteres</div>' +
+                    '</div>';
+
+                $('#modalCancelRemBody').html(html);
+
+                function validarFormRem() {
+                    var motivo = $('#txtMotivoRem').val().trim().length > 0;
+                    $('#btnConfirmarCancelRemision').prop('disabled', !motivo);
+                }
+
+                $(document).on('input.remModal', '#txtMotivoRem', function() {
+                    $('#motivoRemContador').text($(this).val().length);
+                    validarFormRem();
+                });
+                $(document).on('change.remModal', '#selTipoDevolucion', validarFormRem);
+            },
+            error: function(xhr) {
+                $('#modalCancelRemBody').html(
+                    '<div style="text-align:center;padding:32px;color:#dc2626;">' +
+                    '<i class="fas fa-triangle-exclamation" style="font-size:2em;display:block;margin-bottom:8px;"></i>' +
+                    'Error de conexión (' + xhr.status + '). Intente de nuevo.</div>'
+                );
+            }
+        });
+    }
+
+    $('#btnConfirmarCancelRemision').on('click', function() {
+        var motivo = $('#txtMotivoRem').val().trim();
+        if (!motivo) { alert('Debes ingresar un motivo de cancelación.'); return; }
+        if (!idRemActual) { return; }
+
+        var btn = $(this);
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Cancelando...');
+
+        $.ajax({
+            url: urlCancelarRem, type: 'POST',
+            data: { id: idRemActual, motivo: motivo, __RequestVerificationToken: token },
+            success: function(resp) {
+                if (resp && resp.success) {
+                    bsModalRemision.hide();
+                    mostrarToast('Remisión cancelada correctamente.');
+                    if (instancias['VIREM']) instancias['VIREM'].reload();
+                } else {
+                    btn.prop('disabled', false).html('<i class="fas fa-ban"></i> Confirmar cancelación');
+                    alert(resp && resp.message ? resp.message : 'Error al cancelar. Intente de nuevo.');
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html('<i class="fas fa-ban"></i> Confirmar cancelación');
+                alert('Error de conexión (' + xhr.status + '). Intente de nuevo.');
+            }
+        });
+    });
+
+    document.getElementById('modalCancelRemision').addEventListener('hidden.bs.modal', function() {
+        idRemActual = null;
+        $(document).off('input.remModal change.remModal');
+        $('#btnConfirmarCancelRemision').prop('disabled', true)
+            .html('<i class="fas fa-ban"></i> Confirmar cancelación');
+    });
+
+    /* ══════════════════════════════════════════════════════
+       TABLAS — lazy init por tab
+    ══════════════════════════════════════════════════════ */
+    var tabActivo = 'VICOT';
+
+    var columnas = {
+        VICOT: [
+            { title: 'Folio',   data: 'folio', formatter: fmtFolio },
+            { title: 'Fecha',   data: 'fch' },
+            { title: 'Cliente', data: 'n_cli', formatter: fmtCliente },
+            { title: 'Importe', data: 'imp', formatter: function(v) {
+                return '<span style="color:var(--success-color);font-weight:600;">' + fmtMoney(v) + '</span>';
+            }},
+            { title: 'Capturó', data: 'usr0' }
+        ],
+        VIPED: [
+            { title: 'Folio',    data: 'folio',   formatter: fmtFolio },
+            { title: 'Fecha',    data: 'fch' },
+            { title: 'Cliente',  data: 'n_cli',   formatter: fmtCliente },
+            { title: 'Importe',  data: 'imp',     formatter: function(v) {
+                return '<span style="color:var(--success-color);font-weight:600;">' + fmtMoney(v) + '</span>';
+            }},
+            { title: 'Incoterm', data: 'incoterm' },
+            { title: 'Capturó',  data: 'usr0' }
+        ],
+        VIREM: [
+            { title: 'Folio',    data: 'folio',   formatter: fmtFolio },
+            { title: 'Fecha',    data: 'fch' },
+            { title: 'Cliente',  data: 'n_cli',   formatter: fmtCliente },
+            { title: 'Importe',  data: 'imp',     formatter: function(v) {
+                return '<span style="color:var(--success-color);font-weight:600;">' + fmtMoney(v) + '</span>';
+            }},
+            { title: 'Incoterm', data: 'incoterm' },
+            { title: 'Capturó',  data: 'usr0' }
+        ]
+    };
+
+    function iniciarTabla(nat) {
+        var esRemision = (nat === 'VIREM');
+        instancias[nat] = createTable({
+            selector: '#tbl' + nat,
+            path:     urlBase[nat],
+            searchPlaceholder: 'Buscar folio, cliente...',
+            columns:  columnas[nat],
+            actions: [{
+                icon:  'fa-ban',
+                color: 'red-600',
+                title: 'Cancelar',
+                onClick: function(row) {
+                    if (esRemision) iniciarCancelacionRemision(row);
+                    else            iniciarCancelacion(row);
+                }
+            }]
+        });
+    }
+
+    function cambiarTab(nat, btn) {
+        document.querySelectorAll('.cn-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        document.querySelectorAll('.cn-panel').forEach(function(p) { p.classList.remove('active'); });
+        document.getElementById('panel-' + nat).classList.add('active');
+        tabActivo = nat;
+        if (!instancias[nat]) iniciarTabla(nat);
+    }
+
+    /* ── Arranque ── */
+    document.addEventListener('DOMContentLoaded', function() {
+        iniciarTabla('VICOT');
+    });
+
+    </script>
+}

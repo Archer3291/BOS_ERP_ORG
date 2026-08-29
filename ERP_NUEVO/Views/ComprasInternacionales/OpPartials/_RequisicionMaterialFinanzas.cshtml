@@ -1,0 +1,941 @@
+﻿@{
+    ViewBag.Title = "Finanzas";
+}
+<link href="~/content/sidebar.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+@section styles{
+    <style>
+        .card {
+            border-radius: 1rem;
+            background-color: var(--bg-light);
+            box-shadow: var(--shadow);
+            transition: 0.2s ease all;
+        }
+
+            .card:hover {
+                box-shadow: var(--shadow-lg);
+            }
+
+        .table-borderless th,
+        .table-borderless td {
+            border: none;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        thead tr {
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        th {
+            font-weight: 600;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .custom-checkbox {
+            position: relative;
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+        }
+
+            .custom-checkbox input[type="checkbox"] {
+                /*opacity: 0;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                cursor: pointer;*/
+            }
+
+            .custom-checkbox label {
+                /*display: block;
+                width: 100%;
+                height: 100%;
+                background-color: var(--very-light-blue);
+                border: 2px solid var(--primary-blue);
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s ease;*/
+            }
+
+            .custom-checkbox input[type="checkbox"]:checked + label {
+                background-color: var(--primary-blue);
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.173 12.927a.75.75 0 0 1-1.06 0L2.25 10.064a.75.75 0 0 1 1.06-1.06l2.5 2.5 6.44-6.44a.75.75 0 0 1 1.06 1.06l-7 7z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: 65%;
+            }
+    </style>
+}
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+<div class="accordion modern-accordion fade-in-up" id="acordeonTablas">
+
+    <!-- Documentos Recibidos -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingCreadas">
+            <button class="accordion-button modern-accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCreadas" aria-expanded="true" aria-controls="collapseCreadas">
+                🟡 Pendientes por presupuestos
+            </button>
+        </h2>
+        <div id="collapseCreadas" class="accordion-collapse collapse show" aria-labelledby="headingCreadas" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaPendientes" class="table modern-table" style="width:100%">
+                        <thead class="table-warning">
+                            <tr>
+                                <th><i class="fas fa-file-alt"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-user-tie"></i> Responsable</th>
+                                <th><i class="fas fa-coins"></i> Importe</th>
+                                <th><i class="fas fa-sticky-note"></i> Observaciones</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ordenes de compra directa -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingDirectas">
+            <button class="accordion-button modern-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDirectas" aria-expanded="false" aria-controls="collapseDirectas">
+                🔵 Ordenes de compra directa
+            </button>
+        </h2>
+        <div id="collapseDirectas" class="accordion-collapse collapse" aria-labelledby="headingDirectas" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaDirectas" class="table modern-table" style="width:100%">
+                        <thead class="table-primary">
+                            <tr>
+                                <th><i class="fas fa-file-alt"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-user-tie"></i> Responsable</th>
+                                <th><i class="fas fa-coins"></i> Importe</th>
+                                <th><i class="fas fa-sticky-note"></i> Observaciones</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cuentas por Pagar -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingCxp">
+            <button class="accordion-button modern-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCxp" aria-expanded="false" aria-controls="collapseCxp">
+                📄 Cuentas por Pagar
+            </button>
+        </h2>
+        <div id="collapseCxp" class="accordion-collapse collapse" aria-labelledby="headingCxp" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaCuentasPorPagar" class="table modern-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-file-alt"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-user-tie"></i> Responsable</th>
+                                <th><i class="fas fa-coins"></i> Importe</th>
+                                <th><i class="fas fa-sticky-note"></i> Observaciones</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentos Retenidos -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingRetenidas">
+            <button class="accordion-button modern-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRetenidas" aria-expanded="false" aria-controls="collapseRetenidas">
+                🔴 Documentos Retenidos
+            </button>
+        </h2>
+        <div id="collapseRetenidas" class="accordion-collapse collapse" aria-labelledby="headingRetenidas" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive-sm">
+                    <table id="tablaRetenidas" class="table modern-table" style="width:100%">
+                        <thead class="table-danger">
+                            <tr>
+                                <th><i class="fas fa-file-alt"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-user-tie"></i> Responsable</th>
+                                <th><i class="fas fa-coins"></i> Importe</th>
+                                <th><i class="fas fa-sticky-note"></i> Observaciones</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para aceptar cotizacion -->
+<div class="modal fade" id="modalAgregarOpciones" tabindex="-1" aria-labelledby="modalOpcionesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabel"><i class="bi bi-pencil-square"></i> Editar Requisición</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btn-actualizar" class="btn btn-success"><i class="bi bi-save-fill"></i> Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para aceptar OC -->
+<div class="modal fade" id="modalAceptarOC" tabindex="-1" aria-labelledby="modalOpcionesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabel"><i class="bi bi-pencil-square"></i> Editar Requisición</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody2">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btn-aceptaroc" class="btn btn-success"><i class="bi bi-save-fill"></i> Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        cargarTabla("#tablaPendientes", "/Requisicion/GetCotizacionesFinanzas");
+        cargarTabla("#tablaCuentasPorPagar", "/Requisicion/GetOCFinanzas");
+        cargarTabla("#tablaRetenidas", "/Requisicion/GetCotizacionesRetenidas");
+        cargarTabla("#tablaDirectas", "/Requisicion/GetOrdenesCompraDirecta");
+    });
+
+    function cargarTabla(selector, url) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        const tabla = $(selector).DataTable({
+            destroy: true,
+            responsive: true,
+            autoWidth: false,
+            ajax: {
+                url: url,
+                data: { id: id }, // Si necesitas pasarlo al backend
+                dataSrc: "data"
+            },
+            columns: [
+                { data: "nuevo_codigo" },
+                {
+                    data: "fch",
+                    render: function (data, type, row) {
+                        if (data && data.startsWith("/Date(")) {
+                            const timestamp = parseInt(data.match(/\d+/)[0]);
+                            const date = new Date(timestamp);
+                            return date.toLocaleDateString('es-MX');
+                        }
+                        return "";
+                    }
+                },
+                { data: "nombre_completo" },
+                { data: "imp", render: data => `$${parseFloat(data).toFixed(2)}` },
+                {
+                    data: null,
+                    render: function (data, type, row, meta) {
+                        const tablaId = meta.settings.nTable.id;
+
+                        if (tablaId === "tablaRetenidas") {
+                            return row.coment1 || '';
+                        } else {
+                            return row.coment_aut || '';
+                        }
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function (data, type, row, meta) {
+                        let botones = ``;
+
+                        botones += `<div class="d-flex gap-1" role="group">` +
+                            `   <button class="btn btn-sm sky-500" title="Ver detalles" style="color: var(--icon-color)" onclick="GetInfoGeneral(${data.id_encabezado})">` +
+                            `       <i class="fa-solid fa-circle-info"></i>` +
+                            `   </button>`;
+                        if (meta.settings.nTable.id !== "tablaCuentasPorPagar") {
+                            botones += `<button class="btn btn-sm btn-success" title="Aceptar Cotizacion" style="color: var(--icon-color)" data-encabezado="${data.id_encabezado}" data-nvocodigo="${data.nuevo_codigo}" onclick="aceptarCotizacion(this)">` +
+                                `       <i class="fa-solid fa-circle-check" ></i> ` +
+                                `   </button>`;
+                        }
+                        if (meta.settings.nTable.id === "tablaPendientes") {
+                            botones += `   <button class="btn btn-sm red-500" title="Retener" style="color: var(--icon-color)" data-encabezado="${data.id_encabezado}" data-nvocodigo="${data.nuevo_codigo}"  onclick="RetenerCTZ(this)">` +
+                                `        <i class="fa-solid fa-circle-xmark"></i>` +
+                                `   </button>`;
+                        }
+                        if (meta.settings.nTable.id === "tablaDirectas") {
+                            botones += '' +
+                                `   <button class="btn btn-sm green-500" style="color: var(--icon-color)" title="Descargar Formato de compra directa" onclick="GenerarPDFGeneral(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-download"></i>` +
+                                `   </button>`;
+                        }
+                        if (meta.settings.nTable.id === "tablaCuentasPorPagar") {
+                            botones += `   <button class="btn btn-sm btn-success" title="Aceptar Orden de Compra" style="color: var(--icon-color)" data-encabezado="${data.id_encabezado}" data-nvocodigo="${data.nuevo_codigo}"  onclick="aceptarOrdenCompra(this)">` +
+                                `        <i class="fa-solid fa-circle-check" ></i> ` +
+                                `   </button>`;
+                            if (data.tipo_proceso === "gasto") {
+                                botones += `` +
+                                    `   <button class="btn btn-sm green-500" style="color: var(--icon-color)" title="Descargar Formato de solicitud de gasto" onclick="GenerarPDFGeneral(${data.id_encabezado})">` +
+                                    `       <i class="fa-solid fa-download"></i>` +
+                                    `   </button>`;
+                            } else if (data.tipo_proceso === "orden_compra") {
+                                botones += `` +
+                                    `   <button class="btn btn-sm green-500" style="color: var(--icon-color)" title="Descargar Formato de orden de compra" onclick="GenerarPDFGeneral(${data.id_encabezado})">` +
+                                    `       <i class="fa-solid fa-download"></i>` +
+                                    `   </button>`;
+                            }
+                        }
+
+                        botones += `</div>`
+                        return botones
+                    },
+
+                },
+                { data: "id_encabezado", visible: false, searchable: true }
+            ],
+        });
+
+        if (id) {
+            $(selector).on('xhr.dt', function () {
+                tabla.search(id).draw();
+            });
+        }
+    }
+
+    function verDetalle(e) {
+        const folio = $(e).data('encabezado');
+        const nuevo_codigo = $(e).data('nvocodigo');
+
+        GetData({
+            path: `/Requisicion/GetRequisicionPartida?folio=${encodeURIComponent(folio)}`
+        }).then((data) => {
+            if (data && Array.isArray(data.data) && data.data.length > 0) {
+                const primeraPartida = data.data[0];
+
+                // Obtener y formatear la fecha del documento desde la primera partida
+                let fechaFormateada = "";
+                if (primeraPartida.fch && primeraPartida.fch.toString().startsWith("/Date(")) {
+                    const timestamp = parseInt(primeraPartida.fch.match(/\d+/)[0]);
+                    const fecha = new Date(timestamp);
+                    fechaFormateada = fecha.toLocaleDateString('es-MX');
+                }
+
+                // Construir tabla HTML con todas las partidas
+                let tabla = `
+                                                <div style="max-height: 300px; overflow-y: auto;">
+                                                <table class="table table-bordered table-sm text-start">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Producto</th>
+                                                            <th>Cantidad</th>
+                                                            <th>Importe</th>
+                                                            <th>IVA</th>
+                                                            <th>Total</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                            `;
+
+                data.data.forEach(partida => {
+                    tabla += `
+                                                    <tr>
+                                                        <td>${partida.cve_prod}</td>
+                                                        <td>${partida.cant_ud}</td>
+                                                        <td>$${parseFloat(partida.imp_part).toFixed(2)}</td>
+                                                        <td>$${parseFloat(partida.iva).toFixed(2)}</td>
+                                                        <td>$${parseFloat(partida.importe).toFixed(2)}</td>
+                                                    </tr>
+                                                `;
+                });
+
+                tabla += `
+                                                    </tbody>
+                                                </table>
+                                                </div>
+                                            `;
+
+                Swal.fire({
+                    title: `Partidas del folio ${nuevo_codigo}`,
+                    html: tabla,
+                    width: '800px',
+                    scrollbarPadding: false,
+                    confirmButtonText: 'Cerrar',
+                    customClass: {
+                        htmlContainer: 'text-start'
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sin datos',
+                    text: `No se encontraron partidas para el folio ${folio}`
+                });
+            }
+        }).catch((error) => {
+            console.error('Error al obtener los datos:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Ocurrió un error al consultar los datos del documento.'
+            });
+        });
+    }
+    function aceptarCotizacion(e) {
+        const id = $(e).data('encabezado');
+        const nuevo_codigo = $(e).data('nvocodigo');
+
+        GetData({
+            path: '/Requisicion/GetCotizacionData',
+            data: { id: id }
+        }).then((_res) => {
+            if (_res.success) {
+                const body = document.getElementById('modalBody');
+                body.innerHTML = ''; // Limpiar contenido
+
+                let totalGlobal = 0;
+                
+                Object.entries(_res.returnResult.partidas).forEach(([k, v]) => {
+                    const div = document.createElement('div');
+                    div.id = `card-partida-${v.id_partidas}`;
+
+                    const tablaId = `tabla-materiales_${v.id_partidas}`;
+
+                    let html = `
+                                                <div class="card shadow-sm border-0 mb-4" style="background-color: var(--bg-gray); border-radius: 1rem; padding: 1.5rem;">
+                                                    <div class="row mb-3">
+                                                        <div class="col">
+                                                            <p class="mb-1 text-muted small">Clave:</p>
+                                                            <h6 class="fw-bold">${v.cve_prod}</h6>
+                                                        </div>
+                                                        <div class="col">
+                                                            <p class="mb-1 text-muted small">Descripción:</p>
+                                                            <h6 class="fw-bold">${v.descr_prod}</h6>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered table-hover align-middle text-center" id="${tablaId}">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <th>Proveedor *</th>
+                                                                    <th>Producto *</th>
+                                                                    <th>Descripción</th>
+                                                                    <th>Unidad</th>
+                                                                    <th>Costo Unitario</th>
+                                                                    <th>Cantidad</th>
+                                                                    <th>Total</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            `;
+
+                    div.innerHTML = html;
+                    body.appendChild(div);
+
+                    // Agregar filas a la tabla de cada partida
+                    const partidas = _res.returnResult.partidas.filter(p => p.id_partidas == v.id_partidas);
+                    const tbody = document.querySelector(`#${tablaId} tbody`);
+
+                    partidas.forEach(p => {
+                        const precio = parseFloat(p.pv_prod);
+                        const cantidad = parseFloat(p.cant_ud) || 0;
+                        const total = precio * cantidad;
+                        totalGlobal += total;
+
+                        const fila = document.createElement('tr');
+                        fila.innerHTML = `
+                                                    <td><span class="badge bg-secondary">${p.cve_vdr_cpr}</span></td>
+                                                    <td><span class="text-primary fw-semibold">${p.cve_prod}</span></td>
+                                                    <td>${p.descr_prod || '-'}</td>
+                                                    <td>${p.ud || '-'}</td>
+                                                    <td>$${precio.toFixed(2)}</td>
+                                                    <td>${cantidad}</td>
+                                                    <td>$${total.toFixed(2)}</td>
+                                                    <td class="d-none"><span class="badge bg-secondary">${p.refe}</span></td>
+                                                `;
+                        tbody.appendChild(fila);
+                    });
+                });
+
+                // Agregar totalizador general al final
+                const totalResumen = document.createElement('div');
+                totalResumen.className = "mt-4 d-flex justify-content-end";
+                totalResumen.innerHTML = `
+                                            <div class="ticket-summary p-4 rounded-3 border-0" style="min-width: 300px;">
+                                                <div class="ticket-header text-center mb-3">
+                                                    <h6 class="mb-1 fw-bold ticket-title">🧾 RESUMEN DE TOTALES</h6>
+                                                    <div class="ticket-line"></div>
+                                                </div>
+                                                <div class="ticket-body">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span class="ticket-dots">• • • • • • • • • • • • • • • • • • • •</span>
+                                                    </div>
+
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="fw-semibold ticket-text">TOTAL GENERAL:</span>
+                                                        <span class="fw-bold fs-5 ticket-amount">${totalGlobal.toFixed(2)}</span>
+                                                    </div>
+
+                                                    <div class="ticket-footer text-center">
+                                                        <small class="ticket-separator">═══════════════════════</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <style>
+                                            .ticket-summary {
+                                                font-family: 'Courier New', monospace;
+                                                background: var(--bg-light);
+                                                border: 2px dashed var(--border-light) !important;
+                                                position: relative;
+                                                box-shadow: var(--shadow-lg);
+                                                border-left: 4px solid var(--primary-blue) !important;
+                                            }
+                                            .ticket-summary::before {
+                                                content: '';
+                                                position: absolute;
+                                                top: -8px;
+                                                left: 20px;
+                                                right: 20px;
+                                                height: 16px;
+                                                background: repeating-linear-gradient(
+                                                    to right,
+                                                    transparent,
+                                                    transparent 10px,
+                                                    var(--border-light) 10px,
+                                                    var(--border-light) 20px
+                                                );
+                                            }
+                                            .ticket-summary::after {
+                                                content: '';
+                                                position: absolute;
+                                                bottom: -8px;
+                                                left: 20px;
+                                                right: 20px;
+                                                height: 16px;
+                                                background: repeating-linear-gradient(
+                                                    to right,
+                                                    transparent,
+                                                    transparent 10px,
+                                                    var(--border-light) 10px,
+                                                    var(--border-light) 20px
+                                                );
+                                            }
+
+                                            .ticket-line {
+                                                height: 1px;
+                                                background: var(--border-light);
+                                                margin: 0 auto;
+                                                width: 80%;
+                                            }
+                                            .ticket-dots {
+                                                font-size: 0.8em;
+                                                color: var(--text-light);
+                                                letter-spacing: 2px;
+                                            }
+                                            .ticket-title {
+                                                color: var(--primary-blue);
+                                            }
+                                            .ticket-text {
+                                                color: var(--text-dark);
+                                            }
+                                            .ticket-amount {
+                                                color: var(--accent-blue);
+                                            }
+                                            .ticket-separator {
+                                                color: var(--text-light);
+                                            }
+                                            </style>
+                                            `;
+                body.appendChild(totalResumen);
+
+                $('#modalAgregarOpciones').data('encabezado', id);
+                $('#modalOpcionesLabel').text(`Cotización No. ${_res.returnResult.requisicion.nuevo_codigo}`);
+                $('#modalAgregarOpciones').modal('show');
+
+
+
+
+            } else {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: _res.error
+                });
+            }
+        });
+    }
+    document.getElementById('btn-actualizar').addEventListener('click', function () {
+        const idEncabezado = $('#modalAgregarOpciones').data('encabezado');
+
+        if (!idEncabezado || isNaN(idEncabezado)) {
+            Swal.fire('Error', 'ID de encabezado inválido o no proporcionado.', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        formData.append('id_encabezado', idEncabezado);
+
+        fetch('/Requisicion/AceptarCotizacion', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Actualizado', 'El estatus fue actualizado correctamente.', 'success');
+                    $('#modalAgregarOpciones').modal('hide');
+                    $('#tablaPendientes').DataTable().ajax.reload();
+                    $('#tablaRetenidas').DataTable().ajax.reload();
+                    $('#tablaCuentasPorPagar').DataTable().ajax.reload();
+                    $('#tablaDirectas').DataTable().ajax.reload();
+                } else {
+                    Swal.fire('Error', data.error || 'No se pudo actualizar el estatus.', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'Ocurrió un error al actualizar.', 'error');
+            });
+    });
+
+
+
+
+
+    function aceptarOrdenCompra(e) {
+        const id = $(e).data('encabezado');
+        const nuevo_codigo = $(e).data('nvocodigo');
+        var apr5 = false;
+
+        GetData({
+            path: '/Requisicion/GetCotizacionData',
+            data: { id: id }
+        }).then((_res) => {
+            if (_res.success) {
+                const body = document.getElementById('modalBody2');
+                body.innerHTML = ''; // Limpiar contenido
+
+                let totalGlobal = 0;
+                // Validar si apr5 está aprobado
+                apr5 = _res.returnResult.requisicion.apr5;
+                if (_res.returnResult.requisicion.apr5 === false || _res.returnResult.requisicion.apr5 === 'false') {
+                    const btnAceptar = document.getElementById('btn-actualizar');
+                    btnAceptar.disabled = true;
+                    btnAceptar.classList.add('disabled');
+
+                    const advertencia = document.createElement('div');
+                    advertencia.className = 'alert alert-warning mt-3';
+                    advertencia.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    La cotización aún no ha sido aceptada por el área correspondiente. No puedes aprobarla.
+                `;
+                    document.getElementById('modalBody2').appendChild(advertencia);
+                } else {
+                    document.getElementById('btn-actualizar').disabled = false;
+                    document.getElementById('btn-actualizar').classList.remove('disabled');
+                }
+                Object.entries(_res.returnResult.partidas).forEach(([k, v]) => {
+                    const div = document.createElement('div');
+                    div.id = `card-partida-${v.id_partidas}`;
+
+                    const tablaId = `tabla-materiales_${v.id_partidas}`;
+
+                    let html = `
+                                            <div class="card shadow-sm border-0 mb-4" style="background-color: var(--bg-gray); border-radius: 1rem; padding: 1.5rem;">
+                                                <div class="row mb-3">
+                                                    <div class="col">
+                                                        <p class="mb-1 text-muted small">Clave:</p>
+                                                        <h6 class="fw-bold">${v.cve_prod}</h6>
+                                                    </div>
+                                                    <div class="col">
+                                                        <p class="mb-1 text-muted small">Descripción:</p>
+                                                        <h6 class="fw-bold">${v.descr_prod}</h6>
+                                                    </div>
+                                                </div>
+
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-hover align-middle text-center" id="${tablaId}">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Proveedor *</th>
+                                                                <th>Producto *</th>
+                                                                <th>Descripción</th>
+                                                                <th>Unidad</th>
+                                                                <th>Costo Unitario</th>
+                                                                <th>Cantidad</th>
+                                                                <th>Total</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        `;
+
+                    div.innerHTML = html;
+                    body.appendChild(div);
+
+                    // Agregar filas a la tabla de cada partida
+                    const partidas = _res.returnResult.partidas.filter(p => p.id_partidas == v.id_partidas);
+                    const tbody = document.querySelector(`#${tablaId} tbody`);
+
+                    partidas.forEach(p => {
+                        const precio = parseFloat(p.pv_prod);
+                        const cantidad = parseFloat(p.cant_ud) || 0;
+                        const total = precio * cantidad;
+                        totalGlobal += total;
+
+                        const fila = document.createElement('tr');
+                        fila.innerHTML = `
+                                                <td><span class="badge bg-secondary">${p.cve_vdr_cpr}</span></td>
+                                                <td><span class="text-primary fw-semibold">${p.cve_prod}</span></td>
+                                                <td>${p.descr_prod || '-'}</td>
+                                                <td>${p.ud || '-'}</td>
+                                                <td>$${precio.toFixed(2)}</td>
+                                                <td>${cantidad}</td>
+                                                <td>$${total.toFixed(2)}</td>
+                                                <td class="d-none"><span class="badge bg-secondary">${p.refe}</span></td>
+                                            `;
+                        tbody.appendChild(fila);
+                    });
+                });
+
+                // Agregar totalizador general al final
+                const totalResumen = document.createElement('div');
+                totalResumen.className = "mt-4 d-flex justify-content-end";
+                totalResumen.innerHTML = `
+                                        <div class="ticket-summary p-4 rounded-3 border-0" style="min-width: 300px;">
+                                            <div class="ticket-header text-center mb-3">
+                                                <h6 class="mb-1 fw-bold ticket-title">🧾 RESUMEN DE TOTALES</h6>
+                                                <div class="ticket-line"></div>
+                                            </div>
+                                            <div class="ticket-body">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="ticket-dots">• • • • • • • • • • • • • • • • • • • •</span>
+                                                </div>
+
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <span class="fw-semibold ticket-text">TOTAL GENERAL:</span>
+                                                    <span class="fw-bold fs-5 ticket-amount">${totalGlobal.toFixed(2)}</span>
+                                                </div>
+
+                                                <div class="ticket-footer text-center">
+                                                    <small class="ticket-separator">═══════════════════════</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <style>
+                                        .ticket-summary {
+                                            font-family: 'Courier New', monospace;
+                                            background: var(--bg-light);
+                                            border: 2px dashed var(--border-light) !important;
+                                            position: relative;
+                                            box-shadow: var(--shadow-lg);
+                                            border-left: 4px solid var(--primary-blue) !important;
+                                        }
+                                        .ticket-summary::before {
+                                            content: '';
+                                            position: absolute;
+                                            top: -8px;
+                                            left: 20px;
+                                            right: 20px;
+                                            height: 16px;
+                                            background: repeating-linear-gradient(
+                                                to right,
+                                                transparent,
+                                                transparent 10px,
+                                                var(--border-light) 10px,
+                                                var(--border-light) 20px
+                                            );
+                                        }
+                                        .ticket-summary::after {
+                                            content: '';
+                                            position: absolute;
+                                            bottom: -8px;
+                                            left: 20px;
+                                            right: 20px;
+                                            height: 16px;
+                                            background: repeating-linear-gradient(
+                                                to right,
+                                                transparent,
+                                                transparent 10px,
+                                                var(--border-light) 10px,
+                                                var(--border-light) 20px
+                                            );
+                                        }
+
+                                        .ticket-line {
+                                            height: 1px;
+                                            background: var(--border-light);
+                                            margin: 0 auto;
+                                            width: 80%;
+                                        }
+                                        .ticket-dots {
+                                            font-size: 0.8em;
+                                            color: var(--text-light);
+                                            letter-spacing: 2px;
+                                        }
+                                        .ticket-title {
+                                            color: var(--primary-blue);
+                                        }
+                                        .ticket-text {
+                                            color: var(--text-dark);
+                                        }
+                                        .ticket-amount {
+                                            color: var(--accent-blue);
+                                        }
+                                        .ticket-separator {
+                                            color: var(--text-light);
+                                        }
+                                        </style>
+                                        `;
+                body.appendChild(totalResumen);
+
+                $('#modalAceptarOC').data('apr5', apr5);
+                $('#modalAceptarOC').data('encabezado', id);
+                $('#modalOpcionesLabel').text(`Cotización No. ${_res.returnResult.requisicion.nuevo_codigo}`);
+                $('#modalAceptarOC').modal('show');
+
+
+
+
+            } else {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: _res.error
+                });
+            }
+        });
+    }
+    document.getElementById('btn-aceptaroc').addEventListener('click', function () {
+        const idEncabezado = $('#modalAceptarOC').data('encabezado');
+        var apr5 = $('#modalAceptarOC').data('apr5');
+
+        if (!idEncabezado || isNaN(idEncabezado)) {
+            Swal.fire('Error', 'ID de encabezado inválido o no proporcionado.', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        formData.append('id_encabezado', idEncabezado);
+        formData.append('apr5', apr5);
+
+        fetch('/Requisicion/AceptarOrdenDeCompra', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Actualizado', 'El estatus fue actualizado correctamente.', 'success');
+                    $('#modalAceptarOC').modal('hide');
+                    $('#tablaPendientes').DataTable().ajax.reload();
+                    $('#tablaRetenidas').DataTable().ajax.reload();
+                    $('#tablaCuentasPorPagar').DataTable().ajax.reload();
+                    $('#tablaDirectas').DataTable().ajax.reload();
+                } else {
+                    Swal.fire('Error', data.error || 'No se pudo actualizar el estatus.', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('Error', 'Ocurrió un error al actualizar.', 'error');
+            });
+    });
+
+    function RetenerCTZ(button) {
+        const id_encabezado = button.getAttribute('data-encabezado');
+        const fol_doc = button.getAttribute('data-nvocodigo');
+
+        Swal.fire({
+            title: `¿Retener cotización ${fol_doc}?`,
+            input: 'textarea',
+            inputLabel: 'Motivo del rechazo',
+            inputPlaceholder: 'Escribe el motivo...',
+            inputAttributes: {
+                'aria-label': 'Motivo de la retención'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Sí, rechazar',
+            cancelButtonText: 'Cancelar',
+            preConfirm: (comentario) => {
+                if (!comentario) {
+                    Swal.showValidationMessage('Debes ingresar un motivo');
+                }
+                return comentario;
+            }
+        }).then(result => {
+            if (result.isConfirmed) {
+                GetData({
+                    path: '/Requisicion/RetenerRequisicion',
+                    data: {
+                        id_encabezado: id_encabezado,
+                        comentario: result.value
+                    }
+                }).then((data) => {
+                    if (data.success) {
+                        Swal.fire('Rechazada', `La cotización ${fol_doc} fue retenida correctamente.`, 'success');
+                        $('#tablaPendientes').DataTable().ajax.reload();
+                        $('#tablaRetenidas').DataTable().ajax.reload();
+                        $('#tablaCuentasPorPagar').DataTable().ajax.reload();
+                        $('#tablaDirectas').DataTable().ajax.reload();
+                    } else {
+                        Swal.fire('Error', data.error || 'No se pudo rechazar la remisión.', 'error');
+                    }
+                })
+            }
+        });
+    }
+
+</script>

@@ -1,0 +1,399 @@
+﻿@{
+    ViewBag.Title = "Solicitud de Nota de Crédito";
+    ViewBag.PageTitle = "Solicitud de Nota de Crédito";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/content/Facturacion/solicitud-nc.css" rel="stylesheet" />
+
+<!-- LAYOUT PRINCIPAL -->
+<div class="snc-layout container-fluid px-0">
+    <div class="row g-0 align-items-start">
+
+        <!-- ══════════════════════════════════════════
+             COLUMNA PRINCIPAL
+        ══════════════════════════════════════════ -->
+        <div class="col-12 col-xl-9 snc-main p-3 p-md-4">
+
+            <!-- TABS -->
+            <div class="snc-tabs">
+                <div class="snc-tab active" data-tab="nueva" onclick="sncSwitchTab('nueva')">
+                    <i class="fas fa-plus-circle me-2"></i>Nueva solicitud
+                </div>
+                <div class="snc-tab" data-tab="historial" onclick="sncSwitchTab('historial')">
+                    <i class="fas fa-history me-2"></i>Historial de solicitudes
+                </div>
+            </div>
+
+            <!-- ══════════ PANEL NUEVA SOLICITUD ══════════ -->
+            <div class="snc-tab-panel active" id="snc-panel-nueva">
+
+                <!-- FILTROS -->
+                <div class="section-card mb-4">
+                    <div class="section-head">
+                        <div class="section-icon info"><i class="fas fa-filter"></i></div>
+                        <div>
+                            <div class="section-title">Buscar Facturas</div>
+                            <div class="section-sub">Filtra y selecciona las facturas que requieren nota de crédito</div>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md">
+                                <label class="snc-filter-label">Folio / Cliente / RFC</label>
+                                <input type="text" id="snc-search" class="form-control form-control-sm"
+                                       placeholder="Buscar por folio, nombre o RFC..."
+                                       oninput="sncFilterDebounce()" />
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-auto">
+                                <label class="snc-filter-label">RFC exacto</label>
+                                <input type="text" id="snc-filter-rfc" class="form-control form-control-sm"
+                                       placeholder="RFC cliente" style="min-width:130px;" />
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-auto">
+                                <label class="snc-filter-label">Desde</label>
+                                <input type="date" id="snc-filter-desde" class="form-control form-control-sm" style="min-width:130px;" />
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-auto">
+                                <label class="snc-filter-label">Hasta</label>
+                                <input type="date" id="snc-filter-hasta" class="form-control form-control-sm" style="min-width:130px;" />
+                            </div>
+                            <div class="col-6 col-sm-auto">
+                                <button class="btn-icon primary w-100" onclick="sncApplyFilters()">
+                                    <i class="fas fa-search"></i> Buscar
+                                </button>
+                            </div>
+                            <div class="col-6 col-sm-auto">
+                                <button class="btn-icon w-100" onclick="sncClearFilters()">
+                                    <i class="fas fa-eraser"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLA DE FACTURAS -->
+                <div class="section-card">
+                    <div class="section-head flex-wrap gap-2">
+                        <div class="section-icon"><i class="fas fa-file-invoice"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="section-title">Facturas Disponibles</div>
+                            <div class="section-sub" id="snc-count-txt">Cargando...</div>
+                        </div>
+                        <div class="ms-auto">
+                            <button class="btn-icon warn" onclick="sncAbrirModalSolicitud()"
+                                    id="snc-btn-procesar-head" style="display:none;">
+                                <i class="fas fa-clipboard-check"></i>
+                                Registrar solicitud (<span id="snc-sel-count-head">0</span>)
+                            </button>
+                        </div>
+                    </div>
+                    <div class="section-body p-0">
+                        <div class="snc-table-wrap">
+                            <table class="snc-tbl">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px;">
+                                            <div class="snc-check" id="snc-chk-all"
+                                                 onclick="sncSelectAll()" title="Seleccionar todos"></div>
+                                        </th>
+                                        <th class="sortable">Folio</th>
+                                        <th>Cliente</th>
+                                        <th class="d-none d-md-table-cell">RFC</th>
+                                        <th style="text-align:right;">Importe</th>
+                                        <th class="d-none d-sm-table-cell">Fecha</th>
+                                        <th class="d-none d-lg-table-cell">Estado</th>
+                                        <th style="width:70px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="snc-tbody">
+                                    <tr>
+                                        <td colspan="8" style="text-align:center;padding:40px;color:var(--ink-ghost);">
+                                            <i class="fas fa-spinner fa-spin fa-2x" style="opacity:.3;display:block;margin-bottom:10px;"></i>
+                                            Cargando facturas...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="px-3" id="snc-paginacion"></div>
+                    </div>
+                </div>
+
+            </div><!-- /panel-nueva -->
+            <!-- ══════════ PANEL HISTORIAL ══════════ -->
+            <div class="snc-tab-panel" id="snc-panel-historial">
+                <div class="section-card">
+                    <div class="section-head flex-wrap gap-2">
+                        <div class="section-icon amber"><i class="fas fa-history"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="section-title">Historial de Solicitudes</div>
+                            <div class="section-sub">Solicitudes de NC registradas — haz clic en "Generar NC" para procesar</div>
+                        </div>
+                        <div class="ms-auto d-flex gap-2 flex-wrap">
+                            <select id="snc-hist-filtro-estatus"
+                                    class="form-select form-select-sm"
+                                    style="width:auto;"
+                                    onchange="SNC_HIST.estatus=this.value;SNC_HIST.page=1;sncLoadHistorial()">
+                                <option value="">Todos los estados</option>
+                                <option value="PENDIENTE">Pendiente</option>
+                                <option value="EN_PROCESO">En proceso</option>
+                                <option value="NC_EMITIDA">NC emitida</option>
+                                <option value="CANCELADA">Cancelada</option>
+                            </select>
+                            <button class="btn-icon" onclick="sncLoadHistorial()">
+                                <i class="fas fa-sync-alt"></i> Actualizar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="section-body p-0">
+                        <div class="snc-table-wrap">
+                            <table class="snc-tbl">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha solicitud</th>
+                                        <th>Folios</th>
+                                        <th class="d-none d-md-table-cell">Motivo</th>
+                                        <th class="d-none d-lg-table-cell">Comentario</th>
+                                        <th>Estado</th>
+                                        <th class="d-none d-sm-table-cell">Solicitó</th>
+                                        @*<th>Acción</th>*@
+                                    </tr>
+                                </thead>
+                                <tbody id="snc-hist-tbody">
+                                    <tr>
+                                        <td colspan="7" style="text-align:center;padding:40px;color:var(--ink-ghost);">
+                                            Selecciona la pestaña Historial para cargar
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /panel-historial -->
+
+        </div><!-- /col main -->
+        <!-- ══════════════════════════════════════════
+             SIDEBAR DERECHA — RESUMEN SELECCIÓN
+        ══════════════════════════════════════════ -->
+        <div class="col-12 col-xl-3 snc-side">
+            <div class="snc-sb-header">
+                <div class="snc-sb-top">
+                    <div class="snc-sb-brand">
+                        <div class="snc-sb-brand-icon">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 3.5h10M2 7h6.5M2 10.5h8" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <span class="snc-sb-brand-title">Selección</span>
+                    </div>
+                    <span class="snc-sb-badge" id="snc-sb-badge">Sin selección</span>
+                </div>
+            </div>
+
+            <!-- Lista de seleccionadas -->
+            <div class="snc-sb-section" style="flex:1;overflow-y:auto;">
+                <div class="snc-sb-lbl">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <rect x="1" y="1" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M3 5.5l2 2 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Facturas seleccionadas
+                </div>
+                <div id="snc-sb-list">
+                    <div class="snc-sb-empty">
+                        <i class="fas fa-hand-pointer me-2" style="opacity:.4;"></i>
+                        Selecciona facturas de la tabla
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total -->
+            <div class="snc-sb-section">
+                <div class="snc-sb-lbl">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <path d="M5.5 1v9M2 3.5h5a1.5 1.5 0 010 3H3a1.5 1.5 0 000 3h5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                    Total seleccionado
+                </div>
+                <div class="snc-sb-total-card">
+                    <div>
+                        <div class="snc-sb-total-lbl">Importe acumulado</div>
+                        <div class="snc-sb-total-count" id="snc-sb-count">0 facturas</div>
+                    </div>
+                    <div class="snc-sb-total-val" id="snc-sb-total-val">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="snc-sb-actions">
+                <button class="snc-btn-primary" id="snc-btn-procesar"
+                        onclick="sncAbrirModalSolicitud()" disabled>
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M2 6.5l3.5 3.5 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Registrar Solicitud NC
+                </button>
+                <button class="snc-btn-secondary" onclick="SNC_STATE.seleccionadas=[];sncUpdateSidebar();sncFetchFacturas();">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M9 3L3 9M3 3l6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    Limpiar selección
+                </button>
+            </div>
+        </div><!-- /col sidebar -->
+
+    </div><!-- /row -->
+</div><!-- /container -->
+<!-- ══════════════════════════════════════════
+     MODAL — REGISTRAR SOLICITUD NC
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="snc-modal-solicitud">
+    <div class="modal-box" style="max-width:620px;">
+        <div class="modal-header">
+            <span class="modal-title">
+                <i class="fas fa-clipboard-check me-2"></i>Registrar Solicitud de Nota de Crédito
+            </span>
+            <button class="modal-close" onclick="closeSncModal('snc-modal-solicitud')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+
+            <!-- Resumen facturas seleccionadas -->
+            <div id="snc-modal-resumen" style="margin-bottom:16px;"></div>
+
+            <!-- Motivo de la NC -->
+            <div style="margin-bottom:16px;">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:10px;">
+                    Motivo de la solicitud <span style="color:var(--danger-color);">*</span>
+                </div>
+                <div class="motivo-grid" id="snc-motivo-grid">
+                    <div class="motivo-card" data-tipo="devolucion" style="--nc-color:#7c3aed"
+                         onclick="sncSelectMotivo(this,'devolucion')">
+                        <div class="motivo-icon" style="--nc-color:#7c3aed"><i class="fas fa-undo-alt"></i></div>
+                        <div class="motivo-label">Mercancía devuelta</div>
+                        <div class="motivo-desc">Regresa a almacén</div>
+                    </div>
+                    <div class="motivo-card" data-tipo="descuento" style="--nc-color:#0891b2"
+                         onclick="sncSelectMotivo(this,'descuento')">
+                        <div class="motivo-icon" style="--nc-color:#0891b2"><i class="fas fa-percent"></i></div>
+                        <div class="motivo-label">Descuento / Error comercial</div>
+                        <div class="motivo-desc">Ajuste sobre importe</div>
+                    </div>
+                    <div class="motivo-card" data-tipo="precio" style="--nc-color:#d97706"
+                         onclick="sncSelectMotivo(this,'precio')">
+                        <div class="motivo-icon" style="--nc-color:#d97706"><i class="fas fa-dollar-sign"></i></div>
+                        <div class="motivo-label">Error en precio</div>
+                        <div class="motivo-desc">Diferencia vs. pactado</div>
+                    </div>
+                    <div class="motivo-card" data-tipo="cancelacion" style="--nc-color:#dc2626"
+                         onclick="sncSelectMotivo(this,'cancelacion')">
+                        <div class="motivo-icon" style="--nc-color:#dc2626"><i class="fas fa-ban"></i></div>
+                        <div class="motivo-label">Cancelación parcial</div>
+                        <div class="motivo-desc">Partidas específicas</div>
+                    </div>
+                    <div class="motivo-card" data-tipo="bonificacion" style="--nc-color:#059669"
+                         onclick="sncSelectMotivo(this,'bonificacion')">
+                        <div class="motivo-icon" style="--nc-color:#059669"><i class="fas fa-gift"></i></div>
+                        <div class="motivo-label">Bonificación / Rappel</div>
+                        <div class="motivo-desc">Acuerdo comercial</div>
+                    </div>
+                    <div class="motivo-card" data-tipo="otro" style="--nc-color:#64748b"
+                         onclick="sncSelectMotivo(this,'otro')">
+                        <div class="motivo-icon" style="--nc-color:#64748b"><i class="fas fa-ellipsis-h"></i></div>
+                        <div class="motivo-label">Otro motivo</div>
+                        <div class="motivo-desc">Especificar abajo</div>
+                    </div>
+                </div>
+                <input type="hidden" id="snc-motivo-tipo-hidden" />
+            </div>
+
+            <!-- Comentario -->
+            <div class="field mb-3">
+                <label>Descripción del problema / motivo <span class="req">*</span></label>
+                <textarea id="snc-comentario" rows="3"
+                          placeholder="Describe detalladamente por qué se requiere la nota de crédito. Ej: El cliente reportó que los artículos llegaron dañados, orden de compra ref. OC-1234...">
+                </textarea>
+            </div>
+
+            <!-- Campos extra precio -->
+            <div id="snc-campos-precio" style="display:none;" class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="field">
+                        <label>Precio facturado</label>
+                        <input type="number" id="snc-precio-fact" step="0.01" placeholder="0.00" />
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="field">
+                        <label>Precio correcto pactado</label>
+                        <input type="number" id="snc-precio-correcto" step="0.01" placeholder="0.00" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prioridad y responsable -->
+            <div class="row g-2">
+                <div class="col-12 col-sm-6">
+                    <div class="field">
+                        <label>Prioridad</label>
+                        <select id="snc-prioridad">
+                            <option value="normal">Normal</option>
+                            <option value="alta">Alta — requiere atención hoy</option>
+                            <option value="urgente">Urgente — cliente esperando</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="field">
+                        <label>Asignar a (responsable)</label>
+                        <input type="text" id="snc-responsable"
+                               placeholder="Nombre del responsable NC" />
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /modal-body -->
+        <div class="modal-footer">
+            <span style="font-size:11px;color:var(--ink-ghost);">
+                Se cambiará el estatus de los documentos seleccionados
+            </span>
+            <button class="btn-icon" onclick="closeSncModal('snc-modal-solicitud')">Cancelar</button>
+            <button class="btn-icon ok" id="snc-btn-confirmar" onclick="sncGuardarSolicitud()">
+                <i class="fas fa-check"></i> Confirmar solicitud
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL — VER DETALLE FACTURA -->
+<div class="modal-overlay" id="snc-modal-detalle">
+    <div class="modal-box" style="max-width:700px;">
+        <div class="modal-header">
+            <span class="modal-title"><i class="fas fa-file-invoice me-2"></i>Detalle de Factura</span>
+            <button class="modal-close" onclick="closeSncModal('snc-modal-detalle')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="snc-detalle-body">
+            <div style="text-align:center;padding:30px;color:var(--ink-ghost);">
+                <i class="fas fa-spinner fa-spin fa-2x" style="opacity:.4;"></i>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-icon" onclick="closeSncModal('snc-modal-detalle')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div id="snc-toast-container"></div>
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+
+@section scripts {
+    <script src="~/Scripts/Facturas/solicitud-nc.js"></script>
+}

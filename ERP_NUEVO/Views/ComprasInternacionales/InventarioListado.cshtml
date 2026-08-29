@@ -1,0 +1,2038 @@
+﻿@using BOS_ERP.Models
+@model List<InventarioProducto>
+<link href="~/content/Site.css" rel="stylesheet" />
+<style>
+    .container-fluid {
+        padding: 2rem;
+    }
+
+    .card {
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        border-radius: 20px;
+        border: none;
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        color: white;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.5rem;
+        border: none;
+    }
+
+    .card-title {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    .card-subtitle {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 0.95rem;
+    }
+
+    /* Panel de acciones mejorado */
+    .action-panel {
+        border-bottom: 2px solid #dee2e6;
+        padding: 1.5rem;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .action-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .selection-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: var(--bg-gray);
+        padding: 0.75rem 1.25rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+        .selection-info.has-selection {
+            border-color: #3498db;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+        }
+
+    .selection-count {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+        .selection-count.active {
+            color: #3498db;
+        }
+
+    .selection-text {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .btn-enviar-seleccionados {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        border: none;
+        color: white;
+        padding: 0.875rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        text-decoration: none;
+        min-height: 48px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .btn-enviar-seleccionados:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-enviar-seleccionados:hover:before {
+            left: 100%;
+        }
+
+        .btn-enviar-seleccionados:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .btn-enviar-seleccionados:active {
+            transform: translateY(0);
+        }
+
+        .btn-enviar-seleccionados:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
+            .btn-enviar-seleccionados:disabled:hover {
+                transform: none;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+    .btn-icon {
+        font-size: 1.1rem;
+    }
+
+    #tablaInventario {
+        margin: 0 !important;
+        font-size: 0.9rem;
+    }
+
+        #tablaInventario thead th {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            vertical-align: middle;
+            border: none;
+            padding: 1rem 0.75rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #tablaInventario tbody td {
+            padding: 0.75rem;
+            vertical-align: middle;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        #tablaInventario tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Estilos para filas seleccionadas */
+        #tablaInventario tbody tr.selected {
+            background-color: rgba(52, 152, 219, 0.25) !important;
+            border-left: 4px solid #3498db;
+        }
+
+            #tablaInventario tbody tr.selected:hover {
+                background-color: rgba(52, 152, 219, 0.35) !important;
+            }
+    /* Celda del checkbox completamente separada */
+    .checkbox-cell {
+        width: 40px;
+        text-align: center;
+        padding: 0.75rem 0.5rem !important;
+        cursor: pointer;
+    }
+
+    .form-check-input {
+        width: 1.3em;
+        height: 1.3em;
+        cursor: pointer;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+        .form-check-input:checked {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+
+        .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+
+    /* Colores específicos para columnas importantes */
+    .col-parte {
+        font-weight: 600;
+        color: #2c3e50;
+        background-color: rgba(52, 152, 219, 0.05);
+    }
+
+    .col-descripcion {
+        text-align: left !important;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .col-peso {
+        font-family: 'Courier New', monospace;
+        font-weight: 500;
+    }
+
+    /* Badges para unidades de medida */
+    .badge-unidad {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.6rem;
+    }
+
+    /* Mejoras para DataTables */
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        padding: 0.375rem 0.75rem;
+    }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 6px;
+        margin: 0 2px;
+    }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #3498db !important;
+            border-color: #3498db !important;
+            color: white !important;
+        }
+
+    /* Responsive mejoras */
+    @@media (max-width: 768px) {
+        .container-fluid {
+            padding: 1rem;
+        }
+
+        .card-header {
+            padding: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+        }
+
+        .action-panel {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .action-controls {
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .selection-info {
+            justify-content: center;
+        }
+
+        .btn-enviar-seleccionados {
+            justify-content: center;
+            width: 100%;
+        }
+
+        #tablaInventario {
+            font-size: 0.8rem;
+        }
+
+            #tablaInventario thead th,
+            #tablaInventario tbody td {
+                padding: 0.5rem 0.25rem;
+            }
+
+
+        .checkbox-cell {
+            width: 35px;
+            padding: 0.5rem 0.25rem !important;
+        }
+    }
+
+    /* Animaciones */
+    .card {
+        animation: slideIn 0.6s ease-out;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Efecto de pulso para botón activo */
+    .btn-enviar-seleccionados.pulse {
+        animation: pulse 2s infinite;
+    }
+
+    @@keyframes pulse {
+        0% {
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        50% {
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.6);
+        }
+
+        100% {
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+    }
+
+    table td, table th {
+        padding: 5px;
+    }
+    /* cursor bonito */
+    .dt-scroll-body {
+        cursor: grab;
+        user-select: none;
+    }
+
+        .dt-scroll-body:active {
+            cursor: grabbing;
+        }
+
+    .page-loader {
+        position: fixed;
+        width: 75%;
+        height: 100%;
+        background: var(--bg-gray);
+        backdrop-filter: blur(5px);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.5s ease;
+    }
+
+        .page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+    /* Spinner principal */
+    .loader-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid #f3f4f6;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1.5rem;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Texto del loader */
+    .loader-text {
+        color: #2c3e50;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
+    .loader-subtext {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        text-align: center;
+        max-width: 300px;
+    }
+
+    /* Barra de progreso */
+    .progress-container {
+        width: 300px;
+        height: 6px;
+        background: #ecf0f1;
+        border-radius: 3px;
+        margin-top: 1rem;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2980b9);
+        border-radius: 3px;
+        width: 0%;
+        transition: width 0.3s ease;
+        position: relative;
+    }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+    @@keyframes shimmer {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    /* Loader para DataTable específico */
+    .datatable-loader {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        border-radius: 10px;
+    }
+
+        .datatable-loader .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border-width: 3px;
+            margin-bottom: 1rem;
+        }
+
+    /* Skeleton loading para las filas */
+    .skeleton-row {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-cell {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        height: 20px;
+        border-radius: 4px;
+        margin: 2px 0;
+    }
+
+    @@keyframes loading {
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    /* Estilos adicionales para integración */
+    .card-loading {
+        position: relative;
+        overflow: hidden;
+    }
+
+        .card-loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: cardShimmer 2s infinite;
+        }
+
+    @@keyframes cardShimmer {
+        0% {
+            left: -100%;
+        }
+
+        100% {
+            left: 100%;
+        }
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .loader-text {
+            font-size: 1rem;
+        }
+
+        .progress-container {
+            width: 250px;
+        }
+
+        .loader-subtext {
+            font-size: 0.8rem;
+            max-width: 250px;
+        }
+    }
+
+</style>
+<div>
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Cargando Inventario</div>
+        <div class="loader-subtext">Procesando datos del Excel, por favor espere...</div>
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-boxes me-3"></i>
+            Control de Inventario
+        </h2>
+        <p class="card-subtitle">
+            <i class="fas fa-calendar-alt me-2"></i>
+            Sistema de Facturación - Gestión de Productos
+        </p>
+    </div>
+
+    <div class="action-panel">
+        <div class="action-controls">
+            <div id="selectionInfo" class="selection-info">
+                <i class="fas fa-check-square" style="color: #3498db; font-size: 1.2rem;"></i>
+                <div>
+                    <p id="selectionCount" class="selection-count">0</p>
+                    <p id="selectionText" class="selection-text">productos seleccionados</p>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" id="btnEnviarSeleccionados" class="btn btn-enviar-seleccionados" disabled>
+            <i class="fas fa-paper-plane btn-icon"></i>
+            <span>Enviar Seleccionados</span>
+        </button>
+    </div>
+
+    <div class="card-body p-0">
+        <div>
+            <table id="tablaInventario" class="table display nowrap">
+                <thead>
+                    <tr>
+                        <th class="checkbox-cell" style="width: 40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th><i class="fas fa-barcode me-2"></i>No. Parte SRS</th>
+                        <th><i class="fas fa-tag me-2"></i>Descripción</th>
+                        <th><i class="fas fa-ruler me-2"></i>U.M.</th>
+                        <th style="width:40px;"><i class="fas fa-warehouse me-2"></i>Total Almacenes</th>
+                        <th style="width:40px;"><i class="fas fa-chart-line me-2"></i>Consumo Mes</th>
+                        <th><i class="fas fa-exclamation-triangle me-2"></i>Por Cubrir</th>
+                        <th><i class="fas fa-check-circle me-2"></i>En Fab (Listo)</th>
+                        <th><i class="fas fa-cog me-2"></i>En Fabricación</th>
+                        <th><i class="fas fa-level-up-alt me-2"></i>Invt. Máximo</th>
+                        <th><i class="fa-solid fa-cart-shopping"></i>Compra</th>
+                        <th><i class="fas fa-weight me-2"></i>Peso</th>
+                        <th><i class="fas fa-weight-hanging me-2"></i>Peso Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr data-parte="@item.NoParteSRS">
+                            <td class="checkbox-cell">
+                                <input type="checkbox" class="form-check-input row-checkbox"
+                                       data-no-parte="@item.NoParteSRS"
+                                       data-descripcion="@item.DescripcionProducto"
+                                       data-unidad="@item.UnidadMedida"
+                                       data-total-almacenes="@item.TotalAlmacenes"
+                                       data-consumo-mes="@item.ConsumoMes"
+                                       data-por-cubrir="@item.PorCubrir"
+                                       data-en-fab-listo="@item.EnFabricacionListo"
+                                       data-en-fabricacion="@item.EnFabricacion"
+                                       data-inventario-maximo="@item.InventarioMaximo"
+                                       data-compra="@item.Compra"
+                                       data-peso="@item.Peso"
+                                       data-peso-total="@item.PesoTotal">
+                            </td>
+                            <td contenteditable='true' class="col-parte">@item.NoParteSRS</td>
+                            <td contenteditable='true' class="col-descripcion" title="@item.DescripcionProducto">@item.DescripcionProducto</td>
+                            <td>
+                                @{
+                                    var badgeClass = "bg-primary";
+                                    switch (item.UnidadMedida?.ToUpper())
+                                    {
+                                        case "PZA":
+                                        case "PIEZA":
+                                            badgeClass = "bg-primary";
+                                            break;
+                                        case "KG":
+                                        case "KILOGRAMO":
+                                            badgeClass = "bg-success";
+                                            break;
+                                        case "MTS":
+                                        case "METRO":
+                                            badgeClass = "bg-warning";
+                                            break;
+                                        case "LITRO":
+                                        case "LT":
+                                            badgeClass = "bg-info";
+                                            break;
+                                        default:
+                                            badgeClass = "bg-secondary";
+                                            break;
+                                    }
+                                }
+                                <span class="badge @badgeClass badge-unidad">@item.UnidadMedida</span>
+                            </td>
+                            <td contenteditable='true' class="col-cantidad @(item.TotalAlmacenes < (item.ConsumoMes * 2) ? "negativo" : item.TotalAlmacenes > (item.ConsumoMes * 5) ? "positivo" : "neutro")">
+                                @item.TotalAlmacenes.ToString("N2")
+                            </td>
+                            <td contenteditable='true' class="col-cantidad neutro">@item.ConsumoMes.ToString("N2")</td>
+                            <td contenteditable='true' class="col-cantidad @(item.PorCubrir < 0 ? "negativo" : item.PorCubrir > 0 ? "positivo" : "neutro")">
+                                @item.PorCubrir.ToString("N2")
+                            </td>
+                            <td contenteditable='true' class="col-cantidad positivo">@item.EnFabricacionListo.ToString("N2")</td>
+                            <td contenteditable='true' class="col-cantidad neutro">@item.EnFabricacion.ToString("N2")</td>
+                            <td contenteditable='true' class="col-cantidad">@item.InventarioMaximo.ToString("N2")</td>
+                            <td contenteditable='true' class="col-cantidad">@item.Compra.ToString("N2")</td>
+                            <td contenteditable='true' class="col-peso">@item.Peso.ToString("N3")</td>
+                            <td class="col-peso">@item.PesoTotal.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    window.encabezadoId = '@ViewBag.IdEncabezado';
+</script>
+<script src="~/lib/jquery/jquery.min.js"></script>
+<script src="~/lib/signature_pad/dist/signature_pad.umd.min.js"></script>
+<script>
+
+    // Variables dinámicas para localStorage basadas en ID
+    let currentEncabezadoId = null;
+    let STORAGE_KEY = 'inventario_productos_seleccionados';
+    let STORAGE_EXPIRY_KEY = 'inventario_seleccion_expiry';
+    const EXPIRY_HOURS = 24; // Los datos expirarán en 24 horas
+
+    let tablaInventario;
+    let productosSeleccionados = [];
+
+    // Detectar si hay datos reales en la tabla
+    function hayDatosRealesEnTabla() {
+    const filasReales = $('#tablaInventario tbody tr').filter(function () {
+    const fila = $(this);
+    // Verificar que no sea skeleton y que tenga contenido real
+    return !fila.hasClass('skeleton-row') &&
+    fila.find('td').length > 0 &&
+    fila.find('td').eq(1).text().trim() !== '';
+    });
+    return filasReales.length > 0;
+    }
+
+    // Función simplificada para inicializar DataTable
+    function initializeDataTable() {
+    // Verificar que la tabla existe
+    if (!$('#tablaInventario').length) {
+    ocultarLoader();
+    return;
+    }
+
+    // Si DataTable ya existe, destruirlo
+    if ($.fn.DataTable.isDataTable('#tablaInventario')) {
+    $('#tablaInventario').DataTable().destroy();
+    }
+
+    // NO eliminar skeleton rows aquí - let them be processed by DataTable
+    const totalFilas = $('#tablaInventario tbody tr').length;
+
+    try {
+    tablaInventario = $('#tablaInventario').DataTable({
+    language: {
+    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+    },
+    scrollX: true,
+    pageLength: 25,
+    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+    order: [[2, 'asc']],
+    // Importante: no procesar datos si son skeleton
+    processing: false,
+    deferRender: true,
+    columnDefs: [
+    {
+    targets: [0],
+    orderable: false,
+    searchable: false,
+    className: 'checkbox-cell',
+    width: '40px'
+    },
+    {
+    targets: [1],
+    width: '200px'
+    },
+    {
+    targets: [2],
+    width: '150px'
+    },
+    {
+    targets: [4, 5, 6, 7, 8, 9, 10, 11, 12],
+    width: '20px',
+    render: function (data, type, row) {
+    if (type === 'display' && data && data.toString().trim() !== '') {
+    const numData = parseFloat(data.toString().replace(/[^0-9.-]/g, ''));
+    if (!isNaN(numData)) {
+    return numData.toLocaleString('es-MX', {
+    minimumFractionDigits: numData % 1 !== 0 ? 2 : 0,
+    maximumFractionDigits: 2
+    });
+    }
+    }
+    return data;
+    }
+    }
+    ],
+    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+    '<"row"<"col-sm-12"tr>>' +
+    '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+    initComplete: function () {
+
+    ocultarLoader();
+    setupUIElements();
+    aplicarSeleccionesGuardadas();
+
+    // Si hay datos reales, limpiar skeletons después de inicializar
+    if (hayDatosRealesEnTabla()) {
+    setTimeout(() => {
+    $('#tablaInventario tbody .skeleton-row').remove();
+    tablaInventario.rows().invalidate().draw();
+    }, 100);
+    }
+    },
+    drawCallback: function () {
+    aplicarSeleccionesEnPaginaActual();
+    }
+    });
+
+    } catch (error) {
+    toastMixin.fire({
+    title: 'Error al inicializar la tabla',
+    text: error.message
+    });
+    ocultarLoader();
+    }
+    }
+
+    function ocultarLoader() {
+    const pageLoader = document.getElementById('pageLoader');
+    if (pageLoader) {
+    pageLoader.classList.add('hidden');
+    setTimeout(() => {
+    pageLoader.style.display = 'none';
+    }, 500);
+    }
+    }
+
+    function setupUIElements() {
+    // Configurar elementos de interfaz
+    $('.dataTables_filter input').attr('placeholder', 'Buscar productos...');
+
+    // Configurar scroll draggable si existe la tabla
+    if (tablaInventario) {
+    let mx = 0, sx = 0;
+    const $scrollBody = $(tablaInventario.table().container()).find('.dt-scroll-body');
+
+    $scrollBody.on({
+    mousemove: function (e) {
+    const mx2 = e.pageX - this.offsetLeft;
+    if (mx) this.scrollLeft = sx + mx - mx2;
+    },
+    mousedown: function (e) {
+    sx = this.scrollLeft;
+    mx = e.pageX - this.offsetLeft;
+    }
+    });
+
+    $(document).on("mouseup", function () {
+    mx = 0;
+    });
+    }
+    }
+
+    class InventoryLoader {
+    constructor() {
+    this.progressBar = document.getElementById('progressBar');
+    this.pageLoader = document.getElementById('pageLoader');
+    this.steps = [
+    { text: 'Conectando al servidor...', progress: 15 },
+    { text: 'Leyendo datos del Excel...', progress: 35 },
+    { text: 'Procesando información...', progress: 55 },
+    { text: 'Validando productos...', progress: 75 },
+    { text: 'Inicializando tabla...', progress: 90 },
+    { text: 'Finalizando carga...', progress: 100 }
+    ];
+    }
+
+    generateSkeletonRows(count = 8) {
+    const tbody = $('#tablaInventario tbody');
+
+    // Solo generar skeleton si no hay contenido
+    if (tbody.children().length === 0) {
+    for (let i = 0; i < count; i++) {
+    const skeletonRow = `
+    <tr class="skeleton-row">
+    <td><div class="skeleton-cell" style="width: 20px; height: 16px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 120px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 200px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 60px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 80px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 80px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 80px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 80px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 80px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 80px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 80px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 70px;"></div></td>
+    <td><div class="skeleton-cell" style="width: 70px;"></div></td>
+    </tr>`;
+    tbody.append(skeletonRow);
+    }
+    }
+    }
+
+    async startLoading() {
+    for (let i = 0; i < this.steps.length; i++) {
+    this.updateProgress(i);
+    const delay = i === 1 ? 800 : i === 2 ? 600 : 400;
+    await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    }
+
+    updateProgress(stepIndex) {
+    const step = this.steps[stepIndex];
+    if (!step || !this.progressBar) return;
+
+    this.progressBar.style.width = step.progress + '%';
+    const loaderText = document.querySelector('.loader-text');
+    const loaderSubtext = document.querySelector('.loader-subtext');
+
+    if (loaderText) loaderText.textContent = step.text;
+    if (loaderSubtext) loaderSubtext.textContent = `Paso ${stepIndex + 1} de ${this.steps.length}`;
+    }
+    }
+
+    $(document).ready(function () {
+
+    // Configurar datos básicos
+    obtenerEncabezadoId();
+    configurarStorageKeys();
+    cargarSeleccionGuardada();
+
+    // Verificar estado inicial de la tabla
+    const hayDatos = hayDatosRealesEnTabla();
+
+    if (hayDatos) {
+    initializeDataTable();
+    } else {
+    // Si no hay datos, mostrar skeleton y esperar
+    const inventoryLoader = new InventoryLoader();
+    inventoryLoader.generateSkeletonRows(10);
+
+    inventoryLoader.startLoading().then(() => {
+    // Después del loader, verificar nuevamente
+    setTimeout(() => {
+    if (hayDatosRealesEnTabla()) {
+    initializeDataTable();
+    } else {
+    initializeDataTable();
+    }
+    }, 500);
+    });
+    }
+
+    // Configurar eventos después del DOM ready
+    configurarEventos();
+    agregarBotonesPersistencia();
+    });
+
+    // Configurar todos los eventos
+    function configurarEventos() {
+    // Checkbox en celda
+    $(document).on('click', '#tablaInventario tbody .checkbox-cell', function (e) {
+    e.stopPropagation();
+    if ($(e.target).is('input[type="checkbox"]')) return;
+
+    const checkbox = $(this).find('.row-checkbox');
+    checkbox.prop('checked', !checkbox.prop('checked')).trigger('change');
+    });
+
+    // Evento change del checkbox
+    $(document).on('change', '#tablaInventario tbody .row-checkbox', function (e) {
+    e.stopPropagation();
+    const checkbox = $(this);
+
+    if (checkbox.is(':checked')) {
+    marcarFilaSeleccionada(checkbox);
+    } else {
+    desmarcarFilaSeleccionada(checkbox);
+    }
+
+    actualizarSelectAll();
+    actualizarContador();
+    actualizarBotonEnviar();
+    guardarSeleccionEnStorage();
+    });
+
+    // Detectar cambios en campos editables
+    $(document).on('input blur keyup paste', '#tablaInventario tbody [contenteditable="true"], #tablaInventario tbody input[type="number"], #tablaInventario tbody input[type="text"], #tablaInventario tbody select', function (e) {
+    e.stopPropagation();
+    const elemento = $(this);
+    const fila = elemento.closest('tr');
+    const checkbox = fila.find('.row-checkbox');
+
+    if (checkbox.is(':checked')) {
+    actualizarDatosProductoSeleccionado(checkbox, elemento);
+    clearTimeout(window.saveTimeout);
+    window.saveTimeout = setTimeout(() => {
+    guardarSeleccionEnStorage();
+    }, 1000);
+    }
+    });
+
+    // Selección de todos
+    $(document).on('change', '#selectAll', function (e) {
+    e.stopPropagation();
+    const isChecked = $(this).is(':checked');
+    const checkboxes = $('#tablaInventario tbody .row-checkbox:visible');
+
+    checkboxes.prop('checked', isChecked);
+
+    if (isChecked) {
+    checkboxes.each(function () {
+    marcarFilaSeleccionada($(this));
+    });
+    } else {
+    productosSeleccionados = [];
+    $('#tablaInventario tbody tr').removeClass('selected');
+    }
+
+    actualizarContador();
+    actualizarBotonEnviar();
+    guardarSeleccionEnStorage();
+    });
+
+    // Botón enviar seleccionados
+    $(document).on('click', '#btnEnviarSeleccionados', function () {
+    if (productosSeleccionados.length > 0) {
+    enviarProductosSeleccionados();
+    }
+    });
+    }
+    // ===== FUNCIONES PARA MANEJO DE ID DINÁMICO =====
+
+    function obtenerEncabezadoId() {
+    // Método 1: Desde parámetro de URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let id = urlParams.get('id_encabezado');
+
+    // Método 2: Desde input hidden en el formulario
+    if (!id) {
+    const hiddenInput = $('input[name="id_encabezado"]');
+    if (hiddenInput.length > 0) {
+    id = hiddenInput.val();
+    }
+    }
+
+    // Método 3: Desde data attribute en el body o contenedor principal
+    if (!id) {
+    const dataId = $('body').data('encabezado-id') || $('.container-main').data('encabezado-id');
+    if (dataId) {
+    id = dataId;
+    }
+    }
+
+    // Método 4: Desde variable global si la defines en tu vista
+    if (!id && typeof window.encabezadoId !== 'undefined') {
+    id = window.encabezadoId;
+    }
+
+    currentEncabezadoId = id;
+    return id;
+    }
+
+    function configurarStorageKeys() {
+    if (currentEncabezadoId) {
+    STORAGE_KEY = `inventario_productos_seleccionados_${currentEncabezadoId}`;
+    STORAGE_EXPIRY_KEY = `inventario_seleccion_expiry_${currentEncabezadoId}`;
+    } else {
+    console.warn('No se pudo determinar el ID del encabezado. Usando claves genéricas.');
+    // Usar un identificador basado en la URL como fallback
+    const pathId = window.location.pathname.replace(/[^a-zA-Z0-9]/g, '_');
+    STORAGE_KEY = `inventario_productos_seleccionados${pathId}`;
+    STORAGE_EXPIRY_KEY = `inventario_seleccion_expiry${pathId}`;
+    }
+    }
+
+    // ===== FUNCIONES DE LOCALSTORAGE MEJORADAS =====
+
+    function esLocalStorageDisponible() {
+    try {
+    const test = '__localStorage_test__';
+    localStorage.setItem(test, 'test');
+    localStorage.removeItem(test);
+    return true;
+    } catch (e) {
+    toastMixin.fire({
+    icon: 'warning',
+    title: 'Advertencia',
+    text: 'localStorage no está disponible: ' + e
+    });
+    return false;
+    }
+    }
+
+    function verificarExpiracion() {
+    try {
+    const expiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+    const now = new Date().getTime();
+
+    if (!expiry) {
+    return false; // No hay tiempo de expiración
+    }
+
+    const tiempoExpiry = parseInt(expiry);
+    const haExpirado = now > tiempoExpiry;
+
+    return haExpirado;
+    } catch (error) {
+    console.error('Error al verificar expiración:', error);
+    return true; // Asumir expirado si hay error
+    }
+    }
+
+    function guardarSeleccionEnStorage() {
+    if (!esLocalStorageDisponible()) {
+    toastMixin.fire({
+    icon: 'warning',
+    title: 'Advertencia',
+    text: 'localStorage no disponible - no se puede guardar'
+    });
+    return false;
+    }
+
+    try {
+    const now = new Date().getTime();
+    const expiry = now + (EXPIRY_HOURS * 60 * 60 * 1000);
+
+    // MEJORADO: Obtener datos actuales de la tabla para productos seleccionados
+    const productosActualizados = productosSeleccionados.map(producto => {
+    const checkbox = $(`input[data-no-parte="${producto.noParteSRS}"]`);
+    if (checkbox.length > 0) {
+    return obtenerDatosProductoActuales(checkbox);
+    }
+    return producto; // Si no se encuentra en la tabla, mantener datos originales
+    });
+
+    // Crear objeto con metadatos adicionales
+    const datosAGuardar = {
+    productos: productosActualizados,
+    encabezadoId: currentEncabezadoId,
+    timestamp: now,
+    timestampLegible: new Date(now).toLocaleString(),
+    url: window.location.href,
+    version: '1.2' // Actualizada la versión para control de versiones
+    };
+
+    // Intentar guardar productos seleccionados con metadatos
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(datosAGuardar));
+
+    // Guardar tiempo de expiración
+    localStorage.setItem(STORAGE_EXPIRY_KEY, expiry.toString());
+
+    // Mostrar indicador visual opcional
+    mostrarIndicadorGuardado();
+    return true;
+
+    } catch (error) {
+    console.error('❌ Error al guardar en localStorage:', error);
+
+    // Intentar liberar espacio si es problema de cuota
+    if (error.name === 'QuotaExceededError' || error.code === 22) {
+    console.log('Intentando liberar espacio...');
+    limpiarDatosAntiguos(true); // Forzar limpieza
+
+    // Reintentar una vez
+    try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(datosAGuardar));
+    localStorage.setItem(STORAGE_EXPIRY_KEY, expiry.toString());
+    console.log('✅ Guardado exitoso después de liberar espacio');
+    return true;
+    } catch (retryError) {
+    console.error('❌ Error persistente al guardar:', retryError);
+    mostrarAdvertencia('No se pudo guardar la selección - memoria llena');
+    }
+    } else {
+    mostrarAdvertencia('Error al guardar la selección automáticamente');
+    }
+    return false;
+    }
+    }
+
+    function cargarSeleccionGuardada() {
+    if (!esLocalStorageDisponible()) {
+    console.warn('localStorage no disponible - no se puede cargar');
+    return false;
+    }
+
+    try {
+    // Verificar si los datos han expirado ANTES de cargar
+    if (verificarExpiracion()) {
+    console.log('Datos expirados detectados - limpiando...');
+    limpiarStorageExpirado();
+    return false;
+    }
+
+    // Cargar datos guardados
+    const datosGuardados = localStorage.getItem(STORAGE_KEY);
+    if (!datosGuardados) {
+    console.log('No hay datos guardados para cargar');
+    return false;
+    }
+
+    const objetoGuardado = JSON.parse(datosGuardados);
+
+    // Verificar compatibilidad con versiones anteriores
+    if (Array.isArray(objetoGuardado)) {
+    // Formato anterior (solo array de productos)
+    console.log('Cargando datos en formato anterior');
+    productosSeleccionados = objetoGuardado;
+    } else if (objetoGuardado && objetoGuardado.productos) {
+    // Nuevo formato con metadatos
+    console.log('Cargando datos con metadatos:', objetoGuardado);
+    productosSeleccionados = objetoGuardado.productos || [];
+
+    // Verificar que coincida el ID del encabezado
+    if (objetoGuardado.encabezadoId && objetoGuardado.encabezadoId !== currentEncabezadoId) {
+    console.warn('⚠️ ID de encabezado no coincide:', {
+    guardado: objetoGuardado.encabezadoId,
+    actual: currentEncabezadoId
+    });
+    limpiarStorageExpirado();
+    return false;
+    }
+    } else {
+    console.warn('Formato de datos no reconocido');
+    productosSeleccionados = [];
+    return false;
+    }
+
+    console.log(`✅ Selección cargada para ID ${currentEncabezadoId}: ${productosSeleccionados.length} productos`);
+
+    // Mostrar indicador de que se cargó una selección previa
+    if (productosSeleccionados.length > 0) {
+    mostrarNotificacionCarga();
+    }
+
+    return true;
+
+    } catch (error) {
+    console.error('❌ Error al cargar desde localStorage:', error);
+    limpiarStorageExpirado();
+    mostrarAdvertencia('Error al cargar selección guardada - datos corrompidos');
+    return false;
+    }
+    }
+
+    // MEJORADO: Función que se ejecuta solo en la página/vista actual
+    function aplicarSeleccionesGuardadas() {
+    if (productosSeleccionados.length === 0) {
+    console.log('No hay selecciones guardadas para aplicar');
+    return;
+    }
+
+    console.log('Aplicando selecciones guardadas iniciales...');
+    aplicarSeleccionesEnPaginaActual();
+
+    // Actualizar interfaz
+    actualizarSelectAll();
+    actualizarContador();
+    actualizarBotonEnviar();
+    }
+
+    // NUEVA: Función para aplicar selecciones en la página actual de la DataTable
+    function aplicarSeleccionesEnPaginaActual() {
+    if (productosSeleccionados.length === 0) {
+    return;
+    }
+
+    console.log('Aplicando selecciones en página actual...');
+    let aplicadas = 0;
+
+    // Marcar checkboxes según los productos guardados SOLO en las filas visibles
+    productosSeleccionados.forEach(producto => {
+    const checkbox = $(`input[data-no-parte="${producto.noParteSRS}"]`);
+    if (checkbox.length > 0 && checkbox.is(':visible')) {
+    checkbox.prop('checked', true);
+    checkbox.closest('tr').addClass('selected');
+
+    // NUEVO: Aplicar datos editados guardados
+    aplicarDatosEditadosGuardados(checkbox, producto);
+    aplicadas++;
+    }
+    });
+
+    console.log(`Selecciones aplicadas en página actual: ${aplicadas}/${productosSeleccionados.length}`);
+    actualizarSelectAll();
+    }
+
+    // MEJORADA: Función para obtener datos actuales de un producto desde la tabla
+    function obtenerDatosProductoActuales(checkbox) {
+    const fila = checkbox.closest('tr');
+
+    return {
+    noParteSRS: checkbox.data('no-parte'),
+    descripcion: obtenerValorCelda(fila, 2), // Columna descripción
+    unidadMedida: obtenerValorCelda(fila, 3), // Columna unidad medida
+    totalAlmacenes: obtenerValorCelda(fila, 4),
+    consumoMes: obtenerValorCelda(fila, 5),
+    porCubrir: obtenerValorCelda(fila, 6),
+    enFabListo: obtenerValorCelda(fila, 7),
+    enFabricacion: obtenerValorCelda(fila, 8),
+    inventarioMaximo: obtenerValorCelda(fila, 9),
+    compra: obtenerValorCelda(fila, 10),
+    peso: obtenerValorCelda(fila, 11),
+    pesoTotal: obtenerValorCelda(fila, 12),
+    // Agregar timestamp de última modificación
+    lastModified: new Date().getTime()
+    };
+    }
+
+    // NUEVA: Función auxiliar para obtener valores de celdas (contenteditable o inputs)
+    function obtenerValorCelda(fila, columnIndex) {
+    const celda = fila.find('td').eq(columnIndex);
+
+    // Primero verificar si hay un input/select dentro de la celda
+    const input = celda.find('input, select');
+    if (input.length > 0) {
+    return input.val() || '';
+    }
+
+    // Si la celda es contenteditable, obtener su contenido
+    if (celda.attr('contenteditable') === 'true') {
+    return celda.text().trim() || '';
+    }
+
+    // Para celdas normales, obtener el texto
+    return celda.text().trim() || '';
+    }
+
+    // NUEVA: Función auxiliar para obtener valores de campos (input o texto)
+    function obtenerValorCampo(fila, dataAttr, columnIndex) {
+    // Primero intentar obtener de un input/select editable
+    const input = fila.find(`input[data-campo="${dataAttr}"], select[data-campo="${dataAttr}"]`);
+    if (input.length > 0) {
+    return input.val();
+    }
+
+    // Si no hay input, obtener del data attribute o del texto de la celda
+    const checkbox = fila.find('.row-checkbox');
+    const dataValue = checkbox.data(dataAttr);
+
+    if (dataValue !== undefined && dataValue !== null && dataValue !== '') {
+    return dataValue;
+    }
+
+    // Como último recurso, obtener del texto de la celda
+    const cellText = fila.find('td').eq(columnIndex).text().trim().replace(/,/g, '');
+    return cellText || '';
+    }
+
+    // MEJORADA: Función para actualizar datos de producto seleccionado cuando se edita
+    function actualizarDatosProductoSeleccionado(checkbox, elementoModificado) {
+    const noParteSRS = checkbox.data('no-parte');
+    const productoIndex = productosSeleccionados.findIndex(p => p.noParteSRS === noParteSRS);
+
+    if (productoIndex !== -1) {
+    // Obtener todos los datos actualizados del producto
+    const datosActualizados = obtenerDatosProductoActuales(checkbox);
+
+    // Actualizar el producto en el array
+    productosSeleccionados[productoIndex] = datosActualizados;
+
+    // Log para debugging
+    const fila = elementoModificado.closest('tr');
+    const columnIndex = fila.find('td').index(elementoModificado.closest('td'));
+    const valor = obtenerValorCelda(fila, columnIndex);
+
+    console.log(`📝 Dato actualizado - Producto: ${noParteSRS}, Columna: ${columnIndex}, Valor: ${valor}`);
+
+    // Mostrar indicador visual de que se guardó automáticamente
+    mostrarIndicadorActualizacion(elementoModificado);
+    }
+    }
+
+
+    // MEJORADA: Función para aplicar datos editados guardados cuando se carga
+    function aplicarDatosEditadosGuardados(checkbox, productoGuardado) {
+    const fila = checkbox.closest('tr');
+
+    // Mapear los campos guardados a las columnas correspondientes
+    const camposAplicar = [
+    { columnIndex: 2, valor: productoGuardado.descripcion },
+    { columnIndex: 4, valor: productoGuardado.totalAlmacenes },
+    { columnIndex: 5, valor: productoGuardado.consumoMes },
+    { columnIndex: 6, valor: productoGuardado.porCubrir },
+    { columnIndex: 7, valor: productoGuardado.enFabListo },
+    { columnIndex: 8, valor: productoGuardado.enFabricacion },
+    { columnIndex: 9, valor: productoGuardado.inventarioMaximo },
+    { columnIndex: 10, valor: productoGuardado.compra },
+    { columnIndex: 11, valor: productoGuardado.peso }
+    // Nota: pesoTotal (columna 12) no es editable según tu HTML
+    ];
+
+    camposAplicar.forEach(campo => {
+    if (campo.valor !== undefined && campo.valor !== null && campo.valor !== '') {
+    aplicarValorACelda(fila, campo.columnIndex, campo.valor);
+    }
+    });
+    }
+
+    // NUEVA: Función para aplicar valor a una celda específica
+    function aplicarValorACelda(fila, columnIndex, valor) {
+    const celda = fila.find('td').eq(columnIndex);
+
+    // Verificar si hay un input/select en la celda
+    const input = celda.find('input, select');
+    if (input.length > 0) {
+    if (input.val() !== valor.toString()) {
+    input.val(valor);
+    input.trigger('change');
+    console.log(`🔄 Input restaurado - Columna ${columnIndex}: ${valor}`);
+    }
+    return;
+    }
+
+    // Si la celda es contenteditable
+    if (celda.attr('contenteditable') === 'true') {
+    const valorActual = celda.text().trim();
+    if (valorActual !== valor.toString()) {
+    celda.text(valor);
+    // Disparar evento para cualquier lógica dependiente
+    celda.trigger('input');
+    console.log(`🔄 Celda contenteditable restaurada - Columna ${columnIndex}: ${valor}`);
+
+    // Mostrar indicador visual
+    mostrarIndicadorActualizacion(celda);
+    }
+    }
+    }
+
+    // MEJORADA: Función para mostrar indicador visual de actualización
+    function mostrarIndicadorActualizacion(elemento) {
+    // Agregar clase de animación temporalmente
+    elemento.addClass('campo-actualizado');
+
+    // Si es una celda contenteditable, también agregar borde
+    if (elemento.attr('contenteditable') === 'true') {
+    elemento.css({
+    'border': '2px solid #28a745',
+    'background-color': 'rgba(40, 167, 69, 0.1)'
+    });
+
+    setTimeout(() => {
+    elemento.css({
+    'border': '',
+    'background-color': ''
+    });
+    }, 1500);
+    }
+
+    setTimeout(() => {
+    elemento.removeClass('campo-actualizado');
+    }, 1000);
+    }
+
+    // NUEVA: Función para validar y limpiar datos numéricos en contenteditable
+    function validarDatoNumerico(elemento) {
+    const valor = elemento.text().trim();
+    const valorNumerico = parseFloat(valor.replace(/[^0-9.-]/g, ''));
+
+    if (!isNaN(valorNumerico)) {
+    // Formatear el número y actualizar la celda
+    const valorFormateado = valorNumerico.toFixed(2);
+    if (elemento.text() !== valorFormateado) {
+    elemento.text(valorFormateado);
+    }
+    return valorNumerico;
+    }
+    return 0;
+    }
+
+    // EVENTO ADICIONAL: Para validar números al salir de campos editables
+    $('#tablaInventario tbody').on('blur', '[contenteditable="true"]', function() {
+    const elemento = $(this);
+    const celda = elemento.closest('td');
+
+    // Solo validar si la celda contiene datos numéricos (basado en las clases CSS)
+    if (celda.hasClass('col-cantidad') || celda.hasClass('col-peso')) {
+    validarDatoNumerico(elemento);
+    }
+    });
+
+    function limpiarStorageExpirado() {
+    if (!esLocalStorageDisponible()) return;
+
+    try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_EXPIRY_KEY);
+    console.log(`🧹 Datos expirados eliminados del localStorage para ID ${currentEncabezadoId}`);
+    } catch (error) {
+    console.error('Error al limpiar storage expirado:', error);
+    }
+    }
+
+    function limpiarSeleccionCompleta() {
+    console.log('🧹 Iniciando limpieza completa de selección...');
+
+    // Limpiar memoria
+    const cantidadAnterior = productosSeleccionados.length;
+    productosSeleccionados = [];
+
+    // Limpiar localStorage
+    if (esLocalStorageDisponible()) {
+    try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_EXPIRY_KEY);
+    console.log('✅ localStorage limpiado exitosamente');
+    } catch (error) {
+    console.error('❌ Error al limpiar localStorage:', error);
+    }
+    }
+
+    // Limpiar interfaz
+    $('#tablaInventario tbody .row-checkbox').prop('checked', false);
+    $('#selectAll').prop('checked', false);
+    $('#tablaInventario tbody tr').removeClass('selected');
+
+    actualizarContador();
+    actualizarBotonEnviar();
+
+    console.log(`✅ Limpieza completa finalizada. Productos limpiados: ${cantidadAnterior}`);
+
+    toastMixin.fire({
+    icon: 'info',
+    title: 'Selección eliminada completamente'
+    });
+    }
+
+    // Función para limpiar datos de otros IDs (mantenimiento) - MEJORADA
+    function limpiarDatosAntiguos(forzarLimpieza = false) {
+    if (!esLocalStorageDisponible()) return;
+
+    try {
+    const keys = Object.keys(localStorage);
+    const patronInventario = /^inventario_(productos_seleccionados|seleccion_expiry)_/;
+    let contadorEliminados = 0;
+    const now = new Date().getTime();
+
+    console.log('🧹 Iniciando limpieza de datos antiguos...', { forzarLimpieza });
+
+    keys.forEach(key => {
+    if (patronInventario.test(key)) {
+    const parts = key.split('_');
+    const id = parts[parts.length - 1];
+
+    // Si no es el ID actual, verificar si ha expirado o si se fuerza limpieza
+    if (id !== currentEncabezadoId || forzarLimpieza) {
+    const expiryKey = `inventario_seleccion_expiry_${id}`;
+    const expiry = localStorage.getItem(expiryKey);
+
+    let debeEliminar = forzarLimpieza;
+
+    if (!debeEliminar && expiry) {
+    debeEliminar = now > parseInt(expiry);
+    } else if (!debeEliminar && !expiry) {
+    // Si no hay tiempo de expiración y no es ID actual, eliminar
+    debeEliminar = id !== currentEncabezadoId;
+    }
+
+    if (debeEliminar) {
+    try {
+    localStorage.removeItem(key);
+    if (key.includes('productos_seleccionados')) {
+    localStorage.removeItem(expiryKey);
+    }
+    contadorEliminados++;
+    console.log(`Eliminado: ${key} (ID: ${id})`);
+    } catch (error) {
+    console.warn(`Error al eliminar ${key}:`, error);
+    }
+    }
+    }
+    }
+    });
+
+    if (contadorEliminados > 0) {
+    console.log(`✅ Limpieza completada: ${contadorEliminados} registros eliminados`);
+    } else {
+    console.log('✅ No se encontraron datos antiguos para limpiar');
+    }
+
+    return contadorEliminados;
+
+    } catch (error) {
+    console.error('❌ Error al limpiar datos antiguos:', error);
+    return 0;
+    }
+    }
+
+    // ===== FUNCIONES DE UI EXISTENTES (mejoradas) =====
+
+    function marcarFilaSeleccionada(checkbox) {
+    const fila = checkbox.closest('tr');
+    fila.addClass('selected');
+
+    // MEJORADO: Obtener datos actuales completos del producto
+    const producto = obtenerDatosProductoActuales(checkbox);
+
+    if (!productosSeleccionados.find(p => p.noParteSRS === producto.noParteSRS)) {
+    productosSeleccionados.push(producto);
+    console.log(`✅ Producto seleccionado: ${producto.noParteSRS}`);
+    }
+    }
+
+    function desmarcarFilaSeleccionada(checkbox) {
+    const fila = checkbox.closest('tr');
+    fila.removeClass('selected');
+
+    const noParteSRS = checkbox.data('no-parte');
+    const cantidadAntes = productosSeleccionados.length;
+    productosSeleccionados = productosSeleccionados.filter(p => p.noParteSRS !== noParteSRS);
+
+    if (productosSeleccionados.length < cantidadAntes) {
+    console.log(`❌ Producto deseleccionado: ${noParteSRS}`);
+    }
+    }
+
+    function actualizarSelectAll() {
+    const totalCheckboxes = $('#tablaInventario tbody .row-checkbox:visible').length;
+    const checkedCheckboxes = $('#tablaInventario tbody .row-checkbox:visible:checked').length;
+
+    $('#selectAll').prop('checked', totalCheckboxes === checkedCheckboxes && totalCheckboxes > 0);
+    }
+
+    function actualizarContador() {
+    const cantidad = productosSeleccionados.length;
+    const countElement = $('#selectionCount');
+    const textElement = $('#selectionText');
+    const infoElement = $('#selectionInfo');
+
+    countElement.text(cantidad);
+    textElement.text(`producto${cantidad !== 1 ? 's' : ''} seleccionado${cantidad !== 1 ? 's' : ''}`);
+
+    if (cantidad > 0) {
+    countElement.addClass('active');
+    infoElement.addClass('has-selection');
+    } else {
+    countElement.removeClass('active');
+    infoElement.removeClass('has-selection');
+    }
+    }
+
+    function actualizarBotonEnviar() {
+    const btn = $('#btnEnviarSeleccionados');
+    const hasSelection = productosSeleccionados.length > 0;
+
+    btn.prop('disabled', !hasSelection);
+
+    if (hasSelection) {
+    btn.addClass('pulse');
+    } else {
+    btn.removeClass('pulse');
+    }
+    }
+
+    function enviarProductosSeleccionados() {
+    const btn = $('#btnEnviarSeleccionados');
+    const originalText = btn.html();
+
+    let signaturePad;
+    let canvas;
+
+    Swal.fire({
+    title: 'Firma antes de enviar',
+    html: `
+    <div class="border-1">
+    <p>Firma del usuario</p>
+    <canvas id="signature" width="400" height="200" style="border:1px solid #ccc;"></canvas>
+    <button type="button" class="btn btn-warning mt-2" id="limpiar_firma">Limpiar</button>
+    </div>
+    `,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+    canvas = document.getElementById("signature");
+    signaturePad = new SignaturePad(canvas, {
+    penColor: "rgb(0, 0, 0)",
+    minWidth: 0.5,
+    maxWidth: 1.0,
+    throttle: 16,
+    minDistance: 3
+    });
+
+    document.getElementById('limpiar_firma').addEventListener('click', () => {
+    signaturePad.clear();
+    });
+
+    const firmaBase64 = '@Context.Session.GetString("Firma")';
+
+    if (firmaBase64 && firmaBase64 !== 'null' && firmaBase64.trim() !== '') {
+    // Pre-cargar firma anterior si existe
+    signaturePad.fromDataURL(firmaBase64);
+    }
+
+    document.getElementById('limpiar_firma').addEventListener('click', () => {
+    signaturePad.clear();
+    });
+
+    // Guarda la instancia para usarla en preConfirm
+    Swal.__signaturePad = signaturePad;
+    Swal.__canvas = canvas;
+    },
+    preConfirm: () => {
+    if (!signaturePad || signaturePad.isEmpty()) {
+    Swal.showValidationMessage('Debes firmar antes de continuar.');
+    return false;
+    }
+
+    const formData = new FormData();
+
+    // Agregar firma como imagen base64
+    const dataUrl = signaturePad.toDataURL("image/png", 0.5);
+    formData.append('firma1', dataUrl);
+
+    // MEJORADO: Asegurar que enviamos los datos más actuales
+    const productosParaEnviar = productosSeleccionados.map(producto => {
+    const checkbox = $(`input[data-no-parte="${producto.noParteSRS}"]`);
+    if (checkbox.length > 0) {
+    return obtenerDatosProductoActuales(checkbox);
+    }
+    return producto;
+    });
+
+    // Productos y cantidad
+    formData.append('productosSeleccionados', JSON.stringify(productosParaEnviar));
+    formData.append('cantidad', productosParaEnviar.length);
+
+    // Encabezado ID
+    if (currentEncabezadoId) {
+    formData.append('id_encabezado', currentEncabezadoId);
+    }
+
+    // Token CSRF
+    const token = document.querySelector('input[name="__RequestVerificationToken"]');
+    if (token) {
+    formData.append('__RequestVerificationToken', token.value);
+    }
+
+    // Mostrar loading en el botón
+    btn.html('<i class="fas fa-spinner fa-spin btn-icon"></i><span>Enviando...</span>').prop('disabled', true);
+
+    // Realizar el envío
+    return fetch('/ProcesoDirectorInternacional/ProcesarSeleccionados', {
+    method: 'POST',
+    body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+    if (!data.success) {
+    throw new Error(data.message || 'Error en la respuesta del servidor');
+    }
+    return data;
+    })
+    .catch(error => {
+    Swal.showValidationMessage(`Error al enviar: ${error.message}`);
+    });
+    }
+    }).then(result => {
+    if (result.isConfirmed && result.value) {
+    Swal.fire({
+    title: '¡Éxito!',
+    text: `Productos enviados correctamente. Folio generado: ${result.value.folio_generado}`,
+    icon: 'success',
+    confirmButtonText: 'Aceptar',
+    confirmButtonColor: '#28a745'
+    }).then(() => {
+    // AQUÍ ESTÁ EL PUNTO CLAVE: limpiar después del envío exitoso
+    console.log('🚀 Envío exitoso - limpiando selección...');
+    limpiarSeleccionCompleta();
+
+    btn.html(originalText)
+    .addClass('btn-enviar-seleccionados')
+    .css('background', '')
+    .prop('disabled', false);
+
+    window.location.href = '/ComprasInternacionales/GestionSolicitudesInternacional';
+    });
+    } else {
+    // Restaurar botón si el usuario cancela o falla algo
+    btn.html(originalText).prop('disabled', false);
+    console.log('❌ Envío cancelado o falló - manteniendo selección');
+    }
+    });
+    }
+
+    // ===== FUNCIONES DE UI ADICIONALES (actualizadas con toastMixin y SweetAlert) =====
+
+    function agregarBotonesPersistencia() {
+    const botonesHTML = `
+    <div class="persistence-controls mt-2" style="display: flex; gap: 0.5rem; justify-content: center;">
+    <button type="button" id="btnLimpiarSeleccion" class="btn btn-sm btn-outline-warning">
+    <i class="fas fa-eraser me-1"></i>Limpiar Selección
+    </button>
+    <button type="button" id="btnInfoStorage" class="btn btn-sm btn-outline-info">
+    <i class="fas fa-info-circle me-1"></i>Info Guardado
+    </button>
+    <button type="button" id="btnLimpiarTodos" class="btn btn-sm btn-outline-danger">
+    <i class="fas fa-trash me-1"></i>Limpiar Todos los Datos
+    </button>
+    </div>
+
+    <style>
+    /* Estilos para indicar campos actualizados */
+    .campo-actualizado {
+    animation: pulseGreen 0.6s ease-in-out;
+    border-color: #28a745 !important;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25) !important;
+    }
+
+    @@keyframes pulseGreen {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+    }
+
+    /* Mejorar visibilidad de filas seleccionadas */
+    .selected {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    }
+
+    .selected td {
+    border-color: #007bff !important;
+    }
+
+    /* Indicador de datos guardados */
+    .animate__pulse {
+    animation: pulse 0.6s;
+    }
+
+    @@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+    }
+    </style>
+    `;
+
+    $('.action-panel').append(botonesHTML);
+
+    // Eventos para los nuevos botones con SweetAlert
+    $('#btnLimpiarSeleccion').on('click', function () {
+    Swal.fire({
+    title: '¿Estás seguro?',
+    text: '¿Deseas limpiar toda la selección guardada para este inventario?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, limpiar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#ffc107',
+    cancelButtonColor: '#6c757d'
+    }).then((result) => {
+    if (result.isConfirmed) {
+    limpiarSeleccionCompleta();
+    }
+    });
+    });
+
+    $('#btnInfoStorage').on('click', function () {
+    mostrarInfoStorage();
+    });
+
+    $('#btnLimpiarTodos').on('click', function () {
+    Swal.fire({
+    title: '¡Atención!',
+    text: '¿Estás seguro de que deseas limpiar TODOS los datos guardados de inventarios anteriores? Esta acción no se puede deshacer.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, eliminar todo',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    dangerMode: true
+    }).then((result) => {
+    if (result.isConfirmed) {
+    limpiarTodosLosDatos();
+    }
+    });
+    });
+
+    // Ejecutar limpieza automática de datos antiguos
+    setTimeout(() => {
+    limpiarDatosAntiguos();
+    }, 2000);
+    }
+
+    function mostrarIndicadorGuardado() {
+    // Pequeña animación en el contador para indicar que se guardó
+    const selectionInfo = $('#selectionInfo');
+    selectionInfo.addClass('animate__pulse');
+    setTimeout(() => {
+    selectionInfo.removeClass('animate__pulse');
+    }, 600);
+    }
+
+    function mostrarNotificacionCarga() {
+    const cantidad = productosSeleccionados.length;
+    toastMixin.fire({
+    icon: 'info',
+    title: `Se restauró una selección previa de ${cantidad} producto${cantidad !== 1 ? 's' : ''} para el ID ${currentEncabezadoId}`
+    });
+    }
+
+    function mostrarAdvertencia(mensaje) {
+    toastMixin.fire({
+    icon: 'warning',
+    title: mensaje
+    });
+    }
+
+    function mostrarInfoStorage() {
+    const expiry = localStorage.getItem(STORAGE_EXPIRY_KEY);
+    const now = new Date().getTime();
+
+    let mensaje = '';
+    let tiempoInfo = '';
+    let estadoExpiracion = '';
+
+    if (expiry) {
+    const tiempoExpiry = parseInt(expiry);
+    const tiempoRestante = tiempoExpiry - now;
+    const horasRestantes = Math.floor(tiempoRestante / (1000 * 60 * 60));
+    const minutosRestantes = Math.floor((tiempoRestante % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (tiempoRestante > 0) {
+    tiempoInfo = `${horasRestantes}h ${minutosRestantes}m`;
+    estadoExpiracion = '✅ Activo';
+    mensaje = 'Los datos se eliminarán automáticamente cuando expire el tiempo.';
+    } else {
+    tiempoInfo = 'Expirado';
+    estadoExpiracion = '⚠️ Expirado';
+    mensaje = 'Los datos han expirado y deberían eliminarse automáticamente.';
+    }
+    } else {
+    tiempoInfo = 'No configurado';
+    estadoExpiracion = '❓ Sin configurar';
+    mensaje = 'No hay configuración de expiración activa.';
+    }
+
+    // Obtener información adicional del localStorage
+    let tamañoStorage = 0;
+    let datosExistentes = false;
+
+    try {
+    const datos = localStorage.getItem(STORAGE_KEY);
+    if (datos) {
+    tamañoStorage = Math.round(datos.length / 1024 * 100) / 100;
+    datosExistentes = true;
+    }
+    } catch (error) {
+    console.error('Error al obtener información del storage:', error);
+    }
+
+    Swal.fire({
+    title: 'Información de Almacenamiento',
+    html: `
+    <div style="text-align: left;">
+    <p><strong>ID Encabezado:</strong> ${currentEncabezadoId || '❌ No detectado'}</p>
+    <p><strong>Selección actual:</strong> ${productosSeleccionados.length} productos</p>
+    <p><strong>Datos guardados:</strong> ${datosExistentes ? '✅ SÍ' : '❌ NO'}</p>
+    <p><strong>Tamaño en storage:</strong> ${tamañoStorage} KB</p>
+    <p><strong>Estado:</strong> ${estadoExpiracion}</p>
+    <p><strong>Tiempo restante:</strong> ${tiempoInfo}</p>
+    <p><strong>Clave de almacenamiento:</strong> <code style="font-size: 0.8em;">${STORAGE_KEY}</code></p>
+    <hr>
+    <p style="font-size: 0.9em; color: #6c757d;">${mensaje}</p>
+    </div>
+    `,
+    icon: 'info',
+    confirmButtonText: 'Entendido',
+    confirmButtonColor: '#17a2b8',
+    width: '500px'
+    });
+    }
+
+    function limpiarTodosLosDatos() {
+    try {
+    const keys = Object.keys(localStorage);
+    const patronInventario = /^inventario_(productos_seleccionados|seleccion_expiry)_/;
+    let contador = 0;
+    const datosEliminados = [];
+
+    keys.forEach(key => {
+    if (patronInventario.test(key)) {
+    // Extraer ID antes de eliminar
+    const parts = key.split('_');
+    const id = parts[parts.length - 1];
+
+    localStorage.removeItem(key);
+    contador++;
+
+    if (key.includes('productos_seleccionados') && !datosEliminados.includes(id)) {
+    datosEliminados.push(id);
+    }
+    }
+    });
+
+    console.log(`🧹 Limpieza completa realizada:`, {
+    registrosEliminados: contador,
+    idsAfectados: datosEliminados
+    });
+
+    toastMixin.fire({
+    icon: 'success',
+    title: `Se eliminaron ${contador} registros de ${datosEliminados.length} inventarios anteriores`
+    });
+
+    } catch (error) {
+    console.error('❌ Error al limpiar todos los datos:', error);
+    toastMixin.fire({
+    icon: 'error',
+    title: 'Error al limpiar los datos'
+    });
+    }
+    }
+
+
+    // Función auxiliar para limpiar (mantener compatibilidad)
+    function limpiarSeleccion() {
+    limpiarSeleccionCompleta();
+    }
+
+    // ===== EVENTOS DE PÁGINA =====
+
+    // Limpiar datos antes de que se cierre/recargue la página (opcional)
+    window.addEventListener('beforeunload', function(e) {
+    // Solo guardar si hay selecciones activas
+    if (productosSeleccionados.length > 0) {
+    guardarSeleccionEnStorage();
+    }
+    });
+
+    // Detectar cambios de visibilidad de página (cuando el usuario cambia de tab)
+    document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+    // Página se oculta - guardar datos
+    if (productosSeleccionados.length > 0) {
+    guardarSeleccionEnStorage();
+    }
+    } else {
+    // Página se muestra - verificar si los datos siguen siendo válidos
+    if (verificarExpiracion()) {
+    limpiarStorageExpirado();
+    // Opcional: notificar al usuario
+    toastMixin.fire({
+    icon: 'warning',
+    title: 'Los datos guardados han expirado y se han eliminado'
+    });
+    }
+    }
+    });
+</script>

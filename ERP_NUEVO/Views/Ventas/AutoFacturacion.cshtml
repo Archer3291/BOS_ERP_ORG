@@ -1,0 +1,2585 @@
+﻿@{
+    ViewBag.Title = "Autofacturación";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Autofacturación · CFDI 4.0</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <!-- jsQR — decodificador de QR client-side -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+    <style>
+                /* ══════════════════════════
+                   TOKENS & RESET
+                ══════════════════════════ */
+                :root {
+                    --navy: #07111f;
+                    --navy-mid: #0d1e33;
+                    --navy-soft: #142540;
+                    --blue: #2563eb;
+                    --blue-light: #3b82f6;
+                    --blue-glow: rgba(37,99,235,.18);
+                    --emerald: #10b981;
+                    --rose: #f43f5e;
+                    --amber: #f59e0b;
+                    /* Glass surfaces — todo translúcido para ver el canvas */
+                    --glass-card: rgba(255,255,255,0.07);
+                    --glass-card-head: rgba(255,255,255,0.05);
+                    --glass-card-body: rgba(255,255,255,0.04);
+                    --glass-input: rgba(255,255,255,0.08);
+                    --glass-input-focus: rgba(255,255,255,0.13);
+                    --glass-border: rgba(255,255,255,0.13);
+                    --glass-border-soft: rgba(255,255,255,0.08);
+                    --glass-table-head: rgba(255,255,255,0.06);
+                    /* Texto sobre oscuro */
+                    --text-on-dark: #f1f5f9;
+                    --text-on-dark-2: rgba(255,255,255,0.60);
+                    --text-on-dark-3: rgba(255,255,255,0.32);
+                    /* Mantener para compatibilidad */
+                    --surface: rgba(255,255,255,0.07);
+                    --surface-2: rgba(255,255,255,0.04);
+                    --surface-3: rgba(255,255,255,0.06);
+                    --border: rgba(255,255,255,0.13);
+                    --text: #f1f5f9;
+                    --text-2: rgba(255,255,255,0.60);
+                    --text-3: rgba(255,255,255,0.32);
+                    --r-card: 16px;
+                    --r-input: 10px;
+                    --r-btn: 10px;
+                    --shadow-glass: 0 8px 32px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.10);
+                    --shadow-sm: 0 4px 16px rgba(0,0,0,0.28);
+                    --shadow-md: 0 8px 32px rgba(0,0,0,0.36);
+                    --t: .18s ease;
+                }
+
+                *, *::before, *::after {
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                html {
+                    background: #0d1e33;
+                    min-height: 100vh;
+                }
+
+                body {
+                    font-family: 'Sora', sans-serif;
+                    background: transparent !important;
+                    color: var(--text-on-dark);
+                    -webkit-font-smoothing: antialiased;
+                    min-height: 100vh;
+                }
+
+                /* Canvas fijo en el fondo */
+                #af-bg-canvas {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    z-index: 0;
+                    pointer-events: none;
+                    display: block;
+                }
+
+                /* Page wrapper */
+                .af-page {
+                    min-height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    position: relative;
+                    background: transparent !important;
+                }
+
+                /* ══════════════════════════
+                   TOP BAR — glassmorphism
+                ══════════════════════════ */
+                .af-topbar {
+                    background: rgba(7,17,31,0.72);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border-bottom: 1px solid rgba(255,255,255,0.09);
+                    padding: .625rem 1.25rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1000;
+                }
+
+                .af-brand {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    color: #f9fafb;
+                    font-weight: 700;
+                    font-size: .9rem;
+                    text-decoration: none;
+                }
+
+                .af-brand-mark {
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 9px;
+                    background: var(--blue);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 800;
+                    font-size: .85rem;
+                    color: #fff;
+                    letter-spacing: -.03em;
+                    flex-shrink: 0;
+                    box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 0 16px rgba(37,99,235,.35);
+                }
+
+                .af-brand-pill {
+                    background: rgba(37,99,235,.22);
+                    color: #93c5fd;
+                    font-size: .62rem;
+                    font-weight: 700;
+                    padding: 3px 8px;
+                    border-radius: 5px;
+                    letter-spacing: .06em;
+                    border: 1px solid rgba(37,99,235,.28);
+                }
+
+                .af-topbar-meta {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: .72rem;
+                    color: rgba(255,255,255,.38);
+                }
+
+                .af-dot-live {
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 50%;
+                    background: var(--emerald);
+                    animation: blink 2s infinite;
+                    box-shadow: 0 0 0 3px rgba(16,185,129,.2);
+                }
+
+                @@keyframes blink {
+                    0%, 100% {
+                        box-shadow: 0 0 0 3px rgba(16,185,129,.2);
+                    }
+
+                    50% {
+                        box-shadow: 0 0 0 5px rgba(16,185,129,.06);
+                    }
+                }
+
+                /* ══════════════════════════
+                   PROGRESS TRACK — glass
+                ══════════════════════════ */
+                .af-progress-track {
+                    background: rgba(13,30,51,0.60);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border-bottom: 1px solid rgba(255,255,255,0.07);
+                    padding: 0 1.25rem;
+                    position: relative;
+                    z-index: 999;
+                }
+
+                .af-steps-row {
+                    display: flex;
+                    align-items: stretch;
+                    max-width: 860px;
+                    margin: 0 auto;
+                    height: 52px;
+                }
+
+                .af-step {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 0 .9rem;
+                    cursor: pointer;
+                    border-bottom: 2px solid transparent;
+                    transition: border-color var(--t), opacity var(--t);
+                    user-select: none;
+                    position: relative;
+                }
+
+                .af-step-bubble {
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    background: rgba(255,255,255,.08);
+                    color: rgba(255,255,255,.35);
+                    font-size: .65rem;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    transition: all var(--t);
+                }
+
+                .af-step-lbl {
+                    font-size: .78rem;
+                    font-weight: 500;
+                    color: rgba(255,255,255,.35);
+                    white-space: nowrap;
+                    transition: color var(--t);
+                }
+
+                .af-step.is-active {
+                    border-bottom-color: var(--blue-light);
+                }
+
+                    .af-step.is-active .af-step-bubble {
+                        background: var(--blue);
+                        color: #fff;
+                        box-shadow: 0 0 10px rgba(37,99,235,.5);
+                    }
+
+                    .af-step.is-active .af-step-lbl {
+                        color: #fff;
+                        font-weight: 600;
+                    }
+
+                .af-step.is-done .af-step-bubble {
+                    background: var(--emerald);
+                    color: #fff;
+                    box-shadow: 0 0 8px rgba(16,185,129,.4);
+                }
+
+                .af-step.is-done .af-step-lbl {
+                    color: rgba(255,255,255,.4);
+                }
+
+                .af-step-sep {
+                    width: 24px;
+                    height: 1px;
+                    background: rgba(255,255,255,.08);
+                    align-self: center;
+                    flex-shrink: 0;
+                }
+
+                /* ── Progress summary (right side) ── */
+                .af-progress-summary {
+                    margin-left: auto;
+                    display: flex;
+                    align-items: center;
+                }
+
+                .af-summary-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                    padding: .3rem .8rem;
+                    border-radius: 7px;
+                    background: rgba(255,255,255,.06);
+                    border: 1px solid rgba(255,255,255,.09);
+                    color: rgba(255,255,255,.65);
+                    font-size: .73rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: background var(--t);
+                    white-space: nowrap;
+                    font-family: 'Sora', sans-serif;
+                }
+
+                    .af-summary-btn:hover {
+                        background: rgba(255,255,255,.11);
+                    }
+
+                    .af-summary-btn .chevron {
+                        font-size: .6rem;
+                        color: rgba(255,255,255,.3);
+                        transition: transform .2s;
+                    }
+
+                    .af-summary-btn.open .chevron {
+                        transform: rotate(180deg);
+                    }
+
+                /* Dropdown */
+                .af-summary-dropdown {
+                    display: none;
+                    position: absolute;
+                    top: calc(100% + 8px);
+                    right: 0;
+                    width: 256px;
+                    background: rgba(14,28,50,0.88);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255,255,255,.10);
+                    border-radius: 13px;
+                    box-shadow: 0 16px 48px rgba(0,0,0,.45);
+                    z-index: 9999;
+                    overflow: hidden;
+                }
+
+                    .af-summary-dropdown.open {
+                        display: block;
+                        animation: slideDown .16s ease;
+                    }
+
+                @@keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-5px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                .af-dd-head {
+                    background: rgba(255,255,255,.04);
+                    padding: .7rem 1rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-bottom: 1px solid rgba(255,255,255,.07);
+                }
+
+                .af-dd-head-title {
+                    font-size: .7rem;
+                    font-weight: 700;
+                    color: rgba(255,255,255,.75);
+                    text-transform: uppercase;
+                    letter-spacing: .06em;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                    .af-dd-head-title i {
+                        color: var(--amber);
+                    }
+
+                .af-dd-badge-new {
+                    font-size: .58rem;
+                    font-weight: 700;
+                    padding: 2px 7px;
+                    border-radius: 99px;
+                    background: rgba(37,99,235,.2);
+                    color: #93c5fd;
+                    border: 1px solid rgba(37,99,235,.25);
+                }
+
+                .af-dd-body {
+                    padding: .7rem 1rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: .55rem;
+                }
+
+                .af-dd-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-size: .74rem;
+                }
+
+                .af-dd-lbl {
+                    color: rgba(255,255,255,.30);
+                }
+
+                .af-dd-val {
+                    color: rgba(255,255,255,.78);
+                    font-weight: 500;
+                }
+
+                .af-dd-divider {
+                    height: 1px;
+                    background: rgba(255,255,255,.07);
+                }
+
+                .af-dd-step-block {
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    padding: .5rem .7rem;
+                    border-radius: 8px;
+                    background: rgba(37,99,235,.12);
+                    border: 1px solid rgba(37,99,235,.20);
+                }
+
+                .af-dd-step-num {
+                    width: 26px;
+                    height: 26px;
+                    border-radius: 50%;
+                    background: var(--blue);
+                    color: #fff;
+                    font-size: .73rem;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .af-dd-step-name {
+                    font-size: .77rem;
+                    font-weight: 600;
+                    color: rgba(255,255,255,.85);
+                }
+
+                .af-dd-step-sub {
+                    font-size: .65rem;
+                    color: rgba(255,255,255,.35);
+                }
+
+                .af-dd-footer {
+                    padding: .6rem 1rem;
+                    border-top: 1px solid rgba(255,255,255,.07);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 5px;
+                }
+
+                .af-dd-btn-primary {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    width: 100%;
+                    padding: .48rem;
+                    border-radius: 7px;
+                    font-size: .73rem;
+                    font-weight: 600;
+                    background: var(--blue);
+                    color: #fff;
+                    border: none;
+                    cursor: pointer;
+                    font-family: 'Sora', sans-serif;
+                    transition: opacity var(--t);
+                }
+
+                    .af-dd-btn-primary:hover {
+                        opacity: .86;
+                    }
+
+                .af-dd-btn-ghost {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    width: 100%;
+                    padding: .44rem;
+                    border-radius: 7px;
+                    font-size: .73rem;
+                    font-weight: 500;
+                    background: transparent;
+                    color: rgba(255,255,255,.4);
+                    border: 1px solid rgba(255,255,255,.09);
+                    cursor: pointer;
+                    font-family: 'Sora', sans-serif;
+                    transition: background var(--t), color var(--t);
+                }
+
+                    .af-dd-btn-ghost:hover {
+                        background: rgba(255,255,255,.07);
+                        color: rgba(255,255,255,.7);
+                    }
+
+                /* ══════════════════════════
+                   LAYOUT
+                ══════════════════════════ */
+                .af-main {
+                    flex: 1;
+                    padding: 2rem 1rem;
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .af-container {
+                    max-width: 860px;
+                    margin: 0 auto;
+                }
+
+                /* Progress line */
+                .af-prog-bar {
+                    height: 3px;
+                    background: rgba(255,255,255,0.08);
+                    border-radius: 99px;
+                    overflow: hidden;
+                    margin-bottom: 1.75rem;
+                }
+
+                .af-prog-fill {
+                    height: 100%;
+                    background: linear-gradient(90deg, var(--blue), #60a5fa);
+                    border-radius: 99px;
+                    transition: width .4s cubic-bezier(.4,0,.2,1);
+                }
+
+                /* ══════════════════════════
+                   PANELS
+                ══════════════════════════ */
+                .af-panel {
+                    display: none;
+                }
+
+                    .af-panel.is-active {
+                        display: block;
+                        animation: panelIn .22s ease;
+                    }
+
+                @@keyframes panelIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(7px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                /* ══════════════════════════
+                   CARD — glassmorphism total
+                ══════════════════════════ */
+                .af-card {
+                    background: var(--glass-card);
+                    border: 1px solid var(--glass-border);
+                    border-radius: var(--r-card);
+                    box-shadow: var(--shadow-glass);
+                    overflow: hidden;
+                    margin-bottom: 1.25rem;
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                }
+
+                .af-card-head {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding: 1.1rem 1.35rem;
+                    border-bottom: 1px solid var(--glass-border-soft);
+                    background: var(--glass-card-head);
+                }
+
+                .af-card-icon {
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 10px;
+                    background: rgba(37,99,235,0.20);
+                    border: 1px solid rgba(37,99,235,0.30);
+                    color: #93c5fd;
+                    font-size: .88rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                .af-card-title {
+                    font-size: .95rem;
+                    font-weight: 700;
+                    color: var(--text-on-dark);
+                }
+
+                .af-card-sub {
+                    font-size: .74rem;
+                    color: var(--text-on-dark-2);
+                    margin-top: .1rem;
+                }
+
+                .af-card-body {
+                    padding: 1.35rem;
+                    background: var(--glass-card-body);
+                }
+
+                /* ══════════════════════════
+                   ALERT
+                ══════════════════════════ */
+                .af-alert {
+                    background: rgba(37,99,235,0.12);
+                    border: 1px solid rgba(37,99,235,0.25);
+                    border-radius: 10px;
+                    padding: .7rem 1rem;
+                    font-size: .8rem;
+                    color: rgba(255,255,255,0.75);
+                    display: flex;
+                    align-items: flex-start;
+                    gap: .65rem;
+                    margin-bottom: 1.1rem;
+                }
+
+                    .af-alert i {
+                        color: #60a5fa;
+                        flex-shrink: 0;
+                        margin-top: .05rem;
+                    }
+
+                    .af-alert strong {
+                        color: #93c5fd;
+                    }
+
+                /* ══════════════════════════
+                   FORM ELEMENTS
+                ══════════════════════════ */
+                .af-label {
+                    display: block;
+                    font-size: .68rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: .07em;
+                    color: var(--text-on-dark-2);
+                    margin-bottom: .35rem;
+                }
+
+                .af-input,
+                .af-select {
+                    width: 100%;
+                    height: 43px;
+                    background: var(--glass-input);
+                    border: 1.5px solid rgba(255,255,255,0.15);
+                    border-radius: var(--r-input);
+                    padding: 0 .9rem;
+                    font-size: .865rem;
+                    font-family: 'Sora', sans-serif;
+                    color: var(--text-on-dark);
+                    outline: none;
+                    transition: border-color var(--t), box-shadow var(--t), background var(--t);
+                }
+
+                    .af-input:hover,
+                    .af-select:hover {
+                        background: rgba(255,255,255,0.11);
+                        border-color: rgba(255,255,255,0.22);
+                    }
+
+                    .af-input:focus,
+                    .af-select:focus {
+                        background: var(--glass-input-focus);
+                        border-color: var(--blue);
+                        box-shadow: 0 0 0 3px rgba(37,99,235,0.22);
+                    }
+
+                    .af-input::placeholder {
+                        color: var(--text-on-dark-3);
+                    }
+
+                    .af-input.mono {
+                        font-family: 'DM Mono', monospace;
+                        font-size: .84rem;
+                        letter-spacing: .02em;
+                    }
+
+                    .af-input.is-error,
+                    .af-select.is-error {
+                        border-color: var(--rose) !important;
+                        background: rgba(244,63,94,0.08) !important;
+                    }
+
+                .af-select {
+                    appearance: none;
+                    padding-right: 2.2rem;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath fill='%2394a3b8' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right .75rem center;
+                    cursor: pointer;
+                }
+
+                    .af-select option {
+                        background: #142540;
+                        color: #f1f5f9;
+                    }
+
+                .af-hint {
+                    font-size: .69rem;
+                    color: var(--text-on-dark-3);
+                    margin-top: .28rem;
+                }
+
+                .af-error {
+                    font-size: .69rem;
+                    color: #fb7185;
+                    margin-top: .28rem;
+                    display: none;
+                }
+
+                    .af-error.is-visible {
+                        display: block;
+                    }
+
+                /* ══════════════════════════
+                   BUTTONS
+                ══════════════════════════ */
+                .af-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    padding: .55rem 1.35rem;
+                    border-radius: var(--r-btn);
+                    font-size: .86rem;
+                    font-weight: 600;
+                    font-family: 'Sora', sans-serif;
+                    cursor: pointer;
+                    border: 1.5px solid rgba(255,255,255,0.15);
+                    background: rgba(255,255,255,0.07);
+                    color: rgba(255,255,255,0.75);
+                    transition: all var(--t);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                }
+
+                    .af-btn:hover {
+                        background: rgba(255,255,255,0.13);
+                        border-color: rgba(255,255,255,0.28);
+                        color: #fff;
+                        transform: translateY(-1px);
+                    }
+
+                    .af-btn:disabled {
+                        opacity: .4;
+                        cursor: not-allowed;
+                        transform: none;
+                    }
+
+                .af-btn-primary {
+                    background: rgba(37,99,235,0.85);
+                    border-color: rgba(37,99,235,0.70);
+                    color: #fff;
+                }
+
+                    .af-btn-primary:hover {
+                        background: var(--blue);
+                        border-color: var(--blue);
+                        color: #fff;
+                        box-shadow: 0 4px 16px rgba(37,99,235,0.40);
+                    }
+
+                .af-btn-success {
+                    background: rgba(16,185,129,0.80);
+                    border-color: rgba(16,185,129,0.60);
+                    color: #fff;
+                }
+
+                    .af-btn-success:hover {
+                        background: var(--emerald);
+                        border-color: var(--emerald);
+                        color: #fff;
+                        box-shadow: 0 4px 16px rgba(16,185,129,0.35);
+                    }
+
+                .af-btn-search {
+                    background: rgba(37,99,235,0.85);
+                    border-color: rgba(37,99,235,0.60);
+                    color: #fff;
+                }
+
+                    .af-btn-search:hover {
+                        background: var(--blue);
+                        border-color: var(--blue);
+                        color: #fff;
+                        box-shadow: 0 4px 16px rgba(37,99,235,0.40);
+                    }
+
+                /* ══════════════════════════
+                   TICKET
+                ══════════════════════════ */
+                .af-ticket-found {
+                    display: none;
+                    margin-top: 1.35rem;
+                }
+
+                .af-mini-label {
+                    font-size: .68rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: .07em;
+                    color: var(--text-on-dark-3);
+                    margin-bottom: .6rem;
+                }
+
+                .af-ticket-box {
+                    border: 1.5px solid rgba(37,99,235,0.50);
+                    border-radius: 12px;
+                    padding: 1.1rem 1.2rem;
+                    background: rgba(37,99,235,0.10);
+                    margin-bottom: 1.25rem;
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                }
+
+                .tc-folio {
+                    font-family: 'DM Mono', monospace;
+                    font-size: .85rem;
+                    font-weight: 600;
+                    color: #93c5fd;
+                }
+
+                .tc-date {
+                    font-size: .73rem;
+                    color: var(--text-on-dark-2);
+                }
+
+                .tc-total {
+                    font-family: 'DM Mono', monospace;
+                    font-weight: 700;
+                    font-size: 1.05rem;
+                    color: var(--text-on-dark);
+                }
+
+                .af-check-icon {
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    background: var(--emerald);
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: .6rem;
+                    flex-shrink: 0;
+                    box-shadow: 0 0 10px rgba(16,185,129,0.45);
+                }
+
+                /* ══════════════════════════
+                   CONCEPTS TABLE
+                ══════════════════════════ */
+                .af-table-wrap {
+                    border: 1px solid rgba(255,255,255,0.10);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    background: rgba(255,255,255,0.04);
+                }
+
+                .af-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: .8rem;
+                }
+
+                    .af-table th {
+                        background: rgba(255,255,255,0.06);
+                        color: rgba(255,255,255,0.38);
+                        font-size: .65rem;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        letter-spacing: .07em;
+                        padding: .55rem .8rem;
+                        border-bottom: 1px solid rgba(255,255,255,0.08);
+                        text-align: left;
+                    }
+
+                    .af-table td {
+                        padding: .55rem .8rem;
+                        border-bottom: 1px solid rgba(255,255,255,0.06);
+                        color: var(--text-on-dark);
+                        vertical-align: middle;
+                    }
+
+                    .af-table tr:last-child td {
+                        border-bottom: none;
+                    }
+
+                    .af-table .mono {
+                        font-family: 'DM Mono', monospace;
+                        font-size: .78rem;
+                    }
+
+                    .af-table tr:hover td {
+                        background: rgba(255,255,255,0.04);
+                    }
+
+                .af-total-bar {
+                    background: rgba(7,17,31,0.65);
+                    border: 1px solid rgba(255,255,255,0.10);
+                    border-radius: 10px;
+                    padding: .85rem 1.1rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-top: .75rem;
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                }
+
+                    .af-total-bar span {
+                        color: rgba(255,255,255,.55);
+                        font-size: .75rem;
+                        font-weight: 600;
+                    }
+
+                    .af-total-bar strong {
+                        color: #fff;
+                        font-family: 'DM Mono', monospace;
+                        font-size: 1.1rem;
+                        font-weight: 700;
+                    }
+
+                /* ══════════════════════════
+                   STEP NAV
+                ══════════════════════════ */
+                .af-step-nav {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    gap: .65rem;
+                    padding-top: 1.1rem;
+                    margin-top: .5rem;
+                    border-top: 1px solid rgba(255,255,255,0.08);
+                }
+
+                    .af-step-nav.space-between {
+                        justify-content: space-between;
+                    }
+
+                /* ══════════════════════════
+                   CFDI PREVIEW
+                ══════════════════════════ */
+                .cfdi-frame {
+                    border: 1px solid rgba(255,255,255,0.12);
+                    border-radius: 13px;
+                    overflow: hidden;
+                    font-size: .78rem;
+                    background: rgba(255,255,255,0.04);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                }
+
+                .cfdi-head {
+                    background: rgba(7,17,31,0.75);
+                    padding: .95rem 1.15rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    gap: 1rem;
+                    flex-wrap: wrap;
+                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                }
+
+                    .cfdi-head .ch-name {
+                        color: #fff;
+                        font-weight: 700;
+                        font-size: .9rem;
+                    }
+
+                    .cfdi-head .ch-sub {
+                        color: rgba(255,255,255,.45);
+                        font-size: .69rem;
+                        margin-top: .15rem;
+                    }
+
+                .cfdi-badge {
+                    background: rgba(255,255,255,.10);
+                    color: #f1f5f9;
+                    border-radius: 5px;
+                    padding: .2em .65em;
+                    font-size: .67rem;
+                    font-weight: 700;
+                    border: 1px solid rgba(255,255,255,0.12);
+                }
+
+                .cfdi-body {
+                    padding: 1rem 1.15rem;
+                    background: transparent;
+                }
+
+                .cfdi-section-lbl {
+                    font-size: .65rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: .07em;
+                    color: rgba(255,255,255,0.28);
+                    margin-bottom: .5rem;
+                }
+
+                .cfdi-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: .28rem 0;
+                    border-bottom: 1px solid rgba(255,255,255,0.06);
+                    gap: 1rem;
+                }
+
+                    .cfdi-row:last-of-type {
+                        border-bottom: none;
+                    }
+
+                    .cfdi-row .cr-lbl {
+                        color: var(--text-on-dark-2);
+                        font-size: .72rem;
+                        flex-shrink: 0;
+                    }
+
+                    .cfdi-row .cr-val {
+                        font-weight: 600;
+                        color: var(--text-on-dark);
+                        text-align: right;
+                        font-family: 'DM Mono', monospace;
+                        font-size: .74rem;
+                        word-break: break-all;
+                    }
+
+                        .cfdi-row .cr-val.plain {
+                            font-family: 'Sora', sans-serif;
+                            font-size: .78rem;
+                        }
+
+                .cfdi-sep {
+                    height: 1px;
+                    background: rgba(255,255,255,0.08);
+                    margin: .65rem 0;
+                }
+
+                .cfdi-totals-block {
+                    background: rgba(0,0,0,0.22);
+                    border: 1px solid rgba(255,255,255,0.09);
+                    border-radius: 9px;
+                    padding: .75rem .95rem;
+                    margin-top: .6rem;
+                }
+
+                .cfdi-t-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: .2rem 0;
+                }
+
+                    .cfdi-t-row .ctl {
+                        color: var(--text-on-dark-2);
+                        font-size: .74rem;
+                    }
+
+                    .cfdi-t-row .ctv {
+                        font-family: 'DM Mono', monospace;
+                        font-weight: 600;
+                        font-size: .78rem;
+                        color: var(--text-on-dark);
+                    }
+
+                    .cfdi-t-row.grand {
+                        border-top: 1px solid rgba(255,255,255,0.10);
+                        margin-top: .4rem;
+                        padding-top: .4rem;
+                    }
+
+                        .cfdi-t-row.grand .ctl {
+                            font-weight: 700;
+                            font-size: .84rem;
+                            color: var(--text-on-dark);
+                        }
+
+                        .cfdi-t-row.grand .ctv {
+                            font-size: 1rem;
+                            color: var(--emerald);
+                            text-shadow: 0 0 12px rgba(16,185,129,0.4);
+                        }
+
+                /* ══════════════════════════
+                   SUCCESS SCREEN
+                ══════════════════════════ */
+                .af-success-wrap {
+                    text-align: center;
+                    padding: 2.25rem 1rem 1.5rem;
+                }
+
+                .af-success-icon {
+                    width: 76px;
+                    height: 76px;
+                    border-radius: 50%;
+                    background: rgba(16,185,129,0.12);
+                    border: 1.5px solid rgba(16,185,129,0.35);
+                    margin: 0 auto 1.1rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 2rem;
+                    color: var(--emerald);
+                    animation: popIn .45s cubic-bezier(.34,1.56,.64,1);
+                    box-shadow: 0 0 32px rgba(16,185,129,0.18);
+                }
+
+                @@keyframes popIn {
+                    from {
+                        transform: scale(0);
+                        opacity: 0;
+                    }
+
+                    to {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                }
+
+                .af-success-wrap h2 {
+                    font-size: 1.2rem;
+                    font-weight: 800;
+                    color: var(--text-on-dark);
+                    margin-bottom: .35rem;
+                }
+
+                .af-success-wrap p {
+                    font-size: .83rem;
+                    color: var(--text-on-dark-2);
+                    max-width: 380px;
+                    margin: 0 auto .5rem;
+                }
+
+                .af-folio-chip {
+                    display: inline-block;
+                    background: rgba(255,255,255,0.07);
+                    border: 1px solid rgba(255,255,255,0.13);
+                    border-radius: 8px;
+                    padding: .4em 1.1em;
+                    font-family: 'DM Mono', monospace;
+                    font-size: .78rem;
+                    font-weight: 500;
+                    color: #93c5fd;
+                    margin: .55rem 0 1.25rem;
+                }
+
+                /* ══════════════════════════
+                   EMAIL BOX
+                ══════════════════════════ */
+                .af-email-box {
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid rgba(255,255,255,0.10);
+                    border-radius: 11px;
+                    padding: .85rem 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: .8rem;
+                    margin-bottom: 1.1rem;
+                }
+
+                    .af-email-box .icon {
+                        font-size: 1.25rem;
+                        color: #60a5fa;
+                        flex-shrink: 0;
+                    }
+
+                .af-email-lbl {
+                    font-size: .74rem;
+                    color: var(--text-on-dark-2);
+                }
+
+                .af-email-addr {
+                    font-family: 'DM Mono', monospace;
+                    font-size: .76rem;
+                    color: #93c5fd;
+                    font-weight: 600;
+                }
+
+                .af-badge-ok {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: .3em;
+                    padding: .28em .8em;
+                    border-radius: 99px;
+                    background: rgba(16,185,129,0.15);
+                    color: #34d399;
+                    font-size: .68rem;
+                    font-weight: 700;
+                    border: 1px solid rgba(16,185,129,0.28);
+                    margin-left: auto;
+                    white-space: nowrap;
+                }
+
+                /* ══════════════════════════
+                   DOWNLOAD BUTTONS
+                ══════════════════════════ */
+                .af-dl-btn {
+                    flex: 1;
+                    border: 1.5px solid rgba(255,255,255,0.13);
+                    background: rgba(255,255,255,0.06);
+                    border-radius: 11px;
+                    padding: .8rem 1rem;
+                    font-size: .8rem;
+                    font-weight: 700;
+                    font-family: 'Sora', sans-serif;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .55rem;
+                    cursor: pointer;
+                    color: var(--text-on-dark);
+                    transition: all var(--t);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                }
+
+                    .af-dl-btn:hover {
+                        border-color: rgba(255,255,255,0.28);
+                        background: rgba(255,255,255,0.12);
+                        color: #fff;
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+                    }
+
+                /* ══════════════════════════
+                   REENVIO
+                ══════════════════════════ */
+                .af-reenvio-row {
+                    display: flex;
+                    gap: .65rem;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    padding-top: 1rem;
+                    border-top: 1px solid rgba(255,255,255,0.08);
+                }
+
+                /* ══════════════════════════
+                   FOOTER
+                ══════════════════════════ */
+                .af-footer {
+                    background: rgba(7,17,31,0.55);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border-top: 1px solid rgba(255,255,255,0.07);
+                    text-align: center;
+                    padding: 1.1rem;
+                    font-size: .72rem;
+                    color: rgba(255,255,255,0.28);
+                    position: relative;
+                    z-index: 1;
+                }
+
+                    .af-footer a {
+                        color: #60a5fa;
+                        text-decoration: none;
+                    }
+
+                        .af-footer a:hover {
+                            text-decoration: underline;
+                        }
+
+                /* ══════════════════════════
+                   RESPONSIVE
+                ══════════════════════════ */
+                @@media (max-width: 576px) {
+                    .af-step-lbl {
+                        display: none;
+                    }
+
+                    .af-main {
+                        padding: 1rem .75rem;
+                    }
+
+                    .af-card-head,
+                    .af-card-body {
+                        padding: 1rem;
+                    }
+
+                    .af-dl-btns {
+                        flex-direction: column;
+                    }
+
+                    .af-step {
+                        padding: 0 .55rem;
+                    }
+                }
+                /* ══════════════════════════
+           QR SCANNER MODAL
+        ══════════════════════════ */
+                .af-qr-overlay {
+                    display: none;
+                    position: fixed;
+                    inset: 0;
+                    z-index: 9000;
+                    background: rgba(7,17,31,0.88);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                    .af-qr-overlay.open {
+                        display: flex;
+                        animation: panelIn .2s ease;
+                    }
+
+                .af-qr-modal {
+                    width: 100%;
+                    max-width: 400px;
+                    margin: 1rem;
+                    background: rgba(20,37,64,0.92);
+                    border: 1px solid rgba(255,255,255,0.13);
+                    border-radius: 18px;
+                    overflow: hidden;
+                    box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+                }
+
+                .af-qr-modal-head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 1rem 1.2rem;
+                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                    background: rgba(255,255,255,0.04);
+                }
+
+                .af-qr-modal-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    font-size: .88rem;
+                    font-weight: 700;
+                    color: #f1f5f9;
+                }
+
+                    .af-qr-modal-title i {
+                        color: #60a5fa;
+                    }
+
+                .af-qr-close {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 8px;
+                    background: rgba(255,255,255,0.07);
+                    border: 1px solid rgba(255,255,255,0.10);
+                    color: rgba(255,255,255,0.5);
+                    font-size: .8rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: all .15s;
+                    font-family: 'Sora',sans-serif;
+                }
+
+                    .af-qr-close:hover {
+                        background: rgba(255,255,255,0.14);
+                        color: #fff;
+                    }
+
+                .af-qr-viewport-wrap {
+                    position: relative;
+                    width: 100%;
+                    background: #000;
+                    aspect-ratio: 1/1;
+                    overflow: hidden;
+                }
+
+                .af-qr-video {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                }
+                /* Visor / crosshair */
+                .af-qr-finder {
+                    position: absolute;
+                    inset: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    pointer-events: none;
+                }
+
+                .af-qr-finder-box {
+                    width: 200px;
+                    height: 200px;
+                    position: relative;
+                }
+
+                    .af-qr-finder-box::before,
+                    .af-qr-finder-box::after,
+                    .af-qr-corner-b,
+                    .af-qr-corner-br {
+                        content: '';
+                        position: absolute;
+                        width: 28px;
+                        height: 28px;
+                        border-color: #60a5fa;
+                        border-style: solid;
+                    }
+
+                    .af-qr-finder-box::before {
+                        top: 0;
+                        left: 0;
+                        border-width: 3px 0 0 3px;
+                        border-radius: 4px 0 0 0;
+                    }
+
+                    .af-qr-finder-box::after {
+                        top: 0;
+                        right: 0;
+                        border-width: 3px 3px 0 0;
+                        border-radius: 0 4px 0 0;
+                    }
+
+                .af-qr-corner-b {
+                    bottom: 0;
+                    left: 0;
+                    border-width: 0 0 3px 3px;
+                    border-radius: 0 0 0 4px;
+                }
+
+                .af-qr-corner-br {
+                    bottom: 0;
+                    right: 0;
+                    border-width: 0 3px 3px 0;
+                    border-radius: 0 0 4px 0;
+                }
+                /* Línea de escaneo animada */
+                .af-qr-scan-line {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    height: 2px;
+                    background: linear-gradient(90deg, transparent, #60a5fa, transparent);
+                    box-shadow: 0 0 8px rgba(96,165,250,0.7);
+                    animation: qrScan 2s ease-in-out infinite;
+                }
+
+                @@keyframes qrScan {
+                    0% {
+                        top: 0;
+                    }
+
+                    50% {
+                        top: calc(100% - 2px);
+                    }
+
+                    100% {
+                        top: 0;
+                    }
+                }
+                /* Canvas oculto para procesar frames */
+                .af-qr-canvas {
+                    display: none;
+                }
+                /* Status */
+                .af-qr-status {
+                    padding: .75rem 1.2rem;
+                    font-size: .78rem;
+                    color: rgba(255,255,255,0.45);
+                    text-align: center;
+                    min-height: 44px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .5rem;
+                }
+
+                    .af-qr-status.ok {
+                        color: #34d399;
+                    }
+
+                    .af-qr-status.err {
+                        color: #fb7185;
+                    }
+                /* Botón QR junto al buscador */
+                .af-btn-qr {
+                    background: rgba(37,99,235,0.18);
+                    border-color: rgba(37,99,235,0.40);
+                    color: #93c5fd;
+                    gap: 6px;
+                }
+
+                    .af-btn-qr:hover {
+                        background: rgba(37,99,235,0.32);
+                        border-color: rgba(37,99,235,0.65);
+                        color: #bfdbfe;
+                    }
+    </style>
+</head>
+<body>
+    <!-- Canvas animado — fijo en el fondo -->
+    <canvas id="af-bg-canvas"></canvas>
+    <input type="hidden" id="af-punto" value="@ViewBag.Punto" />
+    <div class="af-page">
+
+        <!-- ── TOP BAR ──────────────────────────────────────── -->
+        <div class="af-topbar">
+            <div class="af-brand">
+                <div class="af-brand-mark">AF</div>
+                <span>Autofacturación</span>
+                <span class="af-brand-pill">CFDI 4.0</span>
+            </div>
+            <div class="af-topbar-meta">
+                <span class="af-dot-live"></span>
+                <span class="d-none d-sm-inline">NUEVO CFDI</span>
+                <span id="af-tb-folio">Sin folio</span>
+            </div>
+        </div>
+
+        <!-- ── WIZARD / PROGRESS TRACK ──────────────────────── -->
+        <div class="af-progress-track">
+            <div class="af-steps-row">
+                <div class="af-step is-active" data-step="1" onclick="afGoto(1)">
+                    <div class="af-step-bubble">1</div>
+                    <span class="af-step-lbl">Folio de compra</span>
+                </div>
+                <div class="af-step-sep"></div>
+                <div class="af-step" data-step="2" onclick="afGoto(2)">
+                    <div class="af-step-bubble">2</div>
+                    <span class="af-step-lbl">Datos fiscales</span>
+                </div>
+                <div class="af-step-sep"></div>
+                <div class="af-step" data-step="3" onclick="afGoto(3)">
+                    <div class="af-step-bubble">3</div>
+                    <span class="af-step-lbl">Vista previa</span>
+                </div>
+                <div class="af-step-sep"></div>
+                <div class="af-step" data-step="4" onclick="afGoto(4)">
+                    <div class="af-step-bubble">4</div>
+                    <span class="af-step-lbl">Descarga</span>
+                </div>
+
+                <!-- Summary dropdown -->
+                <div class="af-progress-summary" style="position:relative;">
+                    <button type="button" class="af-summary-btn" id="af-summary-btn" onclick="afToggleSummary()">
+                        <span style="width:6px;height:6px;border-radius:50%;background:var(--emerald);display:inline-block;box-shadow:0 0 6px rgba(16,185,129,.5)"></span>
+                        <span>Resumen</span>
+                        <span id="af-wb-folio-mini" class="d-none d-md-inline" style="font-family:'DM Mono',monospace;font-size:.68rem;color:rgba(255,255,255,.4)">Sin folio</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </button>
+                    <div class="af-summary-dropdown" id="af-summary-dd">
+                        <div class="af-dd-head">
+                            <div class="af-dd-head-title"><i class="fas fa-file-invoice"></i> Resumen AF</div>
+                            <span class="af-dd-badge-new">NUEVO</span>
+                        </div>
+                        <div class="af-dd-body">
+                            <div class="af-dd-row">
+                                <span class="af-dd-lbl">Folio</span>
+                                <span class="af-dd-val" id="dd-folio">Sin seleccionar</span>
+                            </div>
+                            <div class="af-dd-row">
+                                <span class="af-dd-lbl">Total</span>
+                                <span class="af-dd-val" id="dd-total">—</span>
+                            </div>
+                            <div class="af-dd-divider"></div>
+                            <div class="af-dd-row">
+                                <span class="af-dd-lbl">RFC</span>
+                                <span class="af-dd-val" id="dd-rfc">—</span>
+                            </div>
+                            <div class="af-dd-row">
+                                <span class="af-dd-lbl">Razón social</span>
+                                <span class="af-dd-val" id="dd-razon">—</span>
+                            </div>
+                            <div class="af-dd-divider"></div>
+                            <div class="af-dd-step-block">
+                                <div class="af-dd-step-num" id="dd-step-num">1</div>
+                                <div>
+                                    <div class="af-dd-step-name" id="dd-step-name">Folio de compra</div>
+                                    <div class="af-dd-step-sub" id="dd-step-sub">Ingresa tu número de ticket</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="af-dd-footer">
+                            <button type="button" class="af-dd-btn-primary" onclick="afTimbrar()">
+                                <i class="fas fa-paper-plane" style="font-size:10px"></i> Timbrar CFDI
+                            </button>
+                            <button type="button" class="af-dd-btn-ghost" onclick="afReset(); afToggleSummary(true)">
+                                <i class="fas fa-redo" style="font-size:10px"></i> Reiniciar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MAIN ─────────────────────────────────────────── -->
+        <main class="af-main">
+            <div class="af-container">
+
+                <!-- Progress bar -->
+                <div class="af-prog-bar">
+                    <div class="af-prog-fill" id="af-prog-fill" style="width:25%"></div>
+                </div>
+
+                <!-- ══ PASO 1: Búsqueda de folio ══════════════════ -->
+                <div class="af-panel is-active" id="af-panel-1">
+                    <div class="af-card">
+                        <div class="af-card-head">
+                            <div class="af-card-icon"><i class="fas fa-search"></i></div>
+                            <div>
+                                <div class="af-card-title">Buscar folio de compra</div>
+                                <div class="af-card-sub">Ingresa el número de ticket o folio de tu venta</div>
+                            </div>
+                        </div>
+                        <div class="af-card-body">
+
+                            <div class="af-alert">
+                                <i class="fas fa-info-circle"></i>
+                                <span>El folio aparece en tu ticket físico o en el correo de confirmación. Tienes <strong>72 horas</strong> desde la compra para generar tu factura.</span>
+                            </div>
+
+                            <div class="row g-2 align-items-end" >
+                                <div class="col-12 col-sm">
+                                    <label class="af-label">Número de folio / ticket</label>
+                                    @* value: lo trae el QR del ticket cuando el cliente llega
+                                       escaneando con la cámara del teléfono (?folio=…). *@
+                                    <input type="text" class="af-input mono" id="inp-folio"
+                                           value="@(ViewBag.FolioPrecargado ?? "")"
+                                           placeholder="Ej. VSUC-VSUC-26-32" maxlength="20" autocomplete="off" />
+                                    <div class="af-hint">Escanea el QR de tu ticket, o captura el folio completo o sus últimos 5 dígitos</div>
+                                    <div class="af-error" id="err-folio">Folio no encontrado. Verifica e intenta de nuevo.</div>
+                                </div>
+                                <div class="col-12 col-sm-auto d-flex gap-2" style="padding-bottom:21px">
+                                    <button type="button" class="af-btn af-btn-qr" onclick="afAbrirQR()" style="height:43px" title="Escanear código QR">
+                                        <i class="fas fa-qrcode" style="font-size:.9rem"></i>
+                                        <span class="d-none d-sm-inline">Escanear QR</span>
+                                    </button>
+                                    <button type="button" class="af-btn af-btn-search" onclick="afBuscarFolio()" style="height:43px">
+                                        <i class="fas fa-search" style="font-size:.78rem"></i> Buscar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Ticket result -->
+                            <div class="af-ticket-found" id="af-ticket-found">
+
+                                <div class="af-mini-label" style="margin-top:1.35rem">Ticket encontrado</div>
+                                <div class="af-ticket-box">
+                                    <div class="d-flex align-items-start justify-content-between gap-3">
+                                        <div style="flex:1;min-width:0">
+                                            <div class="tc-folio" id="tc-folio">—</div>
+                                            <div class="tc-date mt-1" id="tc-date">—</div>
+                                            <div class="tc-date mt-1" id="tc-items">—</div>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-end gap-2">
+                                            <div class="tc-total" id="tc-total">—</div>
+                                            <div class="af-check-icon"><i class="fas fa-check"></i></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="af-mini-label">Detalle de conceptos</div>
+                                <div class="af-table-wrap">
+                                    <table class="af-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Descripción</th>
+                                                <th>Cant.</th>
+                                                <th>P. Unit.</th>
+                                                <th>Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tb-conceptos"></tbody>
+                                    </table>
+                                </div>
+                                <div class="af-total-bar">
+                                    <span>Total de la compra</span>
+                                    <strong id="dt-total">—</strong>
+                                </div>
+
+                                <div class="af-step-nav space-between">
+                                    <button type="button" class="af-btn" onclick="afResetFolio()">
+                                        <i class="fas fa-arrow-left"></i> Buscar otro
+                                    </button>
+                                    <button type="button" class="af-btn af-btn-primary" onclick="afGoto(2)">
+                                        Continuar <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ PASO 2: Datos fiscales ══════════════════════ -->
+                <div class="af-panel" id="af-panel-2">
+                    <div class="af-card">
+                        <div class="af-card-head">
+                            <div class="af-card-icon"><i class="fas fa-building"></i></div>
+                            <div>
+                                <div class="af-card-title">Datos fiscales del receptor</div>
+                                <div class="af-card-sub">Información para timbrar el CFDI 4.0</div>
+                            </div>
+                        </div>
+                        <div class="af-card-body">
+                            <div class="row g-3">
+
+                                <div class="col-12 col-md-6">
+                                    <label class="af-label">RFC *</label>
+                                    <input type="text" class="af-input mono" id="inp-rfc"
+                                           placeholder="XAXX010101000" maxlength="13"
+                                           oninput="this.value=this.value.toUpperCase()" autocomplete="off" />
+                                    <div class="af-error" id="err-rfc">RFC inválido. Verifica el formato.</div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="af-label">Razón social *</label>
+                                    <input type="text" class="af-input" id="inp-razon"
+                                           placeholder="Como aparece en el SAT"
+                                           oninput="this.value=this.value.toUpperCase()" autocomplete="off" />
+                                    <div class="af-error" id="err-razon">Campo requerido.</div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="af-label">Régimen fiscal *</label>
+                                    <select class="af-select" id="inp-regimen">
+                                        <option value="">Selecciona...</option>
+                                        <option value="601">601 · General de Ley Personas Morales</option>
+                                        <option value="603">603 · Personas Morales con Fines no Lucrativos</option>
+                                        <option value="605">605 · Sueldos y Salarios e Ingresos Asimilados</option>
+                                        <option value="606">606 · Arrendamiento</option>
+                                        <option value="612">612 · Personas Físicas con Actividades Empresariales</option>
+                                        <option value="616">616 · Sin obligaciones fiscales</option>
+                                        <option value="621">621 · Incorporación Fiscal</option>
+                                        <option value="625">625 · Actividades Empresariales con ingresos</option>
+                                        <option value="626">626 · Régimen Simplificado de Confianza</option>
+                                    </select>
+                                    <div class="af-error" id="err-regimen">Selecciona un régimen fiscal.</div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="af-label">Uso del CFDI *</label>
+                                    <select class="af-select" id="inp-uso">
+                                        <option value="">Selecciona...</option>
+                                        <option value="G01">G01 · Adquisición de mercancias</option>
+                                        <option value="G03">G03 · Gastos en general</option>
+                                        <option value="I01">I01 · Construcciones</option>
+                                        <option value="I04">I04 · Equipo de computo y accesorios</option>
+                                        <option value="I08">I08 · Otra maquinaria y equipo</option>
+                                        <option value="D01">D01 · Honorarios médicos, dentales y hospitalarios</option>
+                                        <option value="D10">D10 · Pagos por servicios educativos</option>
+                                        <option value="S01">S01 · Sin efectos fiscales</option>
+                                        <option value="CP01">CP01 · Pagos</option>
+                                    </select>
+                                    <div class="af-error" id="err-uso">Selecciona el uso del CFDI.</div>
+                                </div>
+
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="af-label">Código postal fiscal *</label>
+                                    <input type="text" class="af-input mono" id="inp-cp"
+                                           placeholder="78000" maxlength="5" autocomplete="off" />
+                                    <div class="af-hint">CP registrado en el SAT</div>
+                                    <div class="af-error" id="err-cp">CP de 5 dígitos requerido.</div>
+                                </div>
+
+                                <div class="col-12 col-sm-6 col-md-8">
+                                    <label class="af-label">Correo electrónico *</label>
+                                    <input type="email" class="af-input" id="inp-email"
+                                           placeholder="correo@empresa.com" autocomplete="off" />
+                                    <div class="af-hint">Recibirás el XML y PDF aquí</div>
+                                    <div class="af-error" id="err-email">Ingresa un correo electrónico válido.</div>
+                                </div>
+
+                            </div>
+
+                            <div class="af-step-nav space-between">
+                                <button type="button" class="af-btn" onclick="afGoto(1)">
+                                    <i class="fas fa-arrow-left"></i> Anterior
+                                </button>
+                                <button type="button" class="af-btn af-btn-primary" onclick="afValidarDatos()">
+                                    Vista previa <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ PASO 3: Vista previa ═══════════════════════ -->
+                <div class="af-panel" id="af-panel-3">
+                    <div class="af-card">
+                        <div class="af-card-head">
+                            <div class="af-card-icon"><i class="fas fa-eye"></i></div>
+                            <div>
+                                <div class="af-card-title">Vista previa del CFDI</div>
+                                <div class="af-card-sub">Verifica los datos antes de timbrar</div>
+                            </div>
+                        </div>
+                        <div class="af-card-body">
+
+                            <div class="cfdi-frame" id="cfdi-preview"></div>
+
+                            <div class="af-alert" style="margin-top:1rem">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Al confirmar, el CFDI será <strong>timbrado ante el SAT</strong>. Esta acción no puede deshacerse.</span>
+                            </div>
+
+                            <div class="af-step-nav space-between">
+                                <button type="button" class="af-btn" onclick="afGoto(2)">
+                                    <i class="fas fa-arrow-left"></i> Editar datos
+                                </button>
+                                <button type="button" class="af-btn af-btn-success" id="btn-timbrar" onclick="afTimbrar()">
+                                    <i class="fas fa-paper-plane"></i> Confirmar y timbrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ PASO 4: Descarga ════════════════════════════ -->
+                <div class="af-panel" id="af-panel-4">
+                    <div class="af-card">
+                        <div class="af-card-body" style="background:var(--glass-card-body)">
+
+                            <div class="af-success-wrap">
+                                <div class="af-success-icon"><i class="fas fa-check"></i></div>
+                                <h2>¡CFDI timbrado con éxito!</h2>
+                                <p>Tu factura electrónica fue generada y registrada ante el SAT.</p>
+                                <div class="af-folio-chip" id="folio-fiscal-chip">UUID: —</div>
+                            </div>
+
+                            <div class="af-email-box">
+                                <span class="icon"><i class="fas fa-envelope-open-text"></i></span>
+                                <div>
+                                    <div class="af-email-lbl">Enviado a</div>
+                                    <div class="af-email-addr" id="email-enviado">—</div>
+                                </div>
+                                <span class="af-badge-ok"><i class="fas fa-check" style="font-size:.6rem"></i> Enviado</span>
+                            </div>
+
+                            <div class="af-mini-label">Descargar comprobantes</div>
+                            <div class="row g-2 mb-3 af-dl-btns">
+                                <div class="col-12 col-sm-6">
+                                    <button type="button" class="af-dl-btn w-100" onclick="afDescargar('xml')">
+                                        <i class="fas fa-file-code" style="color:var(--amber)"></i> Descargar XML
+                                    </button>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <button type="button" class="af-dl-btn w-100" onclick="afDescargar('pdf')">
+                                        <i class="fas fa-file-pdf" style="color:#fb7185"></i> Descargar PDF
+                                    </button>
+                                </div>
+                                @* Se muestra al timbrar; sirve de respaldo si el navegador
+                                   bloqueó la ventana de impresión automática. *@
+                                <div class="col-12 d-none" id="btn-ticket">
+                                    <button type="button" class="af-dl-btn w-100" onclick="afImprimirTicket(false)">
+                                        <i class="fas fa-receipt" style="color:#34d399"></i> Imprimir ticket
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="af-reenvio-row">
+                                <div class="af-mini-label w-100 mb-1">Reenviar por correo</div>
+                                <input type="email" class="af-input" id="inp-reenvio"
+                                       placeholder="otro@correo.com"
+                                       style="flex:1;min-width:200px;height:40px;font-size:.83rem;" />
+                                <button type="button" class="af-btn af-btn-success" onclick="afReenviar()">
+                                    <i class="fas fa-paper-plane" style="font-size:.73rem"></i> Reenviar
+                                </button>
+                            </div>
+
+                            <div class="d-flex justify-content-center mt-4">
+                                <button type="button" class="af-btn" onclick="afReset()">
+                                    <i class="fas fa-plus-circle"></i> Nueva factura
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /.af-container -->
+        </main>
+
+        <!-- ── FOOTER ─────────────────────────────────────────── -->
+        <footer class="af-footer">
+            Autofacturación · CFDI 4.0 &nbsp;·&nbsp;
+            Servicio disponible <strong style="color:rgba(255,255,255,.45)">72 horas</strong> después de tu compra &nbsp;·&nbsp;
+            <a href="#">Aviso de privacidad</a>
+        </footer>
+        <!-- ── QR SCANNER MODAL ──────────────────────────────── -->
+        <div class="af-qr-overlay" id="af-qr-overlay" onclick="afQROverlayClick(event)">
+            <div class="af-qr-modal">
+                <div class="af-qr-modal-head">
+                    <div class="af-qr-modal-title">
+                        <i class="fas fa-qrcode"></i>
+                        Escanear código QR del ticket
+                    </div>
+                    <button type="button" class="af-qr-close" onclick="afCerrarQR()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="af-qr-viewport-wrap">
+                    <video class="af-qr-video" id="af-qr-video" autoplay muted playsinline></video>
+                    <canvas class="af-qr-canvas" id="af-qr-canvas"></canvas>
+                    <div class="af-qr-finder">
+                        <div class="af-qr-finder-box">
+                            <div class="af-qr-scan-line"></div>
+                            <span class="af-qr-corner-b"></span>
+                            <span class="af-qr-corner-br"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="af-qr-status" id="af-qr-status">
+                    <i class="fas fa-camera" style="font-size:.8rem"></i>
+                    Apunta la cámara al código QR de tu ticket
+                </div>
+            </div>
+        </div>
+    </div><!-- /.af-page -->
+    <!-- AntiForgery token -->
+    <form style="display:none">@Html.AntiForgeryToken()</form>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery -->
+    <script src="~/lib/jquery/jquery.min.js"></script>
+
+    <script>
+/* ════════════════════════════════════════════
+   ANIMATED BACKGROUND CANVAS
+════════════════════════════════════════════ */
+(function () {
+    const canvas = document.getElementById('af-bg-canvas');
+    const ctx    = canvas.getContext('2d');
+
+    const CONFIG = {
+        nodeCount:      120,
+        nodeBaseRadius: 2.4,
+        nodePulseAmp:   1.1,
+        nodeSpeed:      0.28,
+        connectDist:    180,
+        lineOpacityMax: 0.25,
+        dotOpacity:     0.25,
+        colorA:         [37, 99, 235],    /* blue */
+        colorB:         [16, 185, 129],   /* emerald */
+        bgColor:        '#0d1e33',
+        pulseSpeed:     0.025
+    };
+
+    let W, H, nodes = [];
+
+    function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function mkNode() {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = CONFIG.nodeSpeed * (0.4 + Math.random() * 0.6);
+        return {
+            x: Math.random() * W, y: Math.random() * H,
+            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+            r: CONFIG.nodeBaseRadius * (0.7 + Math.random() * 0.6),
+            phase: Math.random() * Math.PI * 2,
+            t: Math.random()
+        };
+    }
+    for (let i = 0; i < CONFIG.nodeCount; i++) nodes.push(mkNode());
+
+    function lerpColor(a, b, t) {
+        return [
+            Math.round(a[0] + (b[0]-a[0])*t),
+            Math.round(a[1] + (b[1]-a[1])*t),
+            Math.round(a[2] + (b[2]-a[2])*t)
+        ];
+    }
+
+    function draw() {
+        ctx.fillStyle = CONFIG.bgColor;
+        ctx.fillRect(0, 0, W, H);
+
+        /* grid sutil */
+        ctx.strokeStyle = 'rgba(37,99,235,0.035)';
+        ctx.lineWidth   = 1;
+        const G = 68;
+        for (let x=0; x<W; x+=G) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+        for (let y=0; y<H; y+=G) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+        /* mover nodos */
+        nodes.forEach(n => {
+            n.x += n.vx; n.y += n.vy;
+            if (n.x < -10) n.x = W+10;
+            if (n.x > W+10) n.x = -10;
+            if (n.y < -10) n.y = H+10;
+            if (n.y > H+10) n.y = -10;
+            n.phase += CONFIG.pulseSpeed;
+        });
+
+        /* conexiones */
+        for (let i=0; i<nodes.length; i++) {
+            for (let j=i+1; j<nodes.length; j++) {
+                const a=nodes[i], b=nodes[j];
+                const dx=a.x-b.x, dy=a.y-b.y;
+                const d=Math.sqrt(dx*dx+dy*dy);
+                if (d > CONFIG.connectDist) continue;
+                const alpha = (1-d/CONFIG.connectDist)*CONFIG.lineOpacityMax;
+                const [r,g,bl] = lerpColor(CONFIG.colorA, CONFIG.colorB, (a.t+b.t)/2);
+                ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+                ctx.strokeStyle = `rgba(${r},${g},${bl},${alpha})`;
+                ctx.lineWidth = 1; ctx.stroke();
+            }
+        }
+
+        /* puntos */
+        nodes.forEach(n => {
+            const radius = n.r + Math.sin(n.phase)*CONFIG.nodePulseAmp;
+            const [r,g,b] = lerpColor(CONFIG.colorA, CONFIG.colorB, n.t);
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, radius, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(${r},${g},${b},${CONFIG.dotOpacity})`;
+            ctx.fill();
+        });
+
+        /* viñeta radial suave */
+        const vig = ctx.createRadialGradient(W/2,H/2,H*0.15, W/2,H/2,H*0.75);
+        vig.addColorStop(0, 'rgba(13,30,51,0)');
+        vig.addColorStop(1, 'rgba(7,17,31,0.45)');
+        ctx.fillStyle = vig;
+        ctx.fillRect(0, 0, W, H);
+
+        requestAnimationFrame(draw);
+    }
+    draw();
+})();
+
+/* ════════════════════════════════════════════
+   CONFIG
+════════════════════════════════════════════ */
+const AF_STEPS = {
+    1: { name: 'Folio de compra',  sub: 'Ingresa tu número de ticket' },
+    2: { name: 'Datos fiscales',   sub: 'RFC, régimen y uso del CFDI' },
+    3: { name: 'Vista previa',     sub: 'Revisa antes de timbrar' },
+    4: { name: 'Descarga',         sub: 'CFDI timbrado y listo' }
+};
+
+const AF_EMISOR = {
+    nombre:  '@Html.Raw(Context.Session.GetString("EmpresaNombre") ?? "COMERCIALIZADORA EL NORTE SA DE CV")',
+    rfc:     '@Html.Raw(Context.Session.GetString("EmpresaRFC")    ?? "CEN200101ABC")',
+    regimen: '601 · General de Ley Personas Morales',
+    cp:      '@Html.Raw(Context.Session.GetString("EmpresaCP")     ?? "78000")',
+    lugar:   '@Html.Raw(Context.Session.GetString("EmpresaLugar")  ?? "78000, San Luis Potosí, S.L.P.")'
+};
+
+let afStep            = 1;
+let ticketActual      = null;
+let datosActual       = null;
+let ticketTokenActual = null;
+
+/* ════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════ */
+const fmt = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+const $el  = id => document.getElementById(id);
+
+function afPost(url, data) {
+    const body  = new URLSearchParams();
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+    if (token) body.append('__RequestVerificationToken', token);
+    Object.entries(data).forEach(([k, v]) => body.append(k, v));
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+    }).then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    });
+}
+
+/* ════════════════════════════════════════════
+   SUMMARY DROPDOWN
+════════════════════════════════════════════ */
+function afToggleSummary(forceClose) {
+    const btn  = $el('af-summary-btn');
+    const dd   = $el('af-summary-dd');
+    const open = dd.classList.contains('open');
+    if (forceClose || open) {
+        dd.classList.remove('open'); btn.classList.remove('open');
+    } else {
+        dd.classList.add('open');    btn.classList.add('open');
+    }
+}
+
+document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.af-progress-summary');
+    if (wrap && !wrap.contains(e.target)) {
+        $el('af-summary-dd')?.classList.remove('open');
+        $el('af-summary-btn')?.classList.remove('open');
+    }
+});
+
+/* ════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════ */
+function afGoto(target) {
+    if (target > afStep && !afValidateStep(afStep)) return;
+
+    document.querySelectorAll('.af-panel').forEach((p, i) => {
+        p.classList.toggle('is-active', i+1 === target);
+    });
+    document.querySelectorAll('.af-step').forEach(s => {
+        const n = parseInt(s.dataset.step);
+        s.classList.remove('is-active','is-done');
+        if (n === target) s.classList.add('is-active');
+        if (n < target)   s.classList.add('is-done');
+    });
+
+    afStep = target;
+    $el('af-prog-fill').style.width = (afStep/4*100) + '%';
+    afUpdateSummary();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function afValidateStep(step) {
+    if (step === 1) {
+        if (!ticketActual) {
+            const err = $el('err-folio');
+            err.textContent = 'Primero busca y selecciona un folio.';
+            err.classList.add('is-visible');
+            return false;
+        }
+        return true;
+    }
+    if (step === 2) return afValidarCampos();
+    return true;
+}
+
+/* ════════════════════════════════════════════
+   PASO 1 — FOLIO
+════════════════════════════════════════════ */
+function afBuscarFolio() {
+    const val   = $el('inp-folio').value.trim().toUpperCase();
+    const errEl = $el('err-folio');
+    const inpEl = $el('inp-folio');
+
+    errEl.classList.remove('is-visible');
+    inpEl.classList.remove('is-error');
+
+    if (!val) {
+        errEl.textContent = 'Ingresa un folio.';
+        errEl.classList.add('is-visible');
+        inpEl.classList.add('is-error');
+        return;
+    }
+
+    const btn = document.querySelector('[onclick="afBuscarFolio()"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+
+   const AF_PUNTO = document.getElementById('af-punto').value;
+
+afPost('@Url.Action("BuscarFolio", "AutoFacturacionPublica")', { punto: AF_PUNTO, folio: val })
+        .then(function(res) {
+            if (!res?.success) {
+                errEl.textContent = res?.message ?? 'Folio no encontrado.';
+                errEl.classList.add('is-visible');
+                inpEl.classList.add('is-error');
+                return;
+            }
+            ticketActual      = res.ticket;
+            ticketTokenActual = res.ticket.ticketToken;
+            afRenderTicket(res.ticket);
+
+            if (res.ticket.rfc)         $el('inp-rfc').value   = res.ticket.rfc;
+            if (res.ticket.razonSocial) $el('inp-razon').value = res.ticket.razonSocial;
+            if (res.ticket.correo)      $el('inp-email').value = res.ticket.correo;
+            if (res.ticket.cp)          $el('inp-cp').value    = res.ticket.cp;
+            if (res.ticket.regimen)     [...$el('inp-regimen').options].forEach(o => { if (o.value===res.ticket.regimen) o.selected=true; });
+            if (res.ticket.usoCfdi)     [...$el('inp-uso').options].forEach(o => { if (o.value===res.ticket.usoCfdi) o.selected=true; });
+
+            $el('af-ticket-found').style.display = 'block';
+            $el('af-tb-folio').textContent = res.ticket.folio;
+            afUpdateSummary();
+        })
+        .catch(function() {
+            errEl.textContent = 'Error al consultar el folio. Intenta de nuevo.';
+            errEl.classList.add('is-visible');
+        })
+        .finally(function() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-search" style="font-size:.78rem"></i> Buscar';
+        });
+}
+
+function afRenderTicket(t) {
+    $el('tc-folio').textContent = t.folio;
+    $el('tc-date').textContent  = t.fecha;
+    $el('tc-items').textContent = t.conceptos.length + ' concepto' + (t.conceptos.length>1?'s':'') + ' · ' + t.sucursal;
+    $el('tc-total').textContent = fmt(t.total);
+    $el('dt-total').textContent = fmt(t.total);
+
+    $el('tb-conceptos').innerHTML =
+        t.conceptos.map(c =>
+            '<tr><td>' + c.desc + '</td>'
+            + '<td class="mono text-center">' + c.cant + '</td>'
+            + '<td class="mono">' + fmt(c.pu) + '</td>'
+            + '<td class="mono" style="font-weight:600">' + fmt(c.sub) + '</td></tr>'
+        ).join('')
+        + '<tr style="background:rgba(255,255,255,0.04)">'
+        +   '<td colspan="3" style="font-weight:600;font-size:.74rem;color:rgba(255,255,255,.45)">Subtotal</td>'
+        +   '<td class="mono" style="font-weight:600">' + fmt(t.subtotal) + '</td></tr>'
+        + '<tr style="background:rgba(255,255,255,0.04)">'
+        +   '<td colspan="3" style="font-weight:600;font-size:.74rem;color:rgba(255,255,255,.45)">IVA (16%)</td>'
+        +   '<td class="mono" style="font-weight:600">' + fmt(t.iva) + '</td></tr>';
+}
+
+function afResetFolio() {
+    $el('inp-folio').value = '';
+    $el('af-ticket-found').style.display = 'none';
+    ticketActual = null;
+    ticketTokenActual = null;
+    $el('af-tb-folio').textContent = 'Sin folio';
+    afUpdateSummary();
+}
+
+$el('inp-folio').addEventListener('keydown', e => { if (e.key==='Enter') afBuscarFolio(); });
+
+/* ════════════════════════════════════════════
+   PASO 2 — DATOS FISCALES
+════════════════════════════════════════════ */
+function afValidarCampos() {
+    let ok = true;
+    const fields = [
+        ['inp-rfc',     'err-rfc',     v => /^([A-ZÑ&]{3,4})(\d{6})([A-Z0-9]{3})$/.test(v), 'RFC inválido.'],
+        ['inp-razon',   'err-razon',   v => v.length > 2,                                      'Campo requerido.'],
+        ['inp-regimen', 'err-regimen', v => v !== '',                                           'Selecciona un régimen.'],
+        ['inp-uso',     'err-uso',     v => v !== '',                                           'Selecciona el uso del CFDI.'],
+        ['inp-cp',      'err-cp',      v => /^\d{5}$/.test(v),                                 'CP de 5 dígitos.'],
+        ['inp-email',   'err-email',   v => /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(v),          'Correo inválido.']
+    ];
+
+    fields.forEach(([inpId, errId, validate, msg]) => {
+        const el  = $el(inpId);
+        const err = $el(errId);
+        const val = el.value.trim();
+        if (!validate(val)) {
+            err.textContent = msg;
+            err.classList.add('is-visible');
+            el.classList.add('is-error');
+            ok = false;
+        } else {
+            err.classList.remove('is-visible');
+            el.classList.remove('is-error');
+        }
+    });
+    return ok;
+}
+
+function afValidarDatos() {
+    if (!afValidarCampos()) return;
+    datosActual = {
+        rfc:          $el('inp-rfc').value.trim(),
+        razon:        $el('inp-razon').value.trim(),
+        regimen:      $el('inp-regimen').value,
+        regimenLabel: $el('inp-regimen').options[$el('inp-regimen').selectedIndex].text,
+        uso:          $el('inp-uso').value,
+        usoLabel:     $el('inp-uso').options[$el('inp-uso').selectedIndex].text,
+        cp:           $el('inp-cp').value.trim(),
+        email:        $el('inp-email').value.trim()
+    };
+    afRenderPreview();
+    afGoto(3);
+}
+
+/* ════════════════════════════════════════════
+   PASO 3 — PREVIEW
+════════════════════════════════════════════ */
+function afRenderPreview() {
+    const t = ticketActual;
+    const d = datosActual;
+    const folioNum = Math.floor(10000 + Math.random()*89999);
+
+    $el('cfdi-preview').innerHTML =
+        '<div class="cfdi-head">'
+        +   '<div>'
+        +     '<div class="ch-name">' + AF_EMISOR.nombre + '</div>'
+        +     '<div class="ch-sub">RFC: ' + AF_EMISOR.rfc + ' · CP ' + AF_EMISOR.cp + '</div>'
+        +     '<div class="ch-sub" style="margin-top:.1rem">' + AF_EMISOR.regimen + '</div>'
+        +   '</div>'
+        +   '<div class="d-flex flex-column align-items-end gap-1">'
+        +     '<span class="cfdi-badge">CFDI 4.0</span>'
+        +     '<span class="cfdi-badge" style="background:rgba(16,185,129,.22);border-color:rgba(16,185,129,.3);color:#6ee7b7">INGRESO</span>'
+        +     '<div style="color:rgba(255,255,255,.35);font-size:.66rem;margin-top:.15rem">Serie A · Folio ' + folioNum + '</div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="cfdi-body">'
+        +   '<div class="cfdi-section-lbl">Receptor</div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">RFC</span><span class="cr-val">' + d.rfc + '</span></div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">Razón social</span><span class="cr-val plain">' + d.razon + '</span></div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">Régimen fiscal</span><span class="cr-val plain" style="font-size:.72rem">' + d.regimenLabel + '</span></div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">Uso CFDI</span><span class="cr-val plain" style="font-size:.72rem">' + d.usoLabel + '</span></div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">CP Fiscal</span><span class="cr-val">' + d.cp + '</span></div>'
+        +   '<div class="cfdi-sep"></div>'
+        +   '<div class="cfdi-section-lbl">Conceptos</div>'
+        +   t.conceptos.map(c =>
+                '<div class="cfdi-row"><span class="cr-lbl" style="max-width:65%">' + c.desc + '</span><span class="cr-val">' + fmt(c.sub) + '</span></div>'
+            ).join('')
+        +   '<div class="cfdi-sep"></div>'
+        +   '<div class="cfdi-section-lbl">Comprobante original</div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">Folio ticket</span><span class="cr-val">' + t.folio + '</span></div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">Fecha compra</span><span class="cr-val plain">' + t.fecha + '</span></div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">Método de pago</span><span class="cr-val">PUE · Pago en una sola exhibición</span></div>'
+        +   '<div class="cfdi-row"><span class="cr-lbl">Forma de pago</span><span class="cr-val">03 · Transferencia electrónica</span></div>'
+        +   '<div class="cfdi-totals-block">'
+        +     '<div class="cfdi-t-row"><span class="ctl">Subtotal</span><span class="ctv">' + fmt(t.subtotal) + '</span></div>'
+        +     '<div class="cfdi-t-row"><span class="ctl">IVA Trasladado (16%)</span><span class="ctv">' + fmt(t.iva) + '</span></div>'
+        +     '<div class="cfdi-t-row grand"><span class="ctl">Total</span><span class="ctv">' + fmt(t.total) + '</span></div>'
+        +   '</div>'
+        + '</div>';
+}
+
+/* ════════════════════════════════════════════
+   PASO 4 — TIMBRAR
+════════════════════════════════════════════ */
+function afTimbrar() {
+    if (afStep < 3) {
+        if (!afValidateStep(afStep)) return;
+        afGoto(afStep+1);
+        return;
+    }
+
+    const btn = $el('btn-timbrar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Timbrando...';
+    const AF_PUNTO = document.getElementById('af-punto').value;
+    const val   = $el('inp-folio').value.trim().toUpperCase();
+    afPost('@Url.Action("TimbrarCFDI", "AutoFacturacionPublica")', {
+        punto: AF_PUNTO, folio: val ,
+        ticketToken: ticketTokenActual,
+        rfc:     datosActual.rfc,
+        razon:   datosActual.razon,
+        regimen: datosActual.regimen,
+        uso:     datosActual.uso,
+        cp:      datosActual.cp,
+        email:   datosActual.email
+    })
+    .then(function(res) {
+        if (!res?.success) { afToast('error', res?.message ?? 'Error al timbrar.'); return; }
+        $el('folio-fiscal-chip').textContent = 'UUID: ' + res.uuid;
+        $el('email-enviado').textContent     = datosActual.email;
+        $el('inp-reenvio').value             = datosActual.email;
+        afGoto(4);
+
+        if (res.correoEnviado === false) {
+            afToast('warning', 'La factura se timbró, pero no se pudo enviar el correo. Descárgala aquí.');
+        }
+
+        // Ticket imprimible del CFDI. Se guarda para el botón de reimpresión y se manda
+        // a imprimir solo, ya con la factura emitida y el correo enviado.
+        if (res.ticketUrl) {
+            afTicketUrl = res.ticketUrl;
+            $el('btn-ticket')?.classList.remove('d-none');
+            afImprimirTicket(true);
+        }
+    })
+    .catch(function() { afToast('error', 'Error de conexión. Intenta de nuevo.'); })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirmar y timbrar';
+    });
+}
+
+/* ════════════════════════════════════════════
+   TICKET IMPRIMIBLE DEL CFDI
+════════════════════════════════════════════ */
+let afTicketUrl = null;
+
+/* El enlace va firmado y vence a los 30 minutos: si el cliente vuelve más tarde,
+   se le pide reimprimir desde mostrador en vez de mostrar un 404 sin explicación. */
+function afImprimirTicket(automatico) {
+    if (!afTicketUrl) {
+        afToast('error', 'El ticket ya no está disponible. Solicítalo en mostrador.');
+        return;
+    }
+
+    const v = window.open(afTicketUrl + '&print=1', 'ticketFactura', 'width=420,height=780');
+
+    if (!v && !automatico) {
+        afToast('error', 'Permite las ventanas emergentes para imprimir el ticket.');
+    } else if (!v && automatico) {
+        /* Con la impresión automática el bloqueo del navegador es lo normal:
+           no se molesta al cliente con un error, se le deja el botón. */
+        afToast('info', 'Usa el botón "Imprimir ticket" para obtener tu comprobante.');
+    }
+}
+
+/* ════════════════════════════════════════════
+   DOWNLOAD & RESEND
+════════════════════════════════════════════ */
+function afDescargar(tipo) {
+    const uuid = $el('folio-fiscal-chip').textContent.replace('UUID: ','').trim();
+    window.location.href = '@Url.Action("Descargar", "AutoFacturacionPublica")'
+        + '?tipo=' + tipo + '&uuid=' + encodeURIComponent(uuid);
+}
+
+function afReenviar() {
+    const mail = $el('inp-reenvio').value.trim();
+    if (!/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(mail)) { afToast('error', 'Ingresa un correo válido.'); return; }
+    const uuid = $el('folio-fiscal-chip').textContent.replace('UUID: ','').trim();
+    afPost('@Url.Action("ReenviarCFDI", "AutoFacturacionPublica")', { email: mail, uuid })
+        .then(res => afToast(res.success ? 'success' : 'error', res.message))
+        .catch(() => afToast('error', 'Error al reenviar.'));
+}
+
+/* ════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════ */
+function afToast(icon, title) {
+    if (typeof toastMixin !== 'undefined') { toastMixin.fire({ icon, title }); }
+    else { alert(title); }
+}
+
+/* ════════════════════════════════════════════
+   RESET
+════════════════════════════════════════════ */
+function afReset() {
+    ticketActual = datosActual = ticketTokenActual = null;
+    ['inp-folio','inp-rfc','inp-razon','inp-cp','inp-email','inp-reenvio'].forEach(id => { const el=$el(id); if(el) el.value=''; });
+    ['inp-regimen','inp-uso'].forEach(id => { const el=$el(id); if(el) el.value=''; });
+    $el('af-ticket-found').style.display = 'none';
+    $el('af-tb-folio').textContent = 'Sin folio';
+    document.querySelectorAll('.af-error').forEach(e => e.classList.remove('is-visible'));
+    document.querySelectorAll('.af-input,.af-select').forEach(e => e.classList.remove('is-error'));
+    afStep = 1;
+    document.querySelectorAll('.af-panel').forEach((p,i) => p.classList.toggle('is-active', i===0));
+    document.querySelectorAll('.af-step').forEach(s => {
+        s.classList.remove('is-active','is-done');
+        if (parseInt(s.dataset.step)===1) s.classList.add('is-active');
+    });
+    $el('af-prog-fill').style.width = '25%';
+    afUpdateSummary();
+}
+
+/* ════════════════════════════════════════════
+   SUMMARY UPDATE
+════════════════════════════════════════════ */
+function afUpdateSummary() {
+    const p = AF_STEPS[afStep];
+    $el('dd-step-num').textContent  = afStep;
+    $el('dd-step-name').textContent = p?.name ?? '—';
+    $el('dd-step-sub').textContent  = p?.sub  ?? '';
+    $el('dd-folio').textContent     = ticketActual?.folio ?? 'Sin seleccionar';
+    $el('dd-total').textContent     = ticketActual ? fmt(ticketActual.total) : '—';
+    $el('af-wb-folio-mini').textContent = ticketActual?.folio ?? 'Sin folio';
+    $el('dd-rfc').textContent   = datosActual?.rfc   ?? '—';
+    $el('dd-razon').textContent = datosActual?.razon ?? '—';
+}
+        /* ════════════════════════════════════════════
+           QR SCANNER
+        ════════════════════════════════════════════ */
+        let qrStream = null;
+        let qrRafId = null;
+        let qrDetected = false;
+
+        function afAbrirQR() {
+            qrDetected = false;
+            const overlay = $el('af-qr-overlay');
+            overlay.classList.add('open');
+            afQRSetStatus('', '<i class="fas fa-camera" style="font-size:.8rem"></i> Apunta la cámara al código QR de tu ticket');
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(function (stream) {
+                    qrStream = stream;
+                    const video = $el('af-qr-video');
+                    video.srcObject = stream;
+                    video.play();
+                    video.addEventListener('loadedmetadata', afQRTick, { once: true });
+                })
+                .catch(function (err) {
+                    afQRSetStatus('err', '<i class="fas fa-exclamation-circle"></i> Sin acceso a la cámara. Verifica los permisos.');
+                    console.warn('QR cam error:', err);
+                });
+        }
+
+        function afCerrarQR() {
+            $el('af-qr-overlay').classList.remove('open');
+            if (qrRafId) { cancelAnimationFrame(qrRafId); qrRafId = null; }
+            if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+            const video = $el('af-qr-video');
+            video.srcObject = null;
+        }
+
+        function afQROverlayClick(e) {
+            if (e.target === $el('af-qr-overlay')) afCerrarQR();
+        }
+
+        function afQRTick() {
+            if (!qrStream) return;
+            const video = $el('af-qr-video');
+            const canvas = $el('af-qr-canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+                qrRafId = requestAnimationFrame(afQRTick);
+                return;
+            }
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+
+            if (code && !qrDetected) {
+                qrDetected = true;
+                const raw = code.data.trim();
+
+                /* Extraer el folio del contenido QR:
+                   · Si el QR es solo el folio (ej. "TKT-2024-00412") → úsalo directo
+                   · Si es una URL con ?folio=XXX o /folio/XXX → extrae el parámetro
+                   · Si lleva JSON → intenta parsear y tomar campo folio/ticket/id      */
+                let folio = afExtraerFolioQR(raw);
+
+                afQRSetStatus('ok', '<i class="fas fa-check-circle"></i> QR detectado · <strong>' + folio + '</strong>');
+
+                setTimeout(function () {
+                    afCerrarQR();
+                    $el('inp-folio').value = folio;
+                    $el('err-folio').classList.remove('is-visible');
+                    $el('inp-folio').classList.remove('is-error');
+                    afBuscarFolio();
+                }, 700);
+
+                return; /* no seguir con rAF */
+            }
+
+            qrRafId = requestAnimationFrame(afQRTick);
+        }
+
+        /* Heurística para extraer el folio del payload del QR */
+        function afExtraerFolioQR(raw) {
+            /* 1. JSON */
+            try {
+                const obj = JSON.parse(raw);
+                return String(obj.folio ?? obj.ticket ?? obj.id ?? obj.numero ?? raw).toUpperCase();
+            } catch (_) { }
+
+            /* 2. URL con query string ?folio=XXX o ?ticket=XXX */
+            try {
+                const url = new URL(raw);
+                const params = url.searchParams;
+                const val = params.get('folio') ?? params.get('ticket') ?? params.get('id');
+                if (val) return val.toUpperCase();
+                /* 3. Segmento de ruta final */
+                const segs = url.pathname.split('/').filter(Boolean);
+                if (segs.length) return segs[segs.length - 1].toUpperCase();
+            } catch (_) { }
+
+            /* 4. Texto plano — quitar espacios y convertir a mayúsculas */
+            return raw.replace(/\s+/g, '').toUpperCase();
+        }
+
+        function afQRSetStatus(type, html) {
+            const el = $el('af-qr-status');
+            el.className = 'af-qr-status' + (type ? ' ' + type : '');
+            el.innerHTML = html;
+        }
+/* INIT */
+afUpdateSummary();
+
+/* Si el ticket se escaneó con la cámara del teléfono, el folio llega en la URL:
+   se busca solo para que el cliente no tenga que teclear ni pulsar nada. */
+(function () {
+    const precargado = $el('inp-folio')?.value.trim();
+    if (precargado) {
+        document.addEventListener('DOMContentLoaded', afBuscarFolio);
+        if (document.readyState !== 'loading') afBuscarFolio();
+    }
+})();
+    </script>
+
+</body>
+</html>

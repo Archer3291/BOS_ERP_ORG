@@ -1,0 +1,2952 @@
+﻿@{
+    ViewBag.Title = "Facturas";
+    ViewBag.PageTitle = "Facturas Globales";
+}
+@section styles {
+    <style>
+
+        div:where(.swal2-container) .swal2-select {
+
+
+            background: var(--bg-light) !important;
+
+        }
+
+        select {
+            padding: 11px 20px;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 24px 40px;
+            background: var(--very-light-blue);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .stat-card {
+            background: var(--bg-light);
+            padding: 20px 24px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-blue);
+            box-shadow: var(--shadow);
+        }
+
+            .stat-card.success {
+                border-left-color: var(--success-color);
+            }
+
+            .stat-card.warning {
+                border-left-color: var(--warning-color);
+            }
+
+            .stat-card.danger {
+                border-left-color: var(--danger-color);
+            }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: var(--text-light);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1.75em;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pagada {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .status-pendiente {
+            background: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .status-cancelada, .status-vencida {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 6px 8px;
+            font-size: 1.2em;
+            border-radius: 6px;
+        }
+
+            .btn-icon:hover {
+                background: var(--very-light-blue);
+                color: var(--accent-blue);
+            }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 41, 0.6);
+            overflow: auto;
+        }
+
+            .modal.active {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+        .modal-content {
+            background: var(--bg-light);
+            border-radius: 16px;
+            max-width: 920px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            color: white;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+            .modal-header h2 {
+                font-size: 1.5em;
+                font-weight: 700;
+            }
+
+        .close-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+
+        .modal-body {
+            padding: 32px;
+        }
+
+        .detail-section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            color: var(--primary-blue);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-light);
+            font-weight: 700;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .info-item {
+            background: var(--very-light-blue);
+            padding: 14px 18px;
+            border-radius: 10px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .info-label {
+            font-size: 0.75em;
+            color: var(--text-light);
+            margin-bottom: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            font-size: 0.95em;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .detail-table {
+            width: 100%;
+            margin-top: 16px;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+            .detail-table th {
+                background: var(--very-light-blue);
+                padding: 12px 16px;
+                font-size: 0.8em;
+            }
+
+            .detail-table td {
+                padding: 12px 16px;
+                border-bottom: 1px solid var(--border-light);
+            }
+
+        .totals-box {
+            background: var(--very-light-blue);
+            padding: 24px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+            .total-row.final {
+                font-size: 1.4em;
+                font-weight: 700;
+                color: var(--primary-blue);
+                border-top: 2px solid var(--border-light);
+                padding-top: 16px;
+                margin-top: 12px;
+            }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid var(--border-light);
+        }
+
+            .modal-actions button {
+                padding: 11px 20px;
+                background: var(--accent-blue);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                font-weight: 600;
+            }
+
+        /* Estilos personalizados para SweetAlert2 */
+        .custom-swal-popup {
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .custom-swal-title {
+            font-size: 24px;
+            font-weight: 700;
+            padding: 20px 20px 10px;
+        }
+
+        .custom-swal-confirm {
+            background-color: var(--primary-blue) !important;
+            color: white !important;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(30, 58, 95, 0.2);
+            margin: 0 8px;
+        }
+
+            .custom-swal-confirm:hover {
+                background-color: var(--primary-blue-dark) !important;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(30, 58, 95, 0.3);
+            }
+
+            .custom-swal-confirm:active {
+                transform: translateY(0);
+            }
+
+        .custom-swal-cancel {
+            background-color: var(--bg-gray) !important;
+            color: var(--text-dark) !important;
+            border: 2px solid var(--border-light);
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 8px;
+        }
+
+            .custom-swal-cancel:hover {
+                background-color: var(--border-light) !important;
+                border-color: var(--secondary-blue);
+            }
+
+        /* Estilos para el mensaje de validación */
+        .swal2-validation-message {
+            background-color: var(--danger-color);
+            color: white;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+
+        /* Estilos para el loader */
+        .swal2-loader {
+            border-color: var(--accent-blue) transparent var(--accent-blue) transparent;
+        }
+
+        /* Iconos de éxito y error */
+        .swal2-icon.swal2-success [class^='swal2-success-line'] {
+            background-color: var(--success-color);
+        }
+
+        .swal2-icon.swal2-success .swal2-success-ring {
+            border-color: rgba(5, 150, 105, 0.3);
+        }
+
+        .swal2-icon.swal2-error {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+        .custom-swal-confirm-danger {
+            background-color: var(--danger-color) !important;
+            color: white !important;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+            margin: 0 8px;
+        }
+
+            .custom-swal-confirm-danger:hover {
+                background-color: #c82333 !important;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+            }
+
+            .custom-swal-confirm-danger:active {
+                transform: translateY(0);
+            }
+    </style>
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+}
+    <form>
+        @Html.AntiForgeryToken()
+    </form>
+
+    <div class="stats d-none">
+        <div class="stat-card">
+            <div class="stat-label">Total Facturas</div>
+            <div class="stat-value" id="totalInvoices">0</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-label">Pagadas</div>
+            <div class="stat-value" id="paidInvoices">0</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-label">Pendientes</div>
+            <div class="stat-value" id="pendingInvoices">0</div>
+        </div>
+        <div class="stat-card danger">
+            <div class="stat-label">Monto Total</div>
+            <div class="stat-value" id="totalAmount">$0.00</div>
+        </div>
+    </div>
+    <div class="toolbar d-none">
+        <select id="statusFilter">
+            <option value="">Todos los estados</option>
+            <option value="pagada">Pagadas</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="cancelada">Canceladas</option>
+            <option value="vencida">Vencidas</option>
+        </select>
+        <select id="dateFilter">
+            <option value="">Todas las fechas</option>
+            <option value="today">Hoy</option>
+            <option value="week">Esta semana</option>
+            <option value="month">Este mes</option>
+            <option value="year">Este año</option>
+        </select>
+    </div>
+
+    <div class="table-wrapper">
+        <div class="table-responsive">
+            <div id="facturas">
+
+            </div>
+        </div>
+    </div>
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Detalle de Factura</h2>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+    @section scripts {
+        <script src="~/Scripts/TableBuilder.js"></script>
+        <script src="~/lib/jquery/jquery.min.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const facturasTabla = createTable({
+                    selector: '#facturas',
+                    path: '/FacturaGlobalConsulta/ObtenerFacturas',
+                    searchPlaceholder: 'Buscar facturas...',
+                    columns: [
+                        { title: 'Numero de factura', data: 'folio' },
+                        { title: 'Cliente', data: 'rsocliente' },
+                        { title: 'Fecha de emisión', data: 'fechatimbrado', formatter: (v) => dateFormatter(v) },
+                        { title: 'Sucursal', data: 'suc' },
+                        { title: 'Monto', data: 'total', formatter: data => `$${Number(data ?? 0).toFixed(2)}` },
+                        { title: 'Estatus', data: 'statusfactura' },
+                    ],
+                    actions: [
+                        { icon: "fa-eye", color: "cyan-500", title: "Ver Detalles", onClick: row => showDetail(row.encabezado_id) },
+                        { icon: "fa-file-pdf", color: "red-500", title: "Ver PDF", onClick: row => printFactura(row.uuid) },
+                        { icon: "fa-file-code", color: "blue-500", title: "Descargar XML", onClick: row => downloadFactura(row.uuid) },
+                        { icon: "fa-envelope", color: "emerald-500", title: "Enviar por correo", onClick: row => sendFactura(row.uuid) },
+                        { icon: "fa-ban", color: "yellow-500", title: "Cancelar Factura", onClick: row => cancelFactura(row.uuid, row.encabezado_id, row.rfcemisor) }
+                    ]
+                })
+            });
+
+            // Función para mostrar el detalle de la factura
+            function showDetail(id) {
+                const modal = document.getElementById('detailModal');
+                const modalBody = document.getElementById('modalBody');
+
+                modal.classList.add('active');
+                modalBody.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa fa-spinner fa-spin" style="font-size: 2em; color: var(--primary-blue);"></i><p style="margin-top: 16px; color: var(--text-light);">Cargando detalles...</p></div>';
+
+                fetch(`/FacturaGlobalConsulta/FacturaDetail?id=${id}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error al cargar los detalles');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Data recibida:', data); // Para debug
+
+                        // El backend devuelve un array con un objeto que contiene documento como string
+                        if (data && data.length > 0 && data[0].documento) {
+                            // El documento viene como string JSON, necesitamos parsearlo
+                            const documento = JSON.parse(data[0].documento);
+                            console.log('Documento parseado:', documento); // Para debug
+                            renderDocumentosDetail(documento);
+                        } else {
+                            throw new Error('No se encontraron datos');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        modalBody.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fa fa-exclamation-circle" style="font-size: 2em; color: var(--danger-color);"></i>
+                    <p style="margin-top: 16px; color: var(--text-dark);">Error al cargar los detalles</p>
+                    <p style="color: var(--text-light); font-size: 0.9em;">${error.message}</p>
+                </div>
+            `;
+                    });
+            }
+
+            // Función para renderizar el detalle de la factura
+            function renderDocumentosDetail(documentos) {
+                const modalBody = document.getElementById('modalBody');
+
+                // Una factura sin documentos ligados no es un error de carga: es una factura
+                // cuyos documentos origen no quedaron marcados con encabezado_hijo.
+                if (!Array.isArray(documentos) || documentos.length === 0) {
+                    modalBody.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fa fa-folder-open" style="font-size: 2em; color: var(--text-light);"></i>
+                    <p style="margin-top: 16px; color: var(--text-dark);">Esta factura no tiene documentos ligados</p>
+                    <p style="color: var(--text-light); font-size: 0.9em;">No se encontraron ventas asociadas a este comprobante.</p>
+                </div>`;
+                    return;
+                }
+
+                let totalGeneral = 0;
+                let totalPartidas = 0;
+
+                documentos.forEach(doc => {
+                    (doc.partidas || []).forEach(p => {
+                        totalGeneral += p.imp_part || 0;
+                        totalPartidas++;
+                    });
+                });
+                totalGeneral += (totalGeneral * .16)
+                let html = `
+    <!-- Resumen General -->
+    <div class="detail-section" style="margin-bottom: 24px;">
+        <div class="section-title" style="background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%); color: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: var(--shadow-lg);">
+            <i class="fa fa-chart-bar"></i> Resumen General
+        </div>
+        <div class="info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div class="info-item" style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 10px; padding: 20px; text-align: center; transition: all 0.3s ease; box-shadow: var(--shadow);">
+                <div class="info-label" style="font-size: 0.85em; color: var(--text-light); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                    <i class="fa fa-file"></i> Total Documentos
+                </div>
+                <div class="info-value" style="font-size: 2em; font-weight: 700; color: var(--primary-blue);">${documentos.length}</div>
+            </div>
+            <div class="info-item" style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 10px; padding: 20px; text-align: center; transition: all 0.3s ease; box-shadow: var(--shadow);">
+                <div class="info-label" style="font-size: 0.85em; color: var(--text-light); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                    <i class="fa fa-list"></i> Total Partidas
+                </div>
+                <div class="info-value" style="font-size: 2em; font-weight: 700; color: var(--accent-blue);">${totalPartidas}</div>
+            </div>
+            <div class="info-item" style="background: linear-gradient(135deg, var(--success-color) 0%, #10b981 100%); border: none; border-radius: 10px; padding: 20px; text-align: center; transition: all 0.3s ease; box-shadow: var(--shadow-lg);">
+                <div class="info-label" style="font-size: 0.85em; color: rgba(255,255,255,0.9); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                    <i class="fa fa-dollar-sign"></i> Importe Total
+                </div>
+                <div class="info-value" style="font-size: 2em; font-weight: 700; color: white;">$${totalGeneral.toFixed(2)}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Documentos -->
+    <div class="detail-section">
+        <div class="section-title" style="background: var(--bg-light); color: var(--text-dark); padding: 14px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid var(--accent-blue); box-shadow: var(--shadow);">
+            <i class="fa fa-file-alt"></i> Documentos (${documentos.length})
+        </div>
+        ${documentos.map((doc, index) => {
+                    const totalDoc = doc.partidas.reduce((sum, p) => sum + (p.imp_part || 0), 0);
+
+                    return `
+            <div style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 16px; padding: 0; margin-bottom: 24px; overflow: hidden; box-shadow: var(--shadow-lg); transition: all 0.3s ease;">
+                
+                <!-- Encabezado del Documento con Color -->
+                <div style="background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <div style="display: inline-block; background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Documento #${index + 1}
+                        </div>
+                        <h3 style="margin: 0 0 8px 0; font-size: 1.4em; font-weight: 700;">
+                            <i class="fa fa-file-invoice"></i> ${doc.gen}-${doc.nat}-${doc.folio}
+                        </h3>
+                        <p style="margin: 0; opacity: 0.9; font-size: 0.95em;">
+                            <i class="fa fa-calendar"></i> ${formatDate(doc.fecha)}
+                        </p>
+                    </div>
+                    <div style="text-align: right; background: rgba(255,255,255,0.1); padding: 16px 24px; border-radius: 10px; backdrop-filter: blur(10px);">
+                        <div style="font-size: 0.8em; opacity: 0.9; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Total Documento</div>
+                        <div style="font-size: 1.8em; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                            $${totalDoc.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contenido del Documento -->
+                <div style="padding: 24px;">
+                    
+                    <!-- Info del Cliente -->
+                    <div style="background: var(--very-light-blue); border-left: 4px solid var(--accent-blue); padding: 16px 20px; border-radius: 10px; margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: var(--accent-blue); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fa fa-user"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.75em; color: var(--text-light); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Cliente
+                                </div>
+                                <div style="font-weight: 600; color: var(--text-dark); font-size: 1.05em;">${doc.cliente}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Partidas Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border-light);">
+                        <h4 style="margin: 0; color: var(--text-dark); font-size: 1.1em;">
+                            <i class="fa fa-boxes"></i> Partidas (${doc.partidas.length})
+                        </h4>
+                    </div>
+                    
+                    <!-- Tabla de Partidas -->
+                    <div style="overflow-x: auto; border-radius: 10px; border: 1px solid var(--border-light);">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
+                            <thead>
+                                <tr style="background: var(--primary-blue); color: white;">
+                                    <th style="padding: 14px 12px; text-align: center; font-weight: 600; width: 50px; border-right: 1px solid rgba(255,255,255,0.1);">#</th>
+                                    <th style="padding: 14px 16px; text-align: left; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.1);">Clave</th>
+                                    <th style="padding: 14px 16px; text-align: left; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.1);">Descripción</th>
+                                    <th style="padding: 14px 12px; text-align: center; font-weight: 600; width: 90px; border-right: 1px solid rgba(255,255,255,0.1);">Cantidad</th>
+                                    <th style="padding: 14px 12px; text-align: center; font-weight: 600; width: 70px; border-right: 1px solid rgba(255,255,255,0.1);">UDM</th>
+                                    <th style="padding: 14px 16px; text-align: right; font-weight: 600; width: 120px; border-right: 1px solid rgba(255,255,255,0.1);">P. Unit.</th>
+                                    <th style="padding: 14px 16px; text-align: right; font-weight: 600; width: 130px;">Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${doc.partidas.map((partida, idx) => `
+                                    <tr style="background: ${idx % 2 === 0 ? 'var(--bg-light)' : 'var(--very-light-blue)'}; transition: all 0.2s ease;">
+                                        <td style="padding: 14px 12px; text-align: center; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--border-light);">
+                                            ${idx + 1}
+                                        </td>
+                                        <td style="padding: 14px 16px; font-family: 'Courier New', monospace; font-size: 0.9em; font-weight: 600; color: var(--secondary-blue); border-bottom: 1px solid var(--border-light);">
+                                            ${partida.cve_prod}
+                                        </td>
+                                        <td style="padding: 14px 16px; border-bottom: 1px solid var(--border-light);">
+                                            <strong style="color: var(--text-dark);">${partida.descr_prod}</strong>
+                                        </td>
+                                        <td style="padding: 14px 12px; text-align: center; font-weight: 600; color: var(--text-dark); border-bottom: 1px solid var(--border-light);">
+                                            ${partida.cant_ud}
+                                        </td>
+                                        <td style="padding: 14px 12px; text-align: center; color: var(--text-light); font-size: 0.9em; border-bottom: 1px solid var(--border-light);">
+                                            ${partida.ud}
+                                        </td>
+                                        <td style="padding: 14px 16px; text-align: right; font-family: 'Courier New', monospace; color: var(--text-dark); border-bottom: 1px solid var(--border-light);">
+                                            $${partida.pv_prod.toFixed(2)}
+                                        </td>
+                                        <td style="padding: 14px 16px; text-align: right; font-family: 'Courier New', monospace; border-bottom: 1px solid var(--border-light);">
+                                            <strong style="color: var(--primary-blue); font-size: 1.05em;">$${partida.imp_part.toFixed(2)}</strong>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: linear-gradient(to right, var(--primary-blue), var(--primary-blue-dark)); color: white;">
+                                    <td colspan="6" style="text-align: right; padding: 16px 20px; font-weight: 700; font-size: 1.05em; text-transform: uppercase; letter-spacing: 0.5px;">
+                                        Subtotal Documento:
+                                    </td>
+                                    <td style="text-align: right; font-size: 1.3em; font-weight: 700; padding: 16px 20px; font-family: 'Courier New', monospace;">
+                                        $${totalDoc.toFixed(2)}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            `;
+                }).join('')}
+    </div>
+    
+    <!-- Total General -->
+    <div class="detail-section" style="margin-top: 32px;">
+        <div style="background: linear-gradient(135deg, var(--success-color) 0%, #10b981 100%); border-radius: 16px; padding: 28px 32px; text-align: center; box-shadow: var(--shadow-lg); border: 3px solid rgba(255,255,255,0.2);">
+            <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+                <i class="fa fa-calculator"></i> Total General
+            </div>
+            <div style="color: white; font-size: 2.5em; font-weight: 700; font-family: 'Courier New', monospace; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                ${Currency.format(totalGeneral)} <span style="font-size: 0.5em; opacity: 0.9;">MXN</span>
+            </div>
+        </div>
+    </div>
+`;
+
+                modalBody.innerHTML = html;
+            }
+
+            // Función para cerrar el modal
+            function closeModal() {
+                const modal = document.getElementById('detailModal');
+                modal.classList.remove('active');
+            }
+
+            // Función auxiliar para formatear fechas
+            function formatDate(dateString) {
+                if (!dateString) return 'N/A';
+                try {
+                    const date = new Date(dateString);
+                    const options = {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    };
+                    return date.toLocaleDateString('es-MX', options);
+                } catch (error) {
+                    return dateString;
+                }
+            }
+
+            // Función para obtener la clase CSS del estado
+            function getStatusClass(status) {
+                if (!status || status === '0' || status === 0) return 'pendiente';
+                const statusStr = status.toString().toLowerCase();
+                if (statusStr === '1' || statusStr === 'pagada') return 'pagada';
+                if (statusStr === '2' || statusStr === 'cancelada') return 'cancelada';
+                if (statusStr === '3' || statusStr === 'vencida') return 'vencida';
+                return 'pendiente';
+            }
+
+            // Función para obtener el texto del estado
+            function getStatusText(status) {
+                if (!status || status === '0' || status === 0) return 'Pendiente';
+                const statusStr = status.toString().toLowerCase();
+                if (statusStr === '1' || statusStr === 'pagada') return 'Pagada';
+                if (statusStr === '2' || statusStr === 'cancelada') return 'Cancelada';
+                if (statusStr === '3' || statusStr === 'vencida') return 'Vencida';
+                return 'Pendiente';
+            }
+
+            // Funciones para las acciones (puedes implementarlas según tus necesidades)
+            function printFactura(id) {
+                const url = `../Facturacion/facturas/${id}.pdf`;
+                console.log('Imprimir factura:', id);
+                // Implementa la lógica de impresión
+                window.open(url, '_blank');
+            }
+
+            function downloadFactura(id) {
+                const url = `../Facturacion/xml_timbrados/${id}.xml`;
+                // Abrir en nueva pestaña
+                window.open(url, '_blank');
+
+                // Forzar descarga simultáneamente
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${id}.xml`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+
+function sendFactura(id) {
+    Swal.fire({
+        title: '<i class="fas fa-envelope"></i> Enviar Factura por Correo',
+        html: `
+            <div style="text-align:left; padding: 10px;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary-blue);">
+                    <p style="margin: 5px 0; color: #495057;">
+                        <i class="fas fa-file-invoice" style="color: var(--primary-blue); width: 20px;"></i>
+                        <strong>Factura ID:</strong> <span style="font-family: monospace;">${id}</span>
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                        <i class="fas fa-heading" style="color: var(--primary-blue);"></i> Asunto <span style="color: var(--danger-color);">*</span>
+                    </label>
+                    <input
+                        id="swal-asunto"
+                        class="swal2-input"
+                        placeholder="Asunto del correo"
+                        required
+                        style="width: 100%; margin: 0; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; color: var(--text-dark); background-color: var(--bg-light); transition: all 0.3s ease;"
+                        onfocus="this.style.borderColor='var(--primary-blue)'; this.style.boxShadow='0 0 0 3px rgba(30, 58, 95, 0.1)';"
+                        onblur="this.style.borderColor='var(--border-light)'; this.style.boxShadow='none';">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                        <i class="fas fa-at" style="color: var(--primary-blue);"></i> Destinatario <span style="color: var(--danger-color);">*</span>
+                    </label>
+                    <input
+                        id="swal-email"
+                        class="swal2-input"
+                        type="email"
+                        placeholder="correo@ejemplo.com"
+                        required
+                        style="width: 100%; margin: 0; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; color: var(--text-dark); background-color: var(--bg-light); transition: all 0.3s ease;"
+                        onfocus="this.style.borderColor='var(--primary-blue)'; this.style.boxShadow='0 0 0 3px rgba(30, 58, 95, 0.1)';"
+                        onblur="this.style.borderColor='var(--border-light)'; this.style.boxShadow='none';">
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                        <i class="fas fa-comment-alt" style="color: var(--primary-blue);"></i> Mensaje <span style="color: var(--text-light); font-weight: 400; font-size: 13px;">(opcional)</span>
+                    </label>
+                    <textarea
+                        id="swal-mensaje"
+                        class="swal2-textarea"
+                        placeholder="Escribe un mensaje..."
+                        rows="4"
+                        style="width: 100%; margin: 0; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; color: var(--text-dark); background-color: var(--bg-light); resize: vertical; min-height: 100px; font-family: inherit; transition: all 0.3s ease;"
+                        onfocus="this.style.borderColor='var(--primary-blue)'; this.style.boxShadow='0 0 0 3px rgba(30, 58, 95, 0.1)';"
+                        onblur="this.style.borderColor='var(--border-light)'; this.style.boxShadow='none';"></textarea>
+                </div>
+
+                <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-top: 20px;">
+                    <p style="margin: 0; color: #856404; font-size: 0.9em;">
+                        <i class="fas fa-info-circle" style="color: #ffc107;"></i>
+                        <strong>Nota:</strong> El PDF de la factura se adjuntará automáticamente al correo.
+                    </p>
+                </div>
+            </div>
+        `,
+        width: '600px',
+        background: 'var(--bg-light)',
+        customClass: {
+            popup: 'custom-swal-popup',
+            title: 'custom-swal-title',
+            confirmButton: 'custom-swal-confirm',
+            cancelButton: 'custom-swal-cancel'
+        },
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-paper-plane"></i> Enviar Correo',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+        buttonsStyling: false,
+        preConfirm: () => {
+            const asunto = document.getElementById('swal-asunto').value.trim();
+            const email = document.getElementById('swal-email').value.trim();
+            const mensaje = document.getElementById('swal-mensaje').value.trim();
+
+            if (!asunto || !email) {
+                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> El asunto y el destinatario son obligatorios');
+                return false;
+            }
+
+            const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            if (!emailRegex.test(email)) {
+                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Por favor ingresa un correo electrónico válido');
+                return false;
+            }
+
+            return { asunto, email, mensaje };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const { asunto, email, mensaje } = result.value;
+
+            const formData = new FormData();
+            formData.append('facturaId', id);
+            formData.append('email', email);
+            formData.append('asunto', asunto);
+            formData.append('mensaje', mensaje);
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) {
+                formData.append('__RequestVerificationToken', token);
+            }
+
+            Swal.fire({
+                title: '<i class="fas fa-spinner fa-spin"></i> Enviando Correo',
+                html: `
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="margin: 20px 0;">
+                            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                                <span class="sr-only">Cargando...</span>
+                            </div>
+                        </div>
+                        <p style="color: #6c757d; margin-top: 15px;">
+                            <i class="fas fa-clock"></i> Por favor espera mientras se envía el correo...
+                        </p>
+                        <small style="color: #adb5bd;">Este proceso puede tardar unos momentos</small>
+                    </div>
+                `,
+                background: 'var(--bg-light)',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            fetch('/FacturaGlobalConsulta/EnviarEmail', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '<i class="fas fa-check-circle"></i> Correo Enviado Exitosamente',
+                        html: `
+                            <div style="text-align: center; padding: 10px;">
+                                <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                                    <p style="color: #155724; margin: 0; font-weight: 500;">
+                                        El correo se envió correctamente a:
+                                    </p>
+                                    <p style="color: #155724; margin: 10px 0 0 0; font-family: monospace; font-weight: 600;">
+                                        ${email}
+                                    </p>
+                                </div>
+                                <small style="color: #6c757d;">
+                                    <i class="fas fa-info-circle"></i> El destinatario recibirá la factura en formato PDF
+                                </small>
+                            </div>
+                        `,
+                        width: '500px',
+                        background: 'var(--bg-light)',
+                        confirmButtonText: '<i class="fas fa-check"></i> Aceptar',
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: 'custom-swal-confirm'
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: '<i class="fas fa-times-circle"></i> Error al Enviar',
+                        html: `
+                            <div style="text-align: center; padding: 10px;">
+                                <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 20px; margin-bottom: 15px;">
+                                    <p style="color: #721c24; margin: 0; font-weight: 500;">
+                                        Hubo un problema al enviar el correo.
+                                    </p>
+                                </div>
+                                <small style="color: #6c757d;">
+                                    <i class="fas fa-info-circle"></i> Por favor intenta nuevamente o contacta a soporte
+                                </small>
+                            </div>
+                        `,
+                        width: '500px',
+                        background: 'var(--bg-light)',
+                        confirmButtonText: '<i class="fas fa-check"></i> Entendido',
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: 'custom-swal-confirm'
+                        }
+                    });
+                });
+        }
+    });
+}
+
+            async function cancelFactura(uuid, encabezadoId, rfcEmisor) {
+                // Variables para mantener el estado entre pasos
+                let documentos = null;
+                let selectionResult = null;
+                let formValues = null;
+                let acuseURL = "";
+                // true cuando el proceso ya emitió al menos una factura nominativa: lo que
+                // reste en la lista se consolida completo en la global de reemplazo.
+                let continuandoProceso = false;
+                // ============================================
+                // VERIFICACIÓN INICIAL: Cancelación en SAT
+                // ============================================
+                async function verificarYCancelarSAT() {
+                    Swal.fire({
+                        title: '<i class="fas fa-spinner fa-spin"></i> Verificando Estado',
+                        html: '<p style="color: #6c757d;">Consultando información del proceso...</p>',
+                        background: 'var(--bg-light)',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    try {
+                        // ⚡ PASO 1: SOLO VERIFICAR (no cancelar todavía)
+                        const formData = new FormData();
+                        formData.append('uuid', uuid);
+                        formData.append('encabezadoId', encabezadoId);
+
+                        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                        if (token) {
+                            formData.append('__RequestVerificationToken', token);
+                        }
+
+                        const response = await fetch('/FacturaGlobalConsulta/VerificarEstadoProceso', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const result = await response.json();
+                        acuseURL = result.acusePath;
+                        // ⚡ CASO 1: Proceso ya completado Y BLOQUEADO
+                        if (!result.success && result.yaCompletado && result.bloqueado) {
+                            await Swal.fire({
+                                icon: 'error',
+                                title: '<i class="fas fa-lock"></i> Proceso Bloqueado',
+                                html: `
+<div style="text-align: left; padding: 15px;">
+    <div style="background: linear-gradient(135deg, #fee2e2, #fecaca); border: 3px solid var(--danger-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);">
+        <h4 style="margin: 0 0 15px 0; color: #991b1b; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 1.5em;"></i>
+            <span>Proceso Ya Completado</span>
+        </h4>
+        <p style="margin: 5px 0; color: #7f1d1d; font-weight: 600; font-size: 1.05em;">
+            ${result.message}
+        </p>
+    </div>
+
+    ${result.detalles && result.detalles.fechaCompletado ? `
+    <div style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <h5 style="margin: 0 0 10px 0; color: var(--text-dark);">
+            <i class="fas fa-calendar-check"></i> Información del Proceso
+        </h5>
+        <div style="font-size: 0.9em; color: var(--text-dark);">
+            <p style="margin: 5px 0;">
+                <strong>Fecha de Completado:</strong> ${dateFormatter(result.detalles.fechaCompletado)}
+            </p>
+            <p style="margin: 5px 0;">
+                <strong>ID del Proceso:</strong> <span style="font-family: monospace;">#${result.procesoId}</span>
+            </p>
+        </div>
+    </div>
+    ` : ''}
+
+    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px;">
+        <p style="margin: 0; color: #856404; font-size: 0.9em; display: flex; align-items: start; gap: 10px;">
+            <i class="fas fa-lightbulb" style="margin-top: 3px;"></i>
+            <span>
+                <strong>¿Necesitas hacer cambios?</strong><br>
+                Si requieres modificar algo, deberás contactar al administrador del sistema o generar una nueva factura desde cero.
+            </span>
+        </p>
+    </div>
+</div>
+`,
+                                width: '750px',
+                                background: 'var(--bg-light)',
+                                confirmButtonText: '<i class="fas fa-check"></i> Entendido',
+                                allowOutsideClick: false,
+                                buttonsStyling: false,
+                                customClass: {
+                                    confirmButton: 'custom-swal-confirm'
+                                }
+                            });
+                            return null;
+                        }
+
+                        // ⚡ CASO 2: Ya cancelado en SAT pero NO completado, puede reanudar
+                        if (result.success && result.yaCancelado) {
+                            window.procesoIdActual = result.procesoId;
+
+                            const reanudarResult = await Swal.fire({
+                                icon: 'info',
+                                title: '<i class="fas fa-sync-alt"></i> Proceso Existente Detectado',
+                                html: `
+<div style="text-align: left; padding: 15px;">
+    <div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 2px solid var(--accent-blue); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 15px 0; color: var(--primary-blue);">
+            <i class="fas fa-info-circle"></i> Se encontró un proceso existente
+        </h4>
+        <p style="margin: 5px 0; color: #1565c0;">
+            ${result.message}
+        </p>
+    </div>
+
+    <div style="background: var(--very-light-blue); border-left: 4px solid var(--success-color); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <p style="margin: 0; color: var(--text-dark); font-weight: 600;">
+            <i class="fas fa-check-circle" style="color: var(--success-color);"></i> 
+            Ya cancelado en el SAT
+        </p>
+        <p style="margin: 5px 0 0 24px; font-size: 0.9em; color: var(--text-light);">
+            Acuse disponible: <a href="${result.acusePath}" target="_blank" style="color: var(--accent-blue);">Ver acuse</a>
+        </p>
+    </div>
+
+    ${result.resumen ? `
+    <div style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <h5 style="margin: 0 0 10px 0; color: var(--text-dark);">
+            <i class="fas fa-info-circle"></i> Estado del Proceso
+        </h5>
+        <div style="font-size: 0.9em; line-height: 1.8;">
+            <p style="margin: 5px 0;">
+                <strong>ID:</strong> <span style="font-family: monospace;">#${result.resumen.procesoId}</span>
+            </p>
+            <p style="margin: 5px 0;">
+                <strong>Estado:</strong> 
+                <span style="padding: 4px 8px; background: var(--very-light-blue); border-radius: 4px; font-weight: 600; color: var(--primary-blue);">
+                    ${result.resumen.estadoProceso}
+                </span>
+            </p>
+            <p style="margin: 5px 0;">
+                <strong>Paso actual:</strong> ${result.resumen.pasoActual} - ${result.resumen.pasoDescripcion}
+            </p>
+        </div>
+    </div>
+    ` : ''}
+
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px;">
+        <p style="margin: 0; color: #856404; font-size: 0.9em;">
+            <i class="fas fa-question-circle"></i> 
+            ¿Desea continuar con el proceso de refacturación desde donde se quedó?
+        </p>
+    </div>
+</div>
+`,
+                                width: '750px',
+                                background: 'var(--bg-light)',
+                                showCancelButton: true,
+                                confirmButtonText: '<i class="fas fa-play"></i> Continuar Proceso',
+                                cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                                buttonsStyling: false,
+                                customClass: {
+                                    popup: 'custom-swal-popup',
+                                    confirmButton: 'custom-swal-confirm',
+                                    cancelButton: 'custom-swal-cancel'
+                                }
+                            });
+
+                            if (reanudarResult.isConfirmed) {
+                                // Continuar directamente al paso de selección de documentos
+                                return await paso1();
+                            }
+                            return null;
+                        }
+
+                        // ⚡ CASO 3: Necesita cancelar en SAT (primera vez o proceso interrumpido)
+                        if (result.success && !result.yaCancelado) {
+                            // Guardar procesoId si ya existe
+                            if (result.procesoId) {
+                                window.procesoIdActual = result.procesoId;
+                            }
+
+                            // Mostrar confirmación ANTES de cancelar
+                            const confirmResult = await Swal.fire({
+                                icon: 'warning',
+                                title: '<i class="fas fa-exclamation-triangle"></i> Confirmar Cancelación',
+                                html: `
+<div style="text-align: left; padding: 15px;">
+
+    <div style="background: #e7f1ff; border: 2px solid #76a7ff; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 15px 0; color: #0c4a8a;">
+            <i class="fas fa-info-circle"></i> Proceso de Verificación y Cancelación
+        </h4>
+        <p style="margin: 5px 0; color: #0c4a8a;">
+            Antes de iniciar la cancelación, se realizará una verificación del documento y del estatus actual ante el SAT. 
+            Este proceso completo incluye:
+        </p>
+        <ul style="margin: 10px 0 0 20px; padding: 0; color: #0c4a8a;">
+            <li>Validación de la existencia y estado del folio en SAT</li>
+            <li>Revisión de bloqueos, usos o vinculaciones del CFDI</li>
+            <li>Confirmación del usuario antes de continuar</li>
+            <li>Ejecución de la cancelación ante el SAT (en el paso final)</li>
+            <li>Generación del acuse de cancelación</li>
+            <li>Continuación automática hacia la refacturación (si aplica)</li>
+        </ul>
+    </div>
+
+    <div style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 8px; padding: 15px;">
+        <p style="margin: 0; color: var(--text-dark); font-size: 0.9em;">
+            <i class="fas fa-file-invoice"></i> <strong>UUID:</strong> 
+            <span style="font-family: monospace; font-size: 0.85em; word-break: break-all;">${uuid}</span>
+        </p>
+    </div>
+
+</div>
+`,
+
+                                width: '650px',
+                                background: 'var(--bg-light)',
+                                showCancelButton: true,
+                                confirmButtonText: '<i class="fas fa-check"></i> Continuar con Cancelación',
+                                cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                                buttonsStyling: false,
+                                customClass: {
+                                    popup: 'custom-swal-popup',
+                                    confirmButton: 'custom-swal-confirm',
+                                    cancelButton: 'custom-swal-cancel'
+                                }
+                            });
+
+                            if (!confirmResult.isConfirmed) {
+                                return null;
+                            }
+
+                            // ⚡ AHORA SÍ: Cancelar en el PAC
+                             return await paso1();
+                        }
+
+                        // Error inesperado
+                        throw new Error(result.message || 'Error al verificar el estado');
+
+                    } catch (error) {
+                        console.error('Error:', error);
+                        await Swal.fire({
+                            icon: 'error',
+                            title: '<i class="fas fa-times-circle"></i> Error',
+                            html: `
+<div style="padding: 10px;">
+    <div style="background: #f8d7da; border: 2px solid var(--danger-color); padding: 20px; border-radius: 8px;">
+        <p style="color: #721c24; margin: 0; word-break: break-word;">
+            ${error.message}
+        </p>
+    </div>
+</div>
+`,
+                            width: '500px',
+                            background: 'var(--bg-light)',
+                            confirmButtonText: '<i class="fas fa-check"></i> Cerrar',
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: 'custom-swal-confirm'
+                            }
+                        });
+                        return null;
+                    }
+                }
+
+                // ============================================
+                // NUEVA FUNCIÓN: Ejecutar cancelación en SAT
+                // ============================================
+                async function ejecutarCancelacionSAT() {
+                    Swal.fire({
+                        title: '<i class="fas fa-spinner fa-spin"></i> Cancelando en SAT',
+                        html: '<p style="color: #6c757d;">Procesando cancelación ante el SAT...</p>',
+                        background: 'var(--bg-light)',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    try {
+                        // El paso 3 pide el motivo y lo valida, pero aquí iba '04' fijo:
+                        // lo que el usuario elegía se descartaba en silencio (y el folio de
+                        // sustitución del motivo 01 nunca se enviaba). Para este proceso el
+                        // 04 sigue siendo el correcto, y es el que viene preseleccionado.
+                        const motivoCancelacion = (formValues && formValues.motivo) || '04';
+                        const folioSust = (formValues && formValues.folioSustitucion) || '';
+
+                        const formData = new FormData();
+                        formData.append('rfcEmisor', rfcEmisor);
+                        formData.append('uuid', uuid);
+                        formData.append('motivo', motivoCancelacion);
+                        formData.append('folioSustitucion', folioSust);
+                        formData.append('encabezadoId', encabezadoId);
+
+                        // Si ya existe un procesoId, enviarlo
+                        if (window.procesoIdActual) {
+                            formData.append('procesoId', window.procesoIdActual);
+                        }
+
+                        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                        if (token) {
+                            formData.append('__RequestVerificationToken', token);
+                        }
+
+                        const response = await fetch('/FacturaGlobalConsulta/CancelarFactura', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const result = await response.json();
+
+                        if (!result.success) {
+                            throw new Error(result.message || 'Error al cancelar en el SAT');
+                        }
+
+                        // Guardar procesoId
+                        window.procesoIdActual = result.procesoId;
+
+                        // Mostrar éxito y continuar
+                        await Swal.fire({
+                            icon: 'success',
+                            title: '<i class="fas fa-check-circle"></i> Cancelación Exitosa',
+                            html: `
+<div style="padding: 15px;">
+            <div style="background: var(--very-light-blue); border-left: 4px solid var(--success-color); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <p style="margin: 0; color: var(--text-dark); font-weight: 600;">
+            <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+            Ya cancelado en el SAT
+        </p>
+        <p style="margin: 5px 0 0 24px; font-size: 0.9em; color: var(--text-light);">
+            Acuse disponible: <a href="${acuseURL}" target="_blank" style="color: var(--accent-blue);">Ver acuse</a>
+        </p>
+    </div>
+
+    <div style="background: #d4edda; border: 2px solid var(--success-color); border-radius: 12px; padding: 20px; margin-bottom: 15px;">
+        <p style="margin: 0; color: #155724; font-weight: 600;">
+            <i class="fas fa-check-circle"></i> La factura fue cancelada exitosamente ante el SAT
+        </p>
+    </div>
+    <div style="background: var(--very-light-blue); padding: 12px; border-radius: 8px;">
+        <p style="margin: 0; color: var(--text-dark); font-size: 0.9em;">
+            Ahora puede continuar con el proceso de refacturación
+        </p>
+    </div>
+</div>
+`,
+                            width: '550px',
+                            background: 'var(--bg-light)',
+                            confirmButtonText: '<i class="fas fa-arrow-right"></i> Continuar',
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: 'custom-swal-confirm'
+                            }
+                        });
+
+                        // Continuar con el flujo
+                        return await paso5();
+
+                    } catch (error) {
+                        console.error('Error:', error);
+                        await Swal.fire({
+                            icon: 'error',
+                            title: '<i class="fas fa-times-circle"></i> Error al Cancelar',
+                            html: `
+<div style="padding: 10px;">
+    <div style="background: #f8d7da; border: 2px solid var(--danger-color); padding: 20px; border-radius: 8px;">
+        <p style="color: #721c24; margin: 0; word-break: break-word;">
+            ${error.message}
+        </p>
+    </div>
+</div>
+`,
+                            width: '500px',
+                            background: 'var(--bg-light)',
+                            confirmButtonText: '<i class="fas fa-check"></i> Cerrar',
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: 'custom-swal-confirm'
+                            }
+                        });
+                        return null;
+                    }
+                }
+
+                // PASO 1: Cargar documentos
+                async function paso1() {
+                    Swal.fire({
+                        title: '<i class="fas fa-spinner fa-spin"></i> Cargando Información',
+                        html: '<p style="color: #6c757d;">Obteniendo detalles de la factura...</p>',
+                        background: 'var(--bg-light)',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    try {
+                        // Con procesoId el backend descarta los documentos que ya se le
+                        // facturaron al cliente en este proceso: sólo quedan los pendientes.
+                        const urlDetalle = window.procesoIdActual
+                            ? `/FacturaGlobalConsulta/FacturaDetail?id=${encabezadoId}&procesoId=${window.procesoIdActual}`
+                            : `/FacturaGlobalConsulta/FacturaDetail?id=${encabezadoId}`;
+
+                        const response = await fetch(urlDetalle);
+                        if (!response.ok) throw new Error('Error al cargar los detalles');
+
+                        const data = await response.json();
+                        if (!data || data.length === 0 || !data[0].documento) {
+                            throw new Error('No se encontraron datos');
+                        }
+
+                        documentos = JSON.parse(data[0].documento);
+
+                        // Si ya hay documentos con su factura nominativa emitida, esto es la
+                        // continuación de un proceso: lo que queda va completo a la global.
+                        continuandoProceso = (data[0].ya_refacturados || 0) > 0;
+
+                        return await paso2();
+
+                    } catch (error) {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: '<i class="fas fa-times-circle"></i> Error',
+                            html: `<div style="padding: 10px;"><div style="background: #f8d7da; padding: 20px; border-radius: 8px;"><p style="color: #721c24; margin: 0;">${error.message}</p></div></div>`,
+                            width: '500px',
+                            background: 'var(--bg-light)',
+                            confirmButtonText: '<i class="fas fa-check"></i> Cerrar',
+                            buttonsStyling: false,
+                            customClass: { confirmButton: 'custom-swal-confirm' }
+                        });
+                    }
+                }
+
+                // PASO 2: Selección de documentos
+                async function paso2() {
+                    const result = await Swal.fire({
+                        title: '<i class="fas fa-list-check"></i> Seleccionar Documentos a Cancelar',
+                        html: `
+<div style="text-align:left; padding: 10px;">
+    <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary-blue);">
+        <p style="margin: 3px 0; color: #495057; font-size: 0.85em;">
+            <i class="fas fa-hashtag" style="color: var(--primary-blue); width: 18px;"></i>
+            <strong>UUID:</strong> <span style="font-family: monospace; font-size: 0.9em;">${uuid}</span>
+        </p>
+        <p style="margin: 3px 0; color: #495057; font-size: 0.85em;">
+            <i class="fas fa-building" style="color: var(--primary-blue); width: 18px;"></i>
+            <strong>RFC Emisor:</strong> <span style="font-family: monospace;">${rfcEmisor}</span>
+        </p>
+    </div>
+
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 15px;">
+        <p style="margin: 0; color: #856404; font-size: 0.85em;">
+            <i class="fas fa-info-circle" style="color: #ffc107;"></i>
+            ${continuandoProceso ? `
+            <strong>Continuación del proceso:</strong> las facturas nominativas del cliente ya se emitieron
+            y esos documentos ya no aparecen aquí. Marque los que deben integrar la
+            <strong>nueva factura global</strong> — normalmente, todos.
+            ` : `
+            <strong>Instrucciones:</strong> Marque los documentos que deben <strong>seguir en la factura global</strong>.
+            Los que deje <strong>sin marcar</strong> se le facturarán de forma nominativa al cliente.
+            La factura global actual se cancela completa y se vuelve a emitir sólo con los marcados.
+            `}
+        </p>
+    </div>
+
+    <div style="margin-bottom: 12px;">
+        <div style="position: relative; margin-bottom: 10px;">
+            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="Buscar por folio, cliente o fecha..."
+                   style="width: 100%; padding: 10px 12px 10px 38px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 0.9em; transition: all 0.2s ease;">
+        </div>
+        
+        <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 8px;">
+                <button id="selectAllBtn" class="btn-selection" style="padding: 6px 12px; background: var(--primary-blue); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: 600;">
+                    <i class="fas fa-check-double"></i> Todos
+                </button>
+                <button id="deselectAllBtn" class="btn-selection" style="padding: 6px 12px; background: var(--bg-gray); color: var(--text-dark); border: 2px solid var(--border-light); border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: 600;">
+                    <i class="fas fa-times"></i> Ninguno
+                </button>
+            </div>
+            <div id="selectionCounter" style="font-weight: 600; color: var(--primary-blue); font-size: 0.9em;">
+                <i class="fas fa-check-circle"></i> 0 de ${documentos.length}
+            </div>
+        </div>
+    </div>
+
+    <div id="documentosContainer" style="max-height: 500px; overflow-y: auto; border: 2px solid var(--border-light); border-radius: 8px; padding: 12px; background: var(--bg-light); display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px;">
+        ${documentos.map((doc, index) => {
+                            const totalDoc = doc.partidas.reduce((sum, p) => sum + (p.imp_part || 0), 0);
+                            return `
+                <div class="documento-item" data-index="${index}" style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; height: 100%;">
+                    <div style="display: flex; align-items: start; gap: 10px; margin-bottom: 10px;">
+                        <input type="checkbox" 
+                               class="doc-checkbox" 
+                               id="doc_${index}" 
+                               data-doc-index="${index}"
+                               ${selectionResult && selectionResult.seleccionados.some(s => s.folio === doc.folio) ? 'checked' : ''}
+                               style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary-blue); margin-top: 2px; flex-shrink: 0;">
+                        
+                        <div style="flex: 1; min-width: 0;">
+                            <h4 style="margin: 0 0 4px 0; color: var(--primary-blue); font-size: 1em; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <i class="fas fa-file-invoice" style="font-size: 0.9em;"></i> ${doc.gen}-${doc.nat}-${doc.folio}
+                            </h4>
+                            <p style="margin: 0 0 8px 0; color: var(--text-light); font-size: 0.8em;">
+                                <i class="fas fa-calendar" style="font-size: 0.9em;"></i> ${formatDate(doc.fecha)}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--very-light-blue); padding: 8px; border-radius: 6px; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <i class="fas fa-user" style="color: var(--accent-blue); font-size: 0.85em; flex-shrink: 0;"></i>
+                            <span style="font-weight: 600; color: var(--text-dark); font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${doc.cliente}">${doc.cliente}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-boxes" style="color: var(--accent-blue); font-size: 0.85em;"></i>
+                            <span style="font-size: 0.8em; color: var(--text-dark);"><strong>${doc.partidas.length}</strong> partidas</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: auto; text-align: right; background: var(--bg-light); padding: 8px 10px; border-radius: 6px;">
+                        <div style="font-size: 0.7em; color: var(--text-light); margin-bottom: 2px; text-transform: uppercase; font-weight: 600;">Total</div>
+                        <div style="font-size: 1.15em; font-weight: 700; color: var(--primary-blue); font-family: monospace;">$${totalDoc.toFixed(2)}</div>
+                    </div>
+                </div>
+            `;
+                        }).join('')}
+    </div>
+</div>
+`,
+                        width: '1000px',
+                        background: 'var(--bg-light)',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-arrow-right"></i> Continuar',
+                        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'custom-swal-popup',
+                            title: 'custom-swal-title',
+                            confirmButton: 'custom-swal-confirm',
+                            cancelButton: 'custom-swal-cancel'
+                        },
+                        didOpen: () => {
+                            const checkboxes = document.querySelectorAll('.doc-checkbox');
+                            const selectAllBtn = document.getElementById('selectAllBtn');
+                            const deselectAllBtn = document.getElementById('deselectAllBtn');
+                            const counter = document.getElementById('selectionCounter');
+                            const documentosItems = document.querySelectorAll('.documento-item');
+                            const searchInput = document.getElementById('searchInput');
+
+                            function updateCounter() {
+                                const visibleCheckboxes = Array.from(checkboxes).filter(cb => {
+                                    const docItem = cb.closest('.documento-item');
+                                    return docItem.style.display !== 'none';
+                                });
+                                const selectedCount = visibleCheckboxes.filter(cb => cb.checked).length;
+                                const visibleCount = visibleCheckboxes.length;
+                                counter.innerHTML = `<i class="fas fa-check-circle"></i> ${selectedCount} de ${visibleCount}`;
+                            }
+
+                            function filterDocuments() {
+                                const searchTerm = searchInput.value.toLowerCase().trim();
+                                let visibleCount = 0;
+
+                                documentosItems.forEach(item => {
+                                    const index = item.dataset.index;
+                                    const doc = documentos[index];
+                                    const folio = `${doc.gen}-${doc.nat}-${doc.folio}`.toLowerCase();
+                                    const cliente = doc.cliente.toLowerCase();
+                                    const fecha = formatDate(doc.fecha).toLowerCase();
+
+                                    const matches = folio.includes(searchTerm) ||
+                                        cliente.includes(searchTerm) ||
+                                        fecha.includes(searchTerm);
+
+                                    if (matches) {
+                                        item.style.display = 'flex';
+                                        visibleCount++;
+                                    } else {
+                                        item.style.display = 'none';
+                                    }
+                                });
+
+                                updateCounter();
+
+                                if (visibleCount === 0) {
+                                    const container = document.getElementById('documentosContainer');
+                                    if (!document.getElementById('noResultsMsg')) {
+                                        const msg = document.createElement('div');
+                                        msg.id = 'noResultsMsg';
+                                        msg.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-light);';
+                                        msg.innerHTML = '<i class="fas fa-search" style="font-size: 3em; opacity: 0.3; margin-bottom: 10px;"></i><br><strong>No se encontraron documentos</strong><br><span style="font-size: 0.9em;">Intenta con otro término de búsqueda</span>';
+                                        container.appendChild(msg);
+                                    }
+                                } else {
+                                    const noResultsMsg = document.getElementById('noResultsMsg');
+                                    if (noResultsMsg) noResultsMsg.remove();
+                                }
+                            }
+
+                            searchInput.addEventListener('input', filterDocuments);
+
+                            searchInput.addEventListener('focus', function () {
+                                this.style.borderColor = 'var(--primary-blue)';
+                                this.style.boxShadow = '0 0 0 3px rgba(30, 58, 95, 0.1)';
+                            });
+
+                            searchInput.addEventListener('blur', function () {
+                                this.style.borderColor = 'var(--border-light)';
+                                this.style.boxShadow = 'none';
+                            });
+
+                            function updateDocumentStyle(checkbox) {
+                                const docItem = checkbox.closest('.documento-item');
+                                if (checkbox.checked) {
+                                    docItem.style.borderColor = 'var(--success-color)';
+                                    docItem.style.background = '#f0fdf4';
+                                    docItem.style.boxShadow = '0 3px 8px rgba(5, 150, 105, 0.15)';
+                                    docItem.style.transform = 'translateY(-2px)';
+                                } else {
+                                    docItem.style.borderColor = 'var(--border-light)';
+                                    docItem.style.background = 'white';
+                                    docItem.style.boxShadow = 'none';
+                                    docItem.style.transform = 'translateY(0)';
+                                }
+                            }
+
+                            checkboxes.forEach(checkbox => {
+                                checkbox.addEventListener('change', () => {
+                                    updateCounter();
+                                    updateDocumentStyle(checkbox);
+                                });
+                                updateDocumentStyle(checkbox);
+                            });
+
+                            documentosItems.forEach(item => {
+                                item.addEventListener('click', (e) => {
+                                    if (e.target.classList.contains('doc-checkbox')) return;
+                                    const checkbox = item.querySelector('.doc-checkbox');
+                                    checkbox.checked = !checkbox.checked;
+                                    updateCounter();
+                                    updateDocumentStyle(checkbox);
+                                });
+
+                                item.addEventListener('mouseenter', () => {
+                                    if (!item.querySelector('.doc-checkbox').checked) {
+                                        item.style.borderColor = 'var(--primary-blue)';
+                                        item.style.boxShadow = '0 3px 8px rgba(30, 58, 95, 0.12)';
+                                        item.style.transform = 'translateY(-2px)';
+                                    }
+                                });
+
+                                item.addEventListener('mouseleave', () => {
+                                    const checkbox = item.querySelector('.doc-checkbox');
+                                    if (!checkbox.checked) {
+                                        item.style.borderColor = 'var(--border-light)';
+                                        item.style.boxShadow = 'none';
+                                        item.style.transform = 'translateY(0)';
+                                    }
+                                });
+                            });
+
+                            selectAllBtn.addEventListener('click', () => {
+                                const visibleCheckboxes = Array.from(checkboxes).filter(cb => {
+                                    const docItem = cb.closest('.documento-item');
+                                    return docItem.style.display !== 'none';
+                                });
+                                visibleCheckboxes.forEach(cb => {
+                                    cb.checked = true;
+                                    updateDocumentStyle(cb);
+                                });
+                                updateCounter();
+                            });
+
+                            deselectAllBtn.addEventListener('click', () => {
+                                const visibleCheckboxes = Array.from(checkboxes).filter(cb => {
+                                    const docItem = cb.closest('.documento-item');
+                                    return docItem.style.display !== 'none';
+                                });
+                                visibleCheckboxes.forEach(cb => {
+                                    cb.checked = false;
+                                    updateDocumentStyle(cb);
+                                });
+                                updateCounter();
+                            });
+
+                            updateCounter();
+                        },
+                        preConfirm: () => {
+                            const checkboxes = document.querySelectorAll('.doc-checkbox');
+                            const documentosSeleccionados = [];
+                            const documentosNoSeleccionados = [];
+
+                            checkboxes.forEach((checkbox, index) => {
+                                if (checkbox.checked) {
+                                    documentosSeleccionados.push(documentos[index]);
+                                } else {
+                                    documentosNoSeleccionados.push(documentos[index]);
+                                }
+                            });
+
+                            // Sólo aplica en la selección inicial: hay que apartar el
+                            // documento que se le facturará al cliente. Al continuar un
+                            // proceso, esa factura ya se emitió y su documento ni siquiera
+                            // aparece en la lista, así que todo lo que queda va a la global.
+                            if (!continuandoProceso && documentosNoSeleccionados.length === 0) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Deje al menos un documento sin marcar: es el que se facturará al cliente');
+                                return false;
+                            }
+
+                            // Sin documentos marcados no hay global que reemitir, y el paso 7
+                            // fallaba con "No se recibieron IDs válidos" cuando la factura ya
+                            // estaba cancelada en el SAT y las nominativas ya timbradas.
+                            if (documentosSeleccionados.length === 0) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Marque al menos un documento: sin ellos no hay factura global que volver a emitir');
+                                return false;
+                            }
+
+                            return {
+                                seleccionados: documentosSeleccionados,
+                                noCancelados: documentosNoSeleccionados
+                            };
+                        }
+                    });
+
+                    if (result.isConfirmed) {
+                        selectionResult = result.value;
+                        return await paso3();
+                    }
+                    return null;
+                }
+
+                // PASO 3: Resumen y motivo
+                async function paso3() {
+                    const { seleccionados, noCancelados } = selectionResult;
+
+                    const result = await Swal.fire({
+                        title: '<i class="fas fa-clipboard-check"></i> Confirmar Selección',
+                        html: `
+<div style="text-align:left; padding: 10px;">
+    <div style="background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue)); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-lg);">
+        <h4 style="margin: 0 0 15px 0; font-size: 1.2em;">
+            <i class="fas fa-chart-pie"></i> Resumen de Selección
+        </h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; backdrop-filter: blur(10px);">
+                <div style="font-size: 0.85em; opacity: 0.9; margin-bottom: 5px;">Documentos a Mantener</div>
+                <div style="font-size: 2em; font-weight: 700;">${seleccionados.length}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; backdrop-filter: blur(10px);">
+                <div style="font-size: 0.85em; opacity: 0.9; margin-bottom: 5px;">Documentos a Cancelar</div>
+                <div style="font-size: 2em; font-weight: 700;">${noCancelados.length}</div>
+            </div>
+        </div>
+    </div>
+
+    ${seleccionados.length > 0 ? `
+    <div style="margin-bottom: 20px;">
+        <h5 style="color: var(--success-color); margin-bottom: 10px;">
+            <i class="fas fa-check-circle"></i> Documentos que se Mantendrán (${seleccionados.length})
+        </h5>
+        <div style="max-height: 150px; overflow-y: auto; background: var(--very-light-blue); padding: 10px; border-radius: 8px; border-left: 4px solid var(--success-color);">
+            ${seleccionados.map(doc => `
+                <div style="padding: 8px; margin-bottom: 5px; background: var(--bg-light); border-radius: 6px; font-size: 0.9em;">
+                    <strong>${doc.gen}-${doc.nat}-${doc.folio}</strong> - ${doc.cliente}
+                </div>
+            `).join('')}
+        </div>
+    </div>
+    ` : ''}
+
+    <div style="margin-bottom: 20px;">
+        <h5 style="color: var(--danger-color); margin-bottom: 10px;">
+            <i class="fas fa-ban"></i> Documentos que se Cancelarán (${noCancelados.length})
+        </h5>
+        <div style="max-height: 150px; overflow-y: auto; background: #fee2e2; padding: 10px; border-radius: 8px; border-left: 4px solid var(--danger-color);">
+            ${noCancelados.map(doc => `
+                <div style="padding: 8px; margin-bottom: 5px; background: var(--bg-light); border-radius: 6px; font-size: 0.9em;">
+                    <strong>${doc.gen}-${doc.nat}-${doc.folio}</strong> - ${doc.cliente}
+                </div>
+            `).join('')}
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; color: var(--text-dark); font-size: 14px;">
+            <i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i> Motivo de cancelación <span style="color: var(--danger-color);">*</span>
+        </label>
+        <select id="motivoSelect" class="swal2-select" style="width:100%; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; margin: 0;">
+            <option value="">-- Seleccione un motivo --</option>
+            <option value="01" ${formValues && formValues.motivo === '01' ? 'selected' : ''}>01 - Comprobante emitido con errores con relación</option>
+            <option value="02" ${formValues && formValues.motivo === '02' ? 'selected' : ''}>02 - Comprobante emitido con errores sin relación</option>
+            <option value="03" ${formValues && formValues.motivo === '03' ? 'selected' : ''}>03 - No se llevó a cabo la operación</option>
+            <option value="04" ${!formValues || formValues.motivo === '04' ? 'selected' : ''}>04 - Operación nominativa relacionada en factura global</option>
+        </select>
+    </div>
+
+    <div id="folioContainer" style="margin-bottom: 20px; display:${formValues && formValues.motivo === '01' ? 'block' : 'none'};">
+        <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px; color: var(--text-dark); font-size: 14px;">
+            <i class="fas fa-file-alt" style="color: var(--primary-blue);"></i> Folio fiscal que sustituye <span style="color: var(--danger-color);">*</span>
+        </label>
+        <input type="text" id="folioInput" class="swal2-input"
+               placeholder="UUID de la factura sustituta (36 caracteres)"
+               maxlength="36"
+               value="${formValues ? formValues.folioSustitucion : ''}"
+               style="width:100%; margin: 0; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; font-family: monospace;">
+    </div>
+</div>
+`,
+                        width: '800px',
+                        background: 'var(--bg-light)',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-arrow-right"></i> Continuar',
+                        cancelButtonText: '<i class="fas fa-arrow-left"></i> Regresar',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'custom-swal-popup',
+                            title: 'custom-swal-title',
+                            confirmButton: 'custom-swal-confirm',
+                            cancelButton: 'custom-swal-cancel'
+                        },
+                        didOpen: () => {
+                            const motivoSelect = document.getElementById('motivoSelect');
+                            const folioContainer = document.getElementById('folioContainer');
+                            const folioInput = document.getElementById('folioInput');
+
+                            motivoSelect.addEventListener('change', () => {
+                                if (motivoSelect.value === '01') {
+                                    folioContainer.style.display = 'block';
+                                    folioInput.required = true;
+                                } else {
+                                    folioContainer.style.display = 'none';
+                                    folioInput.required = false;
+                                    folioInput.value = '';
+                                }
+                            });
+                        },
+                        preConfirm: () => {
+                            const motivo = document.getElementById('motivoSelect').value;
+                            const folioSustitucion = document.getElementById('folioInput').value.trim().toUpperCase();
+
+                            if (!motivo) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Debe seleccionar un motivo de cancelación');
+                                return false;
+                            }
+
+                            if (motivo === '01' && !folioSustitucion) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Debe ingresar el folio fiscal que sustituye');
+                                return false;
+                            }
+
+                            if (motivo === '01' && folioSustitucion.length !== 36) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> El UUID debe tener exactamente 36 caracteres');
+                                return false;
+                            }
+
+                            return { motivo, folioSustitucion };
+                        }
+                    });
+
+                    if (result.isConfirmed) {
+                        formValues = result.value;
+                        return await paso4();
+                    } else if (result.isDismissed && result.dismiss === Swal.DismissReason.cancel) {
+                        // Regresar al paso anterior
+                        return await paso2();
+                    }
+                    return null;
+                }
+
+                // PASO 4: Confirmación final
+                async function paso4() {
+                    const { seleccionados, noCancelados } = selectionResult;
+                    const { motivo, folioSustitucion } = formValues;
+
+                    const result = await Swal.fire({
+                        title: '<i class="fas fa-exclamation-triangle"></i> Confirmación Final',
+                        html: `
+<div style="text-align:left; padding: 10px;">
+    <div style="background: #f8d7da; border: 2px solid var(--danger-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 15px 0; color: var(--danger-color);">
+            <i class="fas fa-exclamation-triangle"></i> Advertencia Importante
+        </h4>
+        <ul style="margin: 0; padding-left: 20px; color: #721c24;">
+            <li>Se cancelarán <strong>${noCancelados.length} documentos</strong></li>
+            <li>Se mantendrán <strong>${seleccionados.length} documentos</strong></li>
+            <li>Esta acción es <strong>irreversible</strong></li>
+            <li>Se generará un acuse de cancelación</li>
+        </ul>
+    </div>
+
+    <div style="background: --var(--bg-light); border: 2px solid var(--primary-blue); border-radius: 8px; padding: 15px;">
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" id="aceptacionCheck" style="width: 20px; height: 20px; margin-right: 12px; cursor: pointer; accent-color: var(--primary-blue);">
+            <span style="color: var(--text-dark); font-size: 0.95em;">
+                <strong>He revisado la información y autorizo esta operación.</strong>
+            </span>
+        </label>
+    </div>
+</div>
+`,
+                        icon: 'warning',
+                        width: '600px',
+                        background: 'var(--bg-light)',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-ban"></i> Cancelar Documentos',
+                        cancelButtonText: '<i class="fas fa-arrow-left"></i> Regresar',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'custom-swal-popup',
+                            title: 'custom-swal-title',
+                            confirmButton: 'custom-swal-confirm-danger',
+                            cancelButton: 'custom-swal-cancel'
+                        },
+                        preConfirm: () => {
+                            const checkbox = document.getElementById('aceptacionCheck');
+                            if (!checkbox.checked) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Debe aceptar los términos para continuar');
+                                return false;
+                            }
+                            return true;
+                        }
+                    });
+
+                    if (result.isConfirmed) {
+                        // 2. Continuar al paso 5
+                        return await ejecutarCancelacionSAT()
+                    } else if (result.isDismissed && result.dismiss === Swal.DismissReason.cancel) {
+                        // Regresar al paso anterior
+                        return await paso3();
+                    }
+                    return null;
+                }
+
+                // PASO 5: Procesamiento
+                async function paso5() {
+                    const { seleccionados, noCancelados } = selectionResult;
+                    const { motivo, folioSustitucion } = formValues;
+
+                    // Sin documentos que facturar de forma nominativa —el caso típico al
+                    // continuar un proceso, donde esa factura ya se emitió— no tiene sentido
+                    // pedir datos fiscales ni recorrer el paso 6: se va directo a la global.
+                    if (!noCancelados || noCancelados.length === 0) {
+                        return await paso7();
+                    }
+
+                    // Mostrar modal con opción de datos fiscales personalizados
+                    const preResult = await Swal.fire({
+                        title: '<i class="fas fa-user-edit"></i> Configurar Refacturación Individual',
+                        html: `
+<div style="text-align:left; padding: 10px;">
+    <div style="background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue)); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-lg);">
+        <h4 style="margin: 0 0 10px 0; font-size: 1.2em;">
+            <i class="fas fa-receipt"></i> Documentos a Refacturar
+        </h4>
+        <p style="margin: 0; opacity: 0.9; font-size: 0.95em;">
+            Total: <strong style="font-size: 1.2em;">${noCancelados.length}</strong> documentos
+        </p>
+    </div>
+
+    <div style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 15px;">
+            <input type="checkbox" id="usarDatosPersonalizados" 
+                   style="width: 20px; height: 20px; margin-right: 12px; cursor: pointer; accent-color: var(--primary-blue);">
+            <span style="font-weight: 600; color: var(--text-dark); font-size: 1.05em;">
+                <i class="fas fa-edit"></i> Usar datos fiscales personalizados
+            </span>
+        </label>
+        
+        <div id="formularioDatosFiscales" style="display: none; margin-top: 20px; padding: 20px; background: var(--very-light-blue); border-radius: 8px; border-left: 4px solid var(--accent-blue);">
+            
+            <!-- RFC -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                    <i class="fas fa-id-card"></i> RFC <span style="color: var(--danger-color);">*</span>
+                </label>
+                <input type="text" id="rfcPersonalizado" class="swal2-input"
+                       placeholder="Ej: XAXX010101000"
+                       maxlength="13"
+                       style="width: 100%; background: var(--bg-light); margin: 0; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; text-transform: uppercase; font-family: monospace;">
+                <small style="color: var(--text-light); font-size: 0.85em; display: block; margin-top: 5px;">
+                    <i class="fas fa-info-circle"></i> 12 o 13 caracteres
+                </small>
+            </div>
+
+            <!-- Razón Social -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                    <i class="fas fa-building"></i> Razón Social / Nombre <span style="color: var(--danger-color);">*</span>
+                </label>
+                <input type="text" id="razonSocialPersonalizada" class="swal2-input"
+                       placeholder="Nombre completo o razón social"
+                       style="width: 100%; background: var(--bg-light); margin: 0; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px;">
+            </div>
+
+            <!-- Código Postal -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                    <i class="fas fa-map-marker-alt"></i> Código Postal <span style="color: var(--danger-color);">*</span>
+                </label>
+                <input type="text" id="cpPersonalizado" class="swal2-input"
+                       placeholder="Ej: 76000"
+                       maxlength="5"
+                       pattern="[0-9]{5}"
+                       style="width: 100%; background: var(--bg-light); margin: 0; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; font-family: monospace;">
+            </div>
+
+            <!-- Régimen Fiscal -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                    <i class="fas fa-file-invoice-dollar"></i> Régimen Fiscal <span style="color: var(--danger-color);">*</span>
+                </label>
+                <select id="regimenFiscalPersonalizado" class="swal2-select"
+                        style="width: 100%; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; margin: 0;">
+                    <option value="">-- Seleccione un régimen --</option>
+                    <option value="601">601 - General de Ley Personas Morales</option>
+                    <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
+                    <option value="605">605 - Sueldos y Salarios e Ingresos Asimilados a Salarios</option>
+                    <option value="606">606 - Arrendamiento</option>
+                    <option value="607">607 - Régimen de Enajenación o Adquisición de Bienes</option>
+                    <option value="608">608 - Demás ingresos</option>
+                    <option value="610">610 - Residentes en el Extranjero sin Establecimiento Permanente en México</option>
+                    <option value="611">611 - Ingresos por Dividendos (socios y accionistas)</option>
+                    <option value="612">612 - Personas Físicas con Actividades Empresariales y Profesionales</option>
+                    <option value="614">614 - Ingresos por intereses</option>
+                    <option value="615">615 - Régimen de los ingresos por obtención de premios</option>
+                    <option value="616" selected>616 - Sin obligaciones fiscales</option>
+                    <option value="620">620 - Sociedades Cooperativas de Producción que optan por diferir sus ingresos</option>
+                    <option value="621">621 - Incorporación Fiscal</option>
+                    <option value="622">622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
+                    <option value="623">623 - Opcional para Grupos de Sociedades</option>
+                    <option value="624">624 - Coordinados</option>
+                    <option value="625">625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas</option>
+                    <option value="626">626 - Régimen Simplificado de Confianza</option>
+                </select>
+            </div>
+
+            <!-- Uso CFDI -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                    <i class="fas fa-tag"></i> Uso CFDI <span style="color: var(--danger-color);">*</span>
+                </label>
+                <select id="usoCFDIPersonalizado" class="swal2-select"
+                        style="width: 100%; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; margin: 0;">
+                    <option value="">-- Seleccione un uso --</option>
+                    <option value="G01">G01 - Adquisición de mercancías</option>
+                    <option value="G02">G02 - Devoluciones, descuentos o bonificaciones</option>
+                    <option value="G03" selected>G03 - Gastos en general</option>
+                    <option value="I01">I01 - Construcciones</option>
+                    <option value="I02">I02 - Mobiliario y equipo de oficina por inversiones</option>
+                    <option value="I03">I03 - Equipo de transporte</option>
+                    <option value="I04">I04 - Equipo de cómputo y accesorios</option>
+                    <option value="I05">I05 - Dados, troqueles, moldes, matrices y herramental</option>
+                    <option value="I06">I06 - Comunicaciones telefónicas</option>
+                    <option value="I07">I07 - Comunicaciones satelitales</option>
+                    <option value="I08">I08 - Otra maquinaria y equipo</option>
+                    <option value="D01">D01 - Honorarios médicos, dentales y gastos hospitalarios</option>
+                    <option value="D02">D02 - Gastos médicos por incapacidad o discapacidad</option>
+                    <option value="D03">D03 - Gastos funerales</option>
+                    <option value="D04">D04 - Donativos</option>
+                    <option value="D05">D05 - Intereses reales efectivamente pagados por créditos hipotecarios (casa habitación)</option>
+                    <option value="D06">D06 - Aportaciones voluntarias al SAR</option>
+                    <option value="D07">D07 - Primas por seguros de gastos médicos</option>
+                    <option value="D08">D08 - Gastos de transportación escolar obligatoria</option>
+                    <option value="D09">D09 - Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones</option>
+                    <option value="D10">D10 - Pagos por servicios educativos (colegiaturas)</option>
+                    <option value="S01">S01 - Sin efectos fiscales</option>
+                    <option value="CP01">CP01 - Pagos</option>
+                    <option value="CN01">CN01 - Nómina</option>
+                </select>
+            </div>
+
+            <!-- Forma de Pago -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-weight: 600; font-size: 14px;">
+                    <i class="fas fa-credit-card"></i> Forma de Pago <span style="color: var(--danger-color);">*</span>
+                </label>
+                <select id="formaPagoPersonalizada" class="swal2-select"
+                        style="width: 100%; padding: 12px 16px; border: 2px solid var(--border-light); border-radius: 8px; font-size: 14px; margin: 0;">
+                    <option value="">-- Seleccione una forma --</option>
+                    <option value="01">01 - Efectivo</option>
+                    <option value="02">02 - Cheque nominativo</option>
+                    <option value="03">03 - Transferencia electrónica de fondos</option>
+                    <option value="04">04 - Tarjeta de crédito</option>
+                    <option value="05">05 - Monedero electrónico</option>
+                    <option value="06">06 - Dinero electrónico</option>
+                    <option value="08">08 - Vales de despensa</option>
+                    <option value="12">12 - Dación en pago</option>
+                    <option value="13">13 - Pago por subrogación</option>
+                    <option value="14">14 - Pago por consignación</option>
+                    <option value="15">15 - Condonación</option>
+                    <option value="17">17 - Compensación</option>
+                    <option value="23">23 - Novación</option>
+                    <option value="24">24 - Confusión</option>
+                    <option value="25">25 - Remisión de deuda</option>
+                    <option value="26">26 - Prescripción o caducidad</option>
+                    <option value="27">27 - A satisfacción del acreedor</option>
+                    <option value="28">28 - Tarjeta de débito</option>
+                    <option value="29">29 - Tarjeta de servicios</option>
+                    <option value="30">30 - Aplicación de anticipos</option>
+                    <option value="31">31 - Intermediario pagos</option>
+                    <option value="99" selected>99 - Por definir</option>
+                </select>
+            </div>
+
+            <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-top: 15px;">
+                <p style="margin: 0; color: #856404; font-size: 0.85em;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Importante:</strong> Estos datos se aplicarán a TODOS los documentos que se refacturen.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div style="background: var(--very-light-blue); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px;">
+        <p style="margin: 0; color: var(--text-dark); font-size: 0.9em;">
+            <i class="fas fa-info-circle" style="color: var(--accent-blue);"></i> 
+            ${noCancelados.length} documento(s) serán refacturados individualmente
+        </p>
+    </div>
+</div>
+`,
+                        width: '800px',
+                        background: 'var(--bg-light)',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-arrow-right"></i> Continuar',
+                        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'custom-swal-popup',
+                            title: 'custom-swal-title',
+                            confirmButton: 'custom-swal-confirm',
+                            cancelButton: 'custom-swal-cancel'
+                        },
+                        didOpen: () => {
+                            const checkbox = document.getElementById('usarDatosPersonalizados');
+                            const formulario = document.getElementById('formularioDatosFiscales');
+
+                            checkbox.addEventListener('change', () => {
+                                if (checkbox.checked) {
+                                    formulario.style.display = 'block';
+                                } else {
+                                    formulario.style.display = 'none';
+                                }
+                            });
+                        },
+                        preConfirm: () => {
+                            const usarPersonalizados = document.getElementById('usarDatosPersonalizados').checked;
+
+                            if (!usarPersonalizados) {
+                                return { usarDatosPersonalizados: false };
+                            }
+
+                            // Validar campos si el checkbox está marcado
+                            const rfc = document.getElementById('rfcPersonalizado').value.trim().toUpperCase();
+                            const razonSocial = document.getElementById('razonSocialPersonalizada').value.trim();
+                            const cp = document.getElementById('cpPersonalizado').value.trim();
+                            const regimenFiscal = document.getElementById('regimenFiscalPersonalizado').value;
+                            const usoCFDI = document.getElementById('usoCFDIPersonalizado').value;
+                            const formaPago = document.getElementById('formaPagoPersonalizada').value;
+
+                            // Validaciones
+                            if (!rfc) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> El RFC es obligatorio');
+                                return false;
+                            }
+
+                            // Validar formato RFC
+                            const rfcRegex = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
+                            if (!rfcRegex.test(rfc)) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> El RFC no tiene un formato válido');
+                                return false;
+                            }
+
+                            if (!razonSocial) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> La Razón Social es obligatoria');
+                                return false;
+                            }
+
+                            if (!cp || cp.length !== 5) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> El Código Postal debe tener 5 dígitos');
+                                return false;
+                            }
+
+                            if (!regimenFiscal) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Debe seleccionar un Régimen Fiscal');
+                                return false;
+                            }
+
+                            if (!usoCFDI) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Debe seleccionar un Uso CFDI');
+                                return false;
+                            }
+
+                            if (!formaPago) {
+                                Swal.showValidationMessage('<i class="fas fa-exclamation-circle"></i> Debe seleccionar una Forma de Pago');
+                                return false;
+                            }
+
+                            return {
+                                usarDatosPersonalizados: true,
+                                datosFiscales: {
+                                    rfc: rfc,
+                                    razonSocial: razonSocial,
+                                    cp: cp,
+                                    regimenFiscal: regimenFiscal,
+                                    usoCFDI: usoCFDI,
+                                    formaPago: formaPago
+                                }
+                            };
+                        }
+                    });
+
+                    if (!preResult.isConfirmed) {
+                        return null;
+                    }
+
+                    // Guardar la configuración para usarla en el procesamiento
+                    const configuracionRefacturacion = preResult.value;
+
+                    // Continuar con el procesamiento
+                    return await procesarRefacturacionIndividual(configuracionRefacturacion);
+                }
+
+            // PASO 6: Refacturación Individual (Documentos Cancelados)
+            async function paso6() {
+                const { noCancelados } = selectionResult;
+
+                const result = await Swal.fire({
+                    title: '<i class="fas fa-file-invoice"></i> Refacturación Individual',
+                    html: `
+<div style="text-align:left; padding: 10px;">
+    <div style="background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue)); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-lg);">
+        <h4 style="margin: 0 0 10px 0; font-size: 1.2em;">
+            <i class="fas fa-receipt"></i> Documentos a Refacturar Individualmente
+        </h4>
+        <p style="margin: 0; opacity: 0.9; font-size: 0.95em;">
+            Se generará una factura individual por cada documento cancelado
+        </p>
+    </div>
+
+    <div style="background: var(--very-light-blue); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p style="margin: 0; color: var(--text-dark); font-weight: 600;">
+            <i class="fas fa-info-circle" style="color: var(--accent-blue);"></i> 
+            Total de documentos: <strong style="color: var(--primary-blue); font-size: 1.2em;">${noCancelados.length}</strong>
+        </p>
+    </div>
+
+    <div style="max-height: 300px; overflow-y: auto; background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 8px; padding: 15px;">
+        ${noCancelados.map((doc, index) => {
+                        const totalDoc = doc.partidas.reduce((sum, p) => sum + (p.imp_part || 0), 0);
+                        return `
+            <div style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 10px; padding: 15px; margin-bottom: 12px; box-shadow: var(--shadow);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <div style="font-weight: 700; color: var(--primary-blue); font-size: 1.1em; margin-bottom: 5px;">
+                            <i class="fas fa-hashtag"></i> ${doc.gen}-${doc.nat}-${doc.folio}
+                        </div>
+                        <div style="color: var(--text-light); font-size: 0.9em; margin-bottom: 8px;">
+                            <i class="fas fa-calendar"></i> ${formatDate(doc.fecha)}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; background: var(--very-light-blue); padding: 8px 12px; border-radius: 6px;">
+                            <i class="fas fa-user" style="color: var(--accent-blue);"></i>
+                            <span style="font-weight: 600; color: var(--text-dark); font-size: 0.9em;">${doc.cliente}</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right; background: linear-gradient(135deg, var(--success-color), #10b981); padding: 15px 20px; border-radius: 10px; color: white;">
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-bottom: 4px; text-transform: uppercase;">Total</div>
+                        <div style="font-size: 1.4em; font-weight: 700; font-family: monospace;">$${totalDoc.toFixed(2)}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light);">
+                    <span style="color: var(--text-light); font-size: 0.85em;">
+                        <i class="fas fa-boxes"></i> ${doc.partidas.length} partidas
+                    </span>
+                </div>
+            </div>
+            `;
+                    }).join('')}
+    </div>
+
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin-top: 20px;">
+        <p style="margin: 0; color: #856404; font-size: 0.9em;">
+            <i class="fas fa-info-circle" style="color: #ffc107;"></i>
+            <strong>Nota:</strong> Se procesará cada documento de forma individual y se generarán las facturas correspondientes.
+        </p>
+    </div>
+</div>
+`,
+                    width: '900px',
+                    background: 'var(--bg-light)',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-play"></i> Procesar Refacturación Individual',
+                    cancelButtonText: '<i class="fas fa-times"></i> Omitir este Paso',
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'custom-swal-popup',
+                        title: 'custom-swal-title',
+                        confirmButton: 'custom-swal-confirm',
+                        cancelButton: 'custom-swal-cancel'
+                    }
+                });
+
+                if (result.isConfirmed) {
+                    // Procesar refacturación individual
+                    return await procesarRefacturacionIndividual();
+                } else {
+                    // Omitir y pasar al siguiente paso
+                    return await paso7();
+                }
+            }
+
+            // Función para procesar la refacturación individual
+                async function procesarRefacturacionIndividual(configuracionRefacturacion) {
+                    const { noCancelados } = selectionResult;
+
+                    let procesados = 0;
+                    let errores = 0;
+                    let resultados = [];
+
+                    // Se pide antes del modal de progreso para no reemplazarlo. Queda
+                    // guardada y la reutiliza la global de reemplazo.
+                    const cuentaBanco = await obtenerCuentaBancoProceso();
+                    if (!cuentaBanco) return;
+
+                    // Mostrar modal de progreso
+                    Swal.fire({
+                        title: '<i class="fas fa-spinner fa-spin"></i> Procesando Refacturación Individual',
+                        html: `
+            <div style="padding: 20px;">
+                ${window.procesoIdActual ? `
+                    <div style="background: var(--very-light-blue); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                        <span style="color: var(--primary-blue); font-weight: 600; font-size: 0.9em;">
+                            <i class="fas fa-info-circle"></i> ID Proceso: <span style="font-family: monospace;">#${window.procesoIdActual}</span>
+                        </span>
+                    </div>
+                ` : ''}
+                
+                ${configuracionRefacturacion.usarDatosPersonalizados ? `
+                    <div style="background: #d1ecf1; border: 2px solid #17a2b8; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                        <p style="margin: 0; color: #0c5460; font-size: 0.9em; font-weight: 600;">
+                            <i class="fas fa-user-check"></i> Usando datos fiscales personalizados
+                        </p>
+                        <p style="margin: 5px 0 0 0; color: #0c5460; font-size: 0.85em;">
+                            RFC: <strong>${configuracionRefacturacion.datosFiscales.rfc}</strong>
+                        </p>
+                    </div>
+                ` : ''}
+                
+                <div style="background: var(--very-light-blue); border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-around; text-align: center;">
+                        <div>
+                            <div style="font-size: 2em; font-weight: 700; color: var(--success-color);" id="procesadosCount">0</div>
+                            <div style="color: var(--text-light); font-size: 0.9em; margin-top: 5px;">Procesados</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2em; font-weight: 700; color: var(--danger-color);" id="erroresCount">0</div>
+                            <div style="color: var(--text-light); font-size: 0.9em; margin-top: 5px;">Errores</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2em; font-weight: 700; color: var(--primary-blue);">${noCancelados.length}</div>
+                            <div style="color: var(--text-light); font-size: 0.9em; margin-top: 5px;">Total</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 8px; padding: 15px; max-height: 300px; overflow-y: auto;" id="progresoDetalle">
+                    <p style="text-align: center; color: var(--text-light);">
+                        <i class="fas fa-hourglass-start"></i> Iniciando proceso...
+                    </p>
+                </div>
+            </div>
+        `,
+                        width: '700px',
+                        background: 'var(--bg-light)',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false
+                    });
+
+                    // Procesar cada documento
+                    for (let i = 0; i < noCancelados.length; i++) {
+                        const doc = noCancelados[i];
+                        let mensaje = "";
+                        try {
+                            const formData = new FormData();
+                            let documentosArray = Array.isArray(doc) ? doc : [doc];
+
+                            formData.append("documentos", JSON.stringify(documentosArray));
+                            const ids = documentosArray.map(x => x.id_hijo);
+                            formData.append("ids", ids.join(","));
+                            formData.append("banco", cuentaBanco);
+
+                            // ⚡ NUEVO: Enviar datos personalizados si existen
+                            if (configuracionRefacturacion.usarDatosPersonalizados) {
+                                formData.append("usarDatosPersonalizados", "true");
+                                formData.append("datosFiscalesJson", JSON.stringify(configuracionRefacturacion.datosFiscales));
+                            } else {
+                                formData.append("usarDatosPersonalizados", "false");
+                            }
+
+                            if (window.procesoIdActual) {
+                                formData.append("procesoId", window.procesoIdActual);
+                            }
+
+                            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                            if (token) {
+                                formData.append('__RequestVerificationToken', token);
+                            }
+                            formData.append("tipo", "factura_cliente");
+
+                            const response = await fetch('/FacturaGlobalConsulta/ProcesarDocumentosAsync', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const result = await response.json();
+                            mensaje = result.error;
+                            if (result.success) {
+                                procesados++;
+                                resultados.push({
+                                    documento: `${doc.gen}-${doc.nat}-${doc.folio}`,
+                                    estado: 'success',
+                                    mensaje: 'Facturado correctamente',
+                                    uuid: result.detalles?.uuid || 'N/A',
+                                    pdf: result.detalles?.pdfUrl,
+                                    xml: result.detalles?.xmlUrl
+                                });
+                            } else {
+                                throw new Error(result.message || 'Error al facturar');
+                            }
+
+                        } catch (error) {
+                            errores++;
+                            resultados.push({
+                                documento: `${doc.gen}-${doc.nat}-${doc.folio}`,
+                                estado: 'error',
+                                mensaje: error.message,
+                                mensajefac: mensaje
+                            });
+                        }
+
+                        // Actualizar UI
+                        document.getElementById('procesadosCount').textContent = procesados;
+                        document.getElementById('erroresCount').textContent = errores;
+
+                        const detalleDiv = document.getElementById('progresoDetalle');
+                        const ultimoResultado = resultados[resultados.length - 1];
+                        const iconoEstado = ultimoResultado.estado === 'success'
+                            ? '<i class="fas fa-check-circle" style="color: var(--success-color);"></i>'
+                            : '<i class="fas fa-times-circle" style="color: var(--danger-color);"></i>';
+
+                        detalleDiv.innerHTML += `
+            <div style="padding: 10px; margin-bottom: 8px; background: var(--bg-light); border-left: 4px solid ${ultimoResultado.estado === 'success' ? 'var(--success-color)' : 'var(--danger-color)'}; border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        ${iconoEstado}
+                        <strong style="margin-left: 8px;">${ultimoResultado.documento}</strong>
+                    </div>
+                    <div style="font-size: 0.85em; color: var(--text-light);">
+                        ${i + 1}/${noCancelados.length}
+                    </div>
+                </div>
+                <div style="margin-top: 5px; font-size: 0.9em; color: var(--text-light); margin-left: 28px;">
+                    ${ultimoResultado.mensaje}
+                </div>
+                ${ultimoResultado.uuid && ultimoResultado.uuid !== 'N/A' ? `
+                    <div style="margin-top: 5px; font-size: 0.8em; color: var(--text-light); margin-left: 28px; font-family: monospace;">
+                        UUID: ${ultimoResultado.uuid}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+                        detalleDiv.scrollTop = detalleDiv.scrollHeight;
+                    }
+
+                    // Mostrar resumen final
+                    const iconoResumen = errores === 0 ? 'success' : 'warning';
+                    const colorResumen = errores === 0 ? '#d4edda' : '#fff3cd';
+                    const borderResumen = errores === 0 ? 'var(--success-color)' : '#ffc107';
+
+                    const resultSwal = await Swal.fire({
+                        icon: iconoResumen,
+                        title: `<i class="fas fa-flag-checkered"></i> Refacturación Individual Completada`,
+                        html: `
+            <div style="text-align: left; padding: 10px;">
+                ${window.procesoIdActual ? `
+                    <div style="background: var(--very-light-blue); border-radius: 8px; padding: 12px; margin-bottom: 15px; text-align: center;">
+                        <span style="color: var(--primary-blue); font-weight: 600; font-size: 0.9em;">
+                            <i class="fas fa-bookmark"></i> ID del Proceso: <span style="font-family: monospace;">#${window.procesoIdActual}</span>
+                        </span>
+                    </div>
+                ` : ''}
+
+                <div style="background: ${colorResumen}; border: 2px solid ${borderResumen}; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                        <div>
+                            <div style="font-size: 2.5em; font-weight: 700; color: var(--success-color);">${procesados}</div>
+                            <div style="font-size: 0.9em; color: var(--text-dark); margin-top: 5px;">Exitosos</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2.5em; font-weight: 700; color: var(--danger-color);">${errores}</div>
+                            <div style="font-size: 0.9em; color: var(--text-dark); margin-top: 5px;">Errores</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2.5em; font-weight: 700; color: var(--primary-blue);">${noCancelados.length}</div>
+                            <div style="font-size: 0.9em; color: var(--text-dark); margin-top: 5px;">Total</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${configuracionRefacturacion.usarDatosPersonalizados ? `
+                    <div style="background: #d1ecf1; border: 2px solid #17a2b8; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                        <p style="margin: 0 0 10px 0; color: #0c5460; font-weight: 600;">
+                            <i class="fas fa-info-circle"></i> Se aplicaron los datos fiscales personalizados:
+                        </p>
+                        <div style="font-size: 0.85em; color: #0c5460; line-height: 1.8;">
+                            <div><strong>RFC:</strong> ${configuracionRefacturacion.datosFiscales.rfc}</div>
+                            <div><strong>Razón Social:</strong> ${configuracionRefacturacion.datosFiscales.razonSocial}</div>
+                            <div><strong>CP:</strong> ${configuracionRefacturacion.datosFiscales.cp}</div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${errores > 0 ? `
+                    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                        <p style="margin: 0; color: #856404; font-size: 0.9em;">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Nota:</strong> Algunos documentos tuvieron errores. Puede reintentar el proceso.
+                        </p>
+                    </div>
+                ` : ''}
+
+                <details style="background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 8px; padding: 15px; cursor: pointer;">
+                    <summary style="font-weight: 600; color: var(--primary-blue); cursor: pointer;">
+                        <i class="fas fa-list"></i> Ver Detalle de Resultados
+                    </summary>
+                    <div style="margin-top: 15px; max-height: 300px; overflow-y: auto;">
+                        ${resultados.map(r => `
+                            <div style="padding: 10px; margin-bottom: 8px; background: var(--bg-light); border-left: 4px solid ${r.estado === 'success' ? 'var(--success-color)' : 'var(--danger-color)'}; border-radius: 6px;">
+                                <div style="font-weight: 600; color: var(--text-dark);">
+                                    ${r.estado === 'success' ? '<i class="fas fa-check-circle" style="color: var(--success-color);"></i>' : '<i class="fas fa-times-circle" style="color: var(--danger-color);"></i>'}
+                                    ${r.documento}
+                                </div>
+                                <div style="margin-top: 5px; font-size: 0.9em; color: var(--text-light);">
+                                    ${r.mensajefac}
+                                </div>
+                                ${r.uuid ? `<div style="margin-top: 5px; font-size: 0.85em; color: var(--text-light); font-family: monospace;">UUID: ${r.uuid}</div>` : ''}
+                                <div style="display: grid; gap: 1rem;">
+
+                                ${r.estado === 'success' ? `
+    <!-- Opción PDF -->
+        <br>
+    <a href="${r.pdf}" download target="_blank" style="
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);
+    " onmouseover="this.style.transform='translateY(-2px)'"
+       onmouseout="this.style.transform='translateY(0)'">
+        <i class="fas fa-file-pdf" style="font-size: 2rem;"></i>
+        <div style="text-align: left; flex: 1;">
+            <div style="font-size: 1.1rem;">Descargar PDF</div>
+            <div style="font-size: 0.8rem; opacity: 0.9;">Versión imprimible</div>
+        </div>
+        <i class="fas fa-download"></i>
+    </a>
+
+            <!-- Opción XML -->
+    <a href="${r.xml}" download target="_blank" style="
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px rgba(5, 150, 105, 0.3);
+    " onmouseover="this.style.transform='translateY(-2px)'"
+       onmouseout="this.style.transform='translateY(0)'">
+        <i class="fas fa-file-code" style="font-size: 2rem;"></i>
+        <div style="text-align: left; flex: 1;">
+            <div style="font-size: 1.1rem;">Descargar XML</div>
+            <div style="font-size: 0.8rem; opacity: 0.9;">Archivo oficial del SAT</div>
+        </div>
+        <i class="fas fa-download"></i>
+    </a>
+
+    <!-- Opción Ambos -->
+    <button onclick="descargarAmbosArchivos('${r.pdf}', '${r.xml}')" style="
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px rgba(124, 58, 237, 0.3);
+    " onmouseover="this.style.transform='translateY(-2px)'"
+       onmouseout="this.style.transform='translateY(0)'">
+        <i class="fas fa-file-archive" style="font-size: 2rem;"></i>
+        <div style="text-align: left; flex: 1;">
+            <div style="font-size: 1.1rem;">Descargar Ambos</div>
+            <div style="font-size: 0.8rem; opacity: 0.9;">PDF + XML</div>
+        </div>
+        <i class="fas fa-download"></i>
+    </button>
+        ` : '' }
+                            </div>
+                        `).join('')}
+                    </div>
+                </details>
+            </div>
+        `,
+                        width: '850px',                  
+                        // 👇 Condiciones dinámicas:
+                        showConfirmButton: errores === 0,  // Solo si NO hubo errores
+                        confirmButtonText: '<i class="fas fa-arrow-right"></i> Continuar con Factura Global',
+
+                        showCancelButton: errores > 0,     // Solo si SÍ hubo errores
+                        cancelButtonText: '<i class="fas fa-times"></i> Cerrar',
+
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: 'custom-swal-confirm',
+                            cancelButton: 'custom-swal-cancel'
+                        }
+                    });
+
+                    if (resultSwal.isConfirmed) {
+                        return await paso7();   // Solo avanza si NO hubo errores
+                    }
+
+                    // Si hubo errores, no hace nada — el usuario solo puede cerrar.
+                    return;
+                }
+
+            // PASO 7: Refacturación Global (Documentos Seleccionados)
+            async function paso7() {
+                const { seleccionados } = selectionResult;
+
+                if (seleccionados.length === 0) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: '<i class="fas fa-info-circle"></i> Sin Documentos para Factura Global',
+                        html: '<p>No hay documentos seleccionados para generar una factura global.</p>',
+                        background: 'var(--bg-light)',
+                        confirmButtonText: '<i class="fas fa-check"></i> Finalizar',
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: 'custom-swal-confirm'
+                        }
+                    }).then(() => {
+                        location.reload();
+                    });
+                    return;
+                }
+
+                const totalGlobal = seleccionados.reduce((sum, doc) => {
+                    return sum + doc.partidas.reduce((docSum, p) => docSum + (p.imp_part || 0), 0);
+                }, 0);
+
+                const result = await Swal.fire({
+                    title: '<i class="fas fa-globe"></i> Facturación Global',
+                    html: `
+<div style="text-align:left; padding: 10px;">
+    <div style="background: linear-gradient(135deg, var(--accent-blue), var(--primary-blue)); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow-lg);">
+        <h4 style="margin: 0 0 10px 0; font-size: 1.2em;">
+            <i class="fas fa-file-invoice-dollar"></i> Documentos para Factura Global
+        </h4>
+        <p style="margin: 0; opacity: 0.9; font-size: 0.95em;">
+            Se generará una sola factura global que agrupa todos estos documentos
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div style="background: var(--very-light-blue); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 0.85em; color: var(--text-light); margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Documentos</div>
+            <div style="font-size: 2em; font-weight: 700; color: var(--primary-blue);">${seleccionados.length}</div>
+        </div>
+        <div style="background: linear-gradient(135deg, var(--success-color), #10b981); color: white; padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 0.85em; opacity: 0.9; margin-bottom: 5px; text-transform: uppercase; font-weight: 600;">Total Global</div>
+            <div style="font-size: 2em; font-weight: 700; font-family: monospace;">$${totalGlobal.toFixed(2)}</div>
+        </div>
+    </div>
+
+    <div style="max-height: 350px; overflow-y: auto; background: var(--bg-light); border: 2px solid var(--border-light); border-radius: 8px; padding: 15px;">
+        ${seleccionados.map((doc, index) => {
+                        const totalDoc = doc.partidas.reduce((sum, p) => sum + (p.imp_part || 0), 0);
+                        return `
+            <div style="background: var(--bg-gray); border: 2px solid var(--border-light); border-radius: 10px; padding: 15px; margin-bottom: 12px; box-shadow: var(--shadow);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <div style="font-weight: 700; color: var(--primary-blue); font-size: 1.1em; margin-bottom: 5px;">
+                            <i class="fas fa-hashtag"></i> ${doc.gen}-${doc.nat}-${doc.folio}
+                        </div>
+                        <div style="color: var(--text-light); font-size: 0.9em; margin-bottom: 8px;">
+                            <i class="fas fa-calendar"></i> ${formatDate(doc.fecha)}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; background: var(--very-light-blue); padding: 8px 12px; border-radius: 6px;">
+                            <i class="fas fa-user" style="color: var(--accent-blue);"></i>
+                            <span style="font-weight: 600; color: var(--text-dark); font-size: 0.9em;">${doc.cliente}</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right; background: var(--very-light-blue); padding: 15px 20px; border-radius: 10px;">
+                        <div style="font-size: 0.75em; color: var(--text-light); margin-bottom: 4px; text-transform: uppercase;">Total</div>
+                        <div style="font-size: 1.4em; font-weight: 700; color: var(--primary-blue); font-family: monospace;">$${totalDoc.toFixed(2)}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light);">
+                    <span style="color: var(--text-light); font-size: 0.85em;">
+                        <i class="fas fa-boxes"></i> ${doc.partidas.length} partidas
+                    </span>
+                </div>
+            </div>
+            `;
+                    }).join('')}
+    </div>
+
+    <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 15px; margin-top: 20px;">
+        <p style="margin: 0; color: #0c5460; font-size: 0.9em;">
+            <i class="fas fa-info-circle" style="color: #17a2b8;"></i>
+            <strong>Nota:</strong> Todos estos documentos se consolidarán en una única factura global.
+        </p>
+    </div>
+</div>
+`,
+                    width: '900px',
+                    background: 'var(--bg-light)',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-play"></i> Generar Factura Global',
+                    cancelButtonText: '<i class="fas fa-times"></i> Omitir y Finalizar',
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'custom-swal-popup',
+                        title: 'custom-swal-title',
+                        confirmButton: 'custom-swal-confirm',
+                        cancelButton: 'custom-swal-cancel'
+                    }
+                });
+
+                if (result.isConfirmed) {
+                    return await procesarFacturaGlobal();
+                } else {
+                    // Finalizar proceso
+                    Swal.fire({
+                        icon: 'success',
+                        title: '<i class="fas fa-check-circle"></i> Proceso Completado',
+                        html: '<p>El proceso de cancelación y refacturación ha finalizado.</p>',
+                        background: 'var(--bg-light)',
+                        confirmButtonText: '<i class="fas fa-check"></i> Aceptar',
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: 'custom-swal-confirm'
+                        }
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+            }
+
+            // Cuenta bancaria del proceso. Se pregunta una sola vez: la nominativa del
+            // cliente y la global de reemplazo cobran contra la misma cuenta, que es donde
+            // entró el dinero de la venta original. Sin ella el servidor no puede armar la
+            // póliza del documento CXC del cobro y aborta el proceso.
+            async function obtenerCuentaBancoProceso() {
+                if (window.cuentaBancoProceso) return window.cuentaBancoProceso;
+
+                const { value: cuenta } = await Swal.fire({
+                    title: 'Cuenta bancaria del cobro',
+                    html: `
+                        <div class="mb-2 text-start">
+                            <label class="form-label">Cuenta donde se registrará el cobro</label>
+                            <select id="swal-cuenta-banco-global" class="swal2-select w-100">
+                                <option value="">Cargando cuentas...</option>
+                            </select>
+                        </div>`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Continuar',
+                    cancelButtonText: 'Cancelar',
+                    background: 'var(--bg-light)',
+                    focusConfirm: false,
+                    didOpen: async () => {
+                        const select = document.getElementById('swal-cuenta-banco-global');
+                        try {
+                            const resp = await fetch('/DatosGenerales/DatosBancos').then(r => r.json());
+                            select.innerHTML = '<option value="">-- Selecciona --</option>';
+
+                            if (resp.success && resp.result?.length) {
+                                resp.result.forEach(c => {
+                                    select.innerHTML += `<option value="${c.codigo}">${c.codigo} - ${c.nombre}</option>`;
+                                });
+                            } else {
+                                select.innerHTML = '<option value="">No hay cuentas</option>';
+                            }
+                        } catch (err) {
+                            console.error('Error cargando cuentas:', err);
+                            select.innerHTML = '<option value="">Error al cargar</option>';
+                        }
+                    },
+                    preConfirm: () => {
+                        const cuenta = document.getElementById('swal-cuenta-banco-global').value;
+                        if (!cuenta) {
+                            Swal.showValidationMessage('Selecciona una cuenta bancaria');
+                            return false;
+                        }
+                        return cuenta;
+                    }
+                });
+
+                if (cuenta) window.cuentaBancoProceso = cuenta;
+                return cuenta;
+            }
+
+            // Función para procesar la factura global
+            async function procesarFacturaGlobal() {
+                const { seleccionados } = selectionResult;
+
+                // Antes del modal de progreso: si se pidiera después, el diálogo de la
+                // cuenta reemplazaría al indicador de carga y lo dejaría muerto.
+                const cuentaBanco = await obtenerCuentaBancoProceso();
+                if (!cuentaBanco) return;
+
+                Swal.fire({
+                    title: '<i class="fas fa-spinner fa-spin"></i> Generando Factura Global',
+                    html: '<p style="color: #6c757d;">Procesando documentos seleccionados...</p>',
+                    background: 'var(--bg-light)',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                try {
+                    const formData = new FormData();
+                    formData.append('documentos', JSON.stringify(seleccionados));
+                    const ids = seleccionados.map(x => x.id_hijo);
+                    formData.append("ids", ids.join(","));
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    if (token) {
+                        formData.append('__RequestVerificationToken', token);
+                    }
+                    formData.append("global", encabezadoId);
+                    formData.append("banco", cuentaBanco);
+
+
+                    const response = await fetch('/FacturaGlobalConsulta/ProcesarDocumentosAsync', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: '<i class="fas fa-check-circle"></i> Factura Global Generada',
+                            html: `
+<div style="text-align: center; padding: 10px;">
+    <div style="background: #d4edda; border: 2px solid var(--success-color); border-radius: 12px; padding: 25px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 15px 0; color: #155724; font-size: 1.2em;">
+            <i class="fas fa-check-double"></i> ¡Proceso Completado Exitosamente!
+        </h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+            <div style="background: rgba(255,255,255,0.7); padding: 15px; border-radius: 8px;">
+                <div style="color: #155724; font-size: 0.85em; margin-bottom: 5px; font-weight: 600;">Documentos Agrupados</div>
+                <div style="font-size: 2em; font-weight: 700; color: var(--success-color);">${seleccionados.length}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.7); padding: 15px; border-radius: 8px;">
+                <div style="color: #155724; font-size: 0.85em; margin-bottom: 5px; font-weight: 600;">Factura Global</div>
+                <div style="font-size: 1.3em; font-weight: 700; color: var(--primary-blue);">
+                    <i class="fas fa-file-invoice"></i> Generada
+                </div>
+            </div>
+        </div>
+    </div>
+
+    ${result.uuid ? `
+    <div style="background: var(--very-light-blue); border: 2px solid var(--accent-blue); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+        <div style="color: var(--text-dark); font-weight: 600; margin-bottom: 8px;">
+            <i class="fas fa-barcode"></i> UUID Generado:
+        </div>
+        <div style="var(--bg-light); padding: 12px; border-radius: 6px; font-family: monospace; font-size: 0.9em; color: var(--primary-blue); word-break: break-all;">
+            ${result.uuid}
+        </div>
+    </div>
+    ` : ''}
+
+    <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 15px;">
+        <p style="margin: 0; color: #0c5460; font-size: 0.9em;">
+            <i class="fas fa-info-circle" style="color: #17a2b8;"></i>
+            La factura global ha sido generada correctamente con todos los documentos seleccionados.
+        </p>
+    </div>
+</div>
+`,
+                            width: '700px',
+                            background: 'var(--bg-light)',
+                            confirmButtonText: '<i class="fas fa-check"></i> Finalizar',
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: 'custom-swal-confirm'
+                            }
+                        });
+
+                        // Recargar la página para actualizar la tabla
+                        location.reload();
+
+                    } else {
+                        throw new Error(result.message || 'Error al generar la factura global');
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+
+                    const errorResult = await Swal.fire({
+                        icon: 'error',
+                        title: '<i class="fas fa-times-circle"></i> Error en Factura Global',
+                        html: `
+<div style="padding: 10px;">
+    <div style="background: #f8d7da; border: 2px solid var(--danger-color); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 10px 0; color: var(--danger-color);">
+            <i class="fas fa-exclamation-triangle"></i> No se pudo generar la factura global
+        </h4>
+        <p style="color: #721c24; margin: 0; word-break: break-word;">${error.message}</p>
+    </div>
+    
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px;">
+        <p style="margin: 0; color: #856404; font-size: 0.9em;">
+            <i class="fas fa-info-circle"></i> Puede intentar nuevamente o finalizar el proceso.
+        </p>
+    </div>
+</div>
+`,
+                        width: '600px',
+                        background: 'var(--bg-light)',
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: '<i class="fas fa-redo"></i> Reintentar',
+                        denyButtonText: '<i class="fas fa-times"></i> Finalizar sin Factura Global',
+                        cancelButtonText: '<i class="fas fa-arrow-left"></i> Volver',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'custom-swal-popup',
+                            confirmButton: 'custom-swal-confirm',
+                            denyButton: 'custom-swal-cancel',
+                            cancelButton: 'custom-swal-cancel'
+                        }
+                    });
+
+                    if (errorResult.isConfirmed) {
+                        // Reintentar
+                        return await procesarFacturaGlobal();
+                    } else if (errorResult.isDenied) {
+                        // Finalizar sin factura global
+                        Swal.fire({
+                            icon: 'info',
+                            title: '<i class="fas fa-info-circle"></i> Proceso Finalizado',
+                            html: `
+<div style="padding: 10px;">
+    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px;">
+        <p style="margin: 0; color: #856404;">
+            <i class="fas fa-exclamation-triangle"></i>
+            El proceso de cancelación y refacturación individual se completó, pero no se generó la factura global.
+        </p>
+    </div>
+</div>
+`,
+                            width: '600px',
+                            background: 'var(--bg-light)',
+                            confirmButtonText: '<i class="fas fa-check"></i> Aceptar',
+                            buttonsStyling: false,
+                            customClass: {
+                                confirmButton: 'custom-swal-confirm'
+                            }
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        // Volver al paso anterior
+                        return await paso7();
+                    }
+                }
+            }
+                // Iniciar el flujo desde el paso 1
+                await verificarYCancelarSAT();
+            }
+        </script>
+    }

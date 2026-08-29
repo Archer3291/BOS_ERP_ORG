@@ -1,0 +1,1163 @@
+﻿@{
+    ViewData["Title"] = "Seguimiento de Pedidos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Seguimiento de Pedidos";
+}
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<style>
+    /* ── Page ── */
+    .seg-page {
+        background: var(--bg-gray);
+        min-height: 100vh;
+        padding: 2rem 0 5rem;
+    }
+
+    /* ══ KPI Cards ══ */
+    .seg-kpi {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        padding: 1rem 1.1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        height: 100%;
+    }
+
+        .seg-kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .seg-kpi::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: var(--table-radius) var(--table-radius) 0 0;
+        }
+
+        .seg-kpi.blue::before {
+            background: var(--accent-blue);
+        }
+
+        .seg-kpi.slate::before {
+            background: var(--secondary-blue);
+        }
+
+        .seg-kpi.amber::before {
+            background: var(--warning-color);
+        }
+
+        .seg-kpi.green::before {
+            background: var(--success-color);
+        }
+
+        .seg-kpi.red::before {
+            background: var(--danger-color);
+        }
+
+    .seg-kpi-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .seg-kpi-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+        .seg-kpi-icon.blue {
+            background: var(--light-blue);
+            color: var(--accent-blue);
+        }
+
+        .seg-kpi-icon.slate {
+            background: var(--light-blue);
+            color: var(--secondary-blue);
+        }
+
+        .seg-kpi-icon.amber {
+            background: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .seg-kpi-icon.green {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .seg-kpi-icon.red {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+    .seg-kpi-badge {
+        font-size: .7rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: var(--badge-radius);
+        white-space: nowrap;
+    }
+
+        .seg-kpi-badge.up {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .seg-kpi-badge.down {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .seg-kpi-badge.neu {
+            background: var(--bg-gray);
+            color: var(--text-light);
+            border: 1px solid var(--border-light);
+        }
+
+    .seg-kpi-label {
+        font-size: .71rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        margin-bottom: 1px;
+    }
+
+    .seg-kpi-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+        font-family: 'Courier New', monospace;
+    }
+
+    .seg-kpi-sub {
+        font-size: .75rem;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: -2px;
+    }
+
+        .seg-kpi-sub i {
+            font-size: .8rem;
+        }
+
+    .seg-kpi-prog-track {
+        height: 5px;
+        border-radius: 99px;
+        background: var(--border-light);
+        overflow: hidden;
+    }
+
+    .seg-kpi-prog-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: var(--success-color);
+        transition: width .6s ease;
+    }
+
+    .seg-kpi-prog-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: .68rem;
+        color: var(--text-light);
+        margin-top: 3px;
+    }
+
+    /* ── Tabs de estado ── */
+    .seg-tabs {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .seg-tab {
+        padding: .38rem .85rem;
+        border-radius: var(--badge-radius);
+        font-size: .78rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid transparent;
+        transition: all var(--transition-fast);
+        color: var(--text-light);
+        background: var(--bg-gray);
+    }
+
+        .seg-tab:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .seg-tab.active {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+        }
+
+            .seg-tab.active.green {
+                background: var(--success-color);
+                border-color: var(--success-color);
+            }
+
+            .seg-tab.active.amber {
+                background: var(--warning-color);
+                border-color: var(--warning-color);
+            }
+
+            .seg-tab.active.red {
+                background: var(--danger-color);
+                border-color: var(--danger-color);
+            }
+
+            .seg-tab.active.mid {
+                background: var(--secondary-blue);
+                border-color: var(--secondary-blue);
+            }
+
+    /* ── Badges en celdas ── */
+    .seg-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        padding: .18rem .6rem;
+        border-radius: var(--badge-radius);
+    }
+
+        .seg-badge.verificado {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .seg-badge.surtido {
+            background: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .seg-badge.completado {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .seg-badge.pendiente {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .seg-badge.pedido {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+        }
+
+    /* ── Progress mini ── */
+    .seg-prog-wrap {
+        width: 70px;
+        height: 6px;
+        border-radius: 99px;
+        background: var(--border-light);
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 4px;
+    }
+
+    .seg-prog-bar {
+        height: 100%;
+        border-radius: 99px;
+        background: var(--success-color);
+    }
+
+    /* ── Modal ── */
+    .seg-modal-header {
+        background: var(--primary-blue);
+        color: #fff;
+        border-radius: .45rem .45rem 0 0;
+    }
+
+        .seg-modal-header .btn-close {
+            filter: invert(1);
+        }
+
+    .seg-det-label {
+        color: var(--text-light);
+        font-size: .73rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .seg-det-value {
+        color: var(--text-dark);
+        font-weight: 600;
+    }
+
+    /* ── Timeline ── */
+    .seg-timeline {
+        display: flex;
+        align-items: center;
+        margin: 1rem 0;
+    }
+
+    .seg-tl-step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+    }
+
+        .seg-tl-step + .seg-tl-step::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 14px;
+            width: 50%;
+            height: 2px;
+            background: var(--border-light);
+        }
+
+        .seg-tl-step.done + .seg-tl-step::before {
+            background: var(--success-color);
+        }
+
+    .seg-tl-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .75rem;
+        border: 2px solid var(--border-light);
+        background: var(--bg-light);
+        color: var(--text-light);
+        position: relative;
+        z-index: 1;
+    }
+
+    .seg-tl-step.done .seg-tl-dot {
+        border-color: var(--success-color);
+        background: var(--success-color);
+        color: #fff;
+    }
+
+    .seg-tl-step.active .seg-tl-dot {
+        border-color: var(--warning-color);
+        background: var(--warning-color);
+        color: #fff;
+    }
+
+    .seg-tl-label {
+        font-size: .7rem;
+        font-weight: 600;
+        color: var(--text-light);
+        margin-top: 5px;
+        display: block;
+    }
+
+    .seg-tl-date {
+        font-size: .65rem;
+        color: var(--text-light);
+        display: block;
+        opacity: .7;
+    }
+
+    /* ── Marquesina ticker de auto-refresh ── */
+    .seg-refresh-ticker {
+        position: relative;
+        overflow: hidden;
+        width: 260px;
+        max-width: 40vw;
+        height: 32px;
+        border-radius: 99px;
+        background: var(--light-blue);
+        border: 1px solid var(--border-light);
+        display: flex;
+        align-items: center;
+    }
+
+    .seg-refresh-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success-color);
+        flex-shrink: 0;
+        margin-left: 1px;
+        animation: seg-pulse 1.6s ease-in-out infinite;
+        position: relative;
+        z-index: 2;
+    }
+
+    .seg-refresh-ticker.paused .seg-refresh-dot {
+        background: var(--text-light);
+        animation: none;
+    }
+
+    @@keyframes seg-pulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(16,185,129,.5);
+        }
+
+        50% {
+            box-shadow: 0 0 0 5px rgba(16,185,129,0);
+        }
+    }
+
+    .seg-refresh-track {
+        display: flex;
+        white-space: nowrap;
+        position: absolute;
+        left: 0;
+        animation: seg-scroll 12s linear infinite;
+        will-change: transform;
+    }
+
+    .seg-refresh-ticker.paused .seg-refresh-track {
+        animation-play-state: paused;
+    }
+
+    .seg-refresh-track span.seg-refresh-item {
+        font-size: .74rem;
+        font-weight: 600;
+        color: var(--primary-blue);
+        padding: 0 1.5rem 0 8px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    @@keyframes seg-scroll {
+        0% {
+            transform: translateX(0);
+        }
+
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
+    .seg-refresh-ticker {
+        width: 210px;
+        max-width: 45vw;
+        /* resto igual */
+    }
+</style>
+
+<div class="seg-page">
+    <div class="container-xl">
+
+        <!-- ── Encabezado ── -->
+        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <div style="width:2.75rem;height:2.75rem;border-radius:12px;background:var(--primary-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h1 class="h4 mb-0 fw-bold" style="color:var(--text-dark)">Seguimiento de Pedidos</h1>
+                <p class="mb-0 small" style="color:var(--text-light)">Consulta de pedidos, verificaciones y estado de surtido — solo lectura</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="seg-refresh-ticker" id="seg-refresh-banner">
+                    <span class="seg-refresh-dot"></span>
+                    <div class="seg-refresh-track" id="seg-refresh-track">
+                        <span class="seg-refresh-item" id="seg-refresh-text-a">Auto-actualiza en 30s</span>
+                        <span class="seg-refresh-item" id="seg-refresh-text-b">Auto-actualiza en 30s</span>
+                    </div>
+                </div>
+                <button class="btn btn-outline-primary btn-sm fw-semibold" id="seg-btn-refresh"
+                        onclick="SeguimientoApp.refrescar()">
+                    <i class="fas fa-sync-alt" id="seg-icon-refresh"></i> Actualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- ══ KPI Cards ══ -->
+        <div class="row g-3 mb-4 d-none" id="seg-kpi-grid">
+            <!-- Pedidos aprobados -->
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="seg-kpi blue h-100">
+                    <div class="seg-kpi-top">
+                        <div class="seg-kpi-icon blue"><i class="fas fa-file-invoice"></i></div>
+                        <span class="seg-kpi-badge neu">Hoy</span>
+                    </div>
+                    <div>
+                        <div class="seg-kpi-label">Pedidos aprobados</div>
+                        <div class="seg-kpi-value" id="kpi-aprobados">—</div>
+                    </div>
+                    <div class="seg-kpi-sub">
+                        <i class="fas fa-circle-dot" style="color:var(--accent-blue)"></i>
+                        <span>Total del día</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Verificaciones -->
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="seg-kpi slate h-100">
+                    <div class="seg-kpi-top">
+                        <div class="seg-kpi-icon slate"><i class="fas fa-clipboard-check"></i></div>
+                        <span class="seg-kpi-badge neu" id="kpi-verif-badge">—%</span>
+                    </div>
+                    <div>
+                        <div class="seg-kpi-label">Verificaciones</div>
+                        <div class="seg-kpi-value" id="kpi-verif">—</div>
+                    </div>
+                    <div class="seg-kpi-sub">
+                        <i class="fas fa-percent"></i>
+                        <span id="kpi-verif-pct">— del total</span>
+                    </div>
+                </div>
+            </div>
+            <!-- En surtido -->
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="seg-kpi amber h-100">
+                    <div class="seg-kpi-top">
+                        <div class="seg-kpi-icon amber"><i class="fas fa-boxes-stacked"></i></div>
+                        <span class="seg-kpi-badge neu">En curso</span>
+                    </div>
+                    <div>
+                        <div class="seg-kpi-label">En surtido</div>
+                        <div class="seg-kpi-value" id="kpi-surtido">—</div>
+                    </div>
+                    <div class="seg-kpi-sub">
+                        <i class="fas fa-clock"></i>
+                        <span>Pedidos activos</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Completados -->
+            <div class="col-6 col-sm-4 col-md-3 col-xl-2">
+                <div class="seg-kpi green h-100">
+                    <div class="seg-kpi-top">
+                        <div class="seg-kpi-icon green"><i class="fas fa-circle-check"></i></div>
+                        <span class="seg-kpi-badge up" id="kpi-comp-badge">—%</span>
+                    </div>
+                    <div>
+                        <div class="seg-kpi-label">Completados</div>
+                        <div class="seg-kpi-value" id="kpi-completados">—</div>
+                    </div>
+                    <div class="seg-kpi-sub">
+                        <i class="fas fa-flag-checkered" style="color:var(--success-color)"></i>
+                        <span id="kpi-comp-tasa">Tasa: —%</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Importes -->
+            <div class="col-12 col-sm-8 col-md-6 col-xl-4">
+                <div class="seg-kpi red h-100">
+                    <div class="seg-kpi-top">
+                        <div class="seg-kpi-icon red"><i class="fas fa-dollar-sign"></i></div>
+                        <span class="seg-kpi-badge neu">Importes</span>
+                    </div>
+                    <div class="row g-0">
+                        <div class="col-6 pe-2">
+                            <div class="seg-kpi-label">Pendiente</div>
+                            <div class="seg-kpi-value" id="kpi-imp-pend" style="font-size:1rem;color:var(--danger-color)">—</div>
+                        </div>
+                        <div class="col-6 ps-2" style="border-left:1px solid var(--border-light)">
+                            <div class="seg-kpi-label" style="color:var(--success-color)">Verificado</div>
+                            <div class="seg-kpi-value" id="kpi-imp-ver" style="font-size:1rem;color:var(--success-color)">—</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="seg-kpi-prog-track">
+                            <div class="seg-kpi-prog-fill" id="kpi-prog-fill" style="width:0%"></div>
+                        </div>
+                        <div class="seg-kpi-prog-label">
+                            <span id="kpi-pct-pend">Pendiente: —%</span>
+                            <span id="kpi-pct-ver" style="color:var(--success-color)">Verificado: —%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /KPI Cards -->
+        <!-- ── Tabs de estatus + filtros de fecha ── -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 px-1">
+            <div class="seg-tabs" id="seg-tabs-estatus">
+                <button class="seg-tab active" data-est=""
+                        onclick="SeguimientoApp.setTab(this, '')">
+                    Todos
+                </button>
+                <button class="seg-tab" data-est="sin_verificar"
+                        onclick="SeguimientoApp.setTab(this, 'sin_verificar')">
+                    <i class="fas fa-clock me-1"></i>Sin verificar
+                </button>
+                <button class="seg-tab" data-est="en_surtido"
+                        onclick="SeguimientoApp.setTab(this, 'en_surtido')">
+                    <i class="fas fa-boxes me-1"></i>En surtido
+                </button>
+                <button class="seg-tab" data-est="completado"
+                        onclick="SeguimientoApp.setTab(this, 'completado')">
+                    <i class="fas fa-check me-1"></i>Completados
+                </button>
+                <button class="seg-tab" data-est="pendiente_corte"
+                        onclick="SeguimientoApp.setTab(this, 'pendiente_corte')">
+                    <i class="fas fa-cut me-1"></i>Pendiente de corte
+                </button>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <input type="date" id="seg-fdesde" class="form-control form-control-sm" title="Desde"
+                       style="width:auto;" onchange="SeguimientoApp.recargar()">
+                <input type="date" id="seg-fhasta" class="form-control form-control-sm" title="Hasta"
+                       style="width:auto;" onchange="SeguimientoApp.recargar()">
+                <button class="btn btn-outline-secondary btn-sm" onclick="SeguimientoApp.limpiarFiltros()">
+                    <i class="fas fa-eraser"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Leyenda del semáforo de la columna Origen ── -->
+        <div class="d-flex align-items-center gap-3 flex-wrap mb-2" style="font-size:.7rem;color:var(--text-light);">
+            <span class="fw-semibold"><i class="fas fa-traffic-light me-1"></i>Origen:</span>
+            <span><span class="seg-badge" style="font-size:.6rem;background:#dcfce7;color:#15803d;font-weight:700;"><i class="fas fa-check-circle"></i></span> Surtido completo</span>
+            <span><span class="seg-badge" style="font-size:.6rem;background:#fef9c3;color:#b45309;font-weight:700;"><i class="fas fa-truck-loading"></i></span> En surtido</span>
+            <span><span class="seg-badge" style="font-size:.6rem;background:#fee2e2;color:#b91c1c;font-weight:700;"><i class="fas fa-clock"></i></span> Pendiente</span>
+        </div>
+
+        <!-- ── Contenedor de createTable ── -->
+        <div id="seg-tabla-container"></div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MODAL DETALLE
+═══════════════════════════════════════ -->
+<div class="modal fade" id="seg-modalDetalle" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header seg-modal-header py-3">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-alt me-2"></i>
+                    <span id="seg-det-titulo">Detalle</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+
+                <!-- Info encabezado -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <span class="seg-det-label"><i class="fas fa-hashtag me-1"></i>Folio</span>
+                        <span class="seg-det-value" id="seg-det-folio">—</span>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <span class="seg-det-label"><i class="fas fa-user me-1"></i>Cliente</span>
+                        <span class="seg-det-value" id="seg-det-cliente">—</span>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <span class="seg-det-label"><i class="fas fa-calendar me-1"></i>Fecha</span>
+                        <span class="seg-det-value" id="seg-det-fecha">—</span>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <span class="seg-det-label"><i class="fas fa-dollar-sign me-1"></i>Importe</span>
+                        <span class="seg-det-value" id="seg-det-importe">—</span>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <span class="seg-det-label"><i class="fas fa-id-card me-1"></i>RFC</span>
+                        <span class="seg-det-value" id="seg-det-rfc">—</span>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <span class="seg-det-label"><i class="fas fa-tag me-1"></i>Tipo proceso</span>
+                        <span class="seg-det-value" id="seg-det-tipo">—</span>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <span class="seg-det-label"><i class="fas fa-info-circle me-1"></i>Estatus</span>
+                        <span class="seg-det-value" id="seg-det-estatus">—</span>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <span class="seg-det-label"><i class="fas fa-link me-1"></i>Pedido padre</span>
+                        <span class="seg-det-value" id="seg-det-padre">—</span>
+                    </div>
+                </div>
+
+                <!-- Comentarios -->
+                <div class="mb-4 p-3 rounded"
+                     style="background:var(--bg-gray);border:1px solid var(--border-light);">
+                    <span class="seg-det-label mb-1"><i class="fas fa-comment me-1"></i>Comentario</span>
+                    <div id="seg-det-coment" style="font-size:.85rem;color:var(--text-dark);">—</div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="mb-4">
+                    <div style="font-size:.8rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.6rem;">
+                        <i class="fas fa-route me-1"></i> Ciclo de surtido
+                    </div>
+                    <div class="seg-timeline" id="seg-det-timeline"></div>
+                </div>
+
+                <!-- Tabla de partidas -->
+                <div style="font-size:.8rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.6rem;">
+                    <i class="fas fa-list me-1"></i> Partidas del documento
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle" style="font-size:.8rem;">
+                        <thead style="background:var(--bg-gray);">
+                            <tr>
+                                <th>#</th>
+                                <th>Clave</th>
+                                <th>Descripción</th>
+                                <th class="text-center">Pedido</th>
+                                <th class="text-center">Verificado</th>
+                                <th>Almacén</th>
+                                <th>Lote</th>
+                                <th>Ubicación</th>
+                                <th class="text-center">Inicio</th>
+                                <th class="text-center">Fin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="seg-det-tbody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@section scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+        function esc(t) {
+        const d = document.createElement('div');
+        d.textContent = String(t ?? '');
+        return d.innerHTML;
+        }
+
+        function fmtCurrency(v) {
+        const n = parseFloat(v || 0);
+        return n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+        }
+
+// Semáforo por origen: el color indica el avance de surtido de ESE documento
+// (Normal / Tubo / Modula), no solo su tipo.
+//   verde  = completado · ámbar = en surtido · rojo = pendiente
+function badgeOrigen(label, estado) {
+    const map = {
+        completado: { bg: '#dcfce7', fg: '#15803d', icon: 'fa-check-circle', tip: 'surtido completo' },
+        en_surtido: { bg: '#fef9c3', fg: '#b45309', icon: 'fa-truck-loading', tip: 'en surtido' },
+        pendiente:  { bg: '#fee2e2', fg: '#b91c1c', icon: 'fa-clock',         tip: 'pendiente' }
+    };
+    const s = map[estado] || map.pendiente;
+    return `<span class="seg-badge" title="${esc(label)}: ${s.tip}"
+        style="font-size:.65rem;background:${s.bg};color:${s.fg};font-weight:700;">
+        <i class="fas ${s.icon}"></i> ${esc(label)}</span>`;
+}
+
+function badgeSurtido(row) {
+    if (row.fecha_fin_surtido && row.tiene_cortes_pendientes)
+        return `<span class="seg-badge surtido"><i class="fas fa-cut"></i> Pendiente de corte</span>`;
+    if (row.fecha_fin_surtido)
+        return `<span class="seg-badge completado"><i class="fas fa-flag-checkered"></i> Completado</span>`;
+    if (row.fecha_inicio_surtido)
+        return `<span class="seg-badge surtido"><i class="fas fa-boxes"></i> En surtido</span>`;
+    if (parseInt(row.partidas_verificadas || 0) > 0)
+        return `<span class="seg-badge verificado"><i class="fas fa-check"></i> Verificado</span>`;
+    return `<span class="seg-badge pendiente"><i class="fas fa-clock"></i> Pendiente</span>`;
+}
+
+        function barraAvance(row) {
+        const total = parseInt(row.total_partidas || 0);
+        const ver = parseInt(row.partidas_verificadas || 0);
+        const pct = total > 0 ? Math.round((ver / total) * 100) : 0;
+        const color = pct === 100
+        ? 'var(--success-color)'
+        : (pct > 0 ? 'var(--warning-color)' : 'var(--text-light)');
+        return `<div style="display:flex;align-items:center;gap:4px;">
+        <span style="font-size:.74rem;font-weight:600;color:var(--text-light);white-space:nowrap;">${ver}/${total}</span>
+        <div class="seg-prog-wrap"><div class="seg-prog-bar" style="width:${pct}%;background:${color}"></div></div>
+        <span style="font-size:.72rem;font-weight:700;color:${color};white-space:nowrap;">${pct}%</span>
+        </div>`;
+        }
+
+        const SeguimientoApp = (() => {
+        let _estatus = '';
+        let _tabla = null;
+        let _intervalo = null;
+        let _countdown = null;
+        let _intervalMs = 30_000; // 30 segundos
+        let _segsRestantes = _intervalMs / 1000;
+
+        function init() {
+        _tabla = createTable({
+        selector: '#seg-tabla-container',
+        path: '/VISeguimientoPedidos/ObtenerPedidos',
+        searchPlaceholder: 'Buscar folio, cliente…',
+        rowKey: 'id_encabezado',
+        sortDir: 'desc',
+
+        data: () => ({
+        estatus: _estatus,
+        fechaDesde: document.getElementById('seg-fdesde').value,
+        fechaHasta: document.getElementById('seg-fhasta').value,
+        }),
+
+        columns: [
+        {
+        title: 'Origen', data: null, sortable: false,
+        formatter: (_, row) => {
+        const badges = [];
+        if (row.tiene_normal) badges.push(badgeOrigen('Normal', row.estado_normal));
+        if (row.tiene_tubo)   badges.push(badgeOrigen('Tubo',   row.estado_tubo));
+        if (row.tiene_modula) badges.push(badgeOrigen('Modula', row.estado_modula));
+        return badges.join(' ');
+        }
+        },
+        
+        {
+        title: 'Pedido padre', data: 'folio_combinado', sortable: false,
+        formatter: (v) =>
+        `<span style="font-size:.78rem;color:var(--text-light)">${esc(v || '—')}</span>`
+        },
+        {
+        title: 'Cliente', data: 'n_cli',
+        formatter: (v, row) => esc(v || row.cli_prov || '')
+        },
+        {
+        title: 'Fecha', data: 'fch', className: 'text-center',
+        formatter: (v) =>
+        `<span style="white-space:nowrap">${dateFormatter(v)}</span>`
+        },
+        {
+        title: 'Estatus surtido', data: null, sortable: false, className: 'text-center',
+        formatter: (_, row) => badgeSurtido(row)
+        },
+        {
+        title: 'Avance', data: null, sortable: false, className: 'text-center',
+        formatter: (_, row) => barraAvance(row)
+        },
+        {
+        title: 'Inicio surtido', data: 'fecha_inicio_surtido', className: 'text-center',
+        formatter: (v) =>
+        `<span style="font-size:.75rem;white-space:nowrap">${v ? dateFormatter(v) : '-'}</span>`
+        },
+        {
+        title: 'Fin surtido', data: 'fecha_fin_surtido', className: 'text-center',
+        formatter: (v) =>
+        `<span style="font-size:.75rem;white-space:nowrap">${v ? dateFormatter(v) : '-'}</span>`
+        },
+        {
+        title: 'Importe', data: 'imp', className: 'text-center',
+        formatter: (v) =>
+        `<span class="fw-semibold" style="font-size:.8rem">${Currency.format(v)}</span>`
+        },
+        ],
+
+        actions: [
+        {
+        icon: 'fa-eye', color: 'btn-outline-primary',
+        title: 'Ver detalle',
+        onClick: (row) => abrirDetalle(row.id_encabezado)
+        }
+        ],
+
+        RowsEvents: {
+        onRowClick: (row) => abrirDetalle(row.id_grupo)  // antes: row.id_encabezado
+        },
+        actions: [{
+        icon: 'fa-eye', color: 'btn-outline-primary', title: 'Ver detalle',
+        onClick: (row) => abrirDetalle(row.id_grupo)     // antes: row.id_encabezado
+        }],
+
+        exports: []
+        });
+
+        cargarKpis();
+        _iniciarAutoRefresh();
+        }
+
+        function _iniciarAutoRefresh() {
+        if (_intervalo) clearInterval(_intervalo);
+        if (_countdown) clearInterval(_countdown);
+
+        _segsRestantes = _intervalMs / 1000;
+        _actualizarBannerCountdown();
+
+        const banner = document.getElementById('seg-refresh-banner');
+        banner?.classList.remove('paused');
+
+        _intervalo = setInterval(() => {
+        _tabla?.refreshPage();   // recarga la página actual sin resetear filtros
+        cargarKpis();
+        _segsRestantes = _intervalMs / 1000;
+        }, _intervalMs);
+
+        _countdown = setInterval(() => {
+        _segsRestantes = Math.max(0, _segsRestantes - 1);
+        _actualizarBannerCountdown();
+        }, 1000);
+        }
+
+        function _pausarAutoRefresh() {
+        if (_intervalo) clearInterval(_intervalo);
+        if (_countdown) clearInterval(_countdown);
+        _intervalo = null;
+        _countdown = null;
+        document.getElementById('seg-refresh-banner')?.classList.add('paused');
+        }
+
+        function _actualizarBannerCountdown() {
+        const texto = `Auto-actualiza en ${_segsRestantes}s`;
+        const a = document.getElementById('seg-refresh-text-a');
+        const b = document.getElementById('seg-refresh-text-b');
+        if (a) a.textContent = texto;
+        if (b) b.textContent = texto;
+        }
+
+        function setTab(el, est) {
+        document.querySelectorAll('.seg-tab').forEach(t =>
+        t.classList.remove('active', 'green', 'amber', 'red', 'mid'));
+        el.classList.add('active');
+        const map = { sin_verificar: 'red', en_surtido: 'amber', completado: 'green', verificado: 'mid' };
+        if (map[est]) el.classList.add(map[est]);
+        _estatus = est;
+        _tabla?.reload('');
+        }
+
+        function limpiarFiltros() {
+        document.getElementById('seg-fdesde').value = '';
+        document.getElementById('seg-fhasta').value = '';
+        document.querySelectorAll('.seg-tab').forEach(t =>
+        t.classList.remove('active', 'green', 'amber', 'red', 'mid'));
+        document.querySelector('.seg-tab[data-est=""]').classList.add('active');
+        _estatus = '';
+        _tabla?.reload('');
+        }
+
+        function recargar() { _tabla?.reload(''); }
+
+        function refrescar() {
+        cargarKpis();
+        _tabla?.refreshPage();
+        // reinicia el contador visual al refrescar manualmente
+        _segsRestantes = _intervalMs / 1000;
+        _actualizarBannerCountdown();
+        }
+
+        async function cargarKpis() {
+        try {
+        const r = await fetch('/VISeguimientoPedidos/ObtenerKpis');
+        const d = await r.json();
+        if (!d.success) return;
+
+        const aprobados = parseInt(d.pedidos_aprobados || 0);
+        const verif = parseInt(d.total_verificaciones || 0);
+        const surtido = parseInt(d.en_surtido || 0);
+        const compl = parseInt(d.completados || 0);
+        const impPend = parseFloat(d.importe_pendiente || 0);
+        const impVer = parseFloat(d.importe_verificado || 0);
+
+        const total = aprobados || 1;
+        const totalImp = (impPend + impVer) || 1;
+
+        const pctVerif = Math.round((verif / total) * 100);
+        const pctComp = Math.round((compl / total) * 100);
+        const pctImpVer = Math.round((impVer / totalImp) * 100);
+        const pctImpPend = 100 - pctImpVer;
+
+        document.getElementById('kpi-aprobados').textContent = aprobados;
+        document.getElementById('kpi-verif').textContent = verif;
+        document.getElementById('kpi-surtido').textContent = surtido;
+        document.getElementById('kpi-completados').textContent = compl;
+        document.getElementById('kpi-imp-pend').textContent = fmtCurrency(impPend);
+        document.getElementById('kpi-imp-ver').textContent = fmtCurrency(impVer);
+        document.getElementById('kpi-verif-pct').textContent = `${pctVerif}% del total`;
+        document.getElementById('kpi-comp-tasa').textContent = `Tasa: ${pctComp}%`;
+
+        const bv = document.getElementById('kpi-verif-badge');
+        bv.textContent = `${pctVerif}%`;
+        bv.className = 'seg-kpi-badge ' + (pctVerif >= 70 ? 'up' : pctVerif >= 40 ? 'neu' : 'down');
+
+        const bc = document.getElementById('kpi-comp-badge');
+        bc.textContent = `${pctComp}%`;
+        bc.className = 'seg-kpi-badge ' + (pctComp >= 70 ? 'up' : pctComp >= 40 ? 'neu' : 'down');
+
+        document.getElementById('kpi-prog-fill').style.width = pctImpVer + '%';
+        document.getElementById('kpi-pct-pend').textContent = `Pendiente: ${pctImpPend}%`;
+        document.getElementById('kpi-pct-ver').textContent = `Verificado: ${pctImpVer}%`;
+
+        document.getElementById('seg-kpi-grid').classList.remove('d-none');
+
+        } catch (e) { console.error('KPI error', e); }
+        }
+
+        async function abrirDetalle(id) {
+        const modal = bootstrap.Modal.getOrCreateInstance(
+        document.getElementById('seg-modalDetalle'));
+        modal.show();
+
+        document.getElementById('seg-det-titulo').textContent = 'Cargando…';
+        document.getElementById('seg-det-tbody').innerHTML =
+        `<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-light);">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        </td></tr>`;
+
+        try {
+        const r = await fetch(`/VISeguimientoPedidos/ObtenerDetalle?idGrupo=${id}`);
+        const d = await r.json();
+        if (!d.success) throw new Error(d.message);
+
+        const e = d.encabezado;
+        document.getElementById('seg-det-titulo').textContent = `${e.folio} — ${e.nat}`;
+        document.getElementById('seg-det-folio').textContent = e.folio || '—';
+        document.getElementById('seg-det-cliente').textContent = e.n_cli || e.cli_prov || '—';
+        document.getElementById('seg-det-fecha').textContent = dateFormatter(e.fch);
+        document.getElementById('seg-det-importe').textContent = fmtCurrency(e.imp);
+        document.getElementById('seg-det-rfc').textContent = e.rfc || '—';
+        document.getElementById('seg-det-tipo').textContent = e.tipo_proceso || '—';
+        document.getElementById('seg-det-estatus').textContent = e.estatus_desc || '—';
+        document.getElementById('seg-det-padre').textContent = e.encabezado_padre ? `#${e.encabezado_padre}` : '—';
+        document.getElementById('seg-det-coment').textContent = e.coment1 || e.coment_aut || '—';
+
+        /* Timeline */
+        const partidas = d.partidas || [];
+        const inicioMin = partidas.reduce((a, p) =>
+        p.fecha_inicio_surtido && (!a || p.fecha_inicio_surtido < a) ? p.fecha_inicio_surtido : a, null);
+        const finMin = partidas.reduce((a, p) =>
+        p.fecha_fin_surtido && (!a || p.fecha_fin_surtido < a) ? p.fecha_fin_surtido : a, null);
+        const hayVerif = partidas.some(p => p.cantidad_verificada > 0);
+
+        document.getElementById('seg-det-timeline').innerHTML = `
+        <div class="seg-tl-step done">
+        <div class="seg-tl-dot"><i class="fas fa-file-invoice" style="font-size:.65rem"></i></div>
+        <span class="seg-tl-label">Pedido</span>
+        <span class="seg-tl-date">${dateFormatter(e.fch)}</span>
+        </div>
+        <div class="seg-tl-step ${hayVerif ? 'done' : 'active'}">
+        <div class="seg-tl-dot"><i class="fas fa-clipboard-check" style="font-size:.65rem"></i></div>
+        <span class="seg-tl-label">Verificado</span>
+        <span class="seg-tl-date">&nbsp;</span>
+        </div>
+        <div class="seg-tl-step ${inicioMin ? 'done' : (hayVerif ? 'active' : '')}">
+        <div class="seg-tl-dot"><i class="fas fa-play" style="font-size:.65rem"></i></div>
+        <span class="seg-tl-label">Surtido iniciado</span>
+        <span class="seg-tl-date">${inicioMin ? dateFormatter(inicioMin) : '—'}</span>
+        </div>
+        <div class="seg-tl-step ${finMin ? 'done' : (inicioMin ? 'active' : '')}">
+        <div class="seg-tl-dot"><i class="fas fa-flag-checkered" style="font-size:.65rem"></i></div>
+        <span class="seg-tl-label">Surtido finalizado</span>
+        <span class="seg-tl-date">${finMin ? dateFormatter(finMin) : '—'}</span>
+        </div>
+        <div class="seg-tl-step ${finMin ? 'active' : ''}">
+        <div class="seg-tl-dot"><i class="fas fa-truck" style="font-size:.65rem"></i></div>
+        <span class="seg-tl-label">Remisión</span>
+        <span class="seg-tl-date">&nbsp;</span>
+        </div>`;
+
+        const tieneTubo = e.tiene_tubo;
+const cortesPendientesGlobal = partidas.some(p =>
+    p.origen === 'tubo' && parseInt(p.cortes_total || 0) > 0 &&
+    parseInt(p.cortes_confirmados || 0) < parseInt(p.cortes_total || 0)
+);
+
+const avisoCorte = document.getElementById('seg-det-aviso-corte');
+if (avisoCorte) avisoCorte.remove(); // limpiar de una carga anterior
+
+if (tieneTubo && cortesPendientesGlobal) {
+    const aviso = document.createElement('div');
+    aviso.id = 'seg-det-aviso-corte';
+    aviso.className = 'mb-3 p-2 rounded-2 d-flex align-items-center gap-2';
+    aviso.style.cssText = 'background:#fef3c7;border:1px solid var(--warning-color);font-size:.8rem;color:#92400e;';
+    aviso.innerHTML = `<i class="fas fa-cut"></i>
+        Este pedido tiene piezas de tubo con corte <strong>pendiente de confirmación</strong> en el módulo de Operación de Cortes.`;
+    document.getElementById('seg-det-timeline').insertAdjacentElement('afterend', aviso);
+}
+
+        /* Partidas */
+        if (!partidas.length) {
+        document.getElementById('seg-det-tbody').innerHTML =
+        `<tr><td colspan="10" style="text-align:center;padding:1.5rem;color:var(--text-light);">Sin partidas</td></tr>`;
+        return;
+        }
+
+document.getElementById('seg-det-tbody').innerHTML = partidas.map((p, i) => {
+    const cantPed = parseFloat(p.cantidad_pedida || 0);
+    const cantVer = parseFloat(p.cantidad_verificada || 0);
+    const pct = cantPed > 0 ? Math.min(Math.round((cantVer / cantPed) * 100), 100) : 0;
+    const color = pct >= 100 ? 'var(--success-color)' : (pct > 0 ? 'var(--warning-color)' : 'var(--danger-color)');
+    const badge = pct >= 100
+        ? `<span class="seg-badge verificado" style="font-size:.65rem">Completo</span>`
+        : pct > 0
+            ? `<span class="seg-badge surtido"   style="font-size:.65rem">Parcial</span>`
+            : `<span class="seg-badge pendiente" style="font-size:.65rem">Pend.</span>`;
+
+    let badgeCorte = '';
+    const cortesTotal = parseInt(p.cortes_total || 0);
+    const cortesConfirmados = parseInt(p.cortes_confirmados || 0);
+    if (p.origen === 'tubo' && cortesTotal > 0) {
+        badgeCorte = cortesConfirmados >= cortesTotal
+            ? `<span class="seg-badge verificado" style="font-size:.6rem;margin-left:4px"><i class="fas fa-cut"></i> Corte OK</span>`
+            : `<span class="seg-badge surtido" style="font-size:.6rem;margin-left:4px"><i class="fas fa-cut"></i> ${cortesConfirmados}/${cortesTotal} corte</span>`;
+    }
+
+    return `<tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:.55rem .65rem;font-weight:700;">${i + 1}</td>
+        <td style="padding:.55rem .65rem;font-family:monospace;font-size:.8rem;">${esc(p.cve_prod || '')}</td>
+        <td style="padding:.55rem .65rem;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+            title="${esc(p.descr_prod || '')}">${esc(p.descr_prod || '')}</td>
+        <td style="padding:.55rem .65rem;text-align:center;">${cantPed} ${esc(p.unidad || '')}</td>
+        <td style="padding:.55rem .65rem;text-align:center;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-weight:700;color:${color}">${cantVer}</span>${badge}${badgeCorte}
+            </div>
+        </td>
+        <td style="padding:.55rem .65rem;">${esc(p.n_almacen || p.cve_almacen || '—')}</td>
+        <td style="padding:.55rem .65rem;">${esc(p.lote || '—')}</td>
+        <td style="padding:.55rem .65rem;">${esc(p.ubicacion || '—')}</td>
+        <td style="padding:.55rem .65rem;text-align:center;font-size:.72rem;white-space:nowrap;">
+            ${p.fecha_inicio_surtido ? dateFormatter(p.fecha_inicio_surtido) : '-'}
+        </td>
+        <td style="padding:.55rem .65rem;text-align:center;font-size:.72rem;white-space:nowrap;">
+            ${p.fecha_fin_surtido ? dateFormatter(p.fecha_fin_surtido) : '-'}
+        </td>
+    </tr>`;
+}).join('');
+
+        } catch (err) {
+        document.getElementById('seg-det-titulo').textContent = 'Error';
+        document.getElementById('seg-det-tbody').innerHTML =
+        `<tr><td colspan="10" style="text-align:center;padding:1.5rem;color:var(--danger-color);">
+        <i class="fas fa-exclamation-triangle me-1"></i>${esc(err.message)}
+        </td></tr>`;
+        }
+        }
+
+        return {
+        init, setTab, limpiarFiltros, recargar, refrescar, cargarKpis, abrirDetalle,
+        _pausar: _pausarAutoRefresh,
+        _reanudar: _iniciarAutoRefresh
+        };
+        })();
+
+        document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+        SeguimientoApp._pausar();
+        } else {
+        SeguimientoApp._reanudar();
+        }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => SeguimientoApp.init());
+    </script>
+}

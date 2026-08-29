@@ -1,0 +1,3930 @@
+﻿@{
+    ViewBag.Title = "Cierre de Caja";
+    ViewBag.PageTitle = "Cierre de Caja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section styles {
+    <link href="~/content/compras-nacionales.css" rel="stylesheet" />
+    <style>
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--bg-light);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: var(--shadow-lg);
+            }
+
+            .stat-card.success {
+                border-left-color: var(--success-color);
+            }
+
+            .stat-card.danger {
+                border-left-color: var(--danger-color);
+            }
+
+            .stat-card.warning {
+                border-left-color: var(--warning-color);
+            }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .table-container {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e0e0e0;
+        }
+
+        .float-end {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .text-muted {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .input-group-custom input {
+            width: 100%;
+            border: 1px solid var(--border-color, #ccc); /* Borde adaptable */
+            background: var(--bg-gray);
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            transition: all 0.2s;
+        }
+
+            .input-group-custom input:focus {
+                outline: none;
+                background: var(--bg-light);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+        .subtotal {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 1rem;
+            min-width: 100px;
+        }
+
+        tbody tr td:first-child {
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        /* Estilo para billetes y monedas */
+        tbody tr:not(.table-active) td:first-child::before {
+            content: '💵';
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+
+        /* Ajuste para monedas */
+        tbody tr:nth-child(n+9):not(.table-active) td:first-child::before {
+            content: '🪙';
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .table-container {
+                padding: 15px;
+            }
+
+            .section-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .float-end {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .table thead th,
+            .table tbody td {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+            }
+        }
+
+        .btn-custom {
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-blue) 100%);
+            border: none;
+            color: white;
+        }
+
+            .btn-primary-custom:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+            }
+
+        .btn-success-custom {
+            background: linear-gradient(135deg, var(--success-color) 0%, #047857 100%);
+            border: none;
+            color: white;
+        }
+
+            .btn-success-custom:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(5, 150, 105, 0.4);
+            }
+
+        .btn-danger-custom {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #b91c1c 100%);
+            border: none;
+            color: white;
+        }
+
+            .btn-danger-custom:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(220, 38, 38, 0.4);
+            }
+
+        .section-title {
+            color: var(--primary-blue);
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--accent-blue);
+        }
+
+        .total-section {
+            background: linear-gradient(135deg, var(--warning-color) 0%, #d58d70 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .difference-positive {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .difference-negative {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        .notes-section {
+            background: var(--very-light-blue);
+            border-left: 4px solid var(--warning-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+            .notes-section textarea {
+                background: var(--bg-light);
+                border: 1px solid var(--border-light);
+                color: var(--text-dark);
+            }
+
+
+        .modal-xl {
+            max-width: 1200px;
+        }
+
+        .modal-content {
+            background: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid var(--border-light);
+        }
+
+            .nav-tabs .nav-link {
+                color: var(--text-dark);
+                font-weight: 500;
+                border: none;
+                border-bottom: 3px solid transparent;
+                padding: 12px 20px;
+                transition: all 0.3s ease;
+            }
+
+                .nav-tabs .nav-link:hover {
+                    border-bottom-color: var(--accent-blue);
+                    background-color: var(--very-light-blue);
+                }
+
+                .nav-tabs .nav-link.active {
+                    background-color: transparent;
+                    color: var(--accent-blue);
+                    border-bottom-color: var(--accent-blue);
+                    font-weight: 600;
+                }
+
+        .ticket-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+            .ticket-row:hover {
+                background-color: var(--very-light-blue);
+            }
+
+        .badge {
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-blue-dark) 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .btn-info:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+                color: white;
+            }
+
+        .form-control {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            color: var(--text-dark);
+        }
+
+            .form-control:focus {
+                background: var(--bg-light);
+                border-color: var(--accent-blue);
+                color: var(--text-dark);
+            }
+
+        @@media print {
+            body {
+                background: white;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .main-container {
+                box-shadow: none;
+                padding: 15px;
+            }
+
+            .stat-card,
+            .payment-method-card,
+            .table-container {
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+
+            .modal {
+                display: none !important;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .payment-amount {
+                font-size: 1.4rem;
+            }
+
+            .btn-custom {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+
+            .header-section h1 {
+                font-size: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.2rem;
+            }
+
+
+            .table {
+                font-size: 0.9rem;
+            }
+        }
+
+        .payment-method-card {
+            background: var(--very-light-blue);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--accent-blue);
+            box-shadow: var(--shadow);
+            cursor: pointer; /* NUEVO */
+            position: relative; /* NUEVO */
+        }
+
+            .payment-method-card:hover {
+                transform: translateX(5px) scale(1.02); /* MODIFICADO */
+                box-shadow: var(--shadow-lg);
+                background: var(--bg-light); /* NUEVO */
+            }
+
+            /* NUEVO - Indicador visual de que es clickeable */
+            .payment-method-card::after {
+                content: '👁️ Click para ver detalles';
+                position: absolute;
+                bottom: 8px;
+                right: 15px;
+                font-size: 0.75rem;
+                color: var(--text-light);
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .payment-method-card:hover::after {
+                opacity: 1;
+            }
+
+        /* Incrementar z-index para modales apilados */
+        .modal-backdrop.show:nth-of-type(2) {
+            z-index: 1051 !important;
+            opacity: 0.7 !important;
+        }
+
+        .modal.show:nth-of-type(2) {
+            z-index: 1052 !important;
+        }
+
+        /* Reducir opacidad del primer modal cuando se abre el segundo */
+        .modal.show.modal-dimmed {
+            opacity: 0.4 !important;
+            pointer-events: none !important;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Estilo para backdrop personalizado más oscuro */
+        .modal-backdrop-dark {
+            background-color: rgba(0, 0, 0, 0.85) !important;
+        }
+
+        /* Animación suave para modales */
+        .modal.fade .modal-dialog {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+    </style>
+}
+
+<div class="header-section">
+    <div class="row align-items-center">
+
+        <!-- Información operativa -->
+        <div class="col-md-8">
+            <div class="d-flex flex-column">
+
+                <div class="d-flex justify-content-between">
+                    <p class="mb-1">
+                        <i class="fas fa-user"></i> <strong>Cajero:</strong>
+                        <span id="cashier">@User.Identity.Name</span>
+                    </p>
+
+                    <p class="mb-1">
+                        <i class="fas fa-store"></i> <strong>Caja:</strong>
+                        <span id="posName">Caja 1</span>
+                    </p>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <p class="mb-1">
+                        <i class="fas fa-calendar-day"></i> <strong>Fecha:</strong>
+                        <span id="currentDate"></span>
+                    </p>
+
+                    <p class="mb-1">
+                        <i class="fas fa-clock"></i> <strong>Hora:</strong>
+                        <span id="currentTime"></span>
+                    </p>
+                </div>
+                <div>
+                    <p class="mb-0">
+                        <i class="fas fa-receipt"></i> <strong>Tickets:</strong>
+                        <span id="ticketCount">0</span>
+                    </p>
+                </div>
+                <div>
+                    <p class="mb-0">
+                        <i class="fas fa-door-open"></i> <strong>Turno:</strong>
+                        <span id="shift">Matutino</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estado del cierre -->
+        <div class="col-md-4 text-end">
+            <span class="badge bg-primary p-2" id="statusBadge">
+                <i class="fas fa-hourglass-half"></i> Cierre en proceso
+            </span>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-coins"></i> Fondo Inicial</div>
+            <div class="stat-value">$<span id="initialFund">0.00</span></div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card success">
+            <div class="stat-label"><i class="fas fa-shopping-cart"></i> Ventas Totales</div>
+            <div class="stat-value">$<span id="totalSales">0.00</span></div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card warning">
+            <div class="stat-label"><i class="fas fa-receipt"></i> Transacciones</div>
+            <div class="stat-value"><span id="totalTransactions">0</span></div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-calculator"></i> Esperado en Caja</div>
+            <div class="stat-value">$<span id="expectedCash">1,000.00</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- Ventas por Método de Pago -->
+<div class="table-container">
+    <h3 class="section-title">
+        <i class="fas fa-credit-card"></i> Ventas por Método de Pago
+        <button class="btn btn-sm btn-outline-primary float-end no-print" onclick="toggleTicketsView()">
+            <i class="fas fa-eye"></i> Ver Todos los Tickets
+        </button>
+    </h3>
+    <div class="row" id="payment-methods-container">
+        <!-- Las cards se generarán dinámicamente aquí -->
+    </div>
+</div>
+<!-- Modal de Tickets -->
+<div class="modal fade" id="ticketsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-receipt"></i> Detalle de Tickets por Método de Pago</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tabs generadas dinámicamente -->
+                <ul class="nav nav-tabs" id="paymentTabs" role="tablist">
+                    <!-- Se genera con JavaScript -->
+                </ul>
+                <!-- Contenido de tabs generado dinámicamente -->
+                <div class="tab-content" id="paymentTabContent">
+                    <!-- Se genera con JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gastos y Retiros -->
+<!-- Gastos, Retiros y Devoluciones -->
+<div class="table-container">
+    <h3 class="section-title">
+        <i class="fas fa-money-bill-wave"></i> Movimientos Adicionales
+    </h3>
+    <div class="row" id="movimientos-adicionales-container">
+        <!-- Las cards se generarán dinámicamente aquí -->
+    </div>
+</div>
+
+<!-- Totales -->
+<div class="total-section">
+    <div class="row">
+        <div class="col-md-4">
+            <h5>Efectivo Contado</h5>
+            <h2>$<span id="countedCash">0.00</span></h2>
+        </div>
+        <div class="col-md-4">
+            <h5>Efectivo Esperado</h5>
+            <h2>$<span id="expectedTotal">0.00</span></h2>
+        </div>
+        <div class="col-md-4">
+            <h5>Diferencia</h5>
+            <h2><span id="difference">$0.00</span></h2>
+        </div>
+    </div>
+</div>
+
+<!-- Notas -->
+<div class="notes-section">
+    <h4><i class="fas fa-sticky-note"></i> Observaciones</h4>
+    <textarea class="form-control" id="notes" rows="4" placeholder="Añade cualquier observación o incidencia del día..."></textarea>
+</div>
+
+<!-- Botones de Acción -->
+<div class="row mt-4 no-print">
+    @*<div class="col-md-4">
+        <button class="btn btn-primary-custom btn-custom w-100" onclick="calcularTotales()">
+            <i class="fas fa-calculator"></i> Calcular Totales
+        </button>
+    </div>*@
+    <div class="col-md-4">
+        <button class="btn btn-success-custom btn-custom w-100" onclick="facturarTodosDocumentos()">
+            <i class="fas fa-print"></i> Imprimir Cierre
+        </button>
+    </div>
+    @* Las ventas que el cliente facturó por el portal ya tienen CFDI, pero les falta la
+       cadena documental y la póliza: eso se levanta aquí, al cerrar la caja. *@
+    <div class="col-md-4">
+        <button class="btn btn-primary-custom btn-custom w-100" onclick="abrirAutofacturadasPendientes()">
+            <i class="fas fa-file-invoice-dollar"></i> Contabilizar autofacturadas
+            <span id="badgeAutofacturadas" class="badge bg-danger ms-1" style="display:none;"></span>
+        </button>
+    </div>
+</div>
+
+<script>
+    // ═══════════════════════════════════════════════════════════════
+    // VENTAS AUTOFACTURADAS PENDIENTES DE CONTABILIZAR
+    // ═══════════════════════════════════════════════════════════════
+    // El portal de autofacturación timbra el CFDI y marca la venta, pero no levanta
+    // pedido/remisión/factura ni la póliza: corre sin sesión y sin contexto de caja.
+    // Aquí se completan. NO se vuelve a timbrar nada.
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  Cuentas de banco que ofrece el cierre
+    // ════════════════════════════════════════════════════════════════════════
+    // Antes se listaba el catálogo contable completo y el usuario elegía cualquiera.
+    // Ahora se ofrecen las cuentas configuradas para las formas de pago del punto de
+    // venta (Punto de Venta Administrativo > Formas de Pago y Bancos). Si nadie ha
+    // configurado nada todavía, se cae al catálogo completo para no frenar el cierre.
+    const CuentasBancoCierre = {
+        cargado: false,
+        formas: [],
+        todas: [],
+
+        async cargar() {
+            if (this.cargado) return;
+
+            const data = await GetData({ path: '/PuntoVentaAdministracion/CuentasBancoFormasPago' });
+            if (data && data.success) {
+                this.formas = data.formas || [];
+                this.todas = data.todas || [];
+                this.cargado = true;
+            }
+        },
+
+        // Unión, sin repetir, de lo configurado para todas las formas de pago: la
+        // global cobra en varias a la vez, así que ninguna manda por sí sola.
+        configuradas() {
+            const vistas = new Set();
+            const lista = [];
+
+            this.formas.forEach(f => (f.cuentas || []).forEach(c => {
+                if (c.cuenta_contable && !vistas.has(c.cuenta_contable)) {
+                    vistas.add(c.cuenta_contable);
+                    lista.push(c);
+                }
+            }));
+
+            return lista;
+        },
+
+        // En un cierre casi todo es efectivo, así que su cuenta predeterminada es la
+        // que se preselecciona.
+        preferida() {
+            const efectivo = this.formas.find(f => f.cve_sat === '01');
+            const cuentas = (efectivo && efectivo.cuentas) || [];
+            const pred = cuentas.find(c => c.predeterminada) || cuentas[0];
+            return pred ? (pred.cuenta_contable || '') : '';
+        }
+    };
+
+    async function llenarSelectCuentasCierre(sel) {
+        if (!sel) return;
+
+        try {
+            await CuentasBancoCierre.cargar();
+
+            const configuradas = CuentasBancoCierre.configuradas();
+
+            // En el respaldo se prefieren las cuentas que sí tienen su cuenta contable
+            // dada de alta: sin ella la póliza del cobro falla. Si el filtro dejara la
+            // lista vacía se muestran todas, para no impedir el cierre.
+            const todas = (CuentasBancoCierre.todas || []).filter(c => c.cuenta_contable);
+            const contabilizables = todas.filter(c => c.contabilizable);
+            const respaldo = contabilizables.length ? contabilizables : todas;
+
+            const cuentas = configuradas.length ? configuradas : respaldo;
+
+            if (!cuentas.length) {
+                sel.innerHTML = `<option value="">No hay cuentas</option>`;
+                return;
+            }
+
+            sel.innerHTML = `<option value="">-- Selecciona --</option>`
+                + cuentas.map(c => `<option value="${c.cuenta_contable}">${c.cuenta_contable} - ${c.nombre}</option>`).join('');
+
+            const preferida = CuentasBancoCierre.preferida();
+            if (preferida && cuentas.some(c => c.cuenta_contable === preferida)) {
+                sel.value = preferida;
+            }
+        } catch {
+            sel.innerHTML = `<option value="">Error al cargar</option>`;
+        }
+    }
+
+    // Selector de cuenta bancaria, el mismo que usa el cierre antes de facturar.
+    async function pedirCuentaBancaria() {
+        const { value } = await Swal.fire({
+            title: 'Selecciona Cuenta Bancaria',
+            html: `
+            <div class="mb-2 text-start">
+                <label class="form-label">Cuenta Bancaria</label>
+                <select id="swal-cuenta-autofact" class="swal2-select w-100">
+                    <option value="">Cargando cuentas...</option>
+                </select>
+            </div>`,
+            showCancelButton: true,
+            confirmButtonText: 'Continuar',
+            cancelButtonText: 'Cancelar',
+            focusConfirm: false,
+            didOpen: async () => {
+                await llenarSelectCuentasCierre(document.getElementById('swal-cuenta-autofact'));
+            },
+            preConfirm: () => {
+                const c = document.getElementById('swal-cuenta-autofact').value;
+                if (!c) { Swal.showValidationMessage('Selecciona una cuenta bancaria'); return false; }
+                return c;
+            }
+        });
+
+        return value;
+    }
+
+    async function cargarBadgeAutofacturadas() {
+        try {
+            const r = await fetch('/PuntoDeVenta/ObtenerAutofacturadasPendientes');
+            const data = await r.json();
+            if (!data.success) return;
+
+            const badge = document.getElementById('badgeAutofacturadas');
+            if (badge && data.resumen.total > 0) {
+                badge.textContent = data.resumen.total;
+                badge.style.display = 'inline-block';
+            }
+        } catch { /* el badge es informativo; su fallo no debe estorbar el cierre */ }
+    }
+
+    async function abrirAutofacturadasPendientes() {
+        Swal.fire({
+            title: 'Consultando ventas autofacturadas',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false,
+            showConfirmButton: false
+        });
+
+        try {
+            const r = await fetch('/PuntoDeVenta/ObtenerAutofacturadasPendientes');
+            const data = await r.json();
+
+            if (data.sessionExpired) {
+                Swal.fire({ icon: 'warning', title: 'Sesión expirada', text: data.message })
+                    .then(() => window.location.reload());
+                return;
+            }
+            if (!data.success) {
+                Swal.fire({ icon: 'error', title: 'No se pudo consultar', text: data.message });
+                return;
+            }
+
+            const ventas = data.ventas || [];
+
+            if (ventas.length === 0) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Todo contabilizado',
+                    text: 'No hay ventas autofacturadas pendientes de respaldo contable.'
+                });
+                return;
+            }
+
+            const filas = ventas.map(v => `
+                <tr>
+                    <td style="padding:.45rem .4rem; border-bottom:1px solid #e5e7eb; text-align:left;">
+                        <label style="display:flex; gap:.5rem; align-items:flex-start; cursor:pointer; margin:0;">
+                            <input type="checkbox" class="chk-autofact" value="${v.ventaId}" checked
+                                   style="margin-top:.25rem;">
+                            <span>
+                                <span style="font-weight:600;">${v.folio}</span><br>
+                                <span style="font-size:.78rem; color:#6b7280;">
+                                    ${v.cliente || 'Sin cliente'} · ${v.fecha}<br>
+                                    ${v.rfcCliente ? 'RFC ' + v.rfcCliente + ' · ' : ''}
+                                    <span style="font-family:monospace; font-size:.72rem;">${v.uuid || ''}</span>
+                                </span>
+                                ${!v.tieneCfdiRegistrado ? `
+                                    <span style="display:inline-block; margin-top:.2rem; background:#fee2e2;
+                                                 color:#7f1d1d; border-radius:4px; padding:1px 6px;
+                                                 font-size:.7rem; font-weight:600;">
+                                        Sin CFDI registrado en el sistema
+                                    </span>` : ''}
+                            </span>
+                        </label>
+                    </td>
+                    <td style="padding:.45rem .4rem; border-bottom:1px solid #e5e7eb; text-align:right; white-space:nowrap;">
+                        $${Number(v.total).toFixed(2)}
+                    </td>
+                </tr>`).join('');
+
+            const result = await Swal.fire({
+                title: '<i class="fas fa-file-invoice-dollar"></i> Contabilizar autofacturadas',
+                html: `
+                    <p style="font-size:.85rem; color:#6b7280; text-align:left;">
+                        Estas ventas ya tienen CFDI emitido por el cliente en el portal, pero les
+                        falta su pedido, remisión, factura y póliza. Se generarán ahora;
+                        <strong>no se timbrará nada de nuevo</strong>.
+                    </p>
+                    ${data.resumen.sinCfdiRegistrado > 0 ? `
+                    <p style="font-size:.8rem; background:#fef3c7; border:1px solid #fcd34d;
+                              border-radius:6px; padding:.5rem; text-align:left;">
+                        <strong>${data.resumen.sinCfdiRegistrado}</strong> venta(s) tienen un uuid
+                        que no corresponde a ninguna factura registrada. Revísalas antes de
+                        contabilizarlas.
+                    </p>` : ''}
+                    <div style="max-height:46vh; overflow-y:auto; margin-top:.5rem;">
+                        <table style="width:100%; border-collapse:collapse;">${filas}</table>
+                    </div>`,
+                width: '700px',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check"></i> Contabilizar seleccionadas',
+                cancelButtonText: 'Cerrar',
+                preConfirm: () => {
+                    const ids = Array.from(document.querySelectorAll('.chk-autofact:checked'))
+                        .map(c => c.value);
+                    if (ids.length === 0) {
+                        Swal.showValidationMessage('Selecciona al menos una venta.');
+                        return false;
+                    }
+                    return ids;
+                }
+            });
+
+            if (result.isConfirmed) await contabilizarAutofacturadas(result.value);
+
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error de conexión', text: e.message });
+        }
+    }
+
+    async function contabilizarAutofacturadas(ids) {
+        // La póliza de cobro necesita la cuenta bancaria; se pide igual que en el cierre.
+        const cuenta = await pedirCuentaBancaria();
+        if (!cuenta) return;
+
+        Swal.fire({
+            title: 'Generando documentos y pólizas',
+            html: `Procesando ${ids.length} venta(s)...`,
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false,
+            showConfirmButton: false
+        });
+
+        try {
+            const formData = new FormData();
+            formData.append('ids', ids.join(','));
+            formData.append('banco', cuenta);
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            const r = await fetch('/PuntoDeVenta/ContabilizarAutofacturadas', {
+                method: 'POST', body: formData
+            });
+            const data = await r.json();
+
+            if (data.sessionExpired) {
+                Swal.fire({ icon: 'warning', title: 'Sesión expirada', text: data.message })
+                    .then(() => window.location.reload());
+                return;
+            }
+
+            const fallidas = data.fallidas || [];
+            const detalleFallos = fallidas.length
+                ? `<div style="text-align:left; margin-top:.75rem; font-size:.8rem;">
+                       <strong>Pendientes:</strong>
+                       <ul style="margin:.3rem 0 0 1rem; padding:0;">
+                           ${fallidas.map(f => `<li>Venta #${f.ventaId}: ${f.error}</li>`).join('')}
+                       </ul>
+                   </div>`
+                : '';
+
+            await Swal.fire({
+                icon: data.success ? 'success' : 'warning',
+                title: data.success ? 'Contabilización completada' : 'Completada con pendientes',
+                html: `${data.message}${detalleFallos}`,
+                width: '620px'
+            });
+
+            window.location.reload();
+
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+        }
+    }
+
+    // Variables globales
+    const cierreCompletado = @ViewBag.procesoCiere > 0;
+    let tickets = [];
+    // Ventas del día que NO tocaron la caja: se facturaron a crédito al registrarse.
+    let ventasCredito = [];
+    let modalStack = []; // Pila para guardar el historial de modales
+    let ticketsModal;
+    const METODOS_PAGO = [
+        {
+            id: 'cash',
+            nombre: 'Efectivo',
+            icono: '💵',
+            colorBadge: 'success',
+            colorBorde: '#10b981',
+            normalizado: 'Efectivo'
+        },
+        {
+            id: 'debit',
+            nombre: 'Tarjeta de Débito',
+            icono: '💳',
+            colorBadge: 'info',
+            colorBorde: '#3b82f6',
+            normalizado: 'Débito'
+        },
+        {
+            id: 'credit',
+            nombre: 'Tarjeta de Crédito',
+            icono: '💳',
+            colorBadge: 'warning',
+            colorBorde: '#f59e0b',
+            normalizado: 'Crédito'
+        },
+        {
+            id: 'transfer',
+            nombre: 'Transferencia',
+            icono: '🏦',
+            colorBadge: 'primary',
+            colorBorde: '#3b82f6',
+            normalizado: 'Transferencia'
+        },
+        {
+            id: 'cheque',
+            nombre: 'Cheque',
+            icono: '📝',
+            colorBadge: 'secondary',
+            colorBorde: '#6366f1',
+            normalizado: 'Cheque'
+        }
+    ];
+    const MOVIMIENTOS_ADICIONALES = [
+        {
+            id: 'withdrawals',
+            nombre: 'Retiros de Efectivo',
+            icono: '💸',
+            colorBadge: 'danger',
+            colorBorde: '#dc2626',
+            tipo: 'negativo'
+        },
+        //{
+        //    id: 'expenses',
+        //    nombre: 'Gastos Operativos',
+        //    icono: '🧾',
+        //    colorBadge: 'warning',
+        //    colorBorde: '#f59e0b',
+        //    tipo: 'negativo'
+        //},
+        //{
+        //    id: 'returns',
+        //    nombre: 'Devoluciones',
+        //    icono: '↩️',
+        //    colorBadge: 'info',
+        //    colorBorde: '#3b82f6',
+        //    tipo: 'negativo'
+        //}
+    ];
+
+    // Función para inicializar el estado del cierre
+    function inicializarEstadoCierre() {
+        if (cierreCompletado) {
+            // Cambiar el badge a completado
+            const statusBadge = document.getElementById('statusBadge');
+            if (statusBadge) {
+                statusBadge.className = 'badge bg-success p-2';
+                statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Cierre Completado';
+            }
+
+            // Deshabilitar todos los botones de acción
+            deshabilitarBotonesAccion();
+
+            // Mostrar mensaje informativo
+            mostrarMensajeCierreCompletado();
+        }
+    }
+
+    // Función para deshabilitar los botones de acción
+    function deshabilitarBotonesAccion() {
+        // Deshabilitar botón de imprimir/facturar
+        const botonFacturar = document.querySelector('button[onclick="facturarTodosDocumentos()"]');
+        if (botonFacturar) {
+            botonFacturar.disabled = true;
+            botonFacturar.style.opacity = '0.5';
+            botonFacturar.style.cursor = 'not-allowed';
+            botonFacturar.title = 'El cierre de caja ya fue procesado hoy';
+
+            // Cambiar el onclick para evitar que se ejecute
+            botonFacturar.onclick = function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Cierre ya procesado',
+                    text: 'El cierre de caja ya fue completado para el día de hoy',
+                    confirmButtonColor: '#7c3aed'
+                });
+                return false;
+            };
+        }
+
+        // Deshabilitar botón de ver tickets
+        const botonVerTickets = document.querySelector('button[onclick="toggleTicketsView()"]');
+        if (botonVerTickets) {
+            // Este botón puede seguir habilitado para consulta
+            // botonVerTickets.disabled = true;
+        }
+
+        // Las tarjetas de métodos de pago y las de movimientos NO se tocan: son de
+        // consulta, no de acción. Antes se les pisaba el onclick con un aviso que decía
+        // "solo puedes consultar la información" y acto seguido impedía consultarla, así
+        // que después del cierre no había forma de ver el detalle de ningún método.
+        //
+        // Lo que el cierre completado tiene que bloquear es facturar otra vez, y de eso
+        // ya se encarga el botón de arriba.
+    }
+
+    // Función para mostrar mensaje informativo
+    function mostrarMensajeCierreCompletado() {
+        // Crear banner informativo
+        const bannerHTML = `
+        <div id="bannerCierreCompletado" style="
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-left: 4px solid #059669;
+            padding: 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2);
+        ">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-check-circle" style="font-size: 2rem; color: #059669;"></i>
+                <div style="flex: 1;">
+                    <h4 style="color: #047857; margin: 0 0 0.5rem 0; font-size: 1.1rem; font-weight: 700;">
+                        ✓ Cierre de Caja Completado
+                    </h4>
+                    <p style="color: #065f46; margin: 0; font-size: 0.9rem;">
+                        El cierre de caja del día de hoy ya fue procesado y facturado.
+                        Los datos mostrados son de solo lectura.
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+
+        // Insertar el banner después del header
+        const headerSection = document.querySelector('.header-section');
+        if (headerSection) {
+            headerSection.insertAdjacentHTML('afterend', bannerHTML);
+        }
+    }
+
+    // Función mejorada para facturar (con validación)
+    async function facturarTodosDocumentosConValidacion() {
+        // Verificar si el cierre ya está completado
+        if (cierreCompletado) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cierre ya procesado',
+                html: `
+                <div style="text-align: left; padding: 1rem;">
+                    <p style="color: #6b7280; margin-bottom: 1rem;">
+                        El cierre de caja ya fue completado para el día de hoy.
+                    </p>
+                    <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; border-left: 3px solid #f59e0b;">
+                        <strong style="color: #92400e;">
+                            <i class="fas fa-info-circle"></i> Nota:
+                        </strong>
+                        <p style="color: #78350f; margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+                            Si necesita realizar un nuevo cierre, deberá hacerlo en una fecha diferente
+                            o contactar al administrador del sistema.
+                        </p>
+                    </div>
+                </div>
+            `,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#7c3aed',
+                width: '550px'
+            });
+            return;
+        }
+
+        // Si no está completado, ejecutar la función original
+        await facturarTodosDocumentos();
+    }
+
+    function generarCardsMetodosPago() {
+        const container = document.getElementById('payment-methods-container');
+        container.innerHTML = '';
+
+        METODOS_PAGO.forEach(metodo => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6';
+
+            col.innerHTML = `
+            <div class="payment-method-card"
+                 onclick="abrirTicketsPorMetodo('${metodo.id}')"
+                 data-metodo-id="${metodo.id}"
+                 style="border-left-color: ${metodo.colorBorde}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label>${metodo.icono} ${metodo.nombre}</label>
+                    <span class="badge bg-${metodo.colorBadge}">
+                        Tickets: <span id="${metodo.id}TicketCount">0</span>
+                    </span>
+                </div>
+                <div class="payment-amount">$<span id="${metodo.id}SalesAuto">0.00</span></div>
+                <small class="text-muted">Monto esperado automático</small>
+            </div>
+        `;
+
+            container.appendChild(col);
+        });
+
+        pintarTarjetaCredito();
+    }
+
+    // Las ventas a crédito se muestran aparte y con su propio color: son ventas del
+    // día, pero su dinero no está en la caja y no debe sumar al efectivo esperado.
+    function pintarTarjetaCredito() {
+        const container = document.getElementById('payment-methods-container');
+        const anterior = document.getElementById('card-ventas-credito');
+        if (anterior) anterior.remove();
+
+        if (!ventasCredito.length) return;
+
+        const total = ventasCredito.reduce((sum, v) => sum + v.total, 0);
+        const money = n => `$${(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        const col = document.createElement('div');
+        col.className = 'col-md-12';
+        col.id = 'card-ventas-credito';
+        col.innerHTML = `
+            <div class="payment-method-card"
+                 onclick="mostrarDetalleVentasCredito()"
+                 style="border-left-color: #7c3aed;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label>🧾 Ventas a crédito</label>
+                    <span class="badge bg-secondary">Tickets: ${ventasCredito.length}</span>
+                </div>
+                <div class="payment-amount" style="color:#7c3aed;">${money(total)}</div>
+                <small class="text-muted">
+                    NO entra a la caja ni a la factura global: ya se facturó nominativa al
+                    registrar la venta y el importe está en la cartera del cliente.
+                    <b>Clic para ver el detalle.</b>
+                </small>
+            </div>
+        `;
+
+        container.appendChild(col);
+    }
+
+    // Detalle de las ventas a crédito del día. Va en su propia ventana y no como una
+    // pestaña más del modal de tickets porque ese modal desglosa el dinero que entró a
+    // la caja, y estas ventas justamente no entraron.
+    function mostrarDetalleVentasCredito() {
+        if (!ventasCredito.length) {
+            toastMixin.fire({ icon: 'info', title: 'No hay ventas a crédito hoy' });
+            return;
+        }
+
+        const money = n => `$${(parseFloat(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const total = ventasCredito.reduce((sum, v) => sum + v.total, 0);
+
+        const filas = ventasCredito.map(v => `
+            <tr>
+                <td>${v.folio || ''}</td>
+                <td>${v.hora || ''}</td>
+                <td>${v.cliente || ''}</td>
+                <td class="text-end">${money(v.total)}</td>
+            </tr>`).join('');
+
+        Swal.fire({
+            title: '🧾 Ventas a crédito del día',
+            html: `
+                <div style="text-align:left;">
+                    <p style="font-size:.85rem; color:#6b7280;">
+                        Estas ventas ya se facturaron nominativas al registrarse. Su importe
+                        está en la cartera del cliente y se cobra en Crédito y Cobranza, así
+                        que no suma al efectivo esperado ni entra en la factura global.
+                    </p>
+                    <div class="table-responsive" style="max-height:45vh; overflow-y:auto;">
+                        <table class="table modern-table w-100">
+                            <thead>
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Hora</th>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>${filas}</tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3">Total a crédito</th>
+                                    <th class="text-end">${money(total)}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>`,
+            width: '760px',
+            confirmButtonText: 'Cerrar'
+        });
+    }
+
+    function pintarAvisoNoClasificado(monto) {
+        const container = document.getElementById('payment-methods-container');
+        const anterior = document.getElementById('aviso-no-clasificado');
+        if (anterior) anterior.remove();
+
+        if (!monto || monto <= 0) return;
+
+        const money = n => `$${(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        const col = document.createElement('div');
+        col.className = 'col-md-12';
+        col.id = 'aviso-no-clasificado';
+        col.innerHTML = `
+            <div style="background:#fffbeb; border-left:4px solid #f59e0b; border-radius:8px;
+                        padding:.6rem .9rem; font-size:.85rem; color:#92400e;">
+                <i class="fas fa-triangle-exclamation"></i>
+                ${money(monto)} cobrados con una forma de pago que no es efectivo, tarjeta,
+                transferencia ni cheque (por ejemplo una nota de crédito aplicada). No se
+                suman a ninguna tarjeta ni al efectivo esperado; revísalos en el detalle
+                de tickets.
+            </div>
+        `;
+
+        container.appendChild(col);
+    }
+
+    function generarCardsMovimientos() {
+        const container = document.getElementById('movimientos-adicionales-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        MOVIMIENTOS_ADICIONALES.forEach(movimiento => {
+            const col = document.createElement('div');
+            col.className = 'col-md-4';
+
+            col.innerHTML = `
+            <div class="payment-method-card"
+                 onclick="abrirDetallesMovimiento('${movimiento.id}')"
+                 data-movimiento-id="${movimiento.id}"
+                 style="border-left-color: ${movimiento.colorBorde}; cursor: pointer;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label>${movimiento.icono} ${movimiento.nombre}</label>
+                    <span class="badge bg-${movimiento.colorBadge}">
+                        ${movimiento.tipo === 'negativo' ? '-' : '+'}
+                    </span>
+                </div>
+                <div class="payment-amount" style="color: ${movimiento.colorBorde};">
+                    $<span id="${movimiento.id}Amount">0.00</span>
+                </div>
+                <small class="text-muted">Monto registrado</small>
+            </div>
+        `;
+
+            container.appendChild(col);
+        });
+    }
+
+    // ============================================
+    // FUNCIÓN PRINCIPAL PARA ABRIR DETALLES
+    // ============================================
+    function abrirDetallesMovimiento(movimientoId) {
+        const movimiento = MOVIMIENTOS_ADICIONALES.find(m => m.id === movimientoId);
+
+        if (!movimiento) {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Movimiento no encontrado'
+            });
+            return;
+        }
+
+        const monto = parseFloat(document.getElementById(`${movimientoId}Amount`)?.textContent || 0);
+
+        if (monto === 0) {
+            toastMixin.fire({
+                icon: 'info',
+                title: `No hay ${movimiento.nombre.toLowerCase()} registrados hoy`
+            });
+            return;
+        }
+
+        // Llamar a la función específica según el tipo
+        switch (movimientoId) {
+            case 'withdrawals':
+                mostrarDetallesRetiros(monto);
+                break;
+            case 'expenses':
+                mostrarDetallesGastos(monto);
+                break;
+            case 'returns':
+                mostrarDetallesDevoluciones(monto);
+                break;
+            default:
+                toastMixin.fire({
+                    icon: 'warning',
+                    title: 'Funcionalidad en desarrollo'
+                });
+        }
+    }
+
+    // ============================================
+    // MODAL DE RETIROS DE EFECTIVO
+    // ============================================
+    async function mostrarDetallesRetiros(montoTotal) {
+        // Aquí deberías hacer una llamada al servidor para obtener los retiros reales
+        // Por ahora, voy a mostrar un ejemplo con datos de muestra
+
+        const retiros = await obtenerRetirosDelDia(); // Implementar esta función
+
+        const tablaHTML = `
+        <div class="table-responsive mt-3">
+            <table class="table table-hover">
+                <thead style="background: linear-gradient(135deg, #fee2e2, #fecaca); color: #7f1d1d;">
+                    <tr>
+                        <th width="100">Hora</th>
+                        <th>Concepto</th>
+                        <th>Usuario</th>
+                        <th class="text-end" width="120">Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${retiros.length > 0 ? retiros.map(retiro => `
+                        <tr style="cursor: pointer;" onclick="verDetalleRetiro('${retiro.id}')">
+                            <td><strong>${retiro.hora}</strong></td>
+                            <td>${retiro.concepto}</td>
+                            <td>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> ${retiro.usuario}
+                                </small>
+                            </td>
+                            <td class="text-end">
+                                <strong style="color: #dc2626;">-$${retiro.monto.toFixed(2)}</strong>
+                            </td>
+                        </tr>
+                    `).join('') : `
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                No hay retiros registrados
+                            </td>
+                        </tr>
+                    `}
+                </tbody>
+                <tfoot style="background: #fef3c7;">
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>TOTAL RETIROS:</strong></td>
+                        <td class="text-end">
+                            <strong style="color: #dc2626; font-size: 1.2rem;">
+                                -$${montoTotal.toFixed(2)}
+                            </strong>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    `;
+
+        Swal.fire({
+            title: '💸 Retiros de Efectivo del Día',
+            html: `
+            <div style="text-align: left;">
+                <div style="background: linear-gradient(135deg, #fee2e2, #fecaca); padding: 1rem; border-radius: 10px; margin-bottom: 1rem; border-left: 4px solid #dc2626;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #7f1d1d; font-weight: 600;">Total Retirado Hoy</span>
+                        <span style="color: #dc2626; font-size: 1.5rem; font-weight: 700;">
+                            -$${montoTotal.toFixed(2)}
+                        </span>
+                    </div>
+                </div>
+                ${tablaHTML}
+                <div style="background: #fef3c7; padding: 0.75rem; border-radius: 6px; margin-top: 1rem;">
+                    <small style="color: #92400e;">
+                        <i class="fas fa-info-circle"></i>
+                        Click en cualquier registro para ver más detalles
+                    </small>
+                </div>
+            </div>
+        `,
+            width: '800px',
+            confirmButtonText: '<i class="fas fa-check"></i> Cerrar',
+            confirmButtonColor: '#7c3aed',
+            showCloseButton: true
+        });
+    }
+
+
+    // ============================================
+    // FUNCIONES AUXILIARES PARA OBTENER DATOS
+    // ============================================
+
+    async function obtenerRetirosDelDia() {
+        try {
+            const response = await GetData({
+                path: '/PuntoVentaAdministracion/ObtenerDocumentos'
+            });
+
+            if (
+                response?.success &&
+                Array.isArray(response.data?.movements)
+            ) {
+                return response.data.movements.map(retiro => ({
+                    id: retiro.nombre,
+                    hora: retiro.fch ?? '00:00',
+                    concepto: retiro.concept ?? 'Sin especificar',
+                    usuario: retiro.user ?? 'Sistema',
+                    monto: Number(retiro.amount) || 0,
+                    notas: retiro.notes ?? ''
+                }));
+            }
+
+            console.warn('No se encontraron retiros válidos:', response.data);
+            return [];
+
+        } catch (error) {
+            console.error('Error al obtener retiros:', error);
+            return [];
+        }
+    }
+
+    // ============================================
+    // FUNCIONES PARA VER DETALLE INDIVIDUAL
+    // ============================================
+
+    function verDetalleRetiro(retiroId) {
+        // Implementar modal con todos los detalles del retiro específico
+        console.log('Ver detalle del retiro:', retiroId);
+        // Puedes hacer otra llamada al servidor para obtener más información
+    }
+
+    function generarTabsMetodosPago() {
+        // Generar los botones de las tabs
+        const tabsNav = document.getElementById('paymentTabs');
+        tabsNav.innerHTML = '';
+
+        METODOS_PAGO.forEach((metodo, index) => {
+            const li = document.createElement('li');
+            li.className = 'nav-item';
+            li.setAttribute('role', 'presentation');
+
+            li.innerHTML = `
+            <button class="nav-link ${index === 0 ? 'active' : ''}"
+                    id="${metodo.id}-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#${metodo.id}"
+                    type="button">
+                ${metodo.icono} ${metodo.nombre} (<span id="${metodo.id}TabCount">0</span>)
+            </button>
+        `;
+
+            tabsNav.appendChild(li);
+        });
+
+        // Generar el contenido de las tabs
+        const tabContent = document.getElementById('paymentTabContent');
+        tabContent.innerHTML = '';
+
+        METODOS_PAGO.forEach((metodo, index) => {
+            const tabPane = document.createElement('div');
+            tabPane.className = `tab-pane fade ${index === 0 ? 'show active' : ''}`;
+            tabPane.id = metodo.id;
+            tabPane.setAttribute('role', 'tabpanel');
+
+            tabPane.innerHTML = `
+            <div class="table-responsive mt-3">
+                <table class="table modern-table w-100">
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Hora</th>
+                            <th class="text-end">Total</th>
+                            <th width="80">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="${metodo.id}TicketsTable"></tbody>
+                </table>
+            </div>
+        `;
+
+            tabContent.appendChild(tabPane);
+        });
+    }
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function () {
+        // Generar UI dinámicamente
+        generarCardsMetodosPago();
+        generarTabsMetodosPago();
+        generarCardsMovimientos();
+        // Contador de ventas autofacturadas sin respaldo contable
+        cargarBadgeAutofacturadas();
+        // Inicializar modal
+        ticketsModal = new bootstrap.Modal(document.getElementById('ticketsModal'));
+
+        // Cargar fondo inicial
+        cargarFondoInicial();
+
+        // Cargar datos
+        GetData({
+            path: '/PuntoVentaAdministracion/DatosSelect',
+        }).then((_res) => {
+            const facturas = _res.facturas;
+            cargarFondoInicial();
+            if (facturas && facturas.length > 0) {
+                procesarFacturas(facturas);
+            }
+        });
+
+        initializeDate();
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        setTimeout(() => {
+            inicializarEstadoCierre();
+        }, 100);
+    });
+
+    // Nueva función para procesar facturas
+    function procesarFacturas(facturas) {
+        tickets = [];
+        ventasCredito = [];
+
+        // Una venta a crédito no entró a la caja: no puede aparecer en el desglose por
+        // método de pago. Antes caía aquí sin formas de pago (no las tiene) y el
+        // respaldo la etiquetaba como EFECTIVO, inflando el efectivo esperado del corte.
+        const esVentaCredito = f => (f.tipo_proceso || '').toLowerCase().includes('_credito');
+
+        facturas.filter(esVentaCredito).forEach(f => {
+            let horaCredito = '';
+            if (f.fch1) {
+                const fecha = new Date(f.fch1);
+                horaCredito = `${String(fecha.getHours()).padStart(2, '0')}:${String(fecha.getMinutes()).padStart(2, '0')}`;
+            }
+
+            ventasCredito.push({
+                folio: f.folio,
+                hora: horaCredito,
+                cliente: f.n_cli || 'Cliente',
+                total: parseFloat(f.imp) || 0
+            });
+        });
+
+        facturas.filter(f => !esVentaCredito(f)).forEach((factura, index) => {
+            // Parsear las formas de pago desde JSON
+            let formasPago = [];
+
+            if (factura.formas_pago) {
+                try {
+                    // Si viene como string JSON, parsearlo
+                    const formasPagoData = typeof factura.formas_pago === 'string'
+                        ? JSON.parse(factura.formas_pago)
+                        : factura.formas_pago;
+
+                    formasPago = formasPagoData.map(fp => ({
+                        metodo: normalizarMetodoPago(fp.metodo, fp.metodo_nombre),
+                        monto: parseFloat(fp.monto) || 0
+                    }));
+                } catch (e) {
+                    console.error('Error al parsear formas de pago:', e);
+                    formasPago = [];
+                }
+            }
+
+            // Sin desglose de cobros se usa la forma de pago del documento. NO se usa
+            // `mdp` —que es PUE/PPD, el MÉTODO de pago— porque no es una forma de pago y
+            // normalizarMetodoPago lo terminaba etiquetando como efectivo.
+            if (formasPago.length === 0) {
+                formasPago = [{
+                    metodo: normalizarMetodoPago(factura.f_pago_cve_sat, factura.f_pago_cve_sat),
+                    monto: parseFloat(factura.imp) || 0
+                }];
+            }
+
+            // Extraer hora de la fecha
+            let hora = '00:00';
+            if (factura.fch1) {
+                const fecha = new Date(factura.fch1);
+                hora = `${String(fecha.getHours()).padStart(2, '0')}:${String(fecha.getMinutes()).padStart(2, '0')}`;
+            }
+
+            // Crear el ticket
+            const ticket = {
+                numero: String(index + 1).padStart(4, '0'),
+                folio: factura.folio || `TICKET-${index + 1}`,
+                id_encabezado: factura.id_encabezado,
+                hora: hora,
+                fecha: factura.fch1,
+                productos: factura.productos_lista || 'Sin productos',
+                productosDescripcion: factura.productos_descripciones || '',
+                total: parseFloat(factura.imp) || 0,
+                cliente: factura.n_cli || 'Público General',
+                formasPago: formasPago
+            };
+
+            tickets.push(ticket);
+        });
+
+        // Ordenar por hora
+        tickets.sort((a, b) => a.hora.localeCompare(b.hora));
+
+        // Actualizar la interfaz. La tarjeta de crédito se pinta antes de los totales
+        // para que quede arriba del aviso de formas de pago no clasificadas.
+        pintarTarjetaCredito();
+        updatePaymentMethodTotals();
+        calcularTotales();
+    }
+
+    // Función para normalizar nombres de métodos de pago
+    // Mapeo oficial de claves SAT. Ojo con el par tarjetas: 04 es CRÉDITO y 28 es
+    // DÉBITO — estaba al revés, y el punto de venta manda justamente esas dos claves.
+    const MAPA_CLAVES_SAT = {
+        '01': 'Efectivo',
+        '02': 'Cheque',
+        '03': 'Transferencia',
+        '04': 'Crédito',
+        '28': 'Débito',
+        '99': 'Otro'          // nota de crédito / por definir: no es dinero en caja
+    };
+
+    // La clave SAT manda sobre el nombre. Buscar sólo por texto confundía
+    // "Nota de Crédito" con "Tarjeta de Crédito" (ambos contienen "crédito") y metía
+    // notas de crédito en el conteo de tarjetas.
+    function normalizarMetodoPago(clave, nombre) {
+        const claveLimpia = (clave || '').toString().trim();
+        if (MAPA_CLAVES_SAT[claveLimpia]) return MAPA_CLAVES_SAT[claveLimpia];
+
+        const texto = (nombre || clave || '').toString().toLowerCase();
+        if (!texto) return 'Otro';
+
+        // Se revisa antes que las tarjetas, por la misma razón de arriba.
+        if (texto.includes('nota de')) return 'Otro';
+
+        for (const metodoPago of METODOS_PAGO) {
+            const nombreLower = metodoPago.normalizado.toLowerCase();
+            if (texto.includes(nombreLower)) return metodoPago.normalizado;
+        }
+
+        // Antes cualquier cosa desconocida caía en Efectivo, que es el peor lugar
+        // posible: cuadrar la caja dependía de que nada se colara aquí.
+        return 'Otro';
+    }
+
+
+
+    // Actualizar fecha y hora
+    function updateDateTime() {
+        const now = new Date();
+        document.getElementById('currentDate').textContent = now.toLocaleDateString('es-MX', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        document.getElementById('currentTime').textContent = now.toLocaleTimeString('es-MX');
+    }
+    // Inicializar fecha
+    function initializeDate() {
+        const today = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('currentDate').textContent = today.toLocaleDateString('es-MX', options);
+    }
+
+    // Actualizar totales por método de pago
+    function updatePaymentMethodTotals() {
+        // Inicializar totales dinámicamente
+        const totales = {};
+        METODOS_PAGO.forEach(metodo => {
+            totales[metodo.normalizado] = { total: 0, count: 0, tickets: [] };
+        });
+
+        // Procesar tickets
+        tickets.forEach(ticket => {
+            ticket.formasPago.forEach(formaPago => {
+                const metodo = formaPago.metodo;
+                const monto = formaPago.monto;
+
+                if (totales[metodo]) {
+                    totales[metodo].total += monto;
+
+                    if (monto > 0) {
+                        const ticketYaAgregado = totales[metodo].tickets.some(
+                            t => t.id_encabezado === ticket.id_encabezado
+                        );
+
+                        if (!ticketYaAgregado) {
+                            const ticketPorMetodo = {
+                                ...ticket,
+                                montoParcial: monto,
+                                esTicketMixto: ticket.formasPago.length > 1
+                            };
+                            totales[metodo].tickets.push(ticketPorMetodo);
+                            totales[metodo].count++;
+                        }
+                    }
+                }
+            });
+        });
+
+        // Actualizar UI dinámicamente
+        METODOS_PAGO.forEach(metodo => {
+            const total = totales[metodo.normalizado].total;
+            const count = totales[metodo.normalizado].count;
+
+            // Actualizar montos y contadores
+            const salesElement = document.getElementById(`${metodo.id}SalesAuto`);
+            const countElement = document.getElementById(`${metodo.id}TicketCount`);
+            const tabCountElement = document.getElementById(`${metodo.id}TabCount`);
+
+            if (salesElement) salesElement.textContent = total.toFixed(2);
+            if (countElement) countElement.textContent = count;
+            if (tabCountElement) tabCountElement.textContent = count;
+
+            // Actualizar estilo de la card
+            const card = document.querySelector(`[data-metodo-id="${metodo.id}"]`);
+            if (card) {
+                if (count === 0) {
+                    card.style.opacity = '0.6';
+                    card.style.cursor = 'not-allowed';
+                } else {
+                    card.style.opacity = '1';
+                    card.style.cursor = 'pointer';
+                }
+            }
+        });
+
+        // Lo que no cayó en ninguna forma de pago conocida (una nota de crédito
+        // aplicada como pago, por ejemplo) ya no se suma al efectivo, pero tampoco
+        // puede desaparecer del corte sin decirlo. El aviso sólo aparece si hay algo.
+        const noClasificado = tickets.reduce((suma, ticket) =>
+            suma + ticket.formasPago
+                .filter(fp => !totales[fp.metodo])
+                .reduce((s, fp) => s + (fp.monto || 0), 0), 0);
+
+        pintarAvisoNoClasificado(noClasificado);
+
+        document.getElementById('ticketCount').textContent = tickets.length;
+
+        // Actualizar tablas de tickets
+        updateTicketTables(totales);
+    }
+
+    // Actualizar tablas de tickets en el modal
+    function updateTicketTables(totales) {
+        METODOS_PAGO.forEach(metodo => {
+            const tbody = document.getElementById(`${metodo.id}TicketsTable`);
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            const ticketsMetodo = totales[metodo.normalizado].tickets;
+
+            if (ticketsMetodo.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No hay tickets registrados</td></tr>`;
+                return;
+            }
+
+            ticketsMetodo.forEach(ticket => {
+                const row = document.createElement('tr');
+                row.className = 'ticket-row';
+
+                const mixtoIndicator = ticket.esTicketMixto
+                    ? '<span class="badge bg-warning text-dark ms-2" title="Ticket con múltiples métodos de pago">MIXTO</span>'
+                    : '';
+
+                const timestamp = parseInt(ticket.fecha.replace(/\/Date\((\d+)\)\//, "$1"));
+                const fecha = new Date(timestamp);
+                const hora = `${String(fecha.getHours()).padStart(2, '0')}:${String(fecha.getMinutes()).padStart(2, '0')}:${String(fecha.getSeconds()).padStart(2, '0')}`;
+
+                const montoMostrar = ticket.esTicketMixto
+                    ? `${Currency.format(ticket.montoParcial)} <small class="text-muted">(de ${Currency.format(ticket.total)})</small>`
+                    : `${Currency.format(ticket.total)}`;
+
+                row.innerHTML = `
+                <td>
+                    <strong>#${ticket.numero}</strong>
+                    ${mixtoIndicator}
+                    <br><small class="text-muted">${ticket.folio}</small>
+                </td>
+                <td>${hora}</td>
+                <td class="text-end"><strong>${montoMostrar}</strong></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-info" onclick="verDetalleTicket('${ticket.id_encabezado}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+                <span class="desc-tooltip">${ticket.productos}</span>
+            `;
+                tbody.appendChild(row);
+            });
+
+            // Agregar fila de total
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'table-active';
+            totalRow.innerHTML = `
+            <td colspan="2" class="text-end"><strong>TOTAL ${metodo.nombre.toUpperCase()}</strong></td>
+            <td class="text-end"><strong>${Currency.format(totales[metodo.normalizado].total)}</strong></td>
+            <td></td>
+        `;
+            tbody.appendChild(totalRow);
+        });
+    }
+
+    function verDetalleTicket(idEncabezado) {
+        const ticket = tickets.find(t => t.id_encabezado == idEncabezado);
+
+        if (!ticket) {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Ticket no encontrado'
+            });
+            return;
+        }
+        const modalPrincipal = document.getElementById('ticketsModal');
+        if (modalPrincipal) {
+            modalPrincipal.classList.add('modal-dimmed');
+        }
+        let formasPagoHTML = ticket.formasPago.map(fp => `
+        <tr>
+            <td><strong>${fp.metodo}</strong></td>
+            <td class="text-end">${Currency.format(fp.monto)}</td>
+        </tr>
+    `).join('');
+
+        const modalHTML = `
+        <div class="modal fade" id="detalleTicketModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-receipt"></i> Detalle del Ticket #${ticket.numero}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Folio:</strong> ${ticket.folio}</p>
+                                <p><strong>Fecha:</strong> ${ticket.fch1}</p>
+                                <p><strong>Cliente:</strong> ${ticket.cliente}</p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <h3>Total: $${ticket.total.toFixed(2)}</h3>
+                            </div>
+                        </div>
+
+                        <h6 class="mt-3"><i class="fas fa-box"></i> Productos</h6>
+                        <div class="alert alert-light">
+                            <small>${ticket.productos}</small>
+                        </div>
+
+                        <h6 class="mt-3"><i class="fas fa-credit-card"></i> Formas de Pago</h6>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Método</th>
+                                    <th class="text-end">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${formasPagoHTML}
+                            </tbody>
+                            <tfoot class="table-active">
+                                <tr>
+                                    <td><strong>TOTAL</strong></td>
+                                    <td class="text-end"><strong>$${ticket.total.toFixed(2)}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        // Remover modal anterior si existe
+        const modalAnterior = document.getElementById('detalleTicketModal');
+        if (modalAnterior) {
+            modalAnterior.remove();
+        }
+
+        // Agregar el nuevo modal al body
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+
+        // ⭐ AGREGAR BACKDROP MÁS OSCURO
+        const nuevoModal = document.getElementById('detalleTicketModal');
+        nuevoModal.addEventListener('show.bs.modal', function () {
+            // Cambiar el backdrop a más oscuro
+            setTimeout(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                if (backdrops.length > 1) {
+                    backdrops[backdrops.length - 1].classList.add('modal-backdrop-dark');
+                }
+            }, 50);
+        });
+
+        // ⭐ RESTAURAR OPACIDAD AL CERRAR
+        nuevoModal.addEventListener('hidden.bs.modal', function () {
+            if (modalPrincipal) {
+                modalPrincipal.classList.remove('modal-dimmed');
+            }
+            this.remove();
+        });
+
+
+        // Mostrar el modal
+        const detalleModal = new bootstrap.Modal(document.getElementById('detalleTicketModal'));
+        detalleModal.show();
+
+        // Limpiar el modal cuando se cierre
+        document.getElementById('detalleTicketModal').addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+    }
+
+    // Toggle vista de tickets
+    function toggleTicketsView() {
+        if (tickets.length === 0) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'Primero genera tickets de ejemplo o carga tickets reales'
+            });
+            return;
+        }
+        ticketsModal.show();
+    }
+
+    function abrirTicketsPorMetodo(metodoId) {
+        if (tickets.length === 0) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'No hay tickets registrados para mostrar'
+            });
+            return;
+        }
+
+        const countElement = document.getElementById(`${metodoId}TicketCount`);
+        const count = countElement ? parseInt(countElement.textContent) : 0;
+
+        if (count === 0) {
+            toastMixin.fire({
+                icon: 'info',
+                title: 'No hay tickets con este método de pago'
+            });
+            return;
+        }
+
+        ticketsModal.show();
+
+        setTimeout(() => {
+            const tabId = `${metodoId}-tab`;
+            const tab = document.getElementById(tabId);
+
+            if (tab) {
+                const tabTrigger = new bootstrap.Tab(tab);
+                tabTrigger.show();
+            }
+        }, 100);
+    }
+
+    //DatosGeneral
+    // Calcular totales generales
+    function calcularTotales() {
+        const initialFund = parseFloat(document.getElementById('initialFund').textContent.replace(',', '')) || 0;
+        const withdrawals = parseFloat(document.getElementById('withdrawalsAmount')?.textContent || 0);
+        const expenses = parseFloat(document.getElementById('expensesAmount')?.textContent || 0);
+        const returns = parseFloat(document.getElementById('returnsAmount')?.textContent || 0);
+        // Calcular ventas totales de forma dinámica
+        let totalSales = 0;
+        let cashSales = 0;
+
+        METODOS_PAGO.forEach(metodo => {
+            const salesElement = document.getElementById(`${metodo.id}SalesAuto`);
+            const sales = salesElement ? parseFloat(salesElement.textContent) || 0 : 0;
+            totalSales += sales;
+
+            // Identificar efectivo para el cálculo de caja
+            if (metodo.normalizado === 'Efectivo') {
+                cashSales = sales;
+            }
+        });
+
+        document.getElementById('totalSales').textContent = totalSales.toFixed(2);
+
+        // Calcular efectivo esperado
+        const expectedCash = initialFund + cashSales - withdrawals - expenses - returns;
+        document.getElementById('expectedCash').textContent = expectedCash.toFixed(2);
+        document.getElementById('expectedTotal').textContent = expectedCash.toFixed(2);
+
+        // Calcular diferencia
+        const difference = expectedCash;
+        const differenceElement = document.getElementById('difference');
+        differenceElement.textContent = '$' + Math.abs(difference).toFixed(2);
+
+        if (difference > 0) {
+            differenceElement.className = 'difference-positive';
+            differenceElement.textContent = '+$' + difference.toFixed(2);
+        } else if (difference < 0) {
+            differenceElement.className = 'difference-negative';
+            differenceElement.textContent = '-$' + Math.abs(difference).toFixed(2);
+        } else {
+            differenceElement.className = '';
+            differenceElement.textContent = '$0.00';
+        }
+
+        document.getElementById('totalTransactions').textContent = tickets.length;
+    }
+
+    // ============================================
+    // OBTENER DOCUMENTOS PENDIENTES
+    // ============================================
+    async function obtenerDocumentosPendientes() {
+        try {
+            const response = await fetch('/PuntoVentaAdministracion/ObtenerTodosDocumentosFacturables', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: '__RequestVerificationToken=' + document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (!result.success) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al obtener documentos',
+                    text: result.message || 'No se pudieron obtener los documentos'
+                });
+                return [];
+            }
+
+            return result.data ? result.data.filter(d => !d.invoiced) : [];
+
+        } catch (error) {
+            console.error('Error al obtener documentos:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: error.message
+            });
+            return [];
+        }
+    }
+
+
+    // ==================== FACTURACIÓN MASIVA ====================
+
+    async function facturarTodosDocumentos() {
+        // Obtener todos los documentos pendientes (sin filtrar aún)
+        const documentosPendientes = await obtenerDocumentosPendientes();
+
+        if (!documentosPendientes || documentosPendientes.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Sin documentos',
+                text: 'No hay documentos disponibles para procesar'
+            });
+            return;
+        }
+
+        // El servidor ya clasificó cada venta (ClasificarDestinoFacturacion):
+        //   global      → cobrada 100% en efectivo, va dentro de la factura global
+        //   individual  → cualquier otra forma de pago, comprobante propio a público
+        //                 en general con SU forma de pago
+        //   credito     → ya se facturó nominativa al registrarse
+        //   facturado   → ya tiene factura
+        const documentosGlobal = documentosPendientes.filter(d => d.destino === 'global');
+        const documentosIndividuales = documentosPendientes.filter(d => d.destino === 'individual');
+        const documentosCredito = documentosPendientes.filter(d => d.destino === 'credito');
+
+        const documentosSinFacturar = documentosGlobal.concat(documentosIndividuales);
+        const documentosYaFacturados = documentosPendientes.filter(d => d.destino === 'facturado').length;
+
+        // Verificar si hay documentos para procesar
+        if (documentosSinFacturar.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Todos los documentos ya están facturados',
+                html: `
+                <div style="text-align: left; padding: 1rem;">
+                    <p style="color: #6b7280;">
+                        Los ${documentosPendientes.length} documento(s) encontrado(s) ya han sido timbrados previamente.
+                    </p>
+                    <p style="color: #059669; margin-top: 1rem;">
+                        <i class="fas fa-check-circle"></i> No hay documentos pendientes de facturar.
+                    </p>
+                </div>
+            `,
+                width: '500px'
+            });
+            return;
+        }
+
+        // Las cuentas de depósito se resuelven ANTES de mostrar nada: cada forma de
+        // pago ya trae la suya configurada en Punto de Venta Administrativo, así que el
+        // resumen las muestra preseleccionadas en vez de pedirlas a ciegas al final.
+        await CuentasBancoCierre.cargar();
+
+        const formasDelCorte = formasDePagoDelCorte(documentosGlobal, documentosIndividuales);
+
+        const htmlResumen =
+            generarResumenDestinos(documentosGlobal, documentosIndividuales, documentosCredito) +
+            generarSelectorCuentas(formasDelCorte) +
+            generarResumenDocumentos(documentosSinFacturar, documentosYaFacturados);
+
+        const confirmResumen = await Swal.fire({
+            title: '📋 Resumen de Facturación del Corte',
+            html: htmlResumen,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Continuar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#7c3aed',
+            cancelButtonColor: '#6b7280',
+            width: '700px',
+            customClass: {
+                popup: 'resumen-facturacion-popup'
+            },
+            preConfirm: () => {
+                const cuentas = {};
+                let faltante = null;
+
+                formasDelCorte.forEach(f => {
+                    const sel = document.getElementById(`cuenta-forma-${f.cve}`);
+                    const valor = sel ? sel.value : '';
+                    if (!valor) faltante = f.nombre;
+                    cuentas[f.cve] = valor;
+                });
+
+                if (faltante) {
+                    Swal.showValidationMessage(`Falta la cuenta de depósito de ${faltante}`);
+                    return false;
+                }
+
+                return cuentas;
+            }
+        });
+
+        if (!confirmResumen.isConfirmed) return;
+
+        const cuentasPorForma = confirmResumen.value || {};
+
+        // Confirmar acción final
+        const confirmResult = await Swal.fire({
+            title: '⚠️ Confirmar Facturación Global',
+            html: `
+            <div style="text-align: left; padding: 1rem;">
+                <p style="color: #dc2626; font-weight: 600; margin-bottom: 1rem;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Se timbrarán ${(documentosGlobal.length ? 1 : 0) + documentosIndividuales.length} comprobante(s).
+                </p>
+                <ul style="margin-left: 1.5rem; color: #6b7280;">
+                    ${documentosGlobal.length
+                        ? `<li><b>1 factura global</b> con ${documentosGlobal.length} venta(s) en efectivo</li>`
+                        : '<li>No hay ventas en efectivo: no se emite factura global</li>'}
+                    ${documentosIndividuales.length
+                        ? `<li><b>${documentosIndividuales.length} factura(s) individual(es)</b> a público en general, una por venta con otra forma de pago</li>`
+                        : ''}
+                </ul>
+                <p style="margin-top: 1rem; color: #059669;">
+                    <i class="fas fa-info-circle"></i>
+                    Este proceso puede tardar varios minutos.
+                </p>
+            </div>
+        `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, procesar todos',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#7c3aed',
+            cancelButtonColor: '#6b7280',
+            width: '600px'
+        });
+
+        if (!confirmResult.isConfirmed) return;
+
+        // La cuenta de cada comprobante ya se eligió en el resumen: no hay un segundo
+        // diálogo pidiendo "una" cuenta sin decir para qué factura era.
+
+        // Mostrar modal de progreso mejorado
+        const progressModal = mostrarModalProgresoMejorado(documentosSinFacturar.length);
+
+        try {
+            // Cada comprobante es una llamada y una transacción aparte: si el PAC rechaza
+            // una venta con tarjeta, la global del efectivo y las demás ya timbradas se
+            // conservan. Antes iba todo en un solo CFDI y un problema tumbaba el corte.
+            const lotes = [];
+
+            if (documentosGlobal.length) {
+                lotes.push({
+                    clase: 'global',
+                    titulo: `Factura global · ${documentosGlobal.length} venta(s) en efectivo`,
+                    ids: documentosGlobal.map(d => d.id_encabezado),
+                    banco: cuentasPorForma['01'],
+                    docs: documentosGlobal
+                });
+            }
+
+            documentosIndividuales.forEach(doc => {
+                lotes.push({
+                    clase: 'individual',
+                    titulo: `${doc.folio} · ${doc.forma_pago_nombre || 'Otra forma de pago'}`,
+                    ids: [doc.id_encabezado],
+                    banco: cuentasPorForma[doc.forma_pago_clave],
+                    docs: [doc]
+                });
+            });
+
+            const resultados = [];
+
+            for (let i = 0; i < lotes.length; i++) {
+                const lote = lotes[i];
+
+                actualizarProgresoDetallado(
+                    progressModal, i, `Timbrando ${i + 1} de ${lotes.length}: ${lote.titulo}`, lotes.length);
+
+                const resultado = await timbrarLoteCorte(lote);
+                resultados.push({ lote, resultado });
+
+                // Un rechazo no detiene el corte: se sigue con los demás y al final se
+                // informa cuáles quedaron pendientes y por qué.
+                actualizarProgresoDetallado(
+                    progressModal, i + 1, `Timbrando ${i + 1} de ${lotes.length}: ${lote.titulo}`, lotes.length);
+            }
+
+            cerrarModalProgreso(progressModal);
+            mostrarResumenCorte(resultados);
+
+        } catch (error) {
+            cerrarModalProgreso(progressModal);
+            mostrarErrorConexion(error);
+        }
+    }
+
+    // Una llamada al pipeline de facturación por lote. Devuelve siempre un objeto con
+    // `success`, para que el corte pueda seguir con los demás comprobantes.
+    async function timbrarLoteCorte(lote) {
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            formData.append('idsDocumentos', lote.ids.join(','));
+
+            // Sólo el comprobante del efectivo es GLOBAL (GLFAC/91): es el único que
+            // agrupa varias ventas de un periodo. Cada venta con otra forma de pago se
+            // timbra como VSFAC/52 con el destino "publico": mismo documento de venta de
+            // sucursal, pero al receptor genérico de público en general, porque esos
+            // clientes tampoco pidieron factura a su nombre.
+            //
+            // Todo lo demás (forma de pago, uso de CFDI, régimen) lo resuelve el
+            // servidor desde el documento; no se manda nada desde aquí.
+            formData.append('tipo', lote.clase === 'global' ? 'global' : 'publico');
+            formData.append('banco', lote.banco || '');
+
+            const response = await fetch('/PuntoDeVenta/ProcesarDocumentosAsync', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const texto = await response.text();
+                return { success: false, error: `HTTP ${response.status}`, detalle: texto.slice(0, 300) };
+            }
+
+            return await response.json();
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
+    // Resultado del corte completo: qué se timbró y qué no, comprobante por comprobante.
+    function mostrarResumenCorte(resultados) {
+        const money = n => `$${(parseFloat(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const ok = resultados.filter(r => r.resultado && r.resultado.success);
+        const fallidos = resultados.filter(r => !r.resultado || !r.resultado.success);
+
+        const fila = (r, exito) => {
+            const total = r.lote.docs.reduce((s, d) => s + (parseFloat(d.imp) || 0), 0);
+            const icono = exito ? '✅' : '❌';
+            const d = (r.resultado && r.resultado.detalles) || {};
+            const detalle = exito
+                ? `<div style="font-size:.72rem; color:#6b7280; word-break:break-all;">
+                       ${d.serie || ''}${d.folio || ''} ${d.uuid || ''}
+                   </div>`
+                : `<div style="font-size:.75rem; color:#b91c1c;">${(r.resultado && (r.resultado.error || r.resultado.message)) || 'Error desconocido'}</div>`;
+
+            return `
+                <div style="display:flex; justify-content:space-between; gap:12px; padding:.5rem 0; border-bottom:1px solid #f3f4f6;">
+                    <div style="min-width:0;">
+                        <div style="font-weight:600;">${icono} ${r.lote.titulo}</div>
+                        ${detalle}
+                    </div>
+                    <div style="white-space:nowrap; font-weight:600;">${money(total)}</div>
+                </div>`;
+        };
+
+        Swal.fire({
+            icon: fallidos.length === 0 ? 'success' : (ok.length === 0 ? 'error' : 'warning'),
+            title: fallidos.length === 0
+                ? 'Corte facturado'
+                : (ok.length === 0 ? 'No se pudo facturar el corte' : 'Corte facturado con pendientes'),
+            html: `
+                <div style="text-align:left; max-height:55vh; overflow-y:auto;">
+                    <p style="color:#6b7280; font-size:.9rem;">
+                        ${ok.length} comprobante(s) timbrado(s)${fallidos.length ? `, ${fallidos.length} con error` : ''}.
+                    </p>
+                    ${ok.map(r => fila(r, true)).join('')}
+                    ${fallidos.map(r => fila(r, false)).join('')}
+                    ${fallidos.length ? `
+                        <p style="margin-top:1rem; color:#92400e; font-size:.85rem;">
+                            Lo que falló NO se guardó: esas ventas siguen pendientes y se pueden
+                            volver a intentar sin duplicar nada.
+                        </p>` : ''}
+                </div>`,
+            width: '720px',
+            confirmButtonText: 'Entendido'
+        }).then(() => window.location.reload());
+    }
+
+    // Formas de pago que intervienen en este corte, cada una con la cuenta que le
+    // toca. El efectivo entra sólo si hay factura global; las demás salen de las
+    // ventas que se van a timbrar por separado.
+    function formasDePagoDelCorte(docsGlobal, docsIndividuales) {
+        const formas = [];
+
+        if (docsGlobal.length) {
+            formas.push({
+                cve: '01',
+                nombre: 'Efectivo (factura global)',
+                comprobantes: 1,
+                ventas: docsGlobal.length
+            });
+        }
+
+        const porClave = {};
+        docsIndividuales.forEach(d => {
+            const cve = d.forma_pago_clave || '';
+            if (!porClave[cve]) {
+                porClave[cve] = {
+                    cve,
+                    nombre: d.forma_pago_nombre || 'Sin forma de pago',
+                    comprobantes: 0,
+                    ventas: 0
+                };
+            }
+            porClave[cve].comprobantes++;
+            porClave[cve].ventas++;
+        });
+
+        return formas.concat(Object.values(porClave));
+    }
+
+    // Un select por forma de pago, ya preseleccionado con la cuenta configurada. No se
+    // pregunta a ciegas "una" cuenta al final del proceso: aquí se ve para qué
+    // comprobante es cada una y se puede cambiar el día que haga falta.
+    function generarSelectorCuentas(formas) {
+        if (!formas.length) return '';
+
+        const cuentasDe = cve => {
+            const forma = (CuentasBancoCierre.formas || []).find(f => f.cve_sat === cve);
+            const configuradas = (forma && forma.cuentas) || [];
+            if (configuradas.length) return { lista: configuradas, configurado: true };
+
+            // Sin configuración se ofrece el catálogo, descartando las cuentas sin
+            // cuenta contable: con ésas la póliza del cobro fallaría.
+            const todas = (CuentasBancoCierre.todas || [])
+                .filter(c => c.cuenta_contable && c.contabilizable);
+            return { lista: todas, configurado: false };
+        };
+
+        const filas = formas.map(f => {
+            const { lista, configurado } = cuentasDe(f.cve);
+            const pred = lista.find(c => c.predeterminada) || lista[0];
+
+            const opciones = lista.length
+                ? lista.map(c => `
+                    <option value="${c.cuenta_contable}" ${pred && c.cuenta_contable === pred.cuenta_contable ? 'selected' : ''}>
+                        ${c.nombre}${c.cuenta_contable ? ' · ' + c.cuenta_contable : ''}
+                    </option>`).join('')
+                : '<option value="">No hay cuentas dadas de alta</option>';
+
+            const aviso = configurado
+                ? ''
+                : `<div style="font-size:.72rem; color:#92400e;">
+                       Esta forma de pago no tiene cuenta configurada en Formas de Pago y Bancos.
+                   </div>`;
+
+            return `
+                <div style="display:flex; align-items:center; gap:10px; padding:.4rem 0; border-bottom:1px solid #f3f4f6;">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:.85rem;">${f.nombre}</div>
+                        <div style="font-size:.72rem; color:#6b7280;">
+                            ${f.comprobantes} comprobante(s) · ${f.ventas} venta(s)
+                        </div>
+                        ${aviso}
+                    </div>
+                    <select id="cuenta-forma-${f.cve}" class="form-select form-select-sm" style="max-width:280px;">
+                        ${opciones}
+                    </select>
+                </div>`;
+        }).join('');
+
+        return `
+            <div style="text-align:left; border:1px solid #e5e7eb; border-radius:8px; padding:.75rem 1rem; margin-bottom:.75rem;">
+                <strong style="font-size:.9rem;">🏦 Cuenta de depósito por forma de pago</strong>
+                <div style="font-size:.78rem; color:#6b7280; margin:.25rem 0 .5rem;">
+                    Cada comprobante registra su cobro en la cuenta de su forma de pago.
+                    Vienen preseleccionadas de la configuración; cámbialas si hoy toca otra.
+                </div>
+                ${filas}
+            </div>`;
+    }
+
+    // Explica, venta por venta, a qué comprobante va y por qué. Es la parte que
+    // faltaba: antes el corte mandaba todo a la global sin decir qué llevaba dentro.
+    function generarResumenDestinos(docsGlobal, docsIndividuales, docsCredito) {
+        const money = n => `$${(parseFloat(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const sumar = ds => ds.reduce((s, d) => s + (parseFloat(d.imp) || 0), 0);
+
+        const listar = ds => ds.map(d => `
+            <div style="display:flex; justify-content:space-between; gap:10px; padding:.35rem 0; border-bottom:1px solid #f3f4f6;">
+                <div style="min-width:0;">
+                    <div style="font-weight:600; font-size:.85rem;">${d.folio}</div>
+                    <div style="font-size:.75rem; color:#6b7280;">${d.motivo || ''}</div>
+                </div>
+                <div style="white-space:nowrap; font-size:.85rem;">${money(d.imp)}</div>
+            </div>`).join('');
+
+        const bloque = (titulo, color, fondo, ds, nota) => !ds.length ? '' : `
+            <div style="border-left:4px solid ${color}; background:${fondo}; border-radius:8px; padding:.75rem 1rem; margin-bottom:.75rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <strong style="color:${color};">${titulo}</strong>
+                    <span style="font-weight:700;">${money(sumar(ds))}</span>
+                </div>
+                <div style="font-size:.78rem; color:#6b7280; margin:.25rem 0 .5rem;">${nota}</div>
+                <div style="max-height:22vh; overflow-y:auto;">${listar(ds)}</div>
+            </div>`;
+
+        return `
+            <div style="text-align:left;">
+                ${bloque(
+                    `🧾 Factura global · ${docsGlobal.length} venta(s)`,
+                    '#059669', '#ecfdf5', docsGlobal,
+                    'Un solo CFDI al público en general que agrupa todas las ventas cobradas en efectivo.')}
+                ${bloque(
+                    `💳 Facturas individuales · ${docsIndividuales.length}`,
+                    '#b45309', '#fffbeb', docsIndividuales,
+                    'Un CFDI por venta, también a público en general, cada uno declarando su propia forma de pago. Un comprobante sólo admite una FormaPago, y la global declara todo como efectivo.')}
+                ${bloque(
+                    `📄 Ventas a crédito · ${docsCredito.length}`,
+                    '#7c3aed', '#f5f3ff', docsCredito,
+                    'No se tocan aquí: ya se facturaron nominativas al registrar la venta y su importe está en la cartera del cliente.')}
+            </div>`;
+    }
+
+    // ⭐ FUNCIÓN PARA GENERAR EL HTML DEL RESUMEN
+    function generarResumenDocumentos(documentosSinFacturar, documentosYaFacturados) {
+
+        // Se separan las ventas del dia de las que quedaron sin facturar en dias
+        // anteriores. Antes el corte solo mostraba las de hoy y las rezagadas eran
+        // invisibles; ahora se incluyen, pero mezclarlas en una sola lista confundia
+        // sobre que se esta timbrando.
+        const esRezagado = d => (parseInt(d.dias_rezago) || 0) > 0;
+        const docsHoy       = documentosSinFacturar.filter(d => !esRezagado(d));
+        const docsRezagados = documentosSinFacturar.filter(esRezagado);
+
+        const sumar = ds => ds.reduce((s, d) => s + (parseFloat(d.imp) || 0), 0);
+        const totalHoy       = sumar(docsHoy);
+        const totalRezagados = sumar(docsRezagados);
+        const totalGeneral   = totalHoy + totalRezagados;
+
+        const maxVisible   = 10;
+        const mostrarScroll = documentosSinFacturar.length > maxVisible;
+
+        // Construye una tabla para un grupo de documentos.
+        function construirTabla(docs, opciones) {
+            const { resaltar, mostrarDias, offset } = opciones;
+            const conScroll = docs.length > maxVisible;
+
+            let filas = '';
+            docs.forEach((doc, i) => {
+                const folio   = doc.folio || doc.numero_documento || 'N/A';
+                const cliente = doc.cliente || doc.n_cli || 'N/A';
+                const total   = doc.imp ? `$${parseFloat(doc.imp).toFixed(2)}` : 'N/A';
+                const dias    = parseInt(doc.dias_rezago) || 0;
+                const fecha   = doc.fch ? new Date(doc.fch).toLocaleDateString('es-MX') : '—';
+
+                const celdaFecha = mostrarDias
+                    ? `<span style="color:#b45309;font-weight:600;">${fecha}
+                           <span style="font-size:0.75rem;font-weight:400;">(hace ${dias} d)</span>
+                       </span>`
+                    : `<span style="color:#6b7280;">${fecha}</span>`;
+
+                filas += `
+                    <tr style="border-bottom:1px solid #e5e7eb;${resaltar ? 'background:#fffbeb;' : ''}">
+                        <td style="padding:0.5rem;">${offset + i + 1}</td>
+                        <td style="padding:0.5rem;font-weight:600;color:#7c3aed;">${folio}</td>
+                        <td style="padding:0.5rem;color:#6b7280;">${cliente}</td>
+                        <td style="padding:0.5rem;">${celdaFecha}</td>
+                        <td style="padding:0.5rem;text-align:right;color:#059669;">${total}</td>
+                    </tr>`;
+            });
+
+            return `
+            <div style="max-height:${conScroll ? '260px' : 'auto'};overflow-y:${conScroll ? 'auto' : 'visible'};margin:0.5rem 0 1rem 0;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+                    <thead style="position:sticky;top:0;background:#f3f4f6;z-index:1;">
+                        <tr>
+                            <th style="padding:0.5rem;text-align:left;border-bottom:2px solid #d1d5db;">#</th>
+                            <th style="padding:0.5rem;text-align:left;border-bottom:2px solid #d1d5db;">Folio</th>
+                            <th style="padding:0.5rem;text-align:left;border-bottom:2px solid #d1d5db;">Cliente</th>
+                            <th style="padding:0.5rem;text-align:left;border-bottom:2px solid #d1d5db;">Fecha</th>
+                            <th style="padding:0.5rem;text-align:right;border-bottom:2px solid #d1d5db;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>${filas}</tbody>
+                </table>
+            </div>`;
+        }
+
+        const seccionHoy = docsHoy.length === 0 ? '' : `
+            <h4 style="margin:1.25rem 0 0.25rem 0;color:#374151;font-size:1rem;display:flex;justify-content:space-between;align-items:center;">
+                <span>📄 Ventas de hoy <span style="color:#6b7280;font-weight:400;">(${docsHoy.length})</span></span>
+                <span style="color:#059669;font-size:0.95rem;">$${totalHoy.toFixed(2)}</span>
+            </h4>
+            ${construirTabla(docsHoy, { resaltar: false, mostrarDias: false, offset: 0 })}`;
+
+        const seccionRezagados = docsRezagados.length === 0 ? '' : `
+            <h4 style="margin:1.25rem 0 0.25rem 0;color:#92400e;font-size:1rem;display:flex;justify-content:space-between;align-items:center;">
+                <span>🕐 Anteriores sin facturar <span style="color:#b45309;font-weight:400;">(${docsRezagados.length})</span></span>
+                <span style="color:#b45309;font-size:0.95rem;">$${totalRezagados.toFixed(2)}</span>
+            </h4>
+            <p style="margin:0 0 0.25rem 0;color:#92400e;font-size:0.85rem;background:#fffbeb;border-left:3px solid #b45309;padding:0.5rem 0.75rem;border-radius:3px;">
+                Ventas de días anteriores que nunca se facturaron. Se incluirán en este corte
+                y se timbrarán junto con las de hoy.
+            </p>
+            ${construirTabla(docsRezagados, { resaltar: true, mostrarDias: true, offset: docsHoy.length })}`;
+
+        return `
+        <div style="text-align:left;padding:0.5rem;">
+            <div style="background:#f0fdf4;border-left:4px solid #059669;padding:1rem;margin-bottom:0.5rem;border-radius:4px;">
+                <p style="margin:0;font-weight:600;color:#059669;">
+                    <i class="fas fa-check-circle"></i>
+                    ${documentosSinFacturar.length} documento(s) pendiente(s) de facturar
+                    ${docsRezagados.length > 0
+                        ? `<span style="font-weight:400;color:#92400e;">
+                               — ${docsHoy.length} de hoy y ${docsRezagados.length} de días anteriores
+                           </span>`
+                        : ''}
+                </p>
+            </div>
+
+            ${documentosYaFacturados > 0 ? `
+            <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:1rem;margin-bottom:0.5rem;border-radius:4px;">
+                <p style="margin:0;color:#92400e;">
+                    <i class="fas fa-info-circle"></i>
+                    ${documentosYaFacturados} documento(s) ya facturado(s) (se omitirán)
+                </p>
+            </div>
+            ` : ''}
+
+            ${seccionHoy}
+            ${seccionRezagados}
+
+            <div style="background:#eff6ff;padding:1rem;border-radius:4px;margin-top:1rem;">
+                <p style="margin:0;display:flex;justify-content:space-between;font-weight:600;color:#1e40af;">
+                    <span>Total General:</span>
+                    <span style="font-size:1.2rem;">$${totalGeneral.toFixed(2)}</span>
+                </p>
+            </div>
+
+            ${mostrarScroll ? `
+            <p style="margin-top:1rem;color:#6b7280;font-size:0.85rem;text-align:center;">
+                <i class="fas fa-arrows-alt-v"></i> Desplázate para ver todos los documentos
+            </p>
+            ` : ''}
+        </div>
+    `;
+    }
+    // ============================================
+    // MODAL DE PROGRESO MEJORADO
+    // ============================================
+    function mostrarModalProgresoMejorado(total) {
+        const modalHTML = `
+        <div id="progressModal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-in-out;
+        ">
+            <div style="
+                background: white;
+                border-radius: 20px;
+                padding: 2.5rem;
+                max-width: 550px;
+                width: 90%;
+                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+                animation: slideUp 0.4s ease-out;
+            ">
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="
+                        width: 80px;
+                        height: 80px;
+                        margin: 0 auto 1rem;
+                        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        animation: spin 2s linear infinite;
+                    ">
+                        <i class="fas fa-cog" style="font-size: 2.5rem; color: white;"></i>
+                    </div>
+                    <h3 style="
+                        color: #1e293b;
+                        margin: 0;
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                    ">
+                        Procesando Documentos
+                    </h3>
+                    <p style="color: #64748b; margin-top: 0.5rem; font-size: 0.9rem;">
+                        Por favor espere, esto puede tardar unos minutos
+                    </p>
+                </div>
+
+                <!-- Progress Info -->
+                <div style="
+                    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                    border-radius: 12px;
+                    padding: 1.5rem;
+                    margin-bottom: 1.5rem;
+                    border: 1px solid #e2e8f0;
+                ">
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 1rem;
+                        font-weight: 600;
+                        color: #374151;
+                    ">
+                        <span><i class="fas fa-file-invoice"></i> Total Documentos</span>
+                        <span id="progressText" style="color: #7c3aed;">${total}</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div style="
+                        background: #e5e7eb;
+                        height: 8px;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        position: relative;
+                    ">
+                        <div id="progressBar" style="
+                            background: linear-gradient(90deg, #7c3aed 0%, #a855f7 50%, #7c3aed 100%);
+                            background-size: 200% 100%;
+                            height: 100%;
+                            width: 0%;
+                            border-radius: 10px;
+                            transition: width 0.5s ease-out;
+                            animation: shimmer 2s linear infinite;
+                        "></div>
+                    </div>
+
+                    <!-- Percentage -->
+                    <div style="
+                        text-align: center;
+                        margin-top: 0.75rem;
+                        font-size: 0.85rem;
+                        color: #64748b;
+                        font-weight: 600;
+                    " id="progressPercentage">
+                        0%
+                    </div>
+                </div>
+
+                <!-- Current Status -->
+                <div style="
+                    padding: 1.25rem;
+                    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+                    border-radius: 12px;
+                    border-left: 4px solid #7c3aed;
+                ">
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 0.75rem;
+                        margin-bottom: 0.5rem;
+                    ">
+                        <i class="fas fa-circle-notch fa-spin" style="color: #7c3aed; font-size: 1rem;"></i>
+                        <strong style="color: #5b21b6; font-size: 0.95rem;">Estado actual:</strong>
+                    </div>
+                    <div id="currentStatus" style="
+                        color: #6b21a8;
+                        font-weight: 600;
+                        font-size: 1rem;
+                        margin-left: 1.75rem;
+                    ">
+                        Preparando solicitud...
+                    </div>
+                </div>
+
+                <!-- Steps Indicator -->
+                <div id="stepsIndicator" style="
+                    margin-top: 1.5rem;
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 0.5rem;
+                ">
+                    <div class="step-indicator" data-step="1" style="
+                        height: 4px;
+                        background: #e5e7eb;
+                        border-radius: 2px;
+                        transition: background 0.3s;
+                    "></div>
+                    <div class="step-indicator" data-step="2" style="
+                        height: 4px;
+                        background: #e5e7eb;
+                        border-radius: 2px;
+                        transition: background 0.3s;
+                    "></div>
+                    <div class="step-indicator" data-step="3" style="
+                        height: 4px;
+                        background: #e5e7eb;
+                        border-radius: 2px;
+                        transition: background 0.3s;
+                    "></div>
+                    <div class="step-indicator" data-step="4" style="
+                        height: 4px;
+                        background: #e5e7eb;
+                        border-radius: 2px;
+                        transition: background 0.3s;
+                    "></div>
+                </div>
+
+                <!-- Warning -->
+                <p style="
+                    margin-top: 1.5rem;
+                    color: #f59e0b;
+                    font-size: 0.85rem;
+                    text-align: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
+                ">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    No cierre esta ventana ni actualice la página
+                </p>
+            </div>
+        </div>
+        <style>
+            @@keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @@keyframes slideUp {
+                from {
+                    transform: translateY(30px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            @@keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+            @@keyframes shimmer {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+        </style>
+    `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        return document.getElementById('progressModal');
+    }
+
+    // ============================================
+    // ACTUALIZAR PROGRESO DETALLADO
+    // ============================================
+    function actualizarProgresoDetallado(modal, paso, mensaje, totalPasos = 4) {
+        if (!modal) return;
+
+        const statusElement = modal.querySelector('#currentStatus');
+        const progressBar = modal.querySelector('#progressBar');
+        const progressPercentage = modal.querySelector('#progressPercentage');
+        const stepIndicators = modal.querySelectorAll('.step-indicator');
+
+        if (statusElement) {
+            statusElement.textContent = mensaje;
+        }
+
+        // Actualizar barra de progreso
+        const porcentaje = (paso / totalPasos) * 100;
+        if (progressBar) {
+            progressBar.style.width = `${porcentaje}%`;
+        }
+        if (progressPercentage) {
+            progressPercentage.textContent = `${Math.round(porcentaje)}%`;
+        }
+
+        // Actualizar indicadores de pasos
+        stepIndicators.forEach((indicator, index) => {
+            if (index < paso) {
+                indicator.style.background = 'linear-gradient(90deg, #7c3aed, #a855f7)';
+            }
+        });
+    }
+
+    // ============================================
+    // SIMULAR PROGRESO EXITOSO
+    // ============================================
+    async function simularProgresoExitoso(modal) {
+        const pasos = [
+            { paso: 2, mensaje: 'Creando remisiones...' },
+            { paso: 3, mensaje: 'Generando facturas...' },
+            { paso: 4, mensaje: 'Timbrando documentos...' }
+        ];
+
+        for (const { paso, mensaje } of pasos) {
+            actualizarProgresoDetallado(modal, paso, mensaje);
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        // Paso final
+        actualizarProgresoDetallado(modal, 4, '✓ Proceso completado exitosamente');
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // ============================================
+    // FUNCIONES DE ERROR MEJORADAS
+    // ============================================
+    function mostrarErrorServidor(status, errorText) {
+        Swal.fire({
+            title: '🚨 Error del Servidor',
+            html: `
+            <div style="text-align: left; padding: 1rem;">
+                <div style="background: #fee2e2; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #dc2626;">
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #dc2626; margin-bottom: 0.75rem;">
+                        <i class="fas fa-server"></i>
+                        Error HTTP ${status}
+                    </div>
+                    <div style="color: #991b1b; font-size: 0.9rem; line-height: 1.6;">
+                        El servidor no pudo procesar la solicitud correctamente.
+                    </div>
+                </div>
+
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <strong style="color: #374151; font-size: 0.9rem;">Detalles técnicos:</strong>
+                    <div style="
+                        margin-top: 0.5rem;
+                        padding: 0.75rem;
+                        background: white;
+                        border-radius: 6px;
+                        color: #6b7280;
+                        font-size: 0.85rem;
+                        max-height: 150px;
+                        overflow-y: auto;
+                        font-family: monospace;
+                    ">
+                        ${errorText || 'Error desconocido del servidor'}
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 1rem; border-radius: 8px;">
+                    <div style="color: #92400e; font-size: 0.85rem;">
+                        <strong><i class="fas fa-lightbulb"></i> Sugerencias:</strong>
+                        <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0;">
+                            <li>Intente nuevamente en unos momentos</li>
+                            <li>Verifique su conexión a internet</li>
+                            <li>Contacte al administrador si el error persiste</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `,
+            icon: 'error',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#7c3aed',
+            width: '650px'
+        });
+    }
+
+    function mostrarErrorFormato() {
+        Swal.fire({
+            title: '⚠️ Error de Formato',
+            html: `
+            <div style="text-align: center; padding: 1.5rem;">
+                <div style="
+                    width: 80px;
+                    height: 80px;
+                    margin: 0 auto 1.5rem;
+                    background: linear-gradient(135deg, #fef3c7, #fde68a);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <i class="fas fa-file-excel" style="font-size: 2.5rem; color: #d97706;"></i>
+                </div>
+                <p style="color: #78350f; font-size: 1.1rem; margin-bottom: 1rem;">
+                    La respuesta del servidor no tiene el formato esperado
+                </p>
+                <p style="color: #92400e; font-size: 0.9rem;">
+                    Es posible que haya ocurrido un error durante el procesamiento.
+                    Por favor, intente nuevamente.
+                </p>
+            </div>
+        `,
+            icon: 'warning',
+            confirmButtonText: 'Reintentar',
+            confirmButtonColor: '#7c3aed',
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            width: '550px'
+        });
+    }
+
+    function mostrarErrorConexion(error) {
+        Swal.fire({
+            title: '🔌 Error de Conexión',
+            html: `
+            <div style="text-align: left; padding: 1rem;">
+                <div style="background: linear-gradient(135deg, #fee2e2, #fecaca); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                    <div style="text-align: center;">
+                        <i class="fas fa-wifi" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #991b1b;">
+                            No se pudo conectar con el servidor
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <strong style="color: #374151;">Detalles del error:</strong>
+                    <div style="
+                        margin-top: 0.5rem;
+                        padding: 0.75rem;
+                        background: #1f2937;
+                        border-radius: 6px;
+                        color: #f3f4f6;
+                        font-size: 0.85rem;
+                        font-family: monospace;
+                    ">
+                        ${error.message}
+                    </div>
+                </div>
+
+                <div style="background: #dbeafe; padding: 1rem; border-radius: 8px;">
+                    <div style="color: #1e3a8a; font-size: 0.9rem;">
+                        <strong><i class="fas fa-info-circle"></i> Verifique lo siguiente:</strong>
+                        <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0; line-height: 1.8;">
+                            <li>Su conexión a internet está activa</li>
+                            <li>El servidor está disponible</li>
+                            <li>No hay problemas de firewall o proxy</li>
+                            <li>La VPN (si aplica) está funcionando</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `,
+            icon: 'error',
+            confirmButtonText: 'Reintentar',
+            confirmButtonColor: '#7c3aed',
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            width: '650px'
+        });
+    }
+
+    // ============================================
+    // FUNCIÓN PARA MOSTRAR ÉXITO
+    // ============================================
+    function mostrarResumenExitoso(result, totalDocumentos, esRetorno = false) {
+        const { resumen, detalles } = result;
+        const montoFormateado = detalles.total ? parseFloat(detalles.total).toLocaleString('es-MX', {
+            style: 'currency',
+            currency: 'MXN'
+        }) : 'N/A';
+
+        // Guardar estado del modal para poder volver (solo si no es un retorno)
+        if (!esRetorno) {
+            guardarModalEnStack({ result, totalDocumentos });
+        }
+
+        Swal.fire({
+            title: '✅ Proceso Completado con Éxito',
+            html: `
+            <div style="text-align: left; padding: 1rem;">
+                <!-- Banner de Éxito -->
+                <div style="
+                    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+                    padding: 1.5rem;
+                    border-radius: 12px;
+                    margin-bottom: 1.5rem;
+                    border-left: 4px solid #059669;
+                    animation: slideIn 0.5s ease-out;
+                ">
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #047857; margin-bottom: 0.5rem;">
+                        <i class="fas fa-check-circle"></i>
+                        ${resumen.documentosProcesados} Documento(s) Facturado(s)
+                    </div>
+                    <div style="color: #065f46; font-size: 0.95rem;">
+                        <i class="fas fa-clock"></i> ${resumen.tiempoFinalizacion}
+                    </div>
+                </div>
+
+                <!-- Información de la Factura -->
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid #e2e8f0;">
+                    <h4 style="color: #1e293b; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-file-invoice-dollar" style="color: #7c3aed;"></i>
+                        Comprobante Fiscal
+                    </h4>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.9rem;">
+                        <div>
+                            <strong style="color: #64748b;">UUID:</strong><br>
+                            <span style="color: #1e293b; font-family: monospace; font-size: 0.85rem;">${detalles.uuid || 'N/A'}</span>
+                        </div>
+                        <div>
+                            <strong style="color: #64748b;">Serie-Folio:</strong><br>
+                            <span style="color: #1e293b; font-weight: 600;">${detalles.serie || ''}-${detalles.folio || ''}</span>
+                        </div>
+                        <div>
+                            <strong style="color: #64748b;">Total:</strong><br>
+                            <span style="color: #059669; font-weight: 700; font-size: 1.1rem;">${montoFormateado}</span>
+                        </div>
+                        <div>
+                            <strong style="color: #64748b;">Productos:</strong><br>
+                            <span style="color: #1e293b; font-weight: 600;">${detalles.cantidadProductos || 0} partidas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información del Cliente -->
+                <div style="background: #fefce8; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 3px solid #eab308;">
+                    <h5 style="color: #854d0e; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                        <i class="fas fa-user-tie"></i> Cliente
+                    </h5>
+                    <div style="color: #713f12; font-size: 0.85rem;">
+                        <strong>${detalles.razonSocial || 'N/A'}</strong><br>
+                        RFC: ${detalles.rfcCliente || 'N/A'}
+                    </div>
+                </div>
+
+                <!-- Detalles del Proceso -->
+                <div style="background: #ede9fe; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <h5 style="color: #5b21b6; margin-bottom: 0.75rem; font-size: 0.95rem;">
+                        <i class="fas fa-tasks"></i> IDs Generados
+                    </h5>
+                    <ul style="color: #6b21a8; margin: 0; padding-left: 1.5rem; font-size: 0.85rem; line-height: 1.8;">
+                        <li>Pedido: <strong>#${detalles.pedidoId}</strong></li>
+                        <li>Remisión: <strong>#${detalles.remisionId}</strong></li>
+                        <li>Factura: <strong>#${detalles.facturaId}</strong></li>
+                    </ul>
+                </div>
+            </div>
+        `,
+            icon: 'success',
+            showCancelButton: true,
+            showDenyButton: true,
+            showCloseButton: true,
+            confirmButtonText: '<i class="fas fa-download"></i> Descargar',
+            denyButtonText: '<i class="fas fa-envelope"></i> Enviar correo',
+            cancelButtonText: '<i class="fas fa-times"></i> Cerrar',
+            confirmButtonColor: '#7c3aed',
+            denyButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280',
+            width: '700px',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        }).then((modalResult) => {
+            if (modalResult.isConfirmed) {
+                mostrarOpcionesDescarga(detalles, `${detalles.serie}-${detalles.folio}`, montoFormateado, result, totalDocumentos);
+            } else if (modalResult.isDenied) {
+                mostrarModalEnvioCorreo(detalles, result, totalDocumentos);
+            } else {
+                // Al cerrar, limpiar el stack y recargar
+                limpiarStackModales();
+                setTimeout(() => {
+                    recargarVista();
+                }, 500);
+            }
+        });
+    }
+    // ============================================
+    // FUNCIÓN PARA MOSTRAR OPCIONES DE DESCARGA
+    // ============================================
+    function mostrarOpcionesDescarga(detalles, seriefolio, montoFormateado, resultOriginal, totalDocumentos) {
+        Swal.fire({
+            title: '📥 Descargar Comprobante',
+            html: `
+            <div style="padding: 1rem;">
+                <p style="color: #6b7280; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    Selecciona el formato que deseas descargar:
+                </p>
+
+                <div style="display: grid; gap: 1rem;">
+                    <!-- Opción PDF -->
+                    <a href="${detalles.pdfUrl}" download target="_blank" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                        padding: 1.25rem;
+                        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        font-size: 1rem;
+                        transition: all 0.3s;
+                        box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);
+                    " onmouseover="this.style.transform='translateY(-2px)'"
+                       onmouseout="this.style.transform='translateY(0)'">
+                        <i class="fas fa-file-pdf" style="font-size: 2rem;"></i>
+                        <div style="text-align: left; flex: 1;">
+                            <div style="font-size: 1.1rem;">Descargar PDF</div>
+                            <div style="font-size: 0.8rem; opacity: 0.9;">Versión imprimible</div>
+                        </div>
+                        <i class="fas fa-download"></i>
+                    </a>
+
+                    <!-- Opción XML -->
+                    <a href="${detalles.xmlUrl}" download target="_blank" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                        padding: 1.25rem;
+                        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        font-size: 1rem;
+                        transition: all 0.3s;
+                        box-shadow: 0 4px 6px rgba(5, 150, 105, 0.3);
+                    " onmouseover="this.style.transform='translateY(-2px)'"
+                       onmouseout="this.style.transform='translateY(0)'">
+                        <i class="fas fa-file-code" style="font-size: 2rem;"></i>
+                        <div style="text-align: left; flex: 1;">
+                            <div style="font-size: 1.1rem;">Descargar XML</div>
+                            <div style="font-size: 0.8rem; opacity: 0.9;">Archivo oficial del SAT</div>
+                        </div>
+                        <i class="fas fa-download"></i>
+                    </a>
+
+                    <!-- Opción Ambos -->
+                    <button onclick="descargarAmbosArchivos('${detalles.pdfUrl}', '${detalles.xmlUrl}')" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                        padding: 1.25rem;
+                        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        box-shadow: 0 4px 6px rgba(124, 58, 237, 0.3);
+                    " onmouseover="this.style.transform='translateY(-2px)'"
+                       onmouseout="this.style.transform='translateY(0)'">
+                        <i class="fas fa-file-archive" style="font-size: 2rem;"></i>
+                        <div style="text-align: left; flex: 1;">
+                            <div style="font-size: 1.1rem;">Descargar Ambos</div>
+                            <div style="font-size: 0.8rem; opacity: 0.9;">PDF + XML</div>
+                        </div>
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+        `,
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: '<i class="fas fa-check"></i> Finalizar',
+            denyButtonText: '<i class="fas fa-arrow-left"></i> Volver',
+            cancelButtonText: '<i class="fas fa-times"></i> Cerrar',
+            confirmButtonColor: '#059669',
+            denyButtonColor: '#6b7280',
+            cancelButtonColor: '#dc2626',
+            width: '600px',
+            allowOutsideClick: false,
+        }).then((result) => {
+            if (result.isDenied) {
+                // Volver al modal de resumen
+                modalStack.pop(); // Remover el estado actual antes de volver
+                mostrarResumenExitoso(resultOriginal, totalDocumentos, true);
+            } else if (result.isConfirmed || result.isDismissed) {
+                limpiarStackModales();
+                setTimeout(() => {
+                    recargarVista();
+                }, 500);
+            }
+        });
+    }
+
+    // ============================================
+    // FUNCIÓN PARA DESCARGAR AMBOS ARCHIVOS
+    // ============================================
+    function descargarAmbosArchivos(pdfUrl, xmlUrl) {
+        descargarArchivo(pdfUrl, "archivo.pdf");
+        descargarArchivo(xmlUrl, "archivo.xml");
+
+        //Swal.fire({
+        //    icon: 'info',
+        //    title: 'Descargando archivos...',
+        //    text: 'PDF y XML',
+        //    timer: 2000,
+        //    toast: true,
+        //    position: 'top-end',
+        //    showConfirmButton: false
+        //});
+    }
+
+    function descargarArchivo(url, nombre) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nombre;   // <-- fuerza descarga
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+
+
+    // ============================================
+    // FUNCIÓN CENTRALIZADA PARA RECARGAR LA VISTA
+    // ============================================
+    function recargarVista() {
+        if (typeof cargarDocumentos === 'function') {
+            cargarDocumentos();
+        } else {
+            location.reload();
+        }
+    }
+
+    // ============================================
+    // FUNCIÓN PARA MOSTRAR ERRORES POR PASO (MEJORADA)
+    // ============================================
+    function mostrarErrorPorPaso(result, totalDocumentos) {
+        const pasosInfo = {
+            'GuardarDesdeDocumentos': {
+                nombre: 'Guardar Documentos Base',
+                icono: '📄',
+                color: '#3b82f6',
+                descripcion: 'Error al crear los documentos base en el sistema'
+            },
+            'GuardarRemisionDesdePedidos': {
+                nombre: 'Crear Remisiones',
+                icono: '📦',
+                color: '#8b5cf6',
+                descripcion: 'Error al generar las remisiones desde los pedidos'
+            },
+            'GuardarFacturaDesdeDocs': {
+                nombre: 'Crear Facturas',
+                icono: '🧾',
+                color: '#ec4899',
+                descripcion: 'Error al crear las facturas desde los documentos'
+            },
+            'GenerarFacturaDesdeDocs': {
+                nombre: 'Generar Timbrado',
+                icono: '✉️',
+                color: '#f59e0b',
+                descripcion: 'Error al timbrar la factura con el PAC'
+            }
+        };
+
+        const pasoInfo = pasosInfo[result.step] || {
+            nombre: result.step,
+            icono: '⚠️',
+            color: '#dc2626',
+            descripcion: 'Error en el proceso'
+        };
+
+        // Extraer el mensaje de error completo
+        const errorCompleto = result.error || result.message || 'Error desconocido';
+
+        // Intentar extraer el código de error del SAT si existe
+        let codigoSAT = '';
+        let mensajeSAT = '';
+        let detallesTecnicos = errorCompleto;
+
+        const matchCFDI = errorCompleto.match(/CFDI\d+/);
+        if (matchCFDI) {
+            codigoSAT = matchCFDI[0];
+        }
+
+        // Extraer el mensaje principal del SAT
+        const matchMensaje = errorCompleto.match(/CFDI\d+\s*-\s*([^-]+)/);
+        if (matchMensaje) {
+            mensajeSAT = matchMensaje[1].trim();
+        }
+
+        Swal.fire({
+            title: '❌ Error en el Proceso de Facturación',
+            html: `
+        <div style="text-align: left; padding: 1rem;">
+            <!-- Header del Error -->
+            <div style="
+                background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+                padding: 1.5rem;
+                border-radius: 12px;
+                margin-bottom: 1.5rem;
+                border-left: 4px solid ${pasoInfo.color};
+            ">
+                <div style="
+                    font-size: 2rem;
+                    text-align: center;
+                    margin-bottom: 0.75rem;
+                ">
+                    ${pasoInfo.icono}
+                </div>
+                <div style="
+                    font-size: 1.2rem;
+                    font-weight: 700;
+                    color: #dc2626;
+                    margin-bottom: 0.5rem;
+                    text-align: center;
+                ">
+                    Error en: ${pasoInfo.nombre}
+                </div>
+                <div style="
+                    color: #991b1b;
+                    font-size: 0.9rem;
+                    text-align: center;
+                    font-style: italic;
+                ">
+                    ${pasoInfo.descripcion}
+                </div>
+            </div>
+
+            ${codigoSAT ? `
+            <!-- Código de Error SAT -->
+            <div style="
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                padding: 1.25rem;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+                border-left: 4px solid #f59e0b;
+                text-align: center;
+            ">
+                <div style="
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    color: #92400e;
+                    margin-bottom: 0.5rem;
+                    font-family: 'Courier New', monospace;
+                ">
+                    ${codigoSAT}
+                </div>
+                <div style="
+                    color: #78350f;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                ">
+                    Código de error del SAT
+                </div>
+            </div>
+            ` : ''}
+
+            ${mensajeSAT ? `
+            <!-- Mensaje Principal del SAT -->
+            <div style="
+                background: #fff1f2;
+                padding: 1.25rem;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+                border: 2px solid #fecdd3;
+            ">
+                <div style="
+                    display: flex;
+                    align-items: start;
+                    gap: 0.75rem;
+                ">
+                    <i class="fas fa-times-circle" style="
+                        color: #dc2626;
+                        font-size: 1.5rem;
+                        margin-top: 0.125rem;
+                    "></i>
+                    <div style="flex: 1;">
+                        <strong style="
+                            color: #991b1b;
+                            display: block;
+                            margin-bottom: 0.75rem;
+                            font-size: 1rem;
+                        ">
+                            Descripción del error:
+                        </strong>
+                        <div style="
+                            color: #7f1d1d;
+                            font-size: 1.05rem;
+                            line-height: 1.6;
+                            background: white;
+                            padding: 1rem;
+                            border-radius: 8px;
+                            font-weight: 600;
+                        ">
+                            ${mensajeSAT}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+
+            <!-- Detalles Completos del Error -->
+            <div style="
+                background: #f9fafb;
+                padding: 1.25rem;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+                border: 1px solid #e5e7eb;
+            ">
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    margin-bottom: 0.75rem;
+                ">
+                    <i class="fas fa-info-circle" style="color: #6b7280; font-size: 1.1rem;"></i>
+                    <strong style="color: #374151; font-size: 0.95rem;">
+                        Detalles completos del error:
+                    </strong>
+                </div>
+                <div style="
+                    color: #4b5563;
+                    font-size: 0.9rem;
+                    line-height: 1.8;
+                    background: #1f2937;
+                    color: #f3f4f6;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    font-family: 'Courier New', monospace;
+                    max-height: 200px;
+                    overflow-y: auto;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                ">
+${detallesTecnicos}
+                </div>
+            </div>
+
+            <!-- Información de Rollback -->
+            <div style="
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                padding: 1.25rem;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+                border-left: 3px solid #f59e0b;
+            ">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <i class="fas fa-undo" style="color: #d97706; font-size: 1.25rem;"></i>
+                    <h4 style="color: #92400e; margin: 0; font-size: 1rem;">
+                        Reversión Automática
+                    </h4>
+                </div>
+                <p style="color: #78350f; font-size: 0.9rem; margin: 0; line-height: 1.6;">
+                    Los registros creados antes del error fueron <strong>eliminados automáticamente</strong>
+                    para mantener la integridad de los datos. No se generaron documentos incompletos.
+                </p>
+            </div>
+
+            <!-- Documentos Afectados -->
+            <div style="
+                background: #f3f4f6;
+                padding: 1.25rem;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+            ">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <i class="fas fa-file-invoice" style="color: #6b7280; font-size: 1.25rem;"></i>
+                    <h4 style="color: #374151; margin: 0; font-size: 1rem;">
+                        Documentos Afectados
+                    </h4>
+                </div>
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background: white;
+                    padding: 1rem;
+                    border-radius: 8px;
+                ">
+                    <span style="color: #6b7280; font-size: 0.95rem;">
+                        Total de documentos no procesados:
+                    </span>
+                    <span style="
+                        color: #dc2626;
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                    ">
+                        ${totalDocumentos}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Recomendaciones -->
+            <div style="
+                background: #dbeafe;
+                padding: 1.25rem;
+                border-radius: 10px;
+                border-left: 3px solid #3b82f6;
+            ">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <i class="fas fa-lightbulb" style="color: #2563eb; font-size: 1.25rem;"></i>
+                    <h4 style="color: #1e3a8a; margin: 0; font-size: 1rem;">
+                        ¿Qué hacer ahora?
+                    </h4>
+                </div>
+                <ul style="
+                    color: #1e40af;
+                    font-size: 0.9rem;
+                    margin: 0;
+                    padding-left: 1.5rem;
+                    line-height: 1.8;
+                ">
+                    <li>Revise el mensaje de error para identificar el problema específico</li>
+                    <li>Verifique que los datos fiscales del receptor sean correctos</li>
+                    ${codigoSAT === 'CFDI40159' ? '<li style="font-weight: 600; color: #dc2626;">Verifique que el Régimen Fiscal del receptor coincida con su tipo de RFC</li>' : ''}
+                    <li>Corrija los datos necesarios e intente procesar nuevamente</li>
+                    <li>Si el error persiste, contacte al administrador del sistema</li>
+                </ul>
+            </div>
+        </div>
+    `,
+            icon: 'error',
+            confirmButtonText: '<i class="fas fa-check"></i> Entendido',
+            confirmButtonColor: '#7c3aed',
+            width: '750px',
+            showCancelButton: true,
+            cancelButtonText: '<i class="fas fa-copy"></i> Copiar error',
+            cancelButtonColor: '#6b7280',
+            customClass: {
+                popup: 'animated-popup'
+            },
+            allowOutsideClick: false
+        }).then((modalResult) => {
+            if (modalResult.dismiss === Swal.DismissReason.cancel) {
+                // Copiar error al portapapeles
+                const textoError = `
+=== ERROR EN FACTURACIÓN ===
+Paso: ${pasoInfo.nombre} (${result.step})
+${codigoSAT ? `Código SAT: ${codigoSAT}` : ''}
+${mensajeSAT ? `Mensaje: ${mensajeSAT}` : ''}
+
+Detalles completos:
+${detallesTecnicos}
+
+Timestamp: ${new Date().toISOString()}
+Documentos afectados: ${totalDocumentos}
+            `.trim();
+
+                navigator.clipboard.writeText(textoError).then(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Error copiado',
+                        text: 'El detalle del error ha sido copiado al portapapeles',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                }).catch(() => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al copiar',
+                        text: 'No se pudo copiar al portapapeles',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                });
+            }
+        });
+    }
+    // ============================================
+    // CERRAR MODAL DE PROGRESO
+    // ============================================
+    function cerrarModalProgreso(modal) {
+        if (modal) {
+            modal.style.animation = 'fadeOut 0.3s ease-in-out';
+            setTimeout(() => {
+                modal.remove();
+            }, 300);
+        }
+    }
+
+    function guardarModalEnStack(modalData) {
+        modalStack.push(modalData);
+    }
+
+    function volverModalAnterior() {
+        if (modalStack.length > 0) {
+            const modalAnterior = modalStack.pop();
+            mostrarResumenExitoso(modalAnterior.result, modalAnterior.totalDocumentos, true);
+        }
+    }
+
+    function limpiarStackModales() {
+        modalStack = [];
+    }
+    // ============================================
+    // MODAL PARA ENVÍO POR CORREO
+    // ============================================
+    function mostrarModalEnvioCorreo(detalles, resultOriginal, totalDocumentos) {
+        Swal.fire({
+            title: '📧 Enviar Factura por Correo',
+            html: `
+            <div style="text-align: left; padding: 1rem;">
+                <!-- Información del documento -->
+                <div style="
+                    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+                    padding: 1.25rem;
+                    border-radius: 12px;
+                    margin-bottom: 1.5rem;
+                    border-left: 4px solid #7c3aed;
+                ">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #5b21b6; margin-bottom: 0.5rem;">
+                        ${detalles.serie}-${detalles.folio}
+                    </div>
+                    <div style="color: #6b21a8; font-size: 0.9rem;">
+                        <strong>Total:</strong> ${parseFloat(detalles.total).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                    </div>
+                </div>
+
+                <!-- Campo de correo -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="
+                        display: block;
+                        color: #374151;
+                        font-weight: 600;
+                        margin-bottom: 0.5rem;
+                        font-size: 0.95rem;
+                    ">
+                        <i class="fas fa-envelope"></i> Correo electrónico *
+                    </label>
+                    <input
+                        type="email"
+                        id="emailDestino"
+                        class="swal2-input"
+                        placeholder="ejemplo@correo.com"
+                        value="${detalles.emailCliente || ''}"
+                        style="
+                            width: 100%;
+                            padding: 0.75rem;
+                            border: 2px solid #e5e7eb;
+                            border-radius: 8px;
+                            font-size: 1rem;
+                            margin: 0;
+                        "
+                    >
+                </div>
+
+                <!-- Opciones de archivos -->
+                <div style="
+                    background: #f8fafc;
+                    padding: 1rem;
+                    border-radius: 10px;
+                    margin-bottom: 1rem;
+                    border: 1px solid #e2e8f0;
+                ">
+                    <div style="color: #374151; font-weight: 600; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                        <i class="fas fa-paperclip"></i> Archivos adjuntos:
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="incluirPDF" checked style="width: 18px; height: 18px;">
+                        <span style="color: #6b7280; font-size: 0.9rem;">
+                            <i class="fas fa-file-pdf" style="color: #dc2626;"></i> PDF
+                        </span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="incluirXML" checked style="width: 18px; height: 18px;">
+                        <span style="color: #6b7280; font-size: 0.9rem;">
+                            <i class="fas fa-file-code" style="color: #059669;"></i> XML
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Mensaje adicional -->
+                <div style="margin-bottom: 1rem;">
+                    <label style="
+                        display: block;
+                        color: #374151;
+                        font-weight: 600;
+                        margin-bottom: 0.5rem;
+                        font-size: 0.95rem;
+                    ">
+                        <i class="fas fa-comment"></i> Mensaje adicional (opcional)
+                    </label>
+                    <textarea
+                        id="mensajeAdicional"
+                        rows="3"
+                        placeholder="Agregue un mensaje personalizado..."
+                        style="
+                            width: 100%;
+                            padding: 0.75rem;
+                            border: 2px solid #e5e7eb;
+                            border-radius: 8px;
+                            font-size: 0.9rem;
+                            resize: vertical;
+                            font-family: inherit;
+                        "
+                    ></textarea>
+                </div>
+            </div>
+        `,
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: '<i class="fas fa-paper-plane"></i> Enviar',
+            denyButtonText: '<i class="fas fa-arrow-left"></i> Volver',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            confirmButtonColor: '#3b82f6',
+            denyButtonColor: '#6b7280',
+            cancelButtonColor: '#dc2626',
+            width: '600px',
+            focusConfirm: false,
+            preConfirm: () => {
+                const email = document.getElementById('emailDestino').value.trim();
+                const incluirPDF = document.getElementById('incluirPDF').checked;
+                const incluirXML = document.getElementById('incluirXML').checked;
+                const mensaje = document.getElementById('mensajeAdicional').value.trim();
+
+                if (!email) {
+                    Swal.showValidationMessage('Ingrese un correo electrónico');
+                    return false;
+                }
+
+                const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                if (!emailRegex.test(email)) {
+                    Swal.showValidationMessage('Ingrese un correo válido');
+                    return false;
+                }
+
+                if (!incluirPDF && !incluirXML) {
+                    Swal.showValidationMessage('Seleccione al menos un archivo');
+                    return false;
+                }
+
+                return { email, incluirPDF, incluirXML, mensaje };
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                enviarFacturaPorCorreo(detalles, result.value, resultOriginal, totalDocumentos);
+            } else if (result.isDenied) {
+                // Volver al modal de resumen
+                modalStack.pop();
+                mostrarResumenExitoso(resultOriginal, totalDocumentos, true);
+            } else if (result.isDismissed) {
+                limpiarStackModales();
+                setTimeout(() => {
+                    recargarVista();
+                }, 500);
+            }
+        });
+    }
+
+    // ============================================
+    // ENVIAR FACTURA POR CORREO
+    // ============================================
+    async function enviarFacturaPorCorreo(detalles, opciones, resultOriginal, totalDocumentos) {
+        const { email, incluirPDF, incluirXML, mensaje } = opciones;
+
+        Swal.fire({
+            title: 'Enviando correo...',
+            html: `
+            <div style="text-align: center; padding: 1rem;">
+                <div style="
+                    width: 60px;
+                    height: 60px;
+                    margin: 0 auto 1rem;
+                    border: 4px solid #e5e7eb;
+                    border-top-color: #3b82f6;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                "></div>
+                <p style="color: #6b7280;">Enviando a <strong>${email}</strong></p>
+            </div>
+        `,
+            showConfirmButton: false,
+            allowOutsideClick: false,
+        });
+
+        try {
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('serie', detalles.serie);
+            formData.append('folio', detalles.folio);
+            formData.append('facturaId', detalles.uuid);
+            formData.append('pdfUrl', detalles.pdfUrl);
+            formData.append('xmlUrl', detalles.xmlUrl);
+            formData.append('incluirPDF', incluirPDF);
+            formData.append('incluirXML', incluirXML);
+            formData.append('mensaje', mensaje);
+            formData.append('razonSocial', detalles.razonSocial);
+            formData.append('total', detalles.total);
+            formData.append('asunto', "Factura");
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            const response = await fetch('/FacturaConsulta/EnviarEmail', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+
+            const result = await response.json();
+
+            if (result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Correo enviado',
+                    html: `
+                    <div style="text-align: center; padding: 1rem;">
+                        <p style="color: #374151; margin-bottom: 0.5rem;">
+                            Factura enviada exitosamente a:
+                        </p>
+                        <p style="color: #3b82f6; font-weight: 700; font-size: 1.1rem;">
+                            ${email}
+                        </p>
+                    </div>
+                `,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-check"></i> Finalizar',
+                    cancelButtonText: '<i class="fas fa-arrow-left"></i> Volver al resumen',
+                    confirmButtonColor: '#059669',
+                    cancelButtonColor: '#6b7280'
+                }).then((finalResult) => {
+                    if (finalResult.isDismissed || finalResult.isConfirmed) {
+                        if (finalResult.isDismissed) {
+                            // Volver al modal de resumen
+                            modalStack.pop();
+                            mostrarResumenExitoso(resultOriginal, totalDocumentos, true);
+                        } else {
+                            limpiarStackModales();
+                            recargarVista();
+                        }
+                    }
+                });
+            } else {
+                throw new Error(result.message || 'Error al enviar');
+            }
+
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al enviar',
+                text: error.message,
+                showCancelButton: true,
+                confirmButtonText: 'Reintentar',
+                cancelButtonText: 'Volver',
+                confirmButtonColor: '#3b82f6'
+            }).then((retryResult) => {
+                if (retryResult.isConfirmed) {
+                    mostrarModalEnvioCorreo(detalles, resultOriginal, totalDocumentos);
+                } else {
+                    modalStack.pop();
+                    mostrarResumenExitoso(resultOriginal, totalDocumentos, true);
+                }
+            });
+        }
+    }
+
+    // Función para cargar el fondo inicial desde el servidor
+    async function cargarFondoInicial() {
+        try {
+            const response = await GetData({
+                path: '/PuntoVentaAdministracion/DatosGeneral'
+            });
+
+            if (response) {
+                // Cargar fondo inicial
+                if (response.fondoInicial !== undefined) {
+                    const fondoInicial = parseFloat(response.fondoInicial?.[0]?.montoinicial ?? 0);
+                    const fondoElement = document.getElementById('initialFund');
+
+                    if (fondoElement) {
+                        fondoElement.textContent = fondoInicial.toFixed(2);
+                    }
+                }
+
+                // Cargar gastos y retiros
+                if (response.ingresosRetiros) {
+                    const retirosElement = document.getElementById('withdrawalsAmount');
+                    const gastosElement = document.getElementById('expensesAmount');
+
+                    if (retirosElement && response.ingresosRetiros !== undefined) {
+                        retirosElement.textContent = parseFloat(response.ingresosRetiros[0].total_dinero).toFixed(2);
+                    }
+
+                    //if (gastosElement && response.gastos.operativos !== undefined) {
+                    //    gastosElement.textContent = parseFloat(response.gastos.operativos).toFixed(2);
+                    //}
+                }
+
+                // Recalcular totales con los nuevos valores
+                calcularTotales();
+            } else {
+                console.warn('No se pudo obtener datos del servidor');
+            }
+        } catch (error) {
+            console.error('Error al cargar datos:', error);
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'No se pudieron cargar algunos datos'
+            });
+        }
+    }
+</script>

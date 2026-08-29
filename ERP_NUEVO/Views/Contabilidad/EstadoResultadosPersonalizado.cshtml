@@ -1,0 +1,1665 @@
+﻿@{
+    ViewBag.Title = "EstadoResultadosPersonalizado";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Estado de resultados";
+}
+
+<style>
+    /* ══════════════════════════════════════════════════════════════
+       VARIABLES & RESET
+    ══════════════════════════════════════════════════════════════ */
+    .erp-wrap {
+        padding: 1rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       FILTER BAR
+    ══════════════════════════════════════════════════════════════ */
+    .filter-bar {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        padding: 14px 18px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+        box-shadow: var(--shadow);
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 130px;
+        flex: 1;
+    }
+
+        .filter-group label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-light);
+        }
+
+        .filter-group input,
+        .filter-group select {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--row-radius);
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 13px;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+            .filter-group input:focus,
+            .filter-group select:focus {
+                border-color: var(--accent-blue);
+                background: var(--bg-light);
+                box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+            }
+
+    .filter-divider {
+        width: 1px;
+        background: var(--border-light);
+        align-self: stretch;
+        margin: 0 2px;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       BUTTONS
+    ══════════════════════════════════════════════════════════════ */
+    .btn {
+        height: 34px;
+        padding: 0 14px;
+        border-radius: var(--row-radius);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all .15s;
+        white-space: nowrap;
+        border: 1px solid var(--border-light);
+        color: var(--text-dark);
+        background: var(--bg-light);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .btn:hover {
+            background: var(--bg-gray);
+            border-color: var(--secondary-blue);
+        }
+
+        .btn:active {
+            transform: scale(.98);
+        }
+
+    .btn-primary {
+        background: var(--primary-blue);
+        color: #fff;
+        border-color: var(--primary-blue);
+    }
+
+        .btn-primary:hover {
+            background: var(--primary-blue-dark);
+            border-color: var(--primary-blue-dark);
+        }
+
+    .btn-success-soft {
+        background: color-mix(in srgb,#059669 10%,var(--bg-light));
+        color: #059669;
+        border-color: color-mix(in srgb,#059669 25%,var(--border-light));
+    }
+
+        .btn-success-soft:hover {
+            background: color-mix(in srgb,#059669 18%,var(--bg-light));
+        }
+
+    .btn-danger-soft {
+        background: color-mix(in srgb,#dc2626 8%,var(--bg-light));
+        color: #dc2626;
+        border-color: color-mix(in srgb,#dc2626 20%,var(--border-light));
+    }
+
+        .btn-danger-soft:hover {
+            background: color-mix(in srgb,#dc2626 15%,var(--bg-light));
+        }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       VALIDATION
+    ══════════════════════════════════════════════════════════════ */
+    .field-error input, .field-error select {
+        border-color: var(--danger-color) !important;
+        box-shadow: 0 0 0 3px color-mix(in srgb,var(--danger-color) 15%,transparent) !important;
+    }
+
+    .field-error label {
+        color: var(--danger-color) !important;
+    }
+
+    .error-msg {
+        font-size: 10px;
+        color: var(--danger-color);
+        font-weight: 500;
+        display: none;
+    }
+
+    .field-error .error-msg {
+        display: block;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       BUILDER PANEL
+    ══════════════════════════════════════════════════════════════ */
+    .builder-panel {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .builder-panel-header {
+        padding: 12px 18px;
+        background: var(--bg-gray);
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+        .builder-panel-header h3 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+    .builder-panel-body {
+        padding: 14px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* ── Sección ─────────────────────────────────────────────────── */
+    .seccion-builder {
+        border: 1px solid var(--border-light);
+        border-radius: var(--row-radius);
+        overflow: hidden;
+        transition: box-shadow .2s;
+    }
+
+        .seccion-builder:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+        }
+
+    .seccion-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        background: var(--bg-gray);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .seccion-drag-handle {
+        color: var(--text-light);
+        cursor: grab;
+        font-size: 13px;
+        padding: 0 2px;
+        flex-shrink: 0;
+    }
+
+    .seccion-nombre-input {
+        flex: 1;
+        height: 30px;
+        padding: 0 10px;
+        border: 1px solid var(--border-light);
+        border-radius: var(--row-radius);
+        background: var(--bg-light);
+        color: var(--text-dark);
+        font-size: 13px;
+        font-weight: 600;
+        outline: none;
+        transition: border-color .15s;
+        min-width: 160px;
+    }
+
+        .seccion-nombre-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+        }
+
+        .seccion-nombre-input::placeholder {
+            font-weight: 400;
+            color: var(--text-light);
+        }
+
+    .seccion-body {
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .seccion-footer {
+        padding: 8px 12px;
+        border-top: 1px solid var(--border-light);
+        background: color-mix(in srgb,var(--bg-gray) 50%,var(--bg-light));
+    }
+
+    /* ── Fila de cuenta ──────────────────────────────────────────── */
+    .fila-builder {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr 24px 1.4fr 150px auto 32px;
+        gap: 6px;
+        align-items: center;
+        padding: 6px 8px;
+        border-radius: var(--row-radius);
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        transition: background .12s;
+    }
+
+    /* Separador visual "→" entre cuenta ini y fin */
+    .fila-rango-sep {
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-light);
+        user-select: none;
+        line-height: 30px;
+    }
+
+    .fila-builder:hover {
+        background: var(--bg-gray);
+    }
+
+    .fila-etiqueta {
+        height: 30px;
+        padding: 0 9px;
+        border: 1px solid var(--border-light);
+        border-radius: var(--row-radius);
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-size: 12px;
+        outline: none;
+        transition: border-color .15s;
+        width: 100%;
+    }
+
+        .fila-etiqueta:focus {
+            border-color: var(--accent-blue);
+            background: var(--bg-light);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+        }
+
+    .fila-signo {
+        height: 30px;
+        padding: 0 8px;
+        border: 1px solid var(--border-light);
+        border-radius: var(--row-radius);
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-size: 11px;
+        outline: none;
+        cursor: pointer;
+        transition: border-color .15s;
+        width: 100%;
+    }
+
+        .fila-signo:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+        }
+
+    /* ── Tom Select overrides dentro de .fila-builder ────────────── */
+    .fila-builder .ts-wrapper {
+        min-height: 30px !important;
+    }
+
+    .fila-builder .ts-control {
+        min-height: 30px !important;
+        padding: 0 8px !important;
+        font-size: 12px !important;
+        border-radius: var(--row-radius) !important;
+        background: var(--bg-gray) !important;
+        border: 1px solid var(--border-light) !important;
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+
+        .fila-builder .ts-control input {
+            font-size: 12px !important;
+        }
+
+    /* ── Empty state del builder ─────────────────────────────────── */
+    .builder-empty {
+        padding: 28px 20px;
+        text-align: center;
+        color: var(--text-light);
+        font-size: 13px;
+        border: 2px dashed var(--border-light);
+        border-radius: var(--row-radius);
+    }
+
+        .builder-empty i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+            opacity: .4;
+        }
+
+    /* ══════════════════════════════════════════════════════════════
+       TOOLBAR EXPORTAR
+    ══════════════════════════════════════════════════════════════ */
+    .er-toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       RESULTADO — CARD
+       Grid: 3 columnas (sin acumulado anterior)
+    ══════════════════════════════════════════════════════════════ */
+    .er-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .er-col-header,
+    .er-row,
+    .er-subtotal,
+    .er-utilidad {
+        display: grid;
+        grid-template-columns: 1fr 150px 150px;
+        align-items: center;
+    }
+
+    .er-col-header {
+        padding: 10px 18px;
+        background: var(--primary-blue);
+        color: #fff;
+    }
+
+        .er-col-header > span {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+        }
+
+            .er-col-header > span:not(:first-child) {
+                text-align: right;
+                opacity: .75;
+                font-weight: 400;
+                font-size: 10px;
+            }
+
+    /* ── Encabezado sección coloreado ─────────────────────────────── */
+    .er-section-head {
+        display: grid;
+        grid-template-columns: 1fr 150px 150px;
+        align-items: center;
+        padding: 8px 18px;
+    }
+
+        .er-section-head > span:first-child {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+        }
+
+        .er-section-head > span:not(:first-child) {
+            text-align: right;
+        }
+
+    /* ── Filas de detalle ─────────────────────────────────────────── */
+    .er-row {
+        padding: 8px 18px;
+        border-bottom: 1px solid var(--border-light);
+        transition: background .12s;
+    }
+
+        .er-row:last-child {
+            border-bottom: none;
+        }
+
+        .er-row:hover {
+            background: var(--bg-gray);
+        }
+
+    .er-row-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .er-row-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 11px;
+    }
+
+    .er-row-desc {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .er-row-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+
+    .er-row-sub-label {
+        font-size: 11px;
+        color: var(--text-light);
+    }
+
+    .er-row-amount {
+        text-align: right;
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+
+    /* Filas de desglose (indentadas) */
+    .er-row.is-sub {
+        padding-left: 42px;
+        background: color-mix(in srgb,var(--bg-gray) 40%,var(--bg-light));
+    }
+
+        .er-row.is-sub .er-row-title {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-light);
+        }
+
+        .er-row.is-sub .er-row-amount {
+            font-size: 12px;
+            font-weight: 400;
+        }
+
+    /* ── Subtotales ───────────────────────────────────────────────── */
+    .er-subtotal {
+        padding: 10px 18px;
+        background: var(--light-blue);
+        border-top: 1px solid var(--border-light);
+        border-bottom: 2px solid var(--border-light);
+    }
+
+    .er-subtotal-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--primary-blue);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .er-subtotal-amount {
+        text-align: right;
+        font-size: 13px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--primary-blue);
+    }
+
+    /* ── Utilidad neta ────────────────────────────────────────────── */
+    .er-utilidad {
+        padding: 14px 18px;
+        background: var(--primary-blue);
+    }
+
+    .er-utilidad-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+    }
+
+    .er-utilidad-amount {
+        text-align: right;
+        font-size: 17px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        color: #fff;
+    }
+
+        .er-utilidad-amount.is-pos {
+            color: #6ee7b7;
+        }
+
+        .er-utilidad-amount.is-neg {
+            color: #fca5a5;
+        }
+
+        .er-utilidad-amount.is-small {
+            font-size: 13px;
+            opacity: .8;
+        }
+
+    /* ── Espaciador ───────────────────────────────────────────────── */
+    .er-spacer {
+        height: 6px;
+        background: var(--bg-gray);
+        border-top: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    /* ── Colores de cantidad ──────────────────────────────────────── */
+    .amt-pos {
+        color: var(--success-color) !important;
+    }
+
+    .amt-neg {
+        color: var(--danger-color) !important;
+    }
+
+    /* ── Empty state del resultado ────────────────────────────────── */
+    #er-container-result .er-empty {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--text-light);
+    }
+
+        #er-container-result .er-empty i {
+            font-size: 40px;
+            opacity: .3;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+    #sel-configuracion:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .cambios-badge {
+        color: #f59e0b;
+        font-size: 14px;
+        line-height: 1;
+        animation: pulse-dot 1.2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse-dot {
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.3;
+        }
+    }
+
+    .btn-warning-soft {
+        background: color-mix(in srgb, #f59e0b 12%, var(--bg-light));
+        color: #b45309;
+        border-color: color-mix(in srgb, #f59e0b 35%, var(--border-light));
+        height: 34px;
+        padding: 0 14px;
+        border-radius: var(--row-radius);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all .15s;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .btn-warning-soft:hover {
+            background: color-mix(in srgb, #f59e0b 22%, var(--bg-light));
+        }
+</style>
+
+<link href="~/content/contabilidad/MayorAuxiliar.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<div class="erp-wrap">
+
+    <!-- ── FILTROS DE PERÍODO ──────────────────────────────────────────── -->
+    <div class="filter-bar">
+        <div class="filter-group" id="group-mes">
+            <label>Mes</label>
+            <select id="sel-mes">
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+            </select>
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+
+        <div class="filter-group" id="group-anio">
+            <label>Año</label>
+            <input type="number" id="inp-anio" min="2000" max="2099" placeholder="ej. 2025">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-group" style="min-width:220px; flex:2">
+            <label>Cargar configuración</label>
+            <select id="sel-configuracion">
+                <option value="">— Selecciona una configuración —</option>
+            </select>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-group">
+            <label>Empresas</label>
+            <select id="sel-empresa">
+                <option value="">— Selecciona una empresa —</option>
+            </select>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-group">
+            <label>Sucursales</label>
+            <select id="sel-sucursal">
+                <option value="">— Selecciona una sucursal —</option>
+            </select>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-group">
+            <label>Centro de costos</label>
+            <select id="sel-centro">
+                <option value="">— Selecciona una sucursal —</option>
+            </select>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-toggle-group">
+            <span>Tipo reporte</span>
+            <div class="bootstrap-toggle toggle-success">
+                <input type="checkbox" id="tipoReporte" checked>
+                <label for="tipoReporte" class="toggle-group">
+                    <span class="toggle-on" data-value="resumido">Resumido</span>
+                    <span class="toggle-handle"></span>
+                    <span class="toggle-off" data-value="detallado">Detallado</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="filter-divider"></div>
+
+        <div class="filter-actions">
+            <button class="btn" onclick="clearFilters()">Limpiar</button>
+            <button class="btn btn-primary" onclick="applyFilters()">
+                <i class="fa-solid fa-magnifying-glass"></i> Consultar
+            </button>
+        </div>
+    </div>
+
+    <!-- ── CONFIGURADOR DE SECCIONES ──────────────────────────────────── -->
+    <div class="builder-panel">
+        <div class="builder-panel-header">
+            <h3><i class="fa-solid fa-layer-group me-2"></i>Configuración de secciones</h3>
+            <div style="display:flex;gap:8px;">
+                <button class="btn" id="btn-guardar-config" onclick="guardarConfiguracion()">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar configuración
+                </button>
+                <button class="btn btn-success-soft" onclick="agregarSeccion()">
+                    <i class="fa-solid fa-plus"></i> Agregar sección
+                </button>
+                <button class="btn" onclick="limpiarSecciones()" title="Limpiar todo">
+                    <i class="fa-solid fa-rotate-left"></i> Reiniciar
+                </button>
+            </div>
+        </div>
+        <div class="builder-panel-body" id="secciones-builder">
+            <div class="builder-empty" id="builder-empty">
+                <i class="fa-solid fa-table-list"></i>
+                Agrega una sección para comenzar a configurar el reporte.<br>
+                <small style="opacity:.7">Ejemplo: Ingresos, Costos de Venta, Gastos de Operación…</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TOOLBAR EXPORTAR ────────────────────────────────────────────── -->
+    <div class="er-toolbar">
+        <button class="btn" onclick="exportarPDF()">
+            Exportar a PDF <i class="fa-solid fa-file-pdf ms-1"></i>
+        </button>
+    </div>
+
+    <!-- ── RESULTADO ───────────────────────────────────────────────────── -->
+    <div class="er-card" id="er-container-result">
+        <div class="er-empty">
+            <i class="fa-solid fa-chart-line"></i>
+            Configura las secciones y da click en <strong>Consultar</strong> para ver el reporte.
+        </div>
+    </div>
+
+</div>
+
+<script src="~/Scripts/Switch.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+
+<script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  ESTADO GLOBAL
+    // ═══════════════════════════════════════════════════════════════════════════
+    let _CUENTAS = [];
+    let _SECCIONES = [];
+    let _TOM_INSTANCES = {};
+    let _ER_DATA = null;
+    let _ENTERPRISE_DATA = {};
+    let _SECCIONES_META = [];
+    let _MES_CONSULTA = null;
+    let _ANIO_CONSULTA = null;
+    let _CONFIG_ID_ACTIVA = null;
+    let _CONFIG_NOMBRE_ACTIVO = null;
+    let _HAY_CAMBIOS = false;
+
+    const SECTION_COLORS = [
+        { bg: '#059669', text: '#059669', icon: 'fa-arrow-trend-up' },
+        { bg: '#dc2626', text: '#dc2626', icon: 'fa-boxes-stacked' },
+        { bg: '#d97706', text: '#d97706', icon: 'fa-file-invoice-dollar' },
+        { bg: '#3b82f6', text: '#3b82f6', icon: 'fa-landmark' },
+        { bg: '#6366f1', text: '#6366f1', icon: 'fa-coins' },
+        { bg: '#0891b2', text: '#0891b2', icon: 'fa-chart-bar' },
+        { bg: '#7c3aed', text: '#7c3aed', icon: 'fa-receipt' },
+    ];
+
+    const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+    window.addEventListener('beforeunload', (e) => {
+        if (!_HAY_CAMBIOS) return;
+        e.preventDefault();
+        e.returnValue = '';
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  CARGAR LISTA DE CONFIGURACIONES
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function cargarListaConfiguraciones() {
+        const sel = document.getElementById('sel-configuracion');
+        const selEmpresa = document.getElementById('sel-empresa');
+        const selCentro = document.getElementById('sel-centro');
+
+        try {
+            sel.disabled = true;
+            const data = await GetData({ path: '/Contabilidad/GetConfiguraciones' });
+            const configs = data;
+
+            sel.innerHTML = '<option value="">— Selecciona una configuración —</option>';
+
+            if (!configs || configs.length === 0) {
+                sel.innerHTML += '<option disabled>Sin configuraciones guardadas</option>';
+            }
+
+            configs.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id_configuracion;
+                opt.textContent = c.nombre_configuracion;
+                sel.appendChild(opt);
+            });
+
+            const empre = await GetData({ path: '/Contabilidad/GetEmpresas' });
+            selEmpresa.innerHTML = '<option value="">Todas las empresas</option>';
+
+            if (!empre || empre.length === 0) {
+                selEmpresa += '<option disabled>Sin empresas registradas</option>';
+            }
+
+            empre.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.empresaid;
+                opt.textContent = `${e.nombre}`;
+                selEmpresa.appendChild(opt);
+            });
+
+            const centro = await GetData({ path: '/Contabilidad/GetCentroCostos' });
+            selCentro.innerHTML = '<option value="">Todos los centros de costos</option>';
+
+            if (!centro || centro.length === 0) {
+                selCentro += '<option disabled>Sin centro de costos registrado</option>';
+            }
+
+            centro.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.areaid;
+                opt.textContent = `${e.nombre}`;
+                selCentro.appendChild(opt);
+            });
+        } catch (e) {
+            console.error('Error cargando configuraciones:', e);
+            toastMixin.fire({ icon: 'error', title: 'No se pudieron cargar las configuraciones' });
+        } finally {
+            sel.disabled = false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  CARGAR UNA CONFIGURACIÓN Y RECONSTRUIR EL BUILDER
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function cargarConfiguracion(id) {
+        try {
+            const config = await GetData({ path: '/Contabilidad/CargarConfiguracion', data: { id } });
+
+            Object.keys(_TOM_INSTANCES).forEach(destroyTom);
+            _SECCIONES = [];
+
+            config.secciones.forEach(sec => {
+                _SECCIONES.push({
+                    nombre: sec.nombre,
+                    filas: (sec.filas || []).map(f => ({
+                        etiqueta: f.etiqueta || '',
+                        cuentaIni: f.cuentaIni || '',
+                        cuentaFin: f.cuentaFin || '',
+                        signo: f.signo || 'A',
+                        mostrar: f.mostrar !== false,
+                    }))
+                });
+            });
+
+            rerenderAllSecciones();
+
+            _CONFIG_ID_ACTIVA = id;
+            _CONFIG_NOMBRE_ACTIVO = config.nombre;
+            limpiarCambios();
+            actualizarBadgeGuardar();
+
+            toastMixin.fire({ icon: 'success', title: `Configuración "${config.nombre}" cargada` });
+        } catch (e) {
+            console.error('Error cargando configuración:', e);
+            toastMixin.fire({ icon: 'error', title: 'Error al cargar la configuración' });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  INIT
+    // ═══════════════════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', async () => {
+        const now = new Date();
+        document.getElementById('sel-mes').value = now.getMonth() + 1;
+        document.getElementById('inp-anio').value = now.getFullYear();
+
+        ['sel-mes', 'inp-anio'].forEach(id => {
+            document.getElementById(id).addEventListener('change', function () {
+                const grp = id === 'sel-mes' ? 'group-mes' : 'group-anio';
+                if (this.value) document.getElementById(grp).classList.remove('field-error');
+            });
+        });
+
+        try {
+            let cuentas = await GetData({ path: '/Contabilidad/GetCuentasFinanzas' });
+            _CUENTAS = cuentas.cuentas;
+        } catch (e) {
+            console.error('Error cargando cuentas:', e);
+        }
+
+        await cargarListaConfiguraciones();
+
+        document.getElementById('sel-configuracion').addEventListener('change', async function () {
+            const id = this.value;
+            if (!id) return;
+            await cargarConfiguracion(parseInt(id));
+        });
+
+        document.getElementById('sel-empresa').addEventListener('change', async function () {
+            const id = this.value;
+            if (!id) return;
+            const succ = await GetData({ path: '/Contabilidad/GetSucursales', data: { empresa: document.getElementById('sel-empresa').value } });
+            const selSucursal = document.getElementById('sel-sucursal');
+            selSucursal.innerHTML = '<option value="">Todas las sucursales</option>';
+
+            if (!succ || succ.length === 0) {
+                selSucursal += '<option disabled>Sin sucursal registradas</option>';
+                return;
+            }
+
+            succ.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.id_sucursal;
+                opt.textContent = `${e.cve_sucursal} - ${e.descripcion}`;
+                selSucursal.appendChild(opt);
+            });
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  HELPERS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function getColor(idx) { return SECTION_COLORS[idx % SECTION_COLORS.length]; }
+
+    function colorMix(hex, pct) {
+        return `color-mix(in srgb, ${hex} ${pct}%, var(--bg-light))`;
+    }
+
+    function buildTomConfig(placeholder, onChange) {
+        return {
+            options: _CUENTAS,
+            dropdownParent: 'body',
+            valueField: 'codigo',
+            searchField: ['codigo', 'descripcion', 'nombre'],
+            placeholder,
+            maxItems: 1,
+            create: false,
+            onChange,
+            render: {
+                option: (d, escape) =>
+                    `<div style="font-size:11px;color:black;">
+                    <span style="font-weight:600">${escape(d.codigo)}</span>
+                    — ${escape(d.nombre)}
+                    <span style="font-size:10px;opacity:.6;margin-left:4px">(${escape(d.naturaleza ?? '')})</span>
+                </div>`,
+                item: (d, escape) =>
+                    `<span style="font-size:11px;color:var(--text-dark);">${escape(d.codigo)} — ${escape(d.nombre)}</span>`,
+            },
+        };
+    }
+
+    function destroyTom(tomId) {
+        if (_TOM_INSTANCES[tomId]) {
+            try { _TOM_INSTANCES[tomId].destroy(); } catch (e) { }
+            delete _TOM_INSTANCES[tomId];
+        }
+    }
+
+    function showBuilderEmpty() {
+        const hasAny = _SECCIONES.length > 0;
+        const el = document.getElementById('builder-empty');
+        if (el) el.style.display = hasAny ? 'none' : 'block';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  BUILDER — SECCIONES
+    // ═══════════════════════════════════════════════════════════════════════════
+    function agregarSeccion() {
+        const idx = _SECCIONES.length;
+        _SECCIONES.push({ nombre: '', filas: [] });
+        showBuilderEmpty();
+        renderSeccionDOM(idx);
+        agregarFila(idx);
+        marcarCambio();
+    }
+
+    function limpiarSecciones() {
+        Object.keys(_TOM_INSTANCES).forEach(destroyTom);
+        _SECCIONES = [];
+        _CONFIG_ID_ACTIVA = null;
+        _CONFIG_NOMBRE_ACTIVO = null;
+        limpiarCambios();
+        document.getElementById('sel-configuracion').value = '';
+        document.getElementById('secciones-builder').innerHTML = `
+            <div class="builder-empty" id="builder-empty">
+                <i class="fa-solid fa-table-list"></i>
+                Agrega una sección para comenzar a configurar el reporte.<br>
+                <small style="opacity:.7">Ejemplo: Ingresos, Costos de Venta, Gastos de Operación…</small>
+            </div>`;
+    }
+
+    function eliminarSeccion(idx) {
+        _SECCIONES[idx].filas.forEach((_, f) => {
+            destroyTom(`s${idx}_f${f}_ini`);
+            destroyTom(`s${idx}_f${f}_fin`);
+        });
+        _SECCIONES.splice(idx, 1);
+        rerenderAllSecciones();
+        marcarCambio();
+    }
+
+    function renderSeccionDOM(idx) {
+        const wrap = document.getElementById('secciones-builder');
+        const div = document.createElement('div');
+        div.className = 'seccion-builder';
+        div.id = `seccion-${idx}`;
+        div.innerHTML = `
+    <div class="seccion-header">
+        <span class="seccion-drag-handle" title="Arrastrar"><i class="fa-solid fa-grip-vertical"></i></span>
+        <input type="text"
+            class="seccion-nombre-input"
+            placeholder="Nombre del apartado (ej. Ingresos)"
+            value="${escHtml(_SECCIONES[idx].nombre)}"
+            oninput="_SECCIONES[${idx}].nombre = this.value; marcarCambio();">
+        <button class="btn btn-success-soft" style="height:30px;font-size:12px;" onclick="agregarFila(${idx})">
+            <i class="fa-solid fa-plus"></i> Fila
+        </button>
+        <button class="btn btn-danger-soft btn-icon" onclick="eliminarSeccion(${idx})" title="Eliminar sección">
+            <i class="fa-solid fa-trash" style="font-size:11px;"></i>
+        </button>
+    </div>
+    <div class="seccion-body" id="filas-${idx}"></div>
+    <div class="seccion-footer">
+        <span style="font-size:11px;color:var(--text-light);">
+            <i class="fa-solid fa-sigma me-1"></i>
+            Total de la sección = suma de todas las filas
+            &nbsp;·&nbsp;
+            <i class="fa-solid fa-eye me-1"></i>
+            El checkbox "Desglosar" controla si la fila aparece en el reporte detallado
+        </span>
+    </div>`;
+        wrap.appendChild(div);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  BUILDER — FILAS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function agregarFila(idxSec) {
+        const idxFila = _SECCIONES[idxSec].filas.length;
+        _SECCIONES[idxSec].filas.push({ etiqueta: '', cuentaIni: '', cuentaFin: '', signo: 'haber', mostrar: true });
+        renderFilaDOM(idxSec, idxFila);
+        marcarCambio();
+    }
+
+    function eliminarFila(idxSec, idxFila) {
+        destroyTom(`s${idxSec}_f${idxFila}_ini`);
+        destroyTom(`s${idxSec}_f${idxFila}_fin`);
+        _SECCIONES[idxSec].filas.splice(idxFila, 1);
+        rerenderSeccionFilas(idxSec);
+        marcarCambio();
+    }
+
+    function renderFilaDOM(idxSec, idxFila) {
+        const container = document.getElementById(`filas-${idxSec}`);
+        const tomIniId = `s${idxSec}_f${idxFila}_ini`;
+        const tomFinId = `s${idxSec}_f${idxFila}_fin`;
+        const fila = _SECCIONES[idxSec].filas[idxFila];
+
+        const div = document.createElement('div');
+        div.className = 'fila-builder';
+        div.id = `fila-${idxSec}-${idxFila}`;
+
+        const signoOpts = [
+            { v: 'A', l: '+ Acreedora (haber − debe)' },
+            { v: 'D', l: '− Deudora   (debe − haber)' },
+        ].map(o => `<option value="${o.v}" ${fila.signo === o.v ? 'selected' : ''}>${o.l}</option>`).join('');
+
+        const checked = fila.mostrar !== false ? 'checked' : '';
+
+        div.innerHTML = `
+            <input type="text"
+                class="fila-etiqueta"
+                placeholder="Nombre de la fila"
+                value="${escHtml(fila.etiqueta)}"
+                oninput="_SECCIONES[${idxSec}].filas[${idxFila}].etiqueta = this.value; marcarCambio()">
+            <select id="${tomIniId}" class="fila-cuenta"></select>
+            <span class="fila-rango-sep" title="hasta">→</span>
+            <select id="${tomFinId}" class="fila-cuenta"></select>
+            <select class="fila-signo"
+                    id="signo-${idxSec}-${idxFila}"
+                    onchange="_SECCIONES[${idxSec}].filas[${idxFila}].signo = this.value; marcarCambio()">
+                ${signoOpts}
+            </select>
+            <label title="Mostrar esta fila desglosada en el reporte detallado"
+                style="display:flex;align-items:center;gap:4px;cursor:pointer;flex-shrink:0;padding:0 4px;">
+                <input type="checkbox"
+                    id="mostrar-${idxSec}-${idxFila}"
+                    ${checked}
+                    onchange="_SECCIONES[${idxSec}].filas[${idxFila}].mostrar = this.checked; marcarCambio()"
+                    style="accent-color:var(--primary-blue);width:14px;height:14px;cursor:pointer;">
+                <span style="font-size:10px;color:var(--text-light);white-space:nowrap;user-select:none;">Desglosar</span>
+            </label>
+            <button class="btn btn-danger-soft btn-icon"
+                    onclick="eliminarFila(${idxSec}, ${idxFila})"
+                    title="Eliminar fila">
+                <i class="fa-solid fa-xmark" style="font-size:12px;"></i>
+            </button>`;
+
+        container.appendChild(div);
+
+        // TomSelect cuenta INICIAL
+        const tomIni = new TomSelect(`#${tomIniId}`, buildTomConfig('Cuenta inicial…', (val) => {
+            _SECCIONES[idxSec].filas[idxFila].cuentaIni = val;
+            const cuentaObj = _CUENTAS.find(c => c.codigo === val);
+            if (cuentaObj && cuentaObj.naturaleza) {
+                const autoSigno = cuentaObj.naturaleza === 'deudora' ? 'D' : 'A';
+                _SECCIONES[idxSec].filas[idxFila].signo = autoSigno;
+                const selSigno = document.getElementById(`signo-${idxSec}-${idxFila}`);
+                if (selSigno) selSigno.value = autoSigno;
+            }
+            marcarCambio();
+        }));
+        if (fila.cuentaIni) tomIni.setValue(fila.cuentaIni, true);
+        _TOM_INSTANCES[tomIniId] = tomIni;
+
+        // TomSelect cuenta FINAL
+        const tomFin = new TomSelect(`#${tomFinId}`, buildTomConfig('Cuenta final…', (val) => {
+            _SECCIONES[idxSec].filas[idxFila].cuentaFin = val;
+            marcarCambio();
+        }));
+        if (fila.cuentaFin) tomFin.setValue(fila.cuentaFin, true);
+        _TOM_INSTANCES[tomFinId] = tomFin;
+    }
+
+    // Re-renders
+    function rerenderSeccionFilas(idxSec) {
+        _SECCIONES[idxSec].filas.forEach((_, f) => {
+            destroyTom(`s${idxSec}_f${f}_ini`);
+            destroyTom(`s${idxSec}_f${f}_fin`);
+        });
+        const container = document.getElementById(`filas-${idxSec}`);
+        container.innerHTML = '';
+        _SECCIONES[idxSec].filas.forEach((_, f) => renderFilaDOM(idxSec, f));
+    }
+
+    function rerenderAllSecciones() {
+        Object.keys(_TOM_INSTANCES).forEach(destroyTom);
+        const wrap = document.getElementById('secciones-builder');
+        wrap.innerHTML = `<div class="builder-empty" id="builder-empty" style="display:${_SECCIONES.length ? 'none' : 'block'}">
+    <i class="fa-solid fa-table-list"></i>
+    Agrega una sección para comenzar a configurar el reporte.
+</div>`;
+        _SECCIONES.forEach((_, idx) => {
+            renderSeccionDOM(idx);
+            _SECCIONES[idx].filas.forEach((__, f) => renderFilaDOM(idx, f));
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  GUARDAR CONFIGURACIÓN
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function guardarConfiguracion() {
+        if (_SECCIONES.length === 0) {
+            toastMixin.fire({ icon: 'warning', title: 'No hay secciones que guardar' });
+            return;
+        }
+
+        const esActualizacion = !!_CONFIG_ID_ACTIVA;
+
+        if (esActualizacion) {
+            const { isConfirmed } = await _Swal.fire({
+                title: 'Actualizar configuración',
+                html: `¿Deseas actualizar <strong>"${escHtml(_CONFIG_NOMBRE_ACTIVO)}"</strong> con los cambios actuales?`,
+                icon: 'question',
+                showCancelButton: false,
+                confirmButtonText: 'Actualizar',
+                showDenyButton: true,
+                denyButtonText: 'Guardar como nueva',
+            });
+
+            if (isConfirmed) {
+                await _ejecutarGuardado(_CONFIG_ID_ACTIVA, _CONFIG_NOMBRE_ACTIVO);
+                return;
+            }
+        }
+
+        const { value: nombre } = await _Swal.fire({
+            title: esActualizacion ? 'Guardar como nueva configuración' : 'Guardar configuración',
+            input: 'text',
+            inputLabel: 'Nombre de la configuración',
+            inputPlaceholder: 'Ej. Estado de Resultados Estándar',
+            inputValue: _CONFIG_NOMBRE_ACTIVO ?? '',
+            inputAttributes: { maxlength: 80 },
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (v) => !v.trim() ? 'El nombre es obligatorio' : null,
+        });
+
+        if (!nombre) return;
+        await _ejecutarGuardado(null, nombre.trim());
+    }
+
+    async function _ejecutarGuardado(idExistente, nombre) {
+        const config = {
+            id: idExistente,
+            nombre: nombre,
+            fecha: new Date().toISOString(),
+            secciones: _SECCIONES.map(s => ({
+                nombre: s.nombre,
+                filas: s.filas.map(f => ({
+                    etiqueta: f.etiqueta,
+                    cuentaIni: f.cuentaIni,
+                    cuentaFin: f.cuentaFin,
+                    signo: f.signo,
+                    mostrar: f.mostrar !== false,
+                }))
+            }))
+        };
+
+        await limpiarCambios();
+
+        const resp = await GetData({
+            path: '/Contabilidad/GuardarConfiguracionER',
+            data: { json: JSON.stringify(config) },
+            swalResponse: true,
+            swalType: 'modal',
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  VALIDACIÓN Y CONSULTA
+    // ═══════════════════════════════════════════════════════════════════════════
+    function applyFilters() {
+        const selMes = document.getElementById('sel-mes');
+        const inpAnio = document.getElementById('inp-anio');
+        const gMes = document.getElementById('group-mes');
+        const gAnio = document.getElementById('group-anio');
+        const empresa = document.getElementById('sel-empresa').value;
+        const sucursal = document.getElementById('sel-sucursal').value;
+        const centro = document.getElementById('sel-centro').value;
+
+        let valid = true;
+        [[selMes, gMes], [inpAnio, gAnio]].forEach(([inp, grp]) => {
+            if (!inp.value.trim()) { grp.classList.add('field-error'); valid = false; }
+            else grp.classList.remove('field-error');
+        });
+        if (!valid) return;
+
+        if (_SECCIONES.length === 0) {
+            toastMixin.fire({ icon: 'warning', title: 'Agrega al menos una sección al reporte' });
+            return;
+        }
+
+        const seccionesValidas = _SECCIONES.filter(s => s.filas.some(f => f.cuentaIni));
+        if (seccionesValidas.length === 0) {
+            toastMixin.fire({ icon: 'warning', title: 'Selecciona al menos una cuenta en alguna sección' });
+            return;
+        }
+
+        const seccionesLimpias = _SECCIONES.map(s => ({
+            nombre: s.nombre || 'Sin nombre',
+            filas: s.filas
+                .filter(f => f.cuentaIni)
+                .map(f => ({
+                    etiqueta: f.etiqueta,
+                    cuentaIni: f.cuentaIni,
+                    cuentaFin: f.cuentaFin,
+                    signo: f.signo,
+                    mostrar: f.mostrar !== false,
+                }))
+        })).filter(s => s.filas.length > 0);
+
+        const esDetallado = !document.getElementById('tipoReporte').checked;
+        _MES_CONSULTA = selMes.value;
+        _ANIO_CONSULTA = inpAnio.value;
+
+        GetData({
+            path: '/Contabilidad/GetEstadoResultadosPersonalizado',
+            data: {
+                mes: selMes.value,
+                anio: inpAnio.value,
+                detallado: esDetallado ? '1' : '0',
+                secciones: JSON.stringify(seccionesLimpias),
+                empresa: empresa,
+                sucursal: sucursal,
+                centro: centro,
+            }
+        }).then(data => {
+            _ER_DATA = data.estado;
+            _ENTERPRISE_DATA = data.datos_empresa;
+            _SECCIONES_META = data.secciones_meta;
+            renderER(data.estado[0], selMes.value, inpAnio.value, data.secciones_meta, esDetallado);
+        });
+    }
+
+    function clearFilters() {
+        const now = new Date();
+        document.getElementById('sel-mes').value = now.getMonth() + 1;
+        document.getElementById('inp-anio').value = now.getFullYear();
+        document.getElementById('group-mes').classList.remove('field-error');
+        document.getElementById('group-anio').classList.remove('field-error');
+        document.getElementById('er-container-result').innerHTML = `
+    <div class="er-empty">
+        <i class="fa-solid fa-chart-line"></i>
+        Configura las secciones y da click en <strong>Consultar</strong> para ver el reporte.
+    </div>`;
+        _ER_DATA = null;
+    }
+
+    function marcarCambio() {
+        _HAY_CAMBIOS = true;
+        actualizarBadgeGuardar();
+    }
+
+    function limpiarCambios() {
+        _HAY_CAMBIOS = false;
+        actualizarBadgeGuardar();
+    }
+
+    function actualizarBadgeGuardar() {
+        const btn = document.getElementById('btn-guardar-config');
+        if (!btn) return;
+
+        if (_HAY_CAMBIOS) {
+            btn.classList.add('btn-warning-soft');
+            btn.classList.remove('btn');
+            btn.innerHTML = _CONFIG_ID_ACTIVA
+                ? `<i class="fa-solid fa-floppy-disk"></i> Actualizar configuración <span class="cambios-badge">●</span>`
+                : `<i class="fa-solid fa-floppy-disk"></i> Guardar configuración <span class="cambios-badge">●</span>`;
+        } else {
+            btn.classList.remove('btn-warning-soft');
+            btn.classList.add('btn');
+            btn.innerHTML = _CONFIG_ID_ACTIVA
+                ? `<i class="fa-solid fa-floppy-disk"></i> Actualizar configuración`
+                : `<i class="fa-solid fa-floppy-disk"></i> Guardar configuración`;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  RENDER DEL RESULTADO
+    // ═══════════════════════════════════════════════════════════════════════════
+    function renderER(d, mes, anio, seccionesMeta, detallado) {
+        if (!d || !seccionesMeta || seccionesMeta.length === 0) {
+            document.getElementById('er-container-result').innerHTML =
+                '<div style="padding:32px;text-align:center;color:var(--text-light)">Sin datos para el período seleccionado.</div>';
+            return;
+        }
+
+        const fmt = v => Currency.format(Math.abs(v));
+        const fmtN = v => v < 0 ? `(${fmt(v)})` : fmt(v);
+        const amtCls = v => v >= 0 ? 'amt-pos' : 'amt-neg';
+        const mesStr = MESES[parseInt(mes)] ?? mes;
+
+        const utilNeta = parseFloat(d['utilidad_neta'] ?? 0);
+        const utilNetaAcum = parseFloat(d['utilidad_neta_acumulada'] ?? 0);
+
+        let html = `
+<div class="er-col-header">
+    <span>Estado de Resultados — ${mesStr} ${anio}</span>
+    <span>${mesStr} ${anio}</span>
+    <span>Acum. ${anio}</span>
+</div>`;
+
+        seccionesMeta.forEach((sec, s) => {
+            const color = getColor(s);
+
+            const totalMes = parseFloat(d[`s${s}_total`] ?? 0);
+            const totalAcum = parseFloat(d[`s${s}_total_acum`] ?? 0);
+
+            html += `
+    <div class="er-section-head" style="background:${colorMix(color.bg, 14)};">
+        <span style="color:${color.text};">
+            <i class="fa-solid ${color.icon} me-2" style="opacity:.8"></i>
+            ${escHtml(sec.nombre.toUpperCase())}
+        </span>
+        <span></span><span></span>
+    </div>`;
+
+            html += `
+    <div class="er-row">
+        <div class="er-row-label">
+            <div class="er-row-icon" style="background:${colorMix(color.bg, 12)};color:${color.text}">
+                <i class="fa-solid ${color.icon}" style="font-size:11px;"></i>
+            </div>
+            <div class="er-row-desc">
+                <span class="er-row-title">${escHtml(sec.nombre)}</span>
+                <span class="er-row-sub-label">Total del apartado</span>
+            </div>
+        </div>
+        <span class="er-row-amount ${amtCls(totalMes)}">${fmtN(totalMes)}</span>
+        <span class="er-row-amount ${amtCls(totalAcum)}" style="opacity:.7">${fmtN(totalAcum)}</span>
+    </div>`;
+
+            if (detallado) {
+                sec.filas.forEach((fila, f) => {
+                    if (fila.mostrar === false) return;
+
+                    const val = parseFloat(d[`s${s}_fila_${f}`] ?? 0);
+                    const rangoLabel = fila.cuentaFin && fila.cuentaFin !== fila.cuentaIni
+                        ? `${escHtml(fila.cuentaIni)} → ${escHtml(fila.cuentaFin)}`
+                        : escHtml(fila.cuentaIni);
+
+                    html += `
+            <div class="er-row is-sub">
+                <div class="er-row-label">
+                    <div class="er-row-desc">
+                        <span class="er-row-title">${escHtml(fila.etiqueta || fila.cuentaIni)}</span>
+                    </div>
+                </div>
+                <span class="er-row-amount ${amtCls(val)}">${fmtN(val)}</span>
+                <span class="er-row-amount" style="opacity:.35">—</span>
+            </div>`;
+                });
+            }
+
+            html += `
+    <div class="er-subtotal">
+        <span class="er-subtotal-label">Total ${escHtml(sec.nombre)}</span>
+        <span class="er-subtotal-amount ${amtCls(totalMes)}">${fmtN(totalMes)}</span>
+        <span class="er-subtotal-amount ${amtCls(totalAcum)}" style="opacity:.75;font-size:12px">${fmtN(totalAcum)}</span>
+    </div>
+    <div class="er-spacer"></div>`;
+        });
+
+        html += `
+<div class="er-utilidad">
+    <span class="er-utilidad-label">Resultado del Período</span>
+    <span class="er-utilidad-amount ${utilNeta >= 0 ? 'is-pos' : 'is-neg'}">${fmtN(utilNeta)}</span>
+    <span class="er-utilidad-amount is-small ${utilNetaAcum >= 0 ? 'is-pos' : 'is-neg'}">${fmtN(utilNetaAcum)}</span>
+</div>`;
+
+        document.getElementById('er-container-result').innerHTML = html;
+        document.getElementById('er-container-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  EXPORTAR PDF
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function exportarPDF() {
+        if (!_ER_DATA || !_SECCIONES_META.length) {
+            toastMixin.fire({ icon: 'warning', title: 'Primero consulta los resultados para exportar' });
+            return;
+        }
+
+        const mes = _MES_CONSULTA;
+        const anio = _ANIO_CONSULTA;
+        const mesStr = MESES[parseInt(mes)] ?? mes;
+        const d = _ER_DATA[0];
+        const esDetallado = !document.getElementById('tipoReporte').checked;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const logoBase64 = await convertToBase64(`/Content/img/${empresa}/logo.png`);
+
+        const fmt = v => Currency.format(Math.abs(v));
+        const fmtN = v => v < 0 ? `(${fmt(v)})` : fmt(v);
+        const DASH = '—';
+
+        const C_HEADER = [30, 58, 95];
+        const C_SUB_BG = [225, 231, 239];
+        const C_SUB_TEXT = [30, 58, 95];
+        const C_POS = [5, 150, 105];
+        const C_NEG = [220, 38, 38];
+        const C_GRAY = [148, 163, 184];
+        const C_ROW_ALT = [248, 250, 252];
+        const C_SUB_ROW = [241, 245, 249];
+
+        const PDF_SECTION_COLORS = [
+            [5, 150, 105], [220, 38, 38], [217, 119, 6], [59, 130, 246],
+            [99, 102, 241], [8, 145, 178], [124, 58, 237]
+        ];
+
+        const rows = [];
+
+        _SECCIONES_META.forEach((sec, s) => {
+            const totalMes = parseFloat(d[`s${s}_total`] ?? 0);
+            const totalAcum = parseFloat(d[`s${s}_total_acum`] ?? 0);
+            const sColor = PDF_SECTION_COLORS[s % PDF_SECTION_COLORS.length];
+
+            rows.push({ type: 'section', label: sec.nombre.toUpperCase(), color: sColor, mes: '', acum: '' });
+
+            rows.push({
+                type: 'row',
+                label: sec.nombre,
+                sub: 'Total del apartado',
+                mes: fmtN(totalMes),
+                acum: fmtN(totalAcum),
+                mesColor: totalMes >= 0 ? C_POS : C_NEG,
+                acumColor: totalAcum >= 0 ? C_POS : C_NEG,
+            });
+
+            if (esDetallado) {
+                sec.filas.forEach((fila, f) => {
+                    if (fila.Mostrar === false) return;
+
+                    const val = parseFloat(d[`s${s}_fila_${f}`] ?? 0);
+                    const rangoLabel = fila.cuentaFin && fila.cuentaFin !== fila.cuentaIni
+                        ? `${fila.cuentaIni} → ${fila.cuentaFin}`
+                        : fila.cuentaIni;
+
+                    rows.push({
+                        type: 'subrow',
+                        label: `  · ${fila.etiqueta || fila.cuentaIni}`,
+                        sub: rangoLabel,
+                        mes: fmtN(val),
+                        acum: DASH,
+                        mesColor: val >= 0 ? C_POS : C_NEG,
+                        acumColor: C_GRAY,
+                    });
+                });
+            }
+
+            rows.push({
+                type: 'subtotal',
+                label: `Total ${sec.nombre}`,
+                mes: fmtN(totalMes),
+                acum: fmtN(totalAcum),
+                mesColor: totalMes >= 0 ? C_POS : C_NEG,
+                acumColor: totalAcum >= 0 ? C_POS : C_NEG,
+            });
+        });
+
+        const utilNeta = parseFloat(d['utilidad_neta'] ?? 0);
+        const utilNetaAcum = parseFloat(d['utilidad_neta_acumulada'] ?? 0);
+
+        doc.autoTable({
+            startY: 55,
+            margin: { left: 10, right: 10, top: 55 },
+            head: [['Concepto', `${mesStr} ${anio}`, `Acum. ${anio}`]],
+            body: rows.map(r => [r.label, r.mes, r.acum]),
+            styles: {
+                fontSize: 8.5, font: 'helvetica', textColor: [40, 40, 40],
+                cellPadding: { top: 3, bottom: 3, left: 5, right: 5 },
+                lineColor: [220, 220, 220], lineWidth: 0.1, overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: C_HEADER, textColor: [255, 255, 255],
+                fontStyle: 'bold', halign: 'left', fontSize: 8.5,
+            },
+            columnStyles: {
+                0: { cellWidth: 108 },
+                1: { cellWidth: 'auto', halign: 'right' },
+                2: { cellWidth: 36, halign: 'right' },
+            },
+            didParseCell: ({ section, row, cell, column }) => {
+                if (section !== 'body') return;
+                const meta = rows[row.index];
+                if (!meta) return;
+                const ci = column.index;
+
+                if (meta.type === 'section') {
+                    const bg = meta.color.map(c => Math.round(c * 0.15 + 240 * 0.85));
+                    cell.styles.fillColor = bg;
+                    cell.styles.textColor = ci === 0 ? meta.color : [160, 160, 160];
+                    cell.styles.fontStyle = 'bold';
+                    cell.styles.fontSize = 8;
+                    cell.styles.lineWidth = 0;
+                }
+                if (meta.type === 'row') {
+                    cell.styles.fillColor = row.index % 2 === 0 ? [255, 255, 255] : C_ROW_ALT;
+                    if (ci === 1) { cell.styles.textColor = meta.mesColor; cell.styles.fontStyle = 'bold'; cell.styles.halign = 'right'; }
+                    if (ci === 2) { cell.styles.textColor = meta.acumColor; cell.styles.halign = 'right'; }
+                }
+                if (meta.type === 'subrow') {
+                    cell.styles.fillColor = C_SUB_ROW;
+                    cell.styles.fontSize = 7.5;
+                    cell.styles.textColor = [100, 116, 139];
+                    if (ci === 1) { cell.styles.textColor = meta.mesColor; cell.styles.halign = 'right'; }
+                    if (ci === 2) { cell.styles.halign = 'right'; }
+                }
+                if (meta.type === 'subtotal') {
+                    cell.styles.fillColor = C_SUB_BG;
+                    cell.styles.textColor = C_SUB_TEXT;
+                    cell.styles.fontStyle = 'bold';
+                    cell.styles.lineWidth = 0;
+                    if (ci === 1) { cell.styles.textColor = meta.mesColor; cell.styles.halign = 'right'; cell.styles.fontSize = 9; }
+                    if (ci === 2) { cell.styles.textColor = meta.acumColor; cell.styles.halign = 'right'; }
+                }
+            },
+            didDrawPage: (data) => {
+                const lastDay = new Date(anio, parseInt(mes), 0).getDate().toString().padStart(2, '0');
+                agregarEncabezadoPDF(doc, logoBase64, 'ESTADO DE RESULTADOS', _ENTERPRISE_DATA, `${mesStr} ${anio}`);
+                agregarFolioFecha(doc, 'N/A', `Estado de Resultados al ${lastDay} de ${mesStr} de ${anio}`);
+                const W = doc.internal.pageSize.getWidth();
+                const H = doc.internal.pageSize.getHeight();
+                doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(100, 116, 139);
+                doc.text(`Página ${data.pageNumber}`, W - 10, H - 6, { align: 'right' });
+                doc.text(`Generado el ${new Date().toLocaleDateString()}`, 10, H - 6);
+            },
+        });
+
+        const finalY = doc.lastAutoTable.finalY + 2;
+        const W = doc.internal.pageSize.getWidth();
+        const rowH = 12, mL = 10, mR = 10;
+
+        doc.setFillColor(...C_HEADER);
+        doc.roundedRect(mL, finalY, W - mL - mR, rowH, 2, 2, 'F');
+        doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(255, 255, 255);
+        doc.text('RESULTADO DEL PERÍODO', mL + 5, finalY + rowH / 2 + 3);
+
+        const posColor = [110, 231, 183];
+        const negColor = [252, 165, 165];
+
+        doc.setFontSize(11).setTextColor(...(utilNeta >= 0 ? posColor : negColor));
+        doc.text(fmtN(utilNeta), W - mR - 42, finalY + rowH / 2 + 3.5, { align: 'right' });
+        doc.setFontSize(9).setTextColor(...(utilNetaAcum >= 0 ? posColor : negColor));
+        doc.text(fmtN(utilNetaAcum), W - mR - 5, finalY + rowH / 2 + 3.5, { align: 'right' });
+
+        window.open(URL.createObjectURL(doc.output('blob')), '_blank');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  UTILS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function escHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+</script>

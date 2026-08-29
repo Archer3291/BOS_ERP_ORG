@@ -1,0 +1,268 @@
+﻿@{
+    ViewBag.Title = "Líneas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Lineas";
+}
+
+<script>window.document.title = 'Líneas'</script>
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+
+<div class="contenedor-tabla">
+    <div class="card-body">
+        <div class="row">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="button" class="btn blue-600 mb-3" data-bs-toggle="modal" data-bs-target="#modalLinea" onclick="nuevaLinea()">
+                    <i class="fa-duotone fa-solid fa-plus"></i> Nueva Línea
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive-sm">
+            <table id="tablaLineas" class="table modern-table" style="width:100%">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Clave</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+    <!-- Modal para crear/editar -->
+    <div class="modal fade" id="modalLinea" tabindex="-1" aria-labelledby="modalLineaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalLineaLabel">Registrar Nueva Línea</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" title="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formLinea">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" id="action" name="action" value="create" />
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating mb-3" data-mdb-input-init>
+                                    <input type="text" id="clavelinea" class="form-control" name="clavelinea" required />
+                                    <label class="form-label" for="clavelinea">Clave de Línea</label>
+                                    <div class="invalid-feedback">Por favor ingrese la clave de línea</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3" data-mdb-input-init>
+                                    <input type="text" id="nombre" class="form-control" name="nombre" required />
+                                    <label class="form-label" for="nombre">Nombre</label>
+                                    <div class="invalid-feedback">Por favor ingrese el nombre</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-floating mb-3" data-mdb-input-init>
+                                    <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                                    <label class="form-label" for="descripcion">Descripción</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <select class="form-select" id="activo" name="activo" required>
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger" data-mdb-ripple-init data-mdb-ripple-color="danger" data-mdb-ripple-duration="1000ms" data-bs-dismiss="modal">
+                        <i class="fa-duotone fa-solid fa-xmark"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-outline-success" data-mdb-ripple-init data-mdb-ripple-color="success" data-mdb-ripple-duration="1000ms" onclick="sendForm()">
+                        <i class="fa-duotone fa-solid fa-floppy-disk"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+
+    <script>
+        var tablaLineas;
+
+        $(document).ready(function () {
+            cargarTabla();
+
+            // Al abrir el modal
+            $('#modalLinea').on('show.bs.modal', function () {
+                resetValidationUI();
+            });
+
+            // Al cerrar el modal
+            $('#modalLinea').on('hidden.bs.modal', function () {
+                $('#formLinea')[0].reset();
+            });
+
+            // Función para reiniciar la interfaz de validación
+            function resetValidationUI() {
+                var form = $('#formLinea')[0];
+                form.classList.remove('was-validated');
+
+                // Mantener los campos inválidos pero ocultar mensajes
+                $('.is-invalid').each(function () {
+                    $(this).next('.invalid-feedback').text('');
+                });
+            }
+
+            // Validación en tiempo real
+            $('#formLinea input, #formLinea select').on('input change', function () {
+                if (this.checkValidity()) {
+                    $(this).removeClass('is-invalid');
+                    $(this).addClass('is-valid');
+                    $(this).next('.invalid-feedback').text('');
+                } else {
+                    $(this).removeClass('is-valid');
+                    $(this).addClass('is-invalid');
+                }
+            });
+        });
+
+        function cargarTabla() {
+            tablaLineas = $('#tablaLineas').DataTable({
+                ajax: {
+                    url: '@Url.Action("GetLineas", "Lineas")',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'clavelinea' },
+                    { data: 'nombre' },
+                    { data: 'descripcion' },
+                    {
+                        data: 'activo',
+                        render: function (data) {
+                            return data === 1 ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>';
+                        }
+                    },
+                    {
+                        data: 'clavelinea',
+                        render: function (data) {
+                            return `
+                                <button class="btn btn-sm green-500" data-mdb-ripple-init data-mdb-ripple-color="warning" data-mdb-ripple-duration="1000ms" title="Editar" data-clave="${data}" onclick="editarLinea(this)"><i class="fa-duotone fa-solid fa-pen-to-square"></i></button>
+                                <button class="btn btn-sm red-500" data-mdb-ripple-init data-mdb-ripple-color="danger" data-mdb-ripple-duration="1000ms" title="Eliminar" data-clave="${data}" onclick="eliminarLinea(this)"><i class="fa-duotone fa-solid fa-trash"></i></button>
+                            `;
+                        },
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
+                responsive: true,
+                layout: {
+                    topStart: {
+                        pageLength: {
+                            menu: [5, 10, 25, 50]
+                        }
+                    }
+                },
+            });
+        }
+
+        function nuevaLinea() {
+            $('#modalLineaLabel').text('Registrar Nueva Línea');
+            $('#formLinea')[0].reset();
+            $('#modalLinea').modal('show');
+            $('#action').val('create')
+        }
+
+        function editarLinea(e) {
+            const id = $(e).data('clave')
+
+            GetData({
+                path: '@Url.Action("Detalles", "Lineas")',
+                data: { id: id }
+            }).then((_res) => {
+                if (_res.success) {
+                    $('#modalLineaLabel').text('Editar Línea');
+                    $('#clavelinea').val(_res.data.clavelinea);
+                    $('#nombre').val(_res.data.nombre);
+                    $('#descripcion').val(_res.data.descripcion);
+                    $('#activo').val(_res.data.activo);
+                    $('#action').val('edit')
+                    $('#modalLinea').modal('show');
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Error al cargar la linea.'
+                    })
+                }
+            })
+        }
+
+        function sendForm() {
+            const form = $('#formLinea')[0];
+            url = $('#action').val() === 'create' ? '@Url.Action("Create", "Lineas")' : '@Url.Action("Update", "Lineas")';
+
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            postFormData('formLinea', url).then((res) => {
+                if (res.success) {
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: res.message,
+                        //timer: 1500,
+                        //showConfirmButton: false
+                    });
+                    $('#modalLinea').modal('hide');
+                    tablaLineas.ajax.reload(null, false);
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: res.message
+                    });
+                }
+            })
+        }
+
+        function eliminarLinea(e) {
+            const id = String($(e).data('clave'));
+
+            _Swal.fire({
+                title: '¿Estás seguro?',
+                text: "¡No podrás revertir esto!",
+                icon: 'warning',
+                confirmButtonText: '<i class="fa-duotone fa-solid fa-thumbs-up"></i> ¡Sí, eliminarlo!',
+                cancelButtonText: '<i class="fa-duotone fa-solid fa-xmark"></i> Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    GetData({
+                        path: '@Url.Action("Delete", "Lineas")',
+                        data: {id: id}
+                    }).then((_res) => {
+                        if (_res.success) {
+                            tablaLineas.ajax.reload();
+                            toastMixin.fire({
+                                icon: 'success',
+                                title: _res.message
+                            });
+                        } else {
+                            toastMixin.fire({
+                                icon: 'error',
+                                title: _res.message
+                            });
+                        }
+                    })
+                }
+            });
+        }
+    </script>
+}

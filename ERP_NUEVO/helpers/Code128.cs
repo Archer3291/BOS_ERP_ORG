@@ -1,0 +1,110 @@
+using System.Text;
+
+namespace BOS_ERP.Helpers
+{
+    /// <summary>
+    /// Generador de código de barras Code 128 (juego B) en SVG.
+    /// Se dibuja a mano, sin librerías: el ticket se imprime en equipos de mostrador que
+    /// pueden estar sin internet, así que no puede depender de un CDN, y un SVG en línea
+    /// sale nítido en térmica sin problemas de resolución.
+    /// Code 128B cubre ASCII 32–126, que es lo que traen los folios (VSUC-VSUC-26-32).
+    /// </summary>
+    public static class Code128
+    {
+        // Cada patrón describe los anchos de barra/espacio alternados, empezando por barra.
+        private static readonly string[] Patrones =
+        {
+            "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
+            "221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
+            "221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
+            "212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
+            "231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
+            "231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
+            "314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
+            "112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
+            "111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
+            "214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
+            "114131","311141","411131","211412","211214","211232","2331112"
+        };
+
+        private const int InicioB = 104;   // Start Code B
+        private const int Parada = 106;    // Stop (incluye la barra de terminación)
+
+        /// <summary>
+        /// SVG del código de barras, con zona muda incluida.
+        /// </summary>
+        /// <param name="alto">Alto de las barras, en unidades del viewBox.</param>
+        /// <param name="anchoModulo">Ancho del módulo estrecho. Subirlo engrosa las barras.</param>
+        /// <param name="zonaMuda">
+        /// Módulos en blanco a cada lado. La norma pide un mínimo de 10: sin ellos el lector
+        /// no distingue dónde empieza el código y muchos escáneres simplemente no enganchan.
+        /// El SVG los incluye para que el margen sobreviva aunque el código se pegue al borde
+        /// del papel o a otro elemento del ticket.
+        /// </param>
+        public static string ComoSvg(string texto, int alto = 55, int anchoModulo = 2, int zonaMuda = 10)
+        {
+            if (string.IsNullOrWhiteSpace(texto))
+                return "";
+
+            var codigos = Codificar(texto);
+            if (codigos == null)
+                return "";   // caracteres fuera del juego B: mejor no imprimir nada que un código ilegible
+
+            var barras = new StringBuilder();
+            int margen = zonaMuda * anchoModulo;
+            int x = margen;
+
+            foreach (int codigo in codigos)
+            {
+                string patron = Patrones[codigo];
+                bool esBarra = true;   // los patrones siempre empiezan con barra
+
+                foreach (char c in patron)
+                {
+                    int ancho = (c - '0') * anchoModulo;
+
+                    if (esBarra)
+                        barras.Append($"<rect x=\"{x}\" y=\"0\" width=\"{ancho}\" height=\"{alto}\"/>");
+
+                    x += ancho;
+                    esBarra = !esBarra;
+                }
+            }
+
+            int total = x + margen;
+
+            // El fondo blanco explícito evita que la zona muda se pierda si el ticket se
+            // imprime sobre un contenedor con color.
+            return $"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{total}\" height=\"{alto}\" " +
+                   $"viewBox=\"0 0 {total} {alto}\" shape-rendering=\"crispEdges\">" +
+                   $"<rect x=\"0\" y=\"0\" width=\"{total}\" height=\"{alto}\" fill=\"#fff\"/>" +
+                   $"<g fill=\"#000\">{barras}</g></svg>";
+        }
+
+        /// <summary>
+        /// Start B + datos + dígito verificador + Stop.
+        /// Devuelve null si algún carácter queda fuera del juego B.
+        /// </summary>
+        private static List<int> Codificar(string texto)
+        {
+            var codigos = new List<int> { InicioB };
+            long suma = InicioB;
+
+            for (int i = 0; i < texto.Length; i++)
+            {
+                char c = texto[i];
+                if (c < 32 || c > 126)
+                    return null;
+
+                int valor = c - 32;
+                codigos.Add(valor);
+                suma += (long)valor * (i + 1);   // la ponderación arranca en 1 tras el Start
+            }
+
+            codigos.Add((int)(suma % 103));      // dígito verificador
+            codigos.Add(Parada);
+
+            return codigos;
+        }
+    }
+}

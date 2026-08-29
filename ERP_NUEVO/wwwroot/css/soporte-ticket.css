@@ -1,0 +1,918 @@
+﻿/* ─────────────────────────────────────────────────────────────────────────
+   Detalle de ticket de soporte (prefijo tkd-).
+
+   Lo comparten Views/Soporte/Ticket.cshtml (vista del usuario) y
+   Views/Soporte/TicketT.cshtml (vista de gestion): son la misma pantalla, una
+   con controles de administracion y otra sin ellos, asi que el estilo vive aqui
+   y no duplicado en cada <style> de la vista.
+
+   Se apoya en los tokens del tema que declara _Layout (--bg-light, --bg-gray,
+   --text-dark, --text-light, --border-light) mas dos variables propias que cada
+   vista fija en el contenedor: --estado y --estado-soft.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.tkd-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 1rem 0 3rem;
+    font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+.tkd-back {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: 1rem;
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-decoration: none;
+    transition: color .2s ease, gap .2s ease;
+}
+
+    .tkd-back:hover {
+        color: #4f6bf6;
+        gap: .75rem;
+    }
+
+/* ── Cabecera del ticket ────────────────────────────────────── */
+.tkd-hero {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    overflow: hidden;
+    padding: 1.6rem 1.75rem;
+    margin-bottom: 1.5rem;
+    border-radius: 16px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, .06);
+}
+
+    /* Barra del color del estado, como en las tarjetas del centro de soporte. */
+    .tkd-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 5px;
+        background: var(--estado);
+    }
+
+.tkd-hero__icono {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--estado-soft);
+    color: var(--estado);
+    font-size: 1.5rem;
+}
+
+.tkd-hero__cuerpo {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.tkd-hero__folio {
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-light);
+}
+
+.tkd-hero__titulo {
+    margin: .3rem 0 .85rem;
+    font-size: clamp(1.25rem, 2.2vw, 1.7rem);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+    color: var(--text-dark);
+    overflow-wrap: anywhere;
+}
+
+.tkd-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.tkd-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .32rem .8rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-gray);
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+    .tkd-chip--color {
+        border-color: transparent;
+        background: var(--c-soft);
+        color: var(--c);
+    }
+
+    .tkd-chip__punto {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--c);
+    }
+
+.tkd-hero__acciones {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+/* ── Estructura ─────────────────────────────────────────────── */
+.tkd-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.tkd-panel {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, .06);
+}
+
+    .tkd-panel + .tkd-panel {
+        margin-top: 1.25rem;
+    }
+
+.tkd-panel__titulo {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin: 0 0 1.35rem;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+    .tkd-panel__titulo .tkd-cuenta {
+        padding: .1rem .55rem;
+        border-radius: 999px;
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--text-light);
+    }
+
+/* ── Hilo de mensajes ───────────────────────────────────────── */
+.tkd-hilo {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+}
+
+.tkd-msg {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: .9rem;
+}
+
+.tkd-avatar {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--avatar);
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.tkd-burbuja {
+    min-width: 0;
+    padding: 1rem 1.15rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-gray);
+}
+
+.tkd-msg--origen .tkd-burbuja {
+    border-color: rgba(79, 107, 246, .3);
+    background: rgba(79, 107, 246, .06);
+}
+
+.tkd-msg--propio .tkd-burbuja {
+    border-color: rgba(34, 197, 94, .3);
+    background: rgba(34, 197, 94, .06);
+}
+
+.tkd-msg__head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-bottom: .6rem;
+}
+
+.tkd-msg__autor {
+    font-size: .92rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.tkd-msg__etiqueta {
+    padding: .1rem .5rem;
+    border-radius: 999px;
+    background: rgba(79, 107, 246, .12);
+    color: #4f6bf6;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.tkd-msg__fecha {
+    margin-left: auto;
+    font-size: .78rem;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.tkd-msg__cuerpo {
+    font-size: .95rem;
+    line-height: 1.65;
+    color: var(--text-dark);
+    overflow-wrap: anywhere;
+}
+
+.tkd-msg__adjuntos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: .9rem;
+    padding-top: .9rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.tkd-archivo {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    max-width: 100%;
+    padding: .45rem .8rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-light);
+    font-size: .82rem;
+    color: var(--text-dark);
+    text-decoration: none;
+    transition: border-color .2s ease, color .2s ease;
+}
+
+    .tkd-archivo:hover {
+        border-color: #4f6bf6;
+        color: #4f6bf6;
+    }
+
+    .tkd-archivo span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+.tkd-vacio {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-light);
+    border: 1px dashed var(--border-light);
+    border-radius: 12px;
+    font-size: .9rem;
+}
+
+/* ── Responder ──────────────────────────────────────────────── */
+.tkd-wrap textarea.form-control {
+    min-height: 130px;
+    padding: .85rem 1rem;
+    border-radius: 10px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-light);
+    color: var(--text-dark);
+    font-size: .95rem;
+    line-height: 1.55;
+    resize: vertical;
+    box-shadow: none;
+}
+
+    .tkd-wrap textarea.form-control:focus {
+        border-color: #4f6bf6;
+        box-shadow: 0 0 0 4px rgba(79, 107, 246, .14);
+    }
+
+.tkd-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3rem;
+    margin-top: 1rem;
+    padding: 1.5rem 1.25rem;
+    border: 2px dashed var(--border-light);
+    border-radius: 14px;
+    background: var(--bg-gray);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s ease, background .2s ease;
+}
+
+    .tkd-drop:hover,
+    .tkd-drop.is-drag {
+        border-color: #4f6bf6;
+        background: rgba(79, 107, 246, .07);
+    }
+
+    .tkd-drop > i {
+        font-size: 1.5rem;
+        color: #4f6bf6;
+        margin-bottom: .3rem;
+    }
+
+.tkd-drop__texto {
+    margin: 0;
+    font-size: .92rem;
+    color: var(--text-dark);
+}
+
+.tkd-drop__hint {
+    font-size: .78rem;
+    color: var(--text-light);
+}
+
+.tkd-files {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    margin-top: .85rem;
+}
+
+.tkd-file {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .55rem .8rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background: var(--bg-gray);
+    font-size: .86rem;
+    color: var(--text-dark);
+}
+
+    .tkd-file > i {
+        color: #4f6bf6;
+    }
+
+.tkd-file__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tkd-file__size {
+    font-size: .76rem;
+    color: var(--text-light);
+}
+
+.tkd-file__x {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-light);
+    transition: background .2s ease, color .2s ease;
+}
+
+    .tkd-file__x:hover {
+        background: rgba(220, 53, 69, .12);
+        color: #dc3545;
+    }
+
+.tkd-responder__pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.15rem;
+}
+
+.tkd-contador {
+    font-size: .78rem;
+    color: var(--text-light);
+}
+
+/* ── Botones ────────────────────────────────────────────────── */
+.tkd-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    height: 44px;
+    padding: 0 1.4rem;
+    border: none;
+    border-radius: 10px;
+    font-size: .92rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.tkd-btn--primario {
+    background: linear-gradient(135deg, #4f6bf6, #7c5cfc);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(79, 107, 246, .28);
+}
+
+    .tkd-btn--primario:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(79, 107, 246, .35);
+        color: #fff;
+    }
+
+    .tkd-btn--primario:disabled {
+        opacity: .65;
+        box-shadow: none;
+    }
+
+.tkd-btn--estado {
+    background: var(--estado-soft);
+    color: var(--estado);
+}
+
+    .tkd-btn--estado:hover {
+        transform: translateY(-2px);
+        color: var(--estado);
+    }
+
+.tkd-btn--ghost {
+    height: 38px;
+    padding: 0 1rem;
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-light);
+    font-size: .85rem;
+}
+
+    .tkd-btn--ghost:hover {
+        border-color: var(--text-light);
+        color: var(--text-dark);
+    }
+
+/* ── Panel lateral ──────────────────────────────────────────── */
+.tkd-aside {
+    position: sticky;
+    top: 84px;
+}
+
+.tkd-dato {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .65rem 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: .87rem;
+}
+
+    .tkd-dato:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+.tkd-dato__label {
+    flex: 0 0 auto;
+    color: var(--text-light);
+}
+
+.tkd-dato__valor {
+    min-width: 0;
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-dark);
+    overflow-wrap: anywhere;
+}
+
+/* ── Tema oscuro ────────────────────────────────────────────── */
+[data-theme="dark"] .tkd-hero,
+[data-theme="dark"] .tkd-panel {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+}
+
+[data-theme="dark"] .tkd-msg--origen .tkd-burbuja {
+    background: rgba(79, 107, 246, .12);
+}
+
+[data-theme="dark"] .tkd-msg--propio .tkd-burbuja {
+    background: rgba(34, 197, 94, .12);
+}
+
+/* ── Responsivo ─────────────────────────────────────────────── */
+@media (max-width: 992px) {
+    .tkd-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tkd-aside {
+        position: static;
+        order: -1;
+    }
+}
+
+@media (max-width: 640px) {
+    .tkd-hero {
+        flex-wrap: wrap;
+        padding: 1.25rem;
+    }
+
+    .tkd-hero__acciones {
+        flex-direction: row;
+        width: 100%;
+    }
+
+    .tkd-panel {
+        padding: 1.15rem;
+    }
+
+    .tkd-msg {
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: .65rem;
+    }
+
+    .tkd-avatar {
+        width: 34px;
+        height: 34px;
+        font-size: .72rem;
+    }
+
+    .tkd-msg__fecha {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tkd-btn,
+    .tkd-back,
+    .tkd-archivo {
+        transition: none;
+    }
+
+        .tkd-btn:hover {
+            transform: none;
+        }
+}
+    
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Solo vista de gestion (TicketT): controles, tickets anteriores e historial.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.tkd-control {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    padding: .7rem 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+    .tkd-control:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+.tkd-control__label {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.tkd-wrap .form-select {
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    font-size: .88rem;
+    box-shadow: none;
+}
+
+    .tkd-wrap .form-select:focus {
+        border-color: #4f6bf6;
+        box-shadow: 0 0 0 4px rgba(79, 107, 246, .14);
+    }
+
+/* El select de prioridad se pinta con el color del catalogo prio. Sustituye al
+   select2 con templateSelection que habia antes: ese traia su CSS por CDN y su
+   desplegable ignoraba el tema oscuro. */
+.tkd-select-color {
+    position: relative;
+}
+
+    .tkd-select-color .form-select {
+        padding-left: 2.1rem;
+        border-color: var(--c);
+        color: var(--c);
+        font-weight: 600;
+    }
+
+.tkd-select-color__punto {
+    position: absolute;
+    left: .85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--c);
+    pointer-events: none;
+}
+
+/* El panel lateral de gestion es demasiado alto para quedarse fijo: con sticky,
+   lo que sobrepasa la ventana queda fuera de alcance mientras esta pegado. */
+.tkd-aside--largo {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+    .tkd-aside--largo .tkd-panel + .tkd-panel {
+        margin-top: 0;
+    }
+
+/* ── Tickets anteriores ─────────────────────────────────────────────────── */
+.tkd-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+}
+
+    .tkd-lista a {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        min-width: 0;
+        font-size: .87rem;
+        color: var(--text-dark);
+        text-decoration: none;
+        transition: color .2s ease;
+    }
+
+        .tkd-lista a:hover {
+            color: #4f6bf6;
+        }
+
+        .tkd-lista a span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+    .tkd-lista i {
+        flex: 0 0 auto;
+        font-size: .5rem;
+        color: #22c55e;
+    }
+
+/* ── Historial ──────────────────────────────────────────────────────────── */
+.tkd-historial {
+    position: relative;
+    list-style: none;
+    max-height: 360px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0 0 0 1.2rem;
+}
+
+    .tkd-historial::before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: .5rem;
+        bottom: .5rem;
+        width: 2px;
+        background: var(--border-light);
+    }
+
+.tkd-evento {
+    position: relative;
+    padding: 0 0 1rem .3rem;
+}
+
+    .tkd-evento:last-child {
+        padding-bottom: 0;
+    }
+
+    .tkd-evento::before {
+        content: '';
+        position: absolute;
+        left: -1.2rem;
+        top: .3rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--c);
+        border: 2px solid var(--bg-light);
+    }
+
+.tkd-evento__fecha {
+    display: block;
+    font-size: .74rem;
+    color: var(--text-light);
+}
+
+.tkd-evento__texto {
+    font-size: .85rem;
+    line-height: 1.45;
+    color: var(--text-dark);
+    overflow-wrap: anywhere;
+}
+
+/* El boton de editar respuesta vive dentro de la cabecera del mensaje: alli la
+   altura normal de .tkd-btn desequilibra la linea. */
+.tkd-msg__head .tkd-btn--ghost {
+    height: 30px;
+    padding: 0 .6rem;
+    font-size: .78rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Panel de diagnóstico de errores automáticos.
+   Sólo se renderiza para staff (ver CargarDiagnosticoError en SoporteController).
+   Va cerrado por defecto: es referencia técnica, no lo primero que se lee.
+   --------------------------------------------------------------------------- */
+.tkd-diag {
+    margin-top: 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-left: 3px solid #c2410c;
+    border-radius: 6px;
+    background: var(--bs-tertiary-bg);
+    font-size: .85rem;
+}
+
+.tkd-diag__cab {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    flex-wrap: wrap;
+    padding: .6rem .8rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.tkd-diag__cab i { color: #c2410c; }
+.tkd-diag__titulo { font-weight: 600; }
+
+.tkd-diag__chip {
+    font-size: .72rem;
+    padding: .1rem .45rem;
+    border-radius: 999px;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+}
+
+.tkd-diag__chip--off {
+    background: #64748b;
+    color: #fff;
+}
+
+.tkd-diag__datos {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: .3rem .9rem;
+    margin: 0;
+    padding: .3rem .8rem .8rem;
+}
+
+.tkd-diag__datos dt {
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    font-size: .78rem;
+}
+
+.tkd-diag__datos dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tkd-diag__datos code {
+    font-size: .78rem;
+    color: var(--bs-body-color);
+}
+
+.tkd-diag__sub {
+    font-size: .78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--bs-secondary-color);
+    margin: .4rem .8rem .35rem;
+}
+
+/* La tabla scrollea dentro de su caja: el ticket nunca debe scrollear de lado. */
+.tkd-diag__scroll {
+    overflow-x: auto;
+    padding: 0 .8rem;
+}
+
+.tkd-diag__tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .78rem;
+    min-width: 34rem;
+}
+
+.tkd-diag__tabla th,
+.tkd-diag__tabla td {
+    text-align: left;
+    padding: .35rem .5rem .35rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+.tkd-diag__tabla th {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--bs-secondary-color);
+}
+
+.tkd-diag__capa {
+    font-size: .68rem;
+    padding: .08rem .4rem;
+    border-radius: 3px;
+    background: var(--bs-secondary-bg);
+}
+
+.tkd-diag__ruta {
+    max-width: 22rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tkd-diag__ver {
+    border: 1px solid var(--bs-border-color);
+    background: transparent;
+    color: var(--bs-body-color);
+    border-radius: 4px;
+    font-size: .7rem;
+    padding: .1rem .45rem;
+    cursor: pointer;
+}
+
+.tkd-diag__ver:hover { background: var(--bs-secondary-bg); }
+
+.tkd-diag__link {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin: .2rem .8rem .8rem;
+    font-size: .78rem;
+}
+
+.tkd-diag__payload {
+    text-align: left;
+    max-height: 55vh;
+    overflow: auto;
+    font-size: .72rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin: 0;
+}

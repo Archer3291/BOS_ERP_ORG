@@ -1,0 +1,121 @@
+@*
+    Pestaña Tipos de Transporte (solo clientes internacionales).
+    Mantiene en memoria ClientesState.transportes; se envía al
+    guardar desde el modal de edición internacional.
+*@
+<div class="tab-pane fade" id="transportes-internacional" role="tabpanel">
+    <fieldset class="cli-fieldset">
+        <legend class="cli-legend">
+            Tipos de transporte
+            <button type="button" class="cli-btn cli-btn-soft cli-btn-sm cli-legend-action" onclick="agregarTransporte()">
+                <i class="fa-solid fa-plus"></i> Agregar
+            </button>
+        </legend>
+        <ul class="cli-list" id="listaTransportesInternacional"></ul>
+    </fieldset>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        const ICONOS = {
+            'Tren': 'fa-train',
+            'Aereo': 'fa-plane',
+            'Maritimo': 'fa-ship',
+            'Terrestre': 'fa-truck'
+        };
+
+        /* ── Pinta la lista a partir del estado en memoria ─────────── */
+        window.actualizarListaTransportes = function () {
+            const lista = document.getElementById('listaTransportesInternacional');
+            const transportes = ClientesState.transportes;
+            lista.innerHTML = '';
+
+            if (transportes.length === 0) {
+                lista.innerHTML = `
+                    <li class="cli-empty">
+                        <i class="fa-solid fa-truck-fast"></i>
+                        No hay tipos de transporte registrados.
+                    </li>`;
+                return;
+            }
+
+            transportes.forEach((item, index) => {
+                const tipoLabel = ClientesState.tiposTransporte.find(t => t.value === item.tipo)?.label || item.tipo;
+
+                const li = document.createElement('li');
+                li.className = 'cli-list-item';
+                li.innerHTML = `
+                    <span class="cli-list-text">
+                        <i class="fa-solid ${ICONOS[item.tipo] || 'fa-box'}"></i>${tipoLabel}
+                    </span>
+                    <button type="button" class="cli-list-remove" title="Quitar" onclick="eliminarTransporte(${index})">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>`;
+                lista.appendChild(li);
+            });
+        };
+
+        /* ── Alta mediante SweetAlert ─────────────────────────────── */
+        window.agregarTransporte = function () {
+            const selectOptions = ClientesState.tiposTransporte
+                .map(t => `<option value="${t.value}">${t.label}</option>`)
+                .join('');
+
+            _Swal.fire({
+                title: 'Agregar Tipo de Transporte',
+                html: `
+                    <div class="form-group text-start">
+                        <label for="swal-transporte" class="form-label">Seleccione el tipo de transporte:</label>
+                        <select id="swal-transporte" class="form-control">
+                            <option value="">-- Seleccione --</option>
+                            ${selectOptions}
+                        </select>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Agregar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    const tipo = document.getElementById('swal-transporte').value;
+                    if (!tipo) {
+                        _Swal.showValidationMessage('Debe seleccionar un tipo de transporte');
+                        return false;
+                    }
+                    return tipo;
+                }
+            }).then((result) => {
+                if (!result.isConfirmed || !result.value) return;
+
+                if (ClientesState.transportes.some(t => t.tipo === result.value)) {
+                    toastMixin.fire({
+                        icon: 'warning',
+                        title: 'Este tipo de transporte ya está agregado'
+                    });
+                    return;
+                }
+
+                ClientesState.transportes.push({ tipo: result.value });
+                actualizarListaTransportes();
+            });
+        };
+
+        /* ── Baja ─────────────────────────────────────────────────── */
+        window.eliminarTransporte = function (index) {
+            _Swal.fire({
+                title: '¿Está seguro?',
+                text: '¿Desea eliminar este tipo de transporte?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    ClientesState.transportes.splice(index, 1);
+                    actualizarListaTransportes();
+                }
+            });
+        };
+    })();
+</script>

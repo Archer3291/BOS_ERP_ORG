@@ -1,0 +1,631 @@
+@model BOS_ERP.Models.Factura
+@using System.Data
+@using System.Linq
+@using BOS_ERP.Models;
+@using System;
+@using System.Collections.Generic;
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@using System.IO;
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+
+@{
+    Layout = null;
+
+    // International invoices print prices already net of the discount; national ones keep
+    // the usual breakdown (Disc %). Tproductos holds GROSS precioUnit and importe plus the
+    // discount as a percentage, and the Foreign Trade complement was stamped on the gross
+    // amount too, so the net/gross ratio per product is accumulated here.
+    bool esInternacional = Model.ComercioExterior != null;
+
+    var ceBrutoPorProducto = new Dictionary<string, double>();
+    var ceNetoPorProducto = new Dictionary<string, double>();
+    double ceBrutoTotal = 0.0;
+    double ceNetoTotal = 0.0;
+
+    if (Model.Tproductos != null)
+    {
+        bool hayColDescuento = Model.Tproductos.Columns.Contains("descuento");
+
+        foreach (System.Data.DataRow filaDesc in Model.Tproductos.Rows)
+        {
+            double cantFila = Convert.ToDouble(filaDesc["cantidad"]);
+            double puFila = Convert.ToDouble(filaDesc["precioUnit"]);
+            double pctFila = hayColDescuento && filaDesc["descuento"] != DBNull.Value
+                ? Convert.ToDouble(filaDesc["descuento"])
+                : 0.0;
+
+            double brutoFila = cantFila * puFila;
+            double netoFila = brutoFila - Math.Round(brutoFila * pctFila / 100, 2);
+            string claveFila = filaDesc["numero"]?.ToString() ?? "";
+
+            ceBrutoPorProducto.TryGetValue(claveFila, out double acumBruto);
+            ceBrutoPorProducto[claveFila] = acumBruto + brutoFila;
+
+            ceNetoPorProducto.TryGetValue(claveFila, out double acumNeto);
+            ceNetoPorProducto[claveFila] = acumNeto + netoFila;
+
+            ceBrutoTotal += brutoFila;
+            ceNetoTotal += netoFila;
+        }
+    }
+
+    double factorDescuentoGlobal = ceBrutoTotal > 0 ? ceNetoTotal / ceBrutoTotal : 1.0;
+
+    // Discount ratio of a single product (by identification number). Products missing from
+    // Tproductos fall back to the invoice-wide ratio.
+    Func<string, double> factorDescuento = clave =>
+    {
+        if (!string.IsNullOrEmpty(clave)
+            && ceBrutoPorProducto.TryGetValue(clave, out double brutoProd)
+            && brutoProd > 0)
+        {
+            return ceNetoPorProducto[clave] / brutoProd;
+        }
+
+        return factorDescuentoGlobal;
+    };
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Invoice @Model.UUID</title>
+    <style>
+        @@page { size: A4; margin: 15mm; }
+        thead { display: table-header-group; background-color: #e0e0e0; }
+        body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; font-size: 11px; color: #1a1a1a; line-height: 1.3; letter-spacing: 0.3px; margin: 0; padding: 0; }
+        table { border-collapse: collapse; width: 100%; }
+        th { background-color: #1976d2; color: white; padding: 6px 8px; text-align: left; font-size: 10px; letter-spacing: 0.4px; }
+        td { padding: 4px 8px; vertical-align: top; }
+        .section-title { font-size: 13px; color: #d32f2f; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 3px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
+        .productos th, .productos td { border: 1px solid #bbb; font-size: 10px; padding: 5px 6px; line-height: 1.3; }
+        .productos tbody tr:nth-child(even) { background-color: #f5f5f5; }
+        .productos td.descripcion { font-weight: 500; }
+        .productos td.numero { text-align: center; }
+        .productos td.cantidad, .productos td.precio, .productos td.importe { text-align: right; }
+        .sello { word-break: break-word; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 9px; background-color: #f9f9f9; border: 1px dashed #aaa; padding: 6px; margin-bottom: 8px; }
+        .info-box { border: 1px solid #ccc; padding: 6px; margin-top: 3px; background-color: #fafafa; line-height: 1.3; }
+        .info-box strong { color: #333; }
+        .productos { page-break-inside: auto; }
+        .productos thead { display: table-header-group; }
+        .productos tr { page-break-inside: avoid; page-break-after: auto; }
+        .observaciones-box { background-color: #fff8e1; border-left: 3px solid #ffc107; padding: 6px; margin: 12px 0; font-size: 10px; }
+        .totales-table { width: 100%; margin-top: 20px; }
+        .totales-table td { vertical-align: top; }
+        .flete-row { background-color: #e8f5e9 !important; font-style: italic; }
+
+        /* Foreign Trade */
+        .comercio-exterior-box { background: #fff; border: 3px solid #1976d2; border-radius: 6px; margin: 20px 0; overflow: hidden; page-break-inside: avoid; }
+        .comercio-exterior-title { font-size: 14px; color: #0d47a1; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); margin: 0; padding: 12px 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 4px solid #1976d2; }
+        .ce-datos-generales { padding: 15px; background-color: #fafafa; border-bottom: 2px solid #e0e0e0; }
+        .ce-datos-generales table { width: 100%; font-size: 10px; border-collapse: collapse; }
+        .ce-datos-generales td { padding: 5px 10px; border: 1px solid #e0e0e0; }
+        .ce-datos-generales td:nth-child(odd) { background-color: #e3f2fd; font-weight: 700; color: #0d47a1; }
+        .ce-subsection { margin: 0; padding: 15px; background-color: #fafafa; border-top: 2px solid #e0e0e0; }
+        .ce-subsection-title { font-weight: bold; color: #0d47a1; background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%); margin: -15px -15px 15px -15px; padding: 10px 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-left: 5px solid #1976d2; border-bottom: 2px solid #1976d2; }
+        .ce-subsection table { width: 100%; font-size: 10px; border-collapse: collapse; background-color: #fff; }
+        .ce-subsection td { padding: 5px 10px; border: 1px solid #e0e0e0; }
+        .ce-subsection td:nth-child(odd) { background-color: #e3f2fd; font-weight: 700; color: #0d47a1; }
+        .ce-valor-destacado { color: #0d47a1; font-weight: bold; background-color: #e3f2fd; padding: 2px 6px; border-radius: 3px; border-left: 3px solid #1976d2; display: inline-block; }
+        .ce-badge-moneda { display: inline-block; background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%); color: #fff; padding: 2px 7px; border-radius: 3px; font-size: 8px; font-weight: bold; text-transform: uppercase; margin-left: 4px; }
+        .ce-info-box { background-color: #fff8e1; border-left: 5px solid #ffa726; padding: 10px; margin: 10px 0; border-radius: 3px; font-size: 10px; }
+        .ce-info-box strong { color: #e65100; }
+    </style>
+</head>
+<body>
+    <!-- INVOICE DATA -->
+    <div class="section-title">Invoice Data</div>
+    <table>
+        <tr>
+            <td style="width: 18%;"><strong>Issue Date:</strong></td>
+            <td style="width: 32%;">@Model.Fecha.ToString("MM/dd/yyyy HH:mm:ss")</td>
+            <td style="width: 18%;"><strong>Document Type:</strong></td>
+            <td style="width: 32%;">@Model.TipoDeComprobante</td>
+        </tr>
+        <tr>
+            <td><strong>Payment Form:</strong></td>
+            <td>@Model.IdTipoPago @(string.IsNullOrEmpty(Model.formaPagoTexto) ? "" : "-- " + Model.formaPagoTexto)</td>
+            <td><strong>Payment Method:</strong></td>
+            <td>@Model.metodoPagoTexto @(string.IsNullOrEmpty(Model.MdpFactura) ? "" : "-- " + Model.MdpFactura)</td>
+        </tr>
+        <tr>
+            <td><strong>Currency:</strong></td>
+            <td>@Model.Moneda</td>
+            <td><strong>Exchange Rate:</strong></td>
+            <td>@Model.TipoCambio</td>
+        </tr>
+    </table>
+
+    <!-- RELATED CFDIs -->
+    @if (!string.IsNullOrWhiteSpace(Model.UUIDsRelacionados))
+    {
+        var descRel = Model.TipoRelacion switch
+        {
+            "01" => "Credit note of the related documents",
+            "02" => "Debit note of the related documents",
+            "03" => "Return of goods over previous invoices or transfers",
+            "04" => "Substitution of previous CFDIs",
+            "05" => "Transfers of previously invoiced goods",
+            "06" => "Invoice generated from previous transfers",
+            "07" => "CFDI for advance payment application",
+            _ => ""
+        };
+        <div class="section-title">Related CFDI(s)</div>
+        <div class="info-box">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="width: 18%;"><strong>Relationship type:</strong></td>
+                    <td colspan="3">@Model.TipoRelacion@(string.IsNullOrEmpty(descRel) ? "" : " - " + descRel)</td>
+                </tr>
+                @foreach (var uuidRel in Model.UUIDsRelacionados.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    <tr>
+                        <td><strong>Related UUID:</strong></td>
+                        <td colspan="3" style="font-family: 'Consolas', monospace; font-size: 9px;">@uuidRel.Trim()</td>
+                    </tr>
+                }
+            </table>
+        </div>
+    }
+
+    <!-- RECEIVER -->
+    <div class="section-title">Receiver</div>
+    <div class="info-box">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 18%;"><strong>Tax ID (RFC):</strong></td>
+                <td style="width: 32%;">@Model.RfcCliente</td>
+                <td style="width: 18%;"><strong>Tax Regime:</strong></td>
+                <td style="width: 32%;">@Model.Regc</td>
+            </tr>
+            <tr>
+                <td><strong>Registered Name:</strong></td>
+                <td colspan="3">@Model.RsoCliente</td>
+            </tr>
+            <tr>
+                <td><strong>CFDI Use:</strong></td>
+                <td>@Model.IdUsoCFDI @(string.IsNullOrEmpty(Model.CFDIText) ? "" : "-- " + Model.CFDIText)</td>
+                <td><strong>Tax Address (ZIP):</strong></td>
+                <td>@Model.CpR</td>
+            </tr>
+            <tr>
+                <td style="vertical-align:top;"><strong>Address:</strong></td>
+                <td colspan="3" style="white-space: pre-line;">@Model.DireccionReceptor</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- LINE ITEMS -->
+    <div class="section-title">Line Items</div>
+    <table class="productos">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 8%;">ID</th>
+                <th style="@(esInternacional ? "width: 50%;" : "width: 42%;")">Description</th>
+                <th style="width: 8%;">Qty</th>
+                <th style="width: 8%;">Unit</th>
+                <th style="width: 14%;">Unit Price</th>
+                @if (!esInternacional)
+                {
+                    <th style="width: 8%;">Disc %</th>
+                }
+                <th style="width: 12%;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (System.Data.DataRow row in Model.Tproductos.Rows)
+            {
+                <tr>
+                    <td class="numero">@row["numero"]</td>
+                    <td class="descripcion">
+                        <strong>@row["descripcion"]</strong>
+                        <br><small style="color: #888;">Prod/Serv Key: @row["claveProdServ"] | Unit Key: @row["claveUnidad"] | Tax Object: @row["objetoImp"]</small>
+                        @if (row.Table.Columns.Contains("pedimento") && !string.IsNullOrWhiteSpace(row["pedimento"]?.ToString()))
+                        {
+                            <br><small style="color: #0d47a1; font-weight: bold; background-color: #e3f2fd; padding: 2px 5px; border-radius: 3px; display: inline-block; margin-top: 3px;">
+                                Customs Declaration: @row["pedimento"]
+                            </small>
+                        }
+                    </td>
+                    @{
+                        double descPct = row.Table.Columns.Contains("descuento") ? Convert.ToDouble(row["descuento"]) : 0;
+                        double cantRow = Convert.ToDouble(row["cantidad"]);
+                        double precioRow = Convert.ToDouble(row["precioUnit"]);
+                        double montoDesc = Math.Round(cantRow * precioRow * (descPct / 100.0), 2);
+                        // The CFDI stores ValorUnitario and Importe gross. International invoices
+                        // print them already net; national ones keep the usual breakdown.
+                        double precioUnitFila = esInternacional
+                            ? precioRow * (1 - descPct / 100.0)
+                            : precioRow;
+                        double importeFila = esInternacional
+                            ? Convert.ToDouble(row["importe"]) - montoDesc
+                            : Convert.ToDouble(row["importe"]);
+                    }
+
+                    <td class="cantidad">@string.Format("{0:N2}", row["cantidad"])</td>
+                    <td class="numero">@row["unidad"]</td>
+                    <td class="precio">@string.Format("{0:C2}", precioUnitFila)</td>
+                    @if (!esInternacional)
+                    {
+                        <td class="numero">@(descPct > 0 ? descPct.ToString("0.##") + "%" : "-")</td>
+                    }
+                    <td class="importe">@string.Format("{0:C2}", importeFila)</td>
+                </tr>
+            }
+
+            @if (Model.Flete > 0)
+            {
+                <tr class="flete-row">
+                    <td class="numero">FREIGHT</td>
+                    <td class="descripcion"><strong>Freight service</strong></td>
+                    <td class="cantidad">1.00</td>
+                    <td class="numero">Service</td>
+                    <td class="precio">@string.Format("{0:C2}", Model.Flete)</td>
+                    @if (!esInternacional)
+                    {
+                        <td class="numero">-</td>
+                    }
+                    <td class="importe">@string.Format("{0:C2}", Model.Flete)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- FOREIGN TRADE COMPLEMENT -->
+    @if (Model.ComercioExterior != null)
+    {
+        var ce = Model.ComercioExterior;
+        <div class="comercio-exterior-box">
+            <div class="comercio-exterior-title">Foreign Trade Complement v@(string.IsNullOrEmpty(ce.Version) ? "2.0" : ce.Version)</div>
+
+            <div class="ce-datos-generales">
+                <table>
+                    @{
+                        var camposGenerales = new List<(string Label, string Valor)>();
+                        if (!string.IsNullOrEmpty(ce.MotivoTraslado)) { camposGenerales.Add(("Transfer Reason", ce.MotivoTraslado)); }
+                        if (!string.IsNullOrEmpty(ce.ClaveDePedimento)) { camposGenerales.Add(("Customs Declaration Key", ce.ClaveDePedimento)); }
+                        if (!string.IsNullOrEmpty(ce.Incoterm)) { camposGenerales.Add(("Incoterm", ce.Incoterm)); }
+                        if (!string.IsNullOrEmpty(ce.CertificadoOrigen)) { camposGenerales.Add(("Certificate of Origin", ce.CertificadoOrigen + (!string.IsNullOrEmpty(ce.NumCertificadoOrigen) ? $" - {ce.NumCertificadoOrigen}" : ""))); }
+                        if (!string.IsNullOrEmpty(ce.NumeroExportadorConfiable)) { camposGenerales.Add(("Authorized Exporter", ce.NumeroExportadorConfiable)); }
+                        if (ce.TipoCambioUSD > 0) { camposGenerales.Add(("USD Exchange Rate", ce.TipoCambioUSD.ToString("N4"))); }
+
+                        for (int i = 0; i < camposGenerales.Count; i += 2)
+                        {
+                            <tr>
+                                <td style="width: 25%;"><strong>@camposGenerales[i].Label</strong></td>
+                                <td style="width: 25%;">@camposGenerales[i].Valor</td>
+                                @if (i + 1 < camposGenerales.Count)
+                                {
+                                    <td style="width: 25%;"><strong>@camposGenerales[i + 1].Label</strong></td>
+                                    <td style="width: 25%;">@camposGenerales[i + 1].Valor</td>
+                                }
+                                else
+                                {
+                                    <td colspan="2" style="border: none; background: transparent;"></td>
+                                }
+                            </tr>
+                        }
+
+                        // USD totals row. The complement was stamped on the GROSS amount, so
+                        // both are shown: the complement total and that same total with the
+                        // discount already applied.
+                        if (ce.TipoCambioUSD > 0)
+                        {
+                            // The netted lines are summed so this total matches the USD Value
+                            // column of the goods detail exactly.
+                            decimal totalUsdConDescuento = ce.Mercancias != null && ce.Mercancias.Any()
+                                ? ce.Mercancias.Sum(m => Math.Round(
+                                    m.ValorDolares * (decimal)factorDescuento(m.NoIdentificacion),
+                                    2, MidpointRounding.AwayFromZero))
+                                : Math.Round(ce.TotalUSD * (decimal)factorDescuentoGlobal,
+                                    2, MidpointRounding.AwayFromZero);
+
+                            <tr style="background: linear-gradient(to right, #e8f5e9 0%, #c8e6c9 100%) !important;">
+                                <td><strong>Total USD</strong></td>
+                                <td>
+                                    <span class="ce-valor-destacado">$@ce.TotalUSD.ToString("N2")</span>
+                                    <span class="ce-badge-moneda">USD</span>
+                                </td>
+                                <td><strong>Total USD with Discount</strong></td>
+                                <td>
+                                    <span class="ce-valor-destacado">$@totalUsdConDescuento.ToString("N2")</span>
+                                    <span class="ce-badge-moneda">USD</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </table>
+            </div>
+
+            <!-- ISSUER ADDRESS -->
+            @if (ce.DomicilioEmisor != null)
+            {
+                var d = ce.DomicilioEmisor;
+                var campos = new List<(string Label, string Valor)>();
+                if (!string.IsNullOrEmpty(d.Calle)) { campos.Add(("Street", d.Calle)); }
+                if (!string.IsNullOrEmpty(d.NumeroExterior)) { campos.Add(("Number", d.NumeroExterior)); }
+                if (!string.IsNullOrEmpty(d.Colonia)) { campos.Add(("Colony", d.Colonia)); }
+                if (!string.IsNullOrEmpty(d.CodigoPostal)) { campos.Add(("ZIP Code", d.CodigoPostal)); }
+                if (!string.IsNullOrEmpty(d.Localidad)) { campos.Add(("City", d.Localidad)); }
+                if (!string.IsNullOrEmpty(d.Municipio)) { campos.Add(("Town", d.Municipio)); }
+                if (!string.IsNullOrEmpty(d.Estado)) { campos.Add(("State", d.Estado)); }
+                if (!string.IsNullOrEmpty(d.Pais)) { campos.Add(("Country", d.Pais)); }
+
+                if (campos.Any())
+                {
+                    <div class="ce-subsection">
+                        <div class="ce-subsection-title">Issuer Address</div>
+                        <table>
+                            @for (int i = 0; i < campos.Count; i += 2)
+                            {
+                                <tr>
+                                    <td style="width: 20%;"><strong>@campos[i].Label</strong></td>
+                                    <td style="width: 30%;">@campos[i].Valor</td>
+                                    @if (i + 1 < campos.Count)
+                                    {
+                                        <td style="width: 20%;"><strong>@campos[i + 1].Label</strong></td>
+                                        <td style="width: 30%;">@campos[i + 1].Valor</td>
+                                    }
+                                    else
+                                    {
+                                        <td colspan="2" style="border: none; background: transparent;"></td>
+                                    }
+                                </tr>
+                            }
+                        </table>
+                    </div>
+                }
+            }
+
+            <!-- RECIPIENT / FOREIGN RECEIVER -->
+            @if (!string.IsNullOrEmpty(ce.NumRegIdTrib) || ce.DomicilioDestinatario != null)
+            {
+                var d = ce.DomicilioDestinatario;
+                var campos = new List<(string Label, string Valor)>();
+                if (d != null)
+                {
+                    if (!string.IsNullOrEmpty(d.Calle)) { campos.Add(("Street", d.Calle)); }
+                    if (!string.IsNullOrEmpty(d.NumeroExterior)) { campos.Add(("Number", d.NumeroExterior)); }
+                    if (!string.IsNullOrEmpty(d.Colonia)) { campos.Add(("Colony", d.Colonia)); }
+                    if (!string.IsNullOrEmpty(d.CodigoPostal)) { campos.Add(("ZIP Code", d.CodigoPostal)); }
+                    if (!string.IsNullOrEmpty(d.Localidad)) { campos.Add(("City", d.Localidad)); }
+                    if (!string.IsNullOrEmpty(d.Municipio)) { campos.Add(("Town", d.Municipio)); }
+                    if (!string.IsNullOrEmpty(d.Estado)) { campos.Add(("State", d.Estado)); }
+                    if (!string.IsNullOrEmpty(d.Pais)) { campos.Add(("Country", d.Pais)); }
+                }
+
+                if (!string.IsNullOrEmpty(ce.NumRegIdTrib) || campos.Any())
+                {
+                    <div class="ce-subsection">
+                        <div class="ce-subsection-title">Recipient / Receiver</div>
+                        @if (!string.IsNullOrEmpty(ce.NumRegIdTrib))
+                        {
+                            <div class="ce-info-box"><strong>Tax ID Registration:</strong> @ce.NumRegIdTrib</div>
+                        }
+                        @if (campos.Any())
+                        {
+                            <table>
+                                @for (int i = 0; i < campos.Count; i += 2)
+                                {
+                                    <tr>
+                                        <td style="width: 20%;"><strong>@campos[i].Label</strong></td>
+                                        <td style="width: 30%;">@campos[i].Valor</td>
+                                        @if (i + 1 < campos.Count)
+                                        {
+                                            <td style="width: 20%;"><strong>@campos[i + 1].Label</strong></td>
+                                            <td style="width: 30%;">@campos[i + 1].Valor</td>
+                                        }
+                                        else
+                                        {
+                                            <td colspan="2" style="border: none; background: transparent;"></td>
+                                        }
+                                    </tr>
+                                }
+                            </table>
+                        }
+                    </div>
+                }
+            }
+
+            <!-- GOODS -->
+            @if (ce.Mercancias != null && ce.Mercancias.Any())
+            {
+                <div class="ce-subsection">
+                    <div class="ce-subsection-title">Goods Detail</div>
+                    <table class="productos">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Item ID</th>
+                                <th style="width: 20%;">Tariff Code</th>
+                                <th style="width: 14%;">Qty</th>
+                                <th style="width: 12%;">Unit</th>
+                                <th style="width: 16%;">Unit Value</th>
+                                <th style="width: 18%;">USD Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var merc in ce.Mercancias)
+                            {
+                                // These come from the stamped XML, i.e. gross. They are netted so
+                                // the detail matches the PDF issued at stamping time; the fiscal
+                                // total is still above, in the USD totals row.
+                                decimal factorMerc = (decimal)factorDescuento(merc.NoIdentificacion);
+                                decimal valorUnitConDesc = Math.Round(
+                                    merc.ValorUnitarioAduana * factorMerc, 2, MidpointRounding.AwayFromZero);
+                                decimal valorDolaresConDesc = Math.Round(
+                                    merc.ValorDolares * factorMerc, 2, MidpointRounding.AwayFromZero);
+
+                                <tr>
+                                    <td class="numero">@merc.NoIdentificacion</td>
+                                    <td class="numero">@merc.FraccionArancelaria</td>
+                                    <td class="cantidad">@merc.CantidadAduana.ToString("N2")</td>
+                                    <td class="numero">@merc.UnidadAduana</td>
+                                    <td class="precio">$@valorUnitConDesc.ToString("N2")</td>
+                                    <td class="importe">
+                                        <span class="ce-valor-destacado">$@valorDolaresConDesc.ToString("N2")</span>
+                                        <span class="ce-badge-moneda">USD</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- APPLIED ADVANCES -->
+    @if (Model.TAnticipos != null && Model.TAnticipos.Rows.Count > 0)
+    {
+        <div class="section-title">Related CFDIs (Applied Advances)</div>
+        <table class="productos">
+            <thead>
+                <tr>
+                    <th>CFDI UUID</th>
+                    <th>Application Date</th>
+                    <th>Balance Before</th>
+                    <th>Applied Amount</th>
+                    <th>Balance After</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (System.Data.DataRow row in Model.TAnticipos.Rows)
+                {
+                    <tr style="background-color:#f0f8ff;">
+                        <td>@row["uuid"]</td>
+                        <td>@Convert.ToDateTime(row["fecha"]).ToString("MM/dd/yyyy HH:mm")</td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", row["saldo_antes"])</td>
+                        <td style="text-align:right; color:#2e7d32; font-weight:bold;">@string.Format("{0:C2}", row["monto_aplicado"])</td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", row["saldo_despues"])</td>
+                    </tr>
+                }
+                <tr style="background-color:#e3f2fd; font-weight:bold;">
+                    <td colspan="3" style="text-align:right;">TOTAL APPLIED ADVANCES:</td>
+                    <td colspan="2" style="text-align:right; color:#d32f2f;">
+                        @string.Format("{0:C2}", Model.TAnticipos.AsEnumerable().Sum(r => Convert.ToDecimal(r["monto_aplicado"])))
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    }
+
+    <!-- NOTES -->
+    @if (!string.IsNullOrEmpty(Model.Observaciones))
+    {
+        <div class="observaciones-box">
+            <strong>Notes:</strong> @Model.Observaciones
+        </div>
+    }
+
+    <!-- TOTALS -->
+    @{
+        decimal totalAnticiposPDF = 0;
+        if (Model.TAnticipos != null && Model.TAnticipos.Rows.Count > 0)
+        {
+            totalAnticiposPDF = Model.TAnticipos.AsEnumerable().Sum(r => Convert.ToDecimal(r["monto_aplicado"]));
+        }
+
+        decimal totalDescuentoPDF = 0;
+        if (Model.Tproductos != null && Model.Tproductos.Columns.Contains("descuento"))
+        {
+            foreach (DataRow dr in Model.Tproductos.Rows)
+            {
+                double c = Convert.ToDouble(dr["cantidad"]);
+                double p = Convert.ToDouble(dr["precioUnit"]);
+                double dd = Convert.ToDouble(dr["descuento"]);
+                totalDescuentoPDF += (decimal)Math.Round(c * p * (dd / 100.0), 2);
+            }
+        }
+    }
+
+    <table class="totales-table" style="width:100%; margin-top:20px; border-collapse:collapse;">
+        <tr>
+            <td style="width:60%; vertical-align:top; padding-right:20px;">
+                <strong>Amount in Words:</strong><br>
+                @Model.TotalTexto @Model.Moneda
+            </td>
+            <td style="width:40%; vertical-align:top;">
+                <table style="width:100%; border-collapse:collapse;">
+                    @if (totalDescuentoPDF > 0)
+                    {
+                        <tr>
+                            <td style="text-align:right; width:60%;"><strong>Gross Subtotal:</strong></td>
+                            <td style="text-align:right; width:40%;">@string.Format("{0:C2}", Model.Subtotal + totalDescuentoPDF)</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:right; color:#c62828;"><strong>Discount:</strong></td>
+                            <td style="text-align:right; color:#c62828;">-@string.Format("{0:C2}", totalDescuentoPDF)</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td style="text-align:right;"><strong>Subtotal:</strong></td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", Model.Subtotal)</td>
+                    </tr>
+                    @if (Model.Flete > 0)
+                    {
+                        <tr>
+                            <td style="text-align:right;"><strong>Freight:</strong></td>
+                            <td style="text-align:right;">@string.Format("{0:C2}", Model.Flete)</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td style="text-align:right;"><strong>VAT (@(Model.IVA > 0 ? "16" : "0")%):</strong></td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", Model.IVA)</td>
+                    </tr>
+                    @if (totalAnticiposPDF > 0)
+                    {
+                        <tr>
+                            <td style="text-align:right; color:#2e7d32;"><strong>Applied Advances:</strong></td>
+                            <td style="text-align:right; color:#2e7d32;">-@string.Format("{0:C2}", totalAnticiposPDF)</td>
+                        </tr>
+                    }
+                    <tr style="border-top:2px solid #1976d2; background:#e3f2fd;">
+                        <td style="text-align:right; font-size:1.1em; padding:6px 10px;"><strong>TOTAL:</strong></td>
+                        <td style="text-align:right; font-size:1.1em; color:#d32f2f; padding:6px 10px;"><strong>@string.Format("{0:C2}", Model.Total)</strong></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- DIGITAL SEALS -->
+    <div class="section-title" style="margin-top: 25px;">Digital Seals and Original String</div>
+    <table>
+        <tr>
+            <td style="width: 75%; vertical-align: top;">
+                <p style="margin: 5px 0 3px 0;"><strong>SAT Certificate Serial No.:</strong></p>
+                <div class="sello">@Model.NoCertificadoSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Issuer CSD Serial No.:</strong></p>
+                <div class="sello">@Model.NoCertificado</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>CFDI Seal:</strong></p>
+                <div class="sello">@Model.SelloCFDI</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>SAT Seal:</strong></p>
+                <div class="sello">@Model.SelloSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Original String:</strong></p>
+                <div class="sello">@Model.CadenaOriginal</div>
+            </td>
+
+            @if (!string.IsNullOrEmpty(Model.RutaQr))
+            {
+                <td style="width: 25%; text-align: center; vertical-align: top; padding-left: 10px;">
+                    <strong style="display: block; margin-bottom: 8px;">QR Code</strong>
+                    <img src="@Url.Content(Model.RutaQr)" alt="QR CFDI" style="width: 150px; height: 150px; border: 1px solid #ccc; padding: 5px; background: white;" />
+                    <br><small style="color: #666;">SAT Verification</small>
+                </td>
+            }
+        </tr>
+    </table>
+
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 25px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 10px; color: #666;">
+        <strong>This document is a printed representation of a CFDI (Mexican digital tax invoice)</strong><br>
+        Generated on @DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")
+    </div>
+
+</body>
+</html>

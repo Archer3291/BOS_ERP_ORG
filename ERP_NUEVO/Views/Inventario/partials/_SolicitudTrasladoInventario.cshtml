@@ -1,0 +1,441 @@
+﻿<div class="controls-panel mb-4">
+    <!-- Controles de acción -->
+    <div class="panel-body">
+        <div class="row">
+            <!-- Botón principal de búsqueda -->
+            <div class="col-sm-12 col-md-6">
+                <button type="button" class="btn blue-500 btn-search w-100"
+                        data-mdb-ripple-duration="1000ms"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalBuscarProductoSolicitud"
+                        id="buscar_producto_solicitud">
+                    <i class="fas fa-search btn-icon"></i>
+                    <span class="btn-main">Consultar Productos</span>
+                </button>
+            </div>
+
+            <!-- Acciones de tabla -->
+            <div class="col-sm-12 col-md-6 d-flex align-items-center justify-content-between">
+                <button id="agregar-fila-solicitud" type="button" class="btn btn-outline-primary btn-add"
+                        onclick="agregarFilaSolicitud()">
+                    <i class="fas fa-plus btn-icon"></i>
+                    <span class="btn-text">Agregar</span>
+                </button>
+                <button id="eliminar-fila-solicitud" type="button" class="btn btn-outline-danger btn-delete"
+                        onclick="eliminarFilasSeleccionadasSolicitud()">
+                    <i class="fas fa-trash btn-icon"></i>
+                    <span class="btn-text">Eliminar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="table-responsive mb-4">
+    <div class="alert-info mb-4">
+        <p class="mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            Las opciones marcadas con <strong>*</strong> son obligatorias
+        </p>
+        <p class="mb-1">
+            <i class="fas fa-info-circle me-2"></i>
+            Busca e ingresa los productos que se van a solicitar sin repetir ninguno.
+        </p>
+    </div>
+
+    <table class="table align-middle table-hover" id="tabla-materiales-solicitud">
+        <thead class="text-center" style="background-color: var(--very-light-blue); color: var(--text-dark);">
+            <tr>
+                <th class="text-start"><i class="bi bi-check-square"></i></th>
+                <th class="text-start">#</th>
+                <th class="text-start">Cantidad *</th>
+                <th class="text-start">Código *</th>
+                <th class="text-start">Descripción *</th>
+                <th class="text-start">Unidad *</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<div class="row">
+    <div class="form-floating mb-4 col-sm-12 col-md-4">
+        <select class="form-select" id="tipoSolicitud" aria-label="Tipo de solicitud">
+            <option value="0">Seleccione un tipo</option>
+            <option value="urgente">Solicitud urgente</option>
+            <option value="normal">Solicitud normal</option>
+            <option value="programada">Solicitud programada</option>
+        </select>
+        <label class="form-label" for="tipoSolicitud"><i class="bi bi-journal-text"></i> Tipo de solicitud</label>
+    </div>
+    <div class="form-floating mb-4 col-sm-12 col-md-4">
+        <input type="text" class="form-control" id="centroCostoSolicitud">
+        <label for="centroCostoSolicitud"><i class="bi bi-journal-text"></i> Centro de costo </label>
+    </div>
+    <div class="form-floating mb-4 col-sm-12 col-md-4">
+        <textarea class="form-control" id="observacionesSolicitud" rows="3"></textarea>
+        <label for="observacionesSolicitud"><i class="bi bi-journal-text"></i> Observaciones</label>
+    </div>
+
+    <div class="mt-4 d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-success" onclick="registrarSolicitud()">
+            <i class="fas fa-save me-1"></i>
+            Guardar Solicitud
+        </button>
+    </div>
+</div>
+
+
+<!-- Modal Buscar Producto Solicitud -->
+<div class="modal fade" id="modalBuscarProductoSolicitud" tabindex="-1" aria-labelledby="modalBuscarProductoSolicitudLabel" aria-hidden="true" style="padding-right: 0px !important;">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalBuscarProductoSolicitudLabel"> Buscar Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" title="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Campo de búsqueda con ícono -->
+                <div class="col-sm-12 mb-3">
+                    <div class="input-group mb-3">
+                        <input type="text"
+                               class="form-control"
+                               id="inputBuscarNombreSolicitud"
+                               placeholder="Ej. Tornillo, Motor, etc."
+                               aria-label="Recipient's username"
+                               aria-describedby="button-addon2" />
+                        <button class="btn btn-outline-warning" type="button" id="btnLimpiarResultadosSolicitud" data-mdb-ripple-init data-mdb-ripple-color="warning" data-mdb-ripple-duration="1000ms">
+                            <i class="fa-duotone fa-solid fa-eraser fa-beat"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resultados -->
+                <div class="">
+                    <ul class="list-group list-group-flush" id="listaResultadosSolicitud" style="max-height: 350px; overflow-y: auto;">
+                        <!-- Aquí se llenarán los resultados -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <!-- Paginación -->
+                <div id="paginationSolicitud" class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <!-- Los botones de paginación serán agregados aquí dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    let unidadesListSolicitud = [];
+    let tsSolicitud;
+
+    async function cargarUnidadesSolicitud() {
+        const prov = await fetch('/Inventario/GetListaUnidades');
+        unidadesListSolicitud = await prov.json();
+    }
+
+    cargarUnidadesSolicitud();
+
+    function agregarFilaSolicitud(datosProducto = null) {
+        document.querySelector('.tab-content').style.removeProperty('height')
+        const tbody = document.querySelector("#tabla-materiales-solicitud tbody");
+        const fila = document.createElement("tr");
+
+        const c1 = datosProducto?.cve_prod || '';
+        const c2 = datosProducto?.descr_prod || '';
+        const c11 = datosProducto?.udm || '';
+
+        let html =
+            `<td class="text-center"><input type="checkbox" class="seleccionar-fila-solicitud" /></td>` +
+            `<td></td>` +
+            `<td contenteditable="true" class="input-cantidad-solicitud"></td>` +
+            `<td contenteditable="true" class="input-codigo-solicitud">${c1}</td>` +
+            `<td contenteditable="true" class="input-descripcion-solicitud">${c2}</td>` +
+            `<td contenteditable="true" class="input-id-solicitud d-none">${datosProducto?.id_catproductos || ''}</td>`;
+
+        fila.innerHTML = html;
+
+        const td = document.createElement('td');
+        td.classList.add('unidad-solicitud');
+        const select = document.createElement('select');
+        select.classList.add('unidadId-solicitud');
+        select.setAttribute('autocomplete', 'off');
+        td.appendChild(select);
+        fila.appendChild(td);
+
+        if (unidadesListSolicitud.length === 0) {
+            cargarUnidadesSolicitud().then(() => {
+                inicializarTomSelectUnidadSolicitud(select);
+            });
+        } else {
+            inicializarTomSelectUnidadSolicitud(select);
+        }
+
+        console.log(datosProducto)
+        tbody.appendChild(fila);
+    }
+
+    function inicializarTomSelectUnidadSolicitud(select, valor = null) {
+        tsSolicitud = new TomSelect(select, {
+            persist: false,
+            createOnBlur: true,
+            create: true,
+            options: unidadesListSolicitud,
+            valueField: "id_udm",
+            labelField: "descripcion",
+            searchField: ["cve_udm", "descripcion"],
+            render: {
+                option: function (data, escape) {
+                    return `<div style="color: var(--text-dark)">${escape(data.descripcion)}</div>`;
+                },
+                item: function (data, escape) {
+                    return `<div style="color: var(--text-dark)">${escape(data.descripcion)}</div>`;
+                }
+            }
+        });
+
+        if (valor) tsSolicitud.setValue(valor);
+    }
+
+    function eliminarFilasSeleccionadasSolicitud() {
+        const checkboxes = document.querySelectorAll(".seleccionar-fila-solicitud:checked");
+        checkboxes.forEach(chk => {
+            chk.closest("tr").remove();
+        });
+    }
+
+    const limpiarNumeroSolicitud = (str) => str.replace(/[^\d.]/g, '');
+
+    // Función para buscar productos con paginación
+    const pageSizeSolicitud = 50; // Número de productos por página
+    function buscarProductosSolicitud(nombre, page = 1) {
+        fetch(`/Almacen/Producto/Buscar?nombre=${encodeURIComponent(nombre)}&page=${page}&pageSize=${pageSizeSolicitud}`)
+            .then(res => res.json())
+            .then(data => {
+                const lista = document.getElementById('listaResultadosSolicitud');
+                lista.innerHTML = ''; // Limpiar resultados anteriores
+
+                if (data.length === 0) {
+                    lista.innerHTML = '<div class="p-3">No se encontraron productos.</div>';
+                    return;
+                }
+
+                // Crear tabla
+                const tabla = document.createElement('table');
+                tabla.classList.add('table', 'table-hover', 'table-bordered');
+
+                // Encabezado
+                tabla.innerHTML = `
+                <thead class="table-secondary">
+                    <tr>
+                        <th style="width: 30%;">Clave</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+
+                const tbody = tabla.querySelector('tbody');
+
+                data.forEach(producto => {
+                    const fila = document.createElement('tr');
+                    fila.style.cursor = 'pointer';
+                    fila.innerHTML = `
+                    <td>${producto.id}</td>
+                    <td>${producto.descripcion}</td>
+                `;
+
+                    // Acción al hacer clic sobre una fila
+                    fila.addEventListener('click', () => {
+                        fetch(`/Almacen/Producto/BuscarProducto?idproducto=${producto.id}`)
+                            .then(res => res.json())
+                            .then(detalle => {
+                                const productId = detalle[0]?.cve_prod;
+                                const table = document.querySelectorAll("#tabla-materiales-solicitud tbody tr");
+                                const ifExist = Array.from(table).some(fila => fila.cells[3]?.innerText.trim() === productId);
+
+                                if (ifExist) {
+                                    toastMixin.fire({
+                                        icon: 'warning',
+                                        title: 'Este producto ya ha sido agregado.'
+                                    });
+                                    return;
+                                }
+
+                                $('#modalBuscarProductoSolicitud').modal('hide')
+                                agregarFilaSolicitud(detalle[0]);
+                            });
+                    });
+
+                    tbody.appendChild(fila);
+                });
+
+                lista.appendChild(tabla);
+
+                // Actualizar la paginación
+                actualizarPaginacionSolicitud(page, data.length);
+
+                // Volver al inicio del scroll
+                lista.scrollTop = 0;
+            })
+            .catch(err => {
+                console.error('Error al buscar: ', err);
+            });
+    }
+
+    // Función para actualizar los controles de paginación
+    function actualizarPaginacionSolicitud(page, currentPageResults) {
+        const pagination = document.getElementById('paginationSolicitud');
+        pagination.innerHTML = ''; // Limpiar paginación anterior
+
+        // Deshabilitar "Siguiente" si no hay más registros
+        const previousButton = document.createElement('button');
+        previousButton.classList.add('btn', 'btn-outline-primary');
+        previousButton.innerText = 'Anterior';
+        previousButton.disabled = page === 1;
+        previousButton.onclick = () => buscarProductosSolicitud(document.getElementById('inputBuscarNombreSolicitud').value, page - 1);
+
+        // "Siguiente" solo se habilita si hay más productos
+        const nextButton = document.createElement('button');
+        nextButton.classList.add('btn', 'btn-outline-primary');
+        nextButton.innerText = 'Siguiente';
+        nextButton.disabled = currentPageResults < pageSizeSolicitud;
+        nextButton.onclick = () => buscarProductosSolicitud(document.getElementById('inputBuscarNombreSolicitud').value, page + 1);
+
+        pagination.appendChild(previousButton);
+        pagination.appendChild(nextButton);
+    }
+
+    // Inicializar la búsqueda cuando se abre el modal
+    document.getElementById('modalBuscarProductoSolicitud').addEventListener('shown.bs.modal', () => {
+        buscarProductosSolicitud(''); // Realiza una búsqueda sin filtro
+    });
+
+    // Llamada para buscar productos cuando se escribe en el input
+    document.getElementById('inputBuscarNombreSolicitud').addEventListener('input', () => {
+        buscarProductosSolicitud(document.getElementById('inputBuscarNombreSolicitud').value);
+    });
+
+    // Buscar automáticamente al abrir el modal
+    const modalBuscarProductoSolicitud = document.getElementById('modalBuscarProductoSolicitud');
+
+    modalBuscarProductoSolicitud.addEventListener('shown.bs.modal', () => {
+        const nombre = document.getElementById('inputBuscarNombreSolicitud').value.trim();
+        buscarProductosSolicitud(nombre);
+    });
+
+    document.getElementById('btnLimpiarResultadosSolicitud').addEventListener('click', () => {
+        buscarProductosSolicitud('');
+        document.getElementById('inputBuscarNombreSolicitud').value = '';
+        document.getElementById('inputBuscarNombreSolicitud').focus();
+    });
+
+    // Validar datos de la tabla
+    function registrarSolicitud() {
+        const filasMateriales = [];
+        let errorFila = false;
+
+        document.querySelectorAll("#tabla-materiales-solicitud tbody tr").forEach((fila) => {
+            const cantidad = parseInt(limpiarNumeroSolicitud(fila.cells[2].innerText.trim()));
+            const codigo = fila.cells[3].innerText.trim();
+            const descripcion = fila.cells[4].innerText.trim();
+            const id_producto = parseInt(fila.cells[5].innerText.trim());
+
+            // Obtener la unidad del TomSelect correspondiente a esta fila
+            const selectUnidad = fila.querySelector('.unidadId-solicitud');
+            const unidad = selectUnidad ? selectUnidad.tomselect?.getValue() : '';
+
+            let filaValida = cantidad !== "" && cantidad !== "0" && codigo !== "" && descripcion !== "" && unidad !== '';
+
+            if (filaValida) {
+                const filaData = {
+                    id_producto,
+                    codigo,
+                    descripcion,
+                    cantidad,
+                    unidad,
+                };
+
+                filasMateriales.push(filaData);
+            } else {
+                errorFila = true;
+            }
+        });
+
+        if (filasMateriales.length === 0 || errorFila) {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Hay filas incompletas o vacías. Revisa que todos los campos obligatorios estén llenos.'
+            });
+            return false;
+        }
+
+        const tipo = document.getElementById('tipoSolicitud').value;
+        const centroCosto = document.getElementById('centroCostoSolicitud').value.trim();
+        const observaciones = document.getElementById('observacionesSolicitud').value.trim();
+
+        if (tipo == "0") {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'El tipo de solicitud es obligatorio, por favor selecciónalo.'
+            });
+            return false;
+        }
+
+        if (centroCosto == "") {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'El centro de costo es obligatorio, por favor ingrésalo.'
+            });
+            return false;
+        }
+
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+                <style>
+                    .flip {
+                        animation: spinY 2s linear infinite;
+                        transform-origin: center;
+                    }
+                    @@keyframes spinY {
+                        0%   { transform: rotateY(0deg); }
+                        100% { transform: rotateY(360deg); }
+                    }
+                </style>
+                <g class="flip">
+                    <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                    <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="32" cy="48" r="3" fill="#000"/>
+                </g>
+            </svg>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: "Confirmar solicitud",
+            html: `¿Está seguro que quiere registrar esta solicitud de inventario?`,
+            footer: "<b style='color: blue;'>INFORMACIÓN - Esta acción creará una nueva solicitud</b>",
+            customClass: {
+                icon: "p-0 bg-transparent border-0 shadow-none"
+            },
+            preConfirm: () => {
+                GetData({
+                    path: "/Inventario/RegistrarSolicitud",
+                    data: {
+                        productos: JSON.stringify(filasMateriales),
+                        tipo: tipo,
+                        centroCosto: centroCosto,
+                        observaciones: observaciones,
+                    },
+                    swalType: 'modal',
+                    swalResponse: true,
+                    swalPath: "/Inventario/Solicitudes"
+                })
+            }
+        })
+
+        return true;
+    }
+</script>

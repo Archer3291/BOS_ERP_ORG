@@ -1,0 +1,973 @@
+@*
+    Tablero de indicadores del Home — cascarón.
+
+    Sólo trae los tokens de estilo, el encabezado, el filtro de sucursal, los
+    KPIs del día y las pestañas. Cada área vive en su propio partial y en su
+    propio módulo de JavaScript:
+
+        Views/Home/Dashboard/_PanelVentas.cshtml    → scripts/Home/dashboard/ventas.js
+        Views/Home/Dashboard/_PanelCobranza.cshtml  → scripts/Home/dashboard/cobranza.js
+        Views/Home/Dashboard/_PanelAlmacen.cshtml   → scripts/Home/dashboard/almacen.js
+
+    Para sumar un área (compras, por ejemplo): agrega su panel, su módulo,
+    sus consultas en ENDPOINTS (core.js) y una pestaña aquí. Los datos de un
+    área se piden hasta que alguien abre esa pestaña.
+
+    Requiere (se cargan desde la sección "scripts" de la vista que lo incluye):
+        <script src="~/lib/echarts/dist/echarts.min.js"></script>
+        <script src="~/scripts/Home/dashboard/core.js"></script>   (y los módulos de área)
+
+    Las peticiones usan GetData de wwwroot/scripts/site1.js (ya viene del layout).
+*@
+
+<style>
+    /* ──────────────────────────────────────────────────────────────
+       Tokens de visualización. Superficies y tinta salen del tema del
+       ERP; los colores de serie son una paleta validada para daltonismo
+       (ΔE CVD >= 8) tanto en claro como en oscuro.
+       ────────────────────────────────────────────────────────────── */
+    .dash {
+        --dv-surface: var(--bg-light);
+        --dv-plane: var(--bg-gray);
+        --dv-ink: var(--text-dark);
+        --dv-ink-2: var(--text-light);
+        --dv-muted: #898781;
+        --dv-grid: var(--border-light);
+        --dv-border: var(--border-light);
+        /* series: el orden de las ranuras es el que pasa las pruebas de
+           daltonismo, no es cosmético — no reordenar a gusto */
+        --dv-s1: #2a78d6; /* azul     */
+        --dv-s2: #eb6834; /* naranja  */
+        --dv-s3: #1baf7a; /* aqua     */
+        --dv-s4: #eda100; /* amarillo */
+        --dv-s5: #e87ba4; /* magenta  */
+        --dv-s6: #4a3aa7; /* violeta  */
+        /* rampa ordinal (antigüedad de cartera): un solo tono, claro → oscuro */
+        --dv-ord1: #86b6ef;
+        --dv-ord2: #5598e7;
+        --dv-ord3: #2a78d6;
+        --dv-ord4: #1c5cab;
+        --dv-ord5: #104281;
+        --dv-track: #cde2fb;
+        --dv-rail: rgba(15, 23, 42, 0.045);
+        --dv-warning: #fab219;
+        --dv-critical: #d03b3b;
+        --dv-good: #0ca30c;
+        --dv-ui: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --dv-num: 'IBM Plex Mono', monospace;
+        --dv-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 30px -18px rgba(15, 23, 42, .22);
+        --dv-shadow-lift: 0 1px 2px rgba(15, 23, 42, .05), 0 18px 40px -20px rgba(15, 23, 42, .30);
+        --dv-radius: 16px;
+        margin-top: 48px;
+        position: relative;
+        z-index: 10;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    [data-theme="dark"] .dash {
+        --dv-s1: #3987e5;
+        --dv-s2: #d95926;
+        --dv-s3: #199e70;
+        --dv-s4: #c98500;
+        --dv-s5: #d55181;
+        --dv-s6: #9085e9;
+        --dv-ord1: #9ec5f4;
+        --dv-ord2: #6da7ec;
+        --dv-ord3: #3987e5;
+        --dv-ord4: #256abf;
+        --dv-ord5: #184f95;
+        --dv-track: #184f95;
+        --dv-rail: rgba(255, 255, 255, 0.05);
+        --dv-good: #0ca30c;
+        --dv-shadow: 0 1px 2px rgba(0, 0, 0, .30), 0 10px 30px -18px rgba(0, 0, 0, .70);
+        --dv-shadow-lift: 0 1px 2px rgba(0, 0, 0, .35), 0 18px 40px -20px rgba(0, 0, 0, .80);
+    }
+
+    .dash h2, .dash h3, .dash p, .dash div, .dash span,
+    .dash button, .dash select, .dash label, .dash th, .dash td {
+        font-family: var(--dv-ui);
+    }
+
+    .dash .num, .dash .dash-updated, .dash .dash-legend-val,
+    .dash .dash-legend-pct, .dash .dash-kpi-foot, .dash .dash-tag {
+        font-family: var(--dv-num);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dash-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .dash-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--dv-ink);
+        letter-spacing: -0.6px;
+        margin: 0 0 5px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .dash-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: var(--dv-num) !important;
+        font-size: 10px;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: var(--dv-good);
+        background: rgba(12, 163, 12, .08);
+        border: 1px solid rgba(12, 163, 12, .22);
+        border-radius: 20px;
+        padding: 3px 11px;
+        font-weight: 500;
+    }
+
+        .dash-live::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--dv-good);
+            box-shadow: 0 0 0 3px rgba(12, 163, 12, .18);
+            animation: dash-blink 1.8s ease-in-out infinite;
+        }
+
+    .dash-sub {
+        font-size: 12.5px;
+        color: var(--dv-ink-2);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .dash-filters {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .dash-field {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--dv-muted);
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+    }
+
+    .dash-select {
+        appearance: none;
+        background: var(--dv-surface);
+        background-image: linear-gradient(45deg, transparent 50%, var(--dv-ink-2) 50%), linear-gradient(135deg, var(--dv-ink-2) 50%, transparent 50%);
+        background-position: calc(100% - 17px) 51%, calc(100% - 12px) 51%;
+        background-size: 5px 5px, 5px 5px;
+        background-repeat: no-repeat;
+        border: 1px solid var(--dv-border);
+        color: var(--dv-ink);
+        border-radius: 10px;
+        padding: 8px 32px 8px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+        min-width: 210px;
+        max-width: 280px;
+        cursor: pointer;
+        box-shadow: var(--dv-shadow);
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .dash-select:hover, .dash-select:focus {
+            border-color: var(--dv-s1);
+            outline: none;
+        }
+
+    .dash-btn {
+        background: var(--dv-surface);
+        border: 1px solid var(--dv-border);
+        color: var(--dv-ink);
+        border-radius: 10px;
+        padding: 8px 15px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--dv-shadow);
+        transition: border-color .2s, color .2s, transform .2s;
+    }
+
+        .dash-btn:hover {
+            border-color: var(--dv-s1);
+            color: var(--dv-s1);
+            transform: translateY(-1px);
+        }
+
+        .dash-btn:active {
+            transform: translateY(0);
+        }
+
+        .dash-btn i {
+            font-size: 11px;
+        }
+
+    .dash-updated {
+        font-size: 11px;
+        color: var(--dv-muted);
+        white-space: nowrap;
+    }
+
+    .dash-note {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        font-size: 11.5px;
+        color: var(--dv-muted);
+        line-height: 1.55;
+        margin: 20px 0 0;
+        padding: 12px 16px;
+        background: var(--dv-plane);
+        border: 1px solid var(--dv-border);
+        border-radius: 12px;
+    }
+
+        .dash-note i {
+            margin-top: 2px;
+            color: var(--dv-ink-2);
+        }
+
+    /* ── KPIs ── */
+    .dash-kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        margin-bottom: 18px;
+    }
+
+    .dash-kpi {
+        position: relative;
+        background: var(--dv-surface);
+        border: 1px solid var(--dv-border);
+        border-radius: var(--dv-radius);
+        padding: 20px 22px 22px;
+        overflow: hidden;
+        box-shadow: var(--dv-shadow);
+        transition: box-shadow .25s, transform .25s;
+    }
+
+        /* filo de color: liga el indicador con su serie */
+        .dash-kpi::before {
+            content: '';
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--kpi-accent), transparent 85%);
+        }
+
+        .dash-kpi:hover {
+            box-shadow: var(--dv-shadow-lift);
+            transform: translateY(-2px);
+        }
+
+    .dash-kpi-top {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin-bottom: 14px;
+    }
+
+    .dash-kpi-chip {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: var(--dv-plane); /* respaldo si no hay color-mix */
+        background: color-mix(in srgb, var(--kpi-accent) 12%, transparent);
+        color: var(--kpi-accent);
+        font-size: 14px;
+    }
+
+    .dash-kpi-label {
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--dv-ink-2);
+        letter-spacing: 1.1px;
+        text-transform: uppercase;
+        line-height: 1.3;
+    }
+
+    .dash-kpi-value {
+        font-size: 30px;
+        font-weight: 700;
+        color: var(--dv-ink);
+        line-height: 1.05;
+        letter-spacing: -1px;
+    }
+
+    .dash-kpi-foot {
+        font-size: 11px;
+        color: var(--dv-muted);
+        margin-top: 9px;
+        line-height: 1.5;
+    }
+
+    .dash-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    /* medidor: relleno = severidad, pista = paso claro del mismo tono */
+    .dash-meter {
+        height: 8px;
+        border-radius: 4px;
+        background: var(--dv-track);
+        overflow: hidden;
+        margin-top: 14px;
+    }
+
+    .dash-meter-fill {
+        height: 100%;
+        border-radius: 4px;
+        /* el color sólido queda de respaldo si el degradado no se soporta */
+        background-color: var(--dv-s1);
+        background-image: linear-gradient(90deg, var(--dv-s1), color-mix(in srgb, var(--dv-s1) 62%, white));
+        transition: width .6s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    /* ── Rejilla de tarjetas ── */
+    .dash-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 18px;
+    }
+
+    .dash-card {
+        background: var(--dv-surface);
+        border: 1px solid var(--dv-border);
+        border-radius: var(--dv-radius);
+        padding: 20px 22px 22px;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        box-shadow: var(--dv-shadow);
+        transition: box-shadow .25s;
+    }
+
+        .dash-card:hover {
+            box-shadow: var(--dv-shadow-lift);
+        }
+
+    .span-4 {
+        grid-column: span 4;
+    }
+
+    .span-5 {
+        grid-column: span 5;
+    }
+
+    .span-6 {
+        grid-column: span 6;
+    }
+
+    .span-7 {
+        grid-column: span 7;
+    }
+
+    .span-8 {
+        grid-column: span 8;
+    }
+
+    .span-12 {
+        grid-column: span 12;
+    }
+
+    .dash-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        padding-bottom: 15px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--dv-border);
+    }
+
+    .dash-card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--dv-ink);
+        letter-spacing: -0.2px;
+        margin: 0 0 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .dash-card-title::before {
+            content: '';
+            width: 3px;
+            height: 14px;
+            border-radius: 2px;
+            background: var(--card-accent, var(--dv-s1));
+            flex-shrink: 0;
+        }
+
+    .dash-card-sub {
+        font-size: 11.5px;
+        color: var(--dv-muted);
+        margin: 0 0 0 11px;
+    }
+
+    .dash-switches {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .dash-switch {
+        display: flex;
+        gap: 2px;
+        background: var(--dv-plane);
+        border: 1px solid var(--dv-border);
+        border-radius: 9px;
+        padding: 3px;
+        flex-shrink: 0;
+    }
+
+    .dash-switch-btn {
+        background: none;
+        border: none;
+        color: var(--dv-ink-2);
+        font-size: 11px;
+        font-weight: 500;
+        padding: 4px 11px;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background .2s, color .2s, box-shadow .2s;
+    }
+
+        .dash-switch-btn:hover {
+            color: var(--dv-ink);
+        }
+
+        .dash-switch-btn.is-active {
+            background: var(--dv-surface);
+            color: var(--dv-ink);
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .10);
+        }
+
+    .dash-body {
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* contenido bajo: se centra para no dejar todo el aire abajo */
+    .dash-card[data-card="cobertura"] .dash-body,
+    .dash-card[data-card="mezcla"] .dash-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* alto = área de trazo + banda de etiquetas del eje */
+    .dash-plot {
+        position: relative;
+        height: 300px;
+    }
+
+    /* contenedor que monta ECharts */
+    .dash-chart {
+        width: 100%;
+        height: 100%;
+    }
+
+    .dash-plot.is-short {
+        height: 120px;
+    }
+
+    .dash-plot.is-mid {
+        height: 230px;
+    }
+
+    .dash-plot.is-gauge {
+        height: 175px;
+    }
+
+    .dash-plot.is-tall {
+        height: 360px;
+    }
+
+    .dash-view[hidden] {
+        display: none;
+    }
+
+    /* ── Leyenda HTML (mezcla contado/crédito) ── */
+    .dash-legend {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .dash-legend-row {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-size: 12px;
+        color: var(--dv-ink);
+        padding: 9px 12px;
+        border-radius: 10px;
+        background: var(--dv-plane);
+        border: 1px solid var(--dv-border);
+    }
+
+    .dash-legend-name {
+        flex: 1;
+        min-width: 0;
+        color: var(--dv-ink-2);
+        font-weight: 500;
+    }
+
+    .dash-legend-val {
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    .dash-legend-pct {
+        color: var(--dv-muted);
+        min-width: 46px;
+        text-align: right;
+        font-size: 11px;
+    }
+
+    /* variante sin caja, para listas de más renglones (dona) */
+    .dash-legend.is-compact {
+        gap: 2px;
+        margin-top: 12px;
+    }
+
+        .dash-legend.is-compact .dash-legend-row {
+            background: none;
+            border: none;
+            padding: 5px 2px;
+            font-size: 11.5px;
+        }
+
+        .dash-legend.is-compact .dash-legend-row.is-selected {
+            background: var(--dv-plane);
+            border-radius: 8px;
+        }
+
+            .dash-legend.is-compact .dash-legend-row.is-selected .dash-legend-name {
+                color: var(--dv-ink);
+                font-weight: 600;
+            }
+
+    /* pie de tarjeta con cifras de apoyo (medidor) */
+    .dash-caption {
+        margin-top: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .dash-caption-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11.5px;
+        color: var(--dv-ink-2);
+    }
+
+        .dash-caption-row b {
+            margin-left: auto;
+            color: var(--dv-ink);
+            font-family: var(--dv-num);
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+
+    .dash-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        align-self: center;
+        margin-top: 4px;
+        font-size: 11px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        border: 1px solid currentColor;
+        font-weight: 500;
+    }
+
+        .dash-state i {
+            font-size: 11px;
+        }
+
+    /* ── Tablas gemelas ── */
+    .dash-tablewrap {
+        overflow: auto;
+        max-height: 340px;
+        border: 1px solid var(--dv-border);
+        border-radius: 12px;
+        background: var(--dv-surface);
+    }
+
+    .dash-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+        .dash-table th {
+            position: sticky;
+            top: 0;
+            background: var(--dv-plane);
+            color: var(--dv-muted);
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: left;
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--dv-border);
+            z-index: 1;
+            white-space: nowrap;
+        }
+
+        .dash-table td {
+            padding: 10px 14px;
+            color: var(--dv-ink);
+            border-bottom: 1px solid var(--dv-border);
+        }
+
+        .dash-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .dash-table td:first-child {
+            font-weight: 600;
+        }
+
+        .dash-table .num {
+            text-align: right;
+        }
+
+        .dash-table tbody tr {
+            transition: background .15s;
+        }
+
+            .dash-table tbody tr:hover td {
+                background: var(--dv-plane);
+            }
+
+    .dash-tag {
+        display: inline-block;
+        font-size: 9.5px;
+        letter-spacing: .8px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        border: 1px solid var(--dv-border);
+        color: var(--dv-ink-2);
+        background: var(--dv-plane);
+    }
+
+        .dash-tag.is-contado {
+            color: var(--dv-s1);
+            border-color: color-mix(in srgb, var(--dv-s1) 32%, transparent);
+            background: color-mix(in srgb, var(--dv-s1) 9%, transparent);
+        }
+
+        .dash-tag.is-credito {
+            color: var(--dv-s2);
+            border-color: color-mix(in srgb, var(--dv-s2) 32%, transparent);
+            background: color-mix(in srgb, var(--dv-s2) 9%, transparent);
+        }
+
+
+    /* ── Estados ── */
+    .dash-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        height: 100%;
+        min-height: 150px;
+        color: var(--dv-muted);
+        font-size: 12px;
+        text-align: center;
+        border: 1px dashed var(--dv-border);
+        border-radius: 12px;
+        background: var(--dv-plane);
+    }
+
+        .dash-empty i {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--dv-surface);
+            border: 1px solid var(--dv-border);
+            font-size: 15px;
+            opacity: .85;
+        }
+
+    /* Refetch: se conserva el render previo atenuado, sin salto de layout */
+    .dash.is-refreshing .dash-kpis,
+    .dash.is-refreshing .dash-grid {
+        opacity: .5;
+        transition: opacity .2s;
+        pointer-events: none;
+    }
+
+    .dash.is-loading .dash-kpi-value,
+    .dash.is-loading .dash-kpi-foot {
+        color: transparent;
+        background: var(--dv-plane);
+        border-radius: 6px;
+    }
+
+    @@keyframes dash-up {
+        from {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes dash-blink {
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .35;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+
+        .dash-live::before {
+            animation: none;
+        }
+    }
+
+    @@media (max-width: 1100px) {
+        .dash-kpis {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .span-4, .span-5, .span-6, .span-7, .span-8 {
+            grid-column: span 12;
+        }
+    }
+
+    @@media (max-width: 640px) {
+        .dash-kpis {
+            grid-template-columns: 1fr;
+        }
+
+        .dash-head {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .dash-title {
+            font-size: 19px;
+        }
+    }
+
+    /* ── Pestañas por área ── */
+    .dash-tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--dv-border);
+        margin-bottom: 20px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+        .dash-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+    .dash-tab {
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--dv-ink-2);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 11px 16px;
+        margin-bottom: -1px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        transition: color .2s, border-color .2s;
+    }
+
+        .dash-tab i {
+            font-size: 12px;
+            opacity: .8;
+        }
+
+        .dash-tab:hover {
+            color: var(--dv-ink);
+        }
+
+        .dash-tab.is-active {
+            color: var(--dv-s1);
+            border-bottom-color: var(--dv-s1);
+            font-weight: 600;
+        }
+
+    .dash-panel[hidden] {
+        display: none;
+    }
+
+    .dash-panel-note {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        font-size: 11.5px;
+        color: var(--dv-muted);
+        line-height: 1.5;
+        margin: 0 0 16px;
+    }
+
+    .dash-kpis.is-tres {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @@media (max-width: 900px) {
+        .dash-kpis.is-tres {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<section class="dash is-loading" id="homeDashboard">
+
+    <div class="idx-section-label">
+        <i class="fas fa-chart-simple"></i>
+        <span>Tablero de indicadores</span>
+    </div>
+
+    <div class="dash-head">
+        <div>
+            <h2 class="dash-title">
+                Ventas, cobranza y movimiento
+                <span class="dash-live">En vivo</span>
+            </h2>
+            <p class="dash-sub">Facturación y cobros del día · productos y clientes de los últimos 60 días</p>
+        </div>
+
+        <!-- Una sola fila de filtros para todo el tablero -->
+        <div class="dash-filters">
+            <label class="dash-field" for="dashSucursal">
+                Sucursal
+                <select class="dash-select" id="dashSucursal">
+                    <option value="__all__">Todas las sucursales</option>
+                </select>
+            </label>
+            <button type="button" class="dash-btn" id="dashRefresh">
+                <i class="fas fa-rotate-right"></i> Actualizar
+            </button>
+            <span class="dash-updated" id="dashUpdated">Cargando…</span>
+        </div>
+    </div>
+
+    <!-- ── KPIs ── -->
+    <div class="dash-kpis">
+        <div class="dash-kpi" style="--kpi-accent:var(--dv-s1)">
+            <div class="dash-kpi-top">
+                <span class="dash-kpi-chip"><i class="fas fa-file-invoice-dollar"></i></span>
+                <span class="dash-kpi-label">Facturado hoy</span>
+            </div>
+            <div class="dash-kpi-value" id="kpiFacturado">—</div>
+            <div class="dash-kpi-foot" id="kpiFacturadoFoot">—</div>
+        </div>
+
+        <div class="dash-kpi" style="--kpi-accent:var(--dv-s3)">
+            <div class="dash-kpi-top">
+                <span class="dash-kpi-chip"><i class="fas fa-hand-holding-dollar"></i></span>
+                <span class="dash-kpi-label">Cobrado hoy</span>
+            </div>
+            <div class="dash-kpi-value" id="kpiCobrado">—</div>
+            <div class="dash-kpi-foot" id="kpiCobradoFoot">—</div>
+        </div>
+
+        <div class="dash-kpi" style="--kpi-accent:var(--dv-s1)">
+            <div class="dash-kpi-top">
+                <span class="dash-kpi-chip"><i class="fas fa-receipt"></i></span>
+                <span class="dash-kpi-label">Ticket promedio</span>
+            </div>
+            <div class="dash-kpi-value" id="kpiTicket">—</div>
+            <div class="dash-kpi-foot" id="kpiTicketFoot">—</div>
+        </div>
+
+        <div class="dash-kpi" style="--kpi-accent:var(--dv-warning)">
+            <div class="dash-kpi-top">
+                <span class="dash-kpi-chip"><i class="fas fa-triangle-exclamation"></i></span>
+                <span class="dash-kpi-label">Vence hoy</span>
+            </div>
+            <div class="dash-kpi-value" id="kpiVence">—</div>
+            <div class="dash-kpi-foot" id="kpiVenceFoot">—</div>
+        </div>
+    </div>
+
+    <!-- Un panel por responsabilidad; los datos se piden al abrir la pestaña -->
+    <nav class="dash-tabs" role="tablist" aria-label="Áreas del tablero">
+        <button type="button" class="dash-tab is-active" data-tab="ventas">
+            <i class="fas fa-cart-shopping"></i> Ventas
+        </button>
+        <button type="button" class="dash-tab" data-tab="cobranza">
+            <i class="fas fa-hand-holding-dollar"></i> Cobranza
+        </button>
+        <button type="button" class="dash-tab" data-tab="almacen">
+            <i class="fas fa-warehouse"></i> Almacén
+        </button>
+    </nav>
+
+    @await Html.PartialAsync("~/Views/Home/Dashboard/_PanelVentas.cshtml")
+    @await Html.PartialAsync("~/Views/Home/Dashboard/_PanelCobranza.cshtml")
+    @await Html.PartialAsync("~/Views/Home/Dashboard/_PanelAlmacen.cshtml")
+
+    <p class="dash-note">
+        <i class="fas fa-circle-info"></i>
+        <span>
+            Los importes se suman tal como están registrados en cada documento, sin conversión entre monedas.
+            «Cobrado / facturado» compara el dinero cobrado hoy contra lo facturado hoy; los cobros pueden
+            corresponder a facturas de días anteriores.
+        </span>
+    </p>
+</section>

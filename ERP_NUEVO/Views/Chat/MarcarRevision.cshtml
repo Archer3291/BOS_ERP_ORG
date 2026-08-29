@@ -1,0 +1,407 @@
+﻿@using System.Linq
+@{
+    ViewData["Title"] = "Supervisión de chat IA";
+    Layout = "_Layout";
+
+    var mensajes = Model as List<dynamic> ?? new List<dynamic>();
+    var usuarioIdFiltro = Context.Request.Query["usuarioId"].ToString();
+    var desdeFiltro = Context.Request.Query["desde"].ToString();
+    var hastaFiltro = Context.Request.Query["hasta"].ToString();
+    var soloRevisionFiltro = Context.Request.Query["soloRevision"] == "true";
+}
+
+<div class="iaadm-wrapper">
+    <div class="iaadm-header">
+        <div>
+            <h4>Supervisión de conversaciones</h4>
+            <span class="iaadm-subtitle">Registro de todas las interacciones con el asistente IA</span>
+        </div>
+        <div class="iaadm-summary">
+            <span class="iaadm-count">@mensajes.Count</span>
+            <span>mensajes mostrados (máx. 500)</span>
+        </div>
+    </div>
+
+    <form method="get" class="iaadm-filters">
+        <div class="iaadm-field">
+            <label>ID de usuario</label>
+            <input type="number" name="usuarioId" value="@usuarioIdFiltro" placeholder="Todos" />
+        </div>
+        <div class="iaadm-field">
+            <label>Desde</label>
+            <input type="datetime-local" name="desde" value="@desdeFiltro" />
+        </div>
+        <div class="iaadm-field">
+            <label>Hasta</label>
+            <input type="datetime-local" name="hasta" value="@hastaFiltro" />
+        </div>
+        <div class="iaadm-field iaadm-field-checkbox">
+            <label>
+                <input type="checkbox" name="soloRevision" value="true" @(soloRevisionFiltro ? "checked" : "") />
+                Solo marcados
+            </label>
+        </div>
+        <button type="submit" class="iaadm-btn-filter">
+            <i class="bi bi-funnel"></i> Filtrar
+        </button>
+        <a href="@Url.Action("Index", "AdminChat")" class="iaadm-btn-clear">Limpiar</a>
+    </form>
+
+    <div class="iaadm-table-container">
+        <table class="iaadm-table">
+            <thead>
+                <tr>
+                    <th style="width: 140px;">Fecha</th>
+                    <th style="width: 160px;">Usuario</th>
+                    <th style="width: 90px;">Rol</th>
+                    <th>Mensaje</th>
+                    <th style="width: 90px;">Revisado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!mensajes.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="iaadm-empty">No se encontraron mensajes con los filtros aplicados.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var m in mensajes)
+                    {
+                        <tr data-mensaje-id="@m.MensajeId" class="@(m.MarcadoRevision ? "iaadm-row-marcado" : "")">
+                            <td class="iaadm-cell-muted">@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@m.Usuario</td>
+                            <td>
+                                <span class="iaadm-badge iaadm-badge-@(m.Rol == "user" ? "user" : "bot")">
+                                    @(m.Rol == "user" ? "Usuario" : "Asistente")
+                                </span>
+                            </td>
+                            <td class="iaadm-cell-contenido">
+                                <div class="iaadm-contenido-preview" data-full="@m.Contenido">@m.Contenido</div>
+                            </td>
+                            <td>
+                                <button class="iaadm-toggle-btn @(m.MarcadoRevision ? "active" : "")"
+                                        data-mensaje-id="@m.MensajeId"
+                                        data-marcado="@m.MarcadoRevision.ToString().ToLower()"
+                                        title="Marcar para revisión">
+                                    <i class="bi @(m.MarcadoRevision ? "bi-flag-fill" : "bi-flag")"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="iaadm-modal-overlay d-none" id="iaadmModalOverlay">
+    <div class="iaadm-modal">
+        <div class="iaadm-modal-header">
+            <span>Mensaje completo</span>
+            <button id="iaadmModalClose"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="iaadm-modal-body" id="iaadmModalBody"></div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        :root {
+            --iaadm-bg: #f7f8fa;
+            --iaadm-surface: #ffffff;
+            --iaadm-border: #e4e6eb;
+            --iaadm-text: #1c1e21;
+            --iaadm-text-secondary: #65676b;
+            --iaadm-primary: #2563eb;
+            --iaadm-danger: #dc2626;
+            --iaadm-warning: #f59e0b;
+        }
+
+        [data-theme="dark"] .iaadm-wrapper,
+        .dark-mode .iaadm-wrapper {
+            --iaadm-bg: #18191a;
+            --iaadm-surface: #242526;
+            --iaadm-border: #3a3b3c;
+            --iaadm-text: #e4e6eb;
+            --iaadm-text-secondary: #b0b3b8;
+        }
+
+        .iaadm-wrapper {
+            background: var(--iaadm-bg);
+            color: var(--iaadm-text);
+            padding: 4px;
+        }
+
+        .iaadm-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .iaadm-header h4 { margin: 0; font-size: 18px; font-weight: 600; }
+        .iaadm-subtitle { font-size: 13px; color: var(--iaadm-text-secondary); }
+
+        .iaadm-summary {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--iaadm-text-secondary);
+        }
+
+        .iaadm-count {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--iaadm-text);
+        }
+
+        .iaadm-filters {
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            flex-wrap: wrap;
+            background: var(--iaadm-surface);
+            border: 1px solid var(--iaadm-border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+
+        .iaadm-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .iaadm-field label {
+            font-size: 12px;
+            color: var(--iaadm-text-secondary);
+            font-weight: 500;
+        }
+
+        .iaadm-field input[type="number"],
+        .iaadm-field input[type="datetime-local"] {
+            border: 1px solid var(--iaadm-border);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 13px;
+            background: var(--iaadm-bg);
+            color: var(--iaadm-text);
+            min-width: 150px;
+        }
+
+        .iaadm-field-checkbox { flex-direction: row; align-items: center; gap: 6px; }
+        .iaadm-field-checkbox label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--iaadm-text); }
+
+        .iaadm-btn-filter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--iaadm-primary);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .iaadm-btn-clear {
+            font-size: 13px;
+            color: var(--iaadm-text-secondary);
+            text-decoration: none;
+            padding: 8px 6px;
+        }
+
+        .iaadm-btn-clear:hover { color: var(--iaadm-text); }
+
+        .iaadm-table-container {
+            background: var(--iaadm-surface);
+            border: 1px solid var(--iaadm-border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .iaadm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .iaadm-table thead th {
+            text-align: left;
+            padding: 10px 14px;
+            background: var(--iaadm-bg);
+            color: var(--iaadm-text-secondary);
+            font-weight: 500;
+            font-size: 12px;
+            border-bottom: 1px solid var(--iaadm-border);
+        }
+
+        .iaadm-table tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--iaadm-border);
+            vertical-align: top;
+        }
+
+        .iaadm-table tbody tr:last-child td { border-bottom: none; }
+        .iaadm-table tbody tr:hover { background: var(--iaadm-bg); }
+        .iaadm-row-marcado { background: rgba(245, 158, 11, 0.06); }
+
+        .iaadm-cell-muted { color: var(--iaadm-text-secondary); white-space: nowrap; }
+
+        .iaadm-badge {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .iaadm-badge-user { background: rgba(37, 99, 235, 0.1); color: var(--iaadm-primary); }
+        .iaadm-badge-bot { background: rgba(101, 103, 107, 0.12); color: var(--iaadm-text-secondary); }
+
+        .iaadm-cell-contenido { max-width: 480px; }
+
+        .iaadm-contenido-preview {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            cursor: pointer;
+            line-height: 1.5;
+        }
+
+        .iaadm-contenido-preview:hover { color: var(--iaadm-primary); }
+
+        .iaadm-toggle-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 1px solid var(--iaadm-border);
+            background: transparent;
+            color: var(--iaadm-text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .iaadm-toggle-btn:hover { background: var(--iaadm-bg); }
+        .iaadm-toggle-btn.active { background: rgba(245, 158, 11, 0.12); color: var(--iaadm-warning); border-color: rgba(245, 158, 11, 0.3); }
+
+        .iaadm-empty {
+            text-align: center;
+            padding: 40px;
+            color: var(--iaadm-text-secondary);
+        }
+
+        /* Modal */
+        .iaadm-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1050;
+        }
+
+        .iaadm-modal {
+            background: var(--iaadm-surface);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .iaadm-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--iaadm-border);
+            font-weight: 500;
+            color: var(--iaadm-text);
+        }
+
+        .iaadm-modal-header button {
+            background: none;
+            border: none;
+            color: var(--iaadm-text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .iaadm-modal-body {
+            padding: 18px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            color: var(--iaadm-text);
+            font-size: 14px;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            document.querySelectorAll('.iaadm-contenido-preview').forEach(el => {
+                el.addEventListener('click', () => {
+                    document.getElementById('iaadmModalBody').textContent = el.dataset.full;
+                    document.getElementById('iaadmModalOverlay').classList.remove('d-none');
+                });
+            });
+
+            document.getElementById('iaadmModalClose').addEventListener('click', () => {
+                document.getElementById('iaadmModalOverlay').classList.add('d-none');
+            });
+
+            document.getElementById('iaadmModalOverlay').addEventListener('click', (e) => {
+                if (e.target.id === 'iaadmModalOverlay') {
+                    e.target.classList.add('d-none');
+                }
+            });
+
+            document.querySelectorAll('.iaadm-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const mensajeId = btn.dataset.mensajeId;
+                    const marcadoActual = btn.dataset.marcado === 'true';
+                    const nuevoValor = !marcadoActual;
+
+                    btn.disabled = true;
+
+                    try {
+                        const res = await fetch('/AdminChat/MarcarRevision', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mensajeId: parseInt(mensajeId, 10), marcado: nuevoValor })
+                        });
+
+                        if (!res.ok) throw new Error('No se pudo actualizar');
+
+                        btn.dataset.marcado = nuevoValor.toString();
+                        btn.classList.toggle('active', nuevoValor);
+                        btn.querySelector('i').className = nuevoValor ? 'bi bi-flag-fill' : 'bi bi-flag';
+
+                        const row = btn.closest('tr');
+                        row.classList.toggle('iaadm-row-marcado', nuevoValor);
+                    } catch (err) {
+                        console.error(err);
+                        alert('No se pudo actualizar el estado de revisión.');
+                    } finally {
+                        btn.disabled = false;
+                    }
+                });
+            });
+        })();
+    </script>
+}
