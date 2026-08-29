@@ -1,0 +1,271 @@
+﻿@{
+    ViewBag.Title = "Calendario";
+    ViewBag.PageTitle = "Calendario de pagos";
+}
+
+<script src="~/lib/fullcalendar/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.global.min.js"></script>
+<link href="~/content/Calendario.css" rel="stylesheet" />
+
+<button class="btn btn-sm green-600" onclick="loadCalendar()">Actualizar calendario</button>
+<div id='calendar'></div>
+
+<script src="~/Scripts/Confetti.js"></script>
+<script>
+    function loadCalendar() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
+            },
+            buttonText: {
+                today: 'Hoy',
+                month: 'Mes',
+                week: 'Semana',
+                day: 'Dia',
+                list: 'Lista'
+            },
+            dayMaxEventRows: true,
+            views: {
+                timeGrid: {
+                    dayMaxEventRows: 4
+                }
+            },
+            events: '/Finanzas/GetDataCalendario',
+            eventClick: function (info) {
+                const event = info.event;
+                const extendedProps = event.extendedProps;
+                // Obtener los datos del evento
+                const titulo = event.title || 'Sin título';
+                const fecha = event.start ? event.start.toLocaleDateString('es-ES') : 'No especificada';
+                const monto = extendedProps.pago || 'N/A';
+                const encabezadoId = extendedProps.encabezado_id;
+                const frecuencia = extendedProps.frecuencia || 'N/A';
+                const totalPagos = extendedProps.total_pagos || 'N/A';
+                const tasaInteres = extendedProps.tasa_interes || 0;
+                const descripcion = extendedProps.descripcion || 'Sin descripción';
+                const estado = extendedProps.estado || 'Pendiente';
+                const numeroPago = extendedProps.numero_pago;
+
+                // Función para obtener color del estado
+                const getStatusColor = (status) => {
+                    switch (status) {
+                        case 'Pendiente': return '#f59e0b';      // Amarillo/Naranja (warning)
+                        case 'Vencido': return '#dc2626';       // Rojo (danger)
+                        case 'Pagado': return '#059669';        // Verde (success)
+                        case 'Cancelado': return '#6b7280';     // Gris (neutral)
+                        default: return 'var(--primary-blue)';
+                    }
+                };
+
+                // Crear el HTML para mostrar la información en formato tabla
+                const htmlContent = `
+                        <style>
+                            .event-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin: 15px 0;
+                                font-size: 14px;
+                                box-shadow: var(--shadow);
+                                border-radius: 8px;
+                                overflow: hidden;
+                            }
+                            .event-table td {
+                                padding: 12px 15px;
+                                border-bottom: 1px solid var(--border-light);
+                                text-align: left;
+                            }
+                            .event-table tr:nth-child(even) {
+                                background-color: var(--very-light-blue);
+                            }
+                            .event-table tr:nth-child(odd) {
+                                background-color: var(--bg-light);
+                            }
+                            .event-table .label {
+                                font-weight: 600;
+                                color: var(--text-dark);
+                                width: 40%;
+                                background-color: var(--light-blue);
+                            }
+                            .event-table .value {
+                                color: var(--text-light);
+                            }
+                            .status-badge {
+                                padding: 6px 14px;
+                                border-radius: 20px;
+                                color: white;
+                                font-weight: 600;
+                                font-size: 12px;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                                box-shadow: var(--shadow);
+                            }
+                            .status-select {
+                                width: 100%;
+                                padding: 10px 15px;
+                                border: 2px solid var(--border-light);
+                                border-radius: 8px;
+                                font-size: 14px;
+                                background-color: var(--bg-light);
+                                color: var(--text-dark);
+                                margin-top: 15px;
+                                box-shadow: var(--shadow);
+                                transition: all 0.3s ease;
+                            }
+                            .status-select:focus {
+                                border-color: var(--primary-blue);
+                                outline: none;
+                                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), var(--shadow);
+                            }
+                            .status-select option {
+                                padding: 8px;
+                                background-color: var(--bg-light);
+                                color: var(--text-dark);
+                            }
+                        </style>
+                        <table class="event-table">
+                            <tr>
+                                <td class="label"><i class="far fa-calendar-alt" style="margin-right: 8px; color: var(--primary-blue);"></i>Fecha</td>
+                                <td class="value">${fecha}</td>
+                            </tr>
+                            <tr>
+                                <td class="label"><i class="far fa-coins" style="margin-right: 8px; color: var(--primary-blue);"></i>Monto</td>
+                                <td class="value">${Currency.format(monto)}</td>
+                            </tr>
+                            <tr>
+                                <td class="label"><i class="far fa-redo" style="margin-right: 8px; color: var(--primary-blue);"></i>Frecuencia</td>
+                                <td class="value">${frecuencia}</td>
+                            </tr>
+                            <tr>
+                                <td class="label"><i class="far fa-credit-card" style="margin-right: 8px; color: var(--primary-blue);"></i>Total de Pagos</td>
+                                <td class="value">${totalPagos}</td>
+                            </tr>
+                            <tr>
+                                <td class="label"><i class="far fa-chart-line" style="margin-right: 8px; color: var(--primary-blue);"></i>Tasa de Interés</td>
+                                <td class="value">${tasaInteres}%</td>
+                            </tr>
+                            <tr>
+                                <td class="label"><i class="far fa-file-text" style="margin-right: 8px; color: var(--primary-blue);"></i>Descripción</td>
+                                <td class="value">${descripcion}</td>
+                            </tr>
+                            <tr>
+                                <td class="label"><i class="far fa-info-circle" style="margin-right: 8px; color: var(--primary-blue);"></i>Estado Actual</td>
+                                <td class="value">
+                                    <span class="status-badge" style="background-color: ${getStatusColor(estado)}">
+                                        ${estado}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                        <div>
+                            <label for="statusSelect" style="font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 8px;">
+                                <i class="far fa-edit" style="margin-right: 8px; color: var(--primary-blue);"></i>Cambiar Estado:
+                            </label>
+                            <select id="statusSelect" class="status-select">
+                                <option value="Pagado" ${estado === 'Pagado' ? 'selected' : ''}><i class="far fa-check-circle"></i> Pagado</option>
+                                <option value="Cancelado" ${estado === 'Cancelado' ? 'selected' : ''}><i class="far fa-times-circle"></i> Cancelado</option>
+                            </select>
+                        </div>
+                    `;
+
+                // Mostrar el SweetAlert con la información del evento
+                _Swal.fire({
+                    title: titulo,
+                    html: htmlContent,
+                    width: '600px',
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar Cambios',
+                    cancelButtonText: 'Cerrar',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#95a5a6',
+                    preConfirm: () => {
+                        const newStatus = document.getElementById('statusSelect').value;
+                        return {
+                            newStatus: newStatus,
+                            eventId: encabezadoId,
+                            originalStatus: estado,
+                            numeroPago: numeroPago
+                        };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const { newStatus, eventId, originalStatus, numeroPago } = result.value;
+                        if (newStatus !== originalStatus) {
+                            GetData({
+                                path: '/Finanzas/ActualizarEstadoPago',
+                                data: {
+                                    encabezado_id: eventId,
+                                    estatus: newStatus,
+                                    numero_pago: numeroPago
+                                }
+                            }).then((_res) => {
+                                if (_res.success) {
+                                    toastMixin.fire({
+                                        icon: 'success',
+                                        title: 'Pago actualizado correctamente.'
+                                    })
+                                } else {
+                                    toastMixin.fire({
+                                        icon: 'error',
+                                        title: 'Ocurrio un error al actualizar el pago.'
+                                    })
+                                }
+                            })
+                            loadCalendar();
+                            if (newStatus === "Pagado") {
+                                const duration = 15 * 1000,
+                                    animationEnd = Date.now() + duration,
+                                    defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+                                function randomInRange(min, max) {
+                                    return Math.random() * (max - min) + min;
+                                }
+
+                                const interval = setInterval(function () {
+                                    const timeLeft = animationEnd - Date.now();
+
+                                    if (timeLeft <= 0) {
+                                        return clearInterval(interval);
+                                    }
+
+                                    const particleCount = 50 * (timeLeft / duration);
+
+                                    // since particles fall down, start a bit higher than random
+                                    confetti(
+                                        Object.assign({}, defaults, {
+                                            particleCount,
+                                            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+                                        })
+                                    );
+                                    confetti(
+                                        Object.assign({}, defaults, {
+                                            particleCount,
+                                            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+                                        })
+                                    );
+                                }, 250);
+                            }
+                        } else {
+                            _Swal.fire({
+                                title: 'Sin cambios',
+                                text: 'No se realizaron modificaciones',
+                                icon: 'info',
+                                showConfirmButton: false
+                            });
+                        }
+                    }
+                });
+            },
+        });
+        calendar.render();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadCalendar()
+    });
+</script>

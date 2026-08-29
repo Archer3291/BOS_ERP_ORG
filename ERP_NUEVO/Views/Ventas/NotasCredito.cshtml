@@ -1,0 +1,889 @@
+﻿@model BOS_ERP.Models.FolioInfo
+@{
+    ViewBag.Title = "Nota de Crédito";
+    ViewBag.PageTitle = "Nota de Crédito";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section styles {}
+<link href="~/content/Facturacion/nota-credito.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<!-- TOP BAR -->
+<div class="top-bar">
+    <div class="top-bar-brand">
+        <span class="pill">NC</span>
+        Nota de Crédito
+    </div>
+    <div class="top-bar-meta">
+        <span class="status-dot"></span>
+        <span>BORRADOR</span>
+        <span class="folio-badge" id="tb-folio">NC-0001</span>
+        <span id="tb-fecha"></span>
+    </div>
+</div>
+
+<!-- WIZARD BAR -->
+<div class="wizard-bar">
+    <div class="wizard-step active" data-step="1" onclick="gotoStep(1)">
+        <div class="step-num">1</div>
+        <span class="step-label-text">Cliente &amp; Referencia</span>
+    </div>
+    <div class="wizard-divider"></div>
+    <div class="wizard-step" data-step="2" onclick="gotoStep(2)">
+        <div class="step-num">2</div>
+        <span class="step-label-text">Partidas</span>
+    </div>
+    <div class="wizard-divider"></div>
+    <div class="wizard-step" data-step="3" onclick="gotoStep(3)">
+        <div class="step-num">3</div>
+        <span class="step-label-text">Condiciones Fiscales</span>
+    </div>
+    <div class="wizard-divider"></div>
+    <div class="wizard-step" data-step="4" onclick="gotoStep(4)">
+        <div class="step-num">4</div>
+        <span class="step-label-text">Revisión &amp; Emisión</span>
+    </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+    <div class="main-col">
+        <form id="nc-form" autocomplete="off">
+
+            <!-- ══════════════════════════════════════════
+         PASO 1 — TIPO Y ORIGEN
+    ════════════════════════════════════════════ -->
+            <div class="panel active" id="panel-1">
+                <!-- SELECTOR DE TIPO cuando NO viene de solicitud -->
+                <div class="section-card" id="nc-tipo-selector">
+                    <div class="section-head">
+                        <div class="section-icon"><i class="fas fa-tag"></i></div>
+                        <div>
+                            <div class="section-title">Tipo de Nota de Crédito</div>
+                            <div class="section-sub">Selecciona el caso que origina este documento</div>
+                        </div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-head">
+                            <div class="section-icon"><i class="fas fa-user"></i></div>
+                            <div><div class="section-title">Cliente</div></div>
+                        </div>
+                        <div class="section-body">
+                            <div class="form-grid">
+                                <div class="field f-span2">
+                                    <label>Razón social / Nombre <span class="req">*</span></label>
+                                    <div class="input-group">
+                                        <input type="text" id="nc-cliente" name="cliente" placeholder="Buscar cliente..." />
+                                        <button type="button" class="btn-icon danger" onclick="openModal('modal-clientes'); fetchClientes();">
+                                            <i class="fas fa-search"></i> Buscar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label>RFC <span class="req">*</span></label>
+                                    <input type="text" id="nc-rfc" name="rfc" placeholder="RFC del cliente" />
+                                </div>
+                                <div class="field">
+                                    <label>Clave cliente</label>
+                                    <input type="text" id="nc-clave-cli" name="claveCliente" placeholder="ID interno" />
+                                </div>
+                                <div class="field f-full">
+                                    <label>Dirección fiscal</label>
+                                    <textarea id="nc-dir-cliente" name="dirCliente" rows="2" placeholder="Calle, Colonia, CP, Ciudad, Estado"></textarea>
+                                </div>
+                                <div class="field">
+                                    <label>Vendedor / Ejecutivo</label>
+                                    <input type="text" id="nc-vendedor" name="vendedor" />
+                                </div>
+                                <div class="field">
+                                    <label>Contacto cliente</label>
+                                    <input type="text" id="nc-contacto" name="contacto" placeholder="Nombre del contacto" />
+                                </div>
+                                <div class="field">
+                                    <label>Email de envío</label>
+                                    <input type="email" id="nc-email" name="email" placeholder="correo@empresa.com" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-head">
+                            <div class="section-icon ok"><i class="fas fa-link"></i></div>
+                            <div>
+                                <div class="section-title">Factura(s) de Referencia</div>
+                                <div class="section-sub">Vincula una o múltiples facturas. La NC puede cubrir varias a la vez.</div>
+                            </div>
+                        </div>
+                        <div class="section-body">
+                            <div class="flex-between gap-8 mt-10">
+                                <button type="button" class="btn-icon ok" onclick="abrirModalFacturas()">
+                                    <i class="fas fa-file-search"></i> Buscar y Agregar Factura
+                                </button>
+                                <span id="ref-cliente-hint" style="font-size:11px; color:var(--ink-ghost); display:none;">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Selecciona un cliente primero para filtrar sus facturas
+                                </span>
+                                <div class="badge info" id="ref-count-badge">0 referencias</div>
+                            </div>
+                            <div id="multi-ref-list" class="multi-ref-list"></div>
+                            <div class="ref-card" id="nc-ref-card">
+                                <div class="ref-card-top">
+                                    <div class="ref-card-label"><i class="fas fa-check-circle"></i> Última referencia cargada</div>
+                                    <button type="button" onclick="clearAllRefs()" class="btn-icon" style="padding:3px 8px; font-size:10px;">
+                                        <i class="fas fa-times"></i> Quitar todas
+                                    </button>
+                                </div>
+                                <div class="ref-card-grid">
+                                    <div class="ref-item"><div class="lbl">Folio</div><div class="val" id="nc-ref-folio">—</div></div>
+                                    <div class="ref-item"><div class="lbl">Cliente</div><div class="val" id="nc-ref-cliente">—</div></div>
+                                    <div class="ref-item"><div class="lbl">Fecha</div><div class="val" id="nc-ref-fecha">—</div></div>
+                                    <div class="ref-item"><div class="lbl">Importe</div><div class="val" id="nc-ref-importe">—</div></div>
+                                    <div class="ref-item"><div class="lbl">Saldo NC</div><div class="val" id="nc-ref-saldo"><span class="badge ok">Sin NCs previas</span></div></div>
+                                </div>
+                            </div>
+                            <div class="nc-ctx" id="ctx-standalone-ref">
+                                <div style="margin-top:12px; padding:12px 14px; background:var(--edge-soft); border-radius:var(--radius); border:1px dashed var(--edge); font-size:12px; color:var(--ink-soft);">
+                                    <i class="fas fa-info-circle me-2 text-info"></i>
+                                    NC sin referencia — se generará como documento independiente sin ligar a ninguna factura.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-head">
+                            <div class="section-icon info"><i class="fas fa-comment-alt"></i></div>
+                            <div><div class="section-title">Concepto y Motivo</div></div>
+                        </div>
+                        <div class="section-body">
+                            <div class="form-grid">
+                                <div class="field f-full">
+                                    <label>Motivo / Concepto <span class="req">*</span></label>
+                                    <input type="text" id="nc-concepto" name="concepto" placeholder="Descripción breve del motivo de la NC..." />
+                                </div>
+                                <div class="field f-full">
+                                    <label>Observaciones internas</label>
+                                    <textarea id="nc-observaciones" name="observaciones" rows="2" placeholder="Notas internas, número de caso, ticket..."></textarea>
+                                </div>
+                                <div class="field">
+                                    <label>Número de caso / Ticket</label>
+                                    <input type="text" id="nc-ticket" name="ticket" placeholder="CAS-001, TICKET-123..." />
+                                </div>
+                                <div class="field">
+                                    <label>Solicitante</label>
+                                    <input type="text" id="nc-solicitante" name="solicitante" placeholder="Nombre del solicitante" />
+                                </div>
+                                <div class="field">
+                                    <label>Departamento solicitante</label>
+                                    <input type="text" id="nc-depto" name="departamento" placeholder="Ventas, Almacén..." />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-body">
+                        <div class="nc-type-grid" id="nc-type-grid">
+                            <div class="nc-type-card" data-type="devolucion" style="--nc-color:#7c3aed" onclick="selectType(this)">
+                                <div class="nc-type-icon" style="--nc-color:#7c3aed"><i class="fas fa-undo-alt"></i></div>
+                                <div class="nc-type-label">Devolución de Mercancía</div>
+                                <div class="nc-type-desc">Reingreso a inventario con ajuste al costo y reversa de la venta.</div>
+                            </div>
+                            <div class="nc-type-card" data-type="descuento" style="--nc-color:#0891b2" onclick="selectType(this)">
+                                <div class="nc-type-icon" style="--nc-color:#0891b2"><i class="fas fa-percent"></i></div>
+                                <div class="nc-type-label">Descuento / Bonificación</div>
+                                <div class="nc-type-desc">Ajuste comercial sobre el importe facturado. No mueve inventario.</div>
+                            </div>
+                            <div class="nc-type-card" data-type="precio" style="--nc-color:#d97706" onclick="selectType(this)">
+                                <div class="nc-type-icon" style="--nc-color:#d97706"><i class="fas fa-dollar-sign"></i></div>
+                                <div class="nc-type-label">Error en Precio</div>
+                                <div class="nc-type-desc">Diferencia entre precio facturado y precio correcto pactado.</div>
+                            </div>
+                            <div class="nc-type-card" data-type="cancelacion" style="--nc-color:#dc2626" onclick="selectType(this)">
+                                <div class="nc-type-icon" style="--nc-color:#dc2626"><i class="fas fa-ban"></i></div>
+                                <div class="nc-type-label">Cancelación Parcial</div>
+                                <div class="nc-type-desc">Anulación de partidas específicas sin cancelar toda la factura.</div>
+                            </div>
+                            <div class="nc-type-card" data-type="bonificacion" style="--nc-color:#059669" onclick="selectType(this)">
+                                <div class="nc-type-icon" style="--nc-color:#059669"><i class="fas fa-gift"></i></div>
+                                <div class="nc-type-label">Bonificación / Rappel</div>
+                                <div class="nc-type-desc">Abono por cumplimiento de metas, volumen o acuerdo comercial.</div>
+                            </div>
+                            <div class="nc-type-card" data-type="standalone" style="--nc-color:#64748b" onclick="selectType(this)">
+                                <div class="nc-type-icon" style="--nc-color:#64748b"><i class="fas fa-file-alt"></i></div>
+                                <div class="nc-type-label">Sin Referencia (Libre)</div>
+                                <div class="nc-type-desc">NC independiente sin ligar a una factura existente.</div>
+                            </div>
+                        </div>
+
+                        <div class="nc-ctx mt-14" id="ctx-devolucion">
+                            <div class="devolucion-panel">
+                                <div class="devolucion-panel-title"><i class="fas fa-warehouse me-2"></i>Configuración de Reingreso a Inventario</div>
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label>Almacén de reingreso <span class="req">*</span></label>
+                                        <select id="nc-almacen" name="almacen">
+                                            <option value="">— Seleccionar —</option>
+                                            <option value="ALM01">ALM-01 Principal</option>
+                                            <option value="ALM02">ALM-02 Materia Prima</option>
+                                            <option value="ALM-DEV">ALM-DEV Devoluciones</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Condición de retorno</label>
+                                        <select id="nc-condicion-retorno">
+                                            <option value="bueno">Buen estado — venta inmediata</option>
+                                            <option value="revision">Requiere revisión / QC</option>
+                                            <option value="dano">Daño visible — solo inventario</option>
+                                            <option value="destruir">Merma / Destrucción</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Genera orden de recepción</label>
+                                        <select id="nc-gen-orden">
+                                            <option value="si">Sí — automática</option>
+                                            <option value="manual">Sí — requiere autorización</option>
+                                            <option value="no">No</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Ajuste de costo</label>
+                                        <select id="nc-ajuste-costo">
+                                            <option value="original">Usar costo original de la venta</option>
+                                            <option value="actual">Usar costo actual del sistema</option>
+                                            <option value="manual">Captura manual</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="nc-ctx mt-14" id="ctx-precio">
+                            <div style="background: var(--warn-bg); border: 1px solid #fde68a; border-radius: var(--radius-lg); padding: 14px 16px;">
+                                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--warn); margin-bottom:10px;">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Datos del Error de Precio
+                                </div>
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label>Precio original facturado</label>
+                                        <input type="number" id="nc-precio-original" step="0.01" placeholder="0.00" />
+                                    </div>
+                                    <div class="field">
+                                        <label>Precio correcto pactado</label>
+                                        <input type="number" id="nc-precio-correcto" step="0.01" placeholder="0.00" oninput="calcDiffPrecio()" />
+                                    </div>
+                                    <div class="field">
+                                        <label>Diferencia calculada</label>
+                                        <input type="text" id="nc-precio-diff" readonly placeholder="$0.00" style="font-family:var(--font-mono); font-weight:700;" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="nc-ctx mt-14" id="ctx-bonificacion">
+                            <div style="background: var(--ok-bg); border: 1px solid #a7f3d0; border-radius: var(--radius-lg); padding: 14px 16px;">
+                                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--ok); margin-bottom:10px;">
+                                    <i class="fas fa-chart-bar me-2"></i>Parámetros de Bonificación
+                                </div>
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label>Tipo de bonificación <span class="req">*</span></label>
+                                        <select id="nc-tipo-boni">
+                                            <option value="">— Seleccionar —</option>
+                                            <option value="rappel">Rappel por volumen</option>
+                                            <option value="pronto_pago">Pronto pago</option>
+                                            <option value="acuerdo">Acuerdo comercial especial</option>
+                                            <option value="lista">Corrección de lista de precios</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Período de referencia</label>
+                                        <input type="text" id="nc-periodo-boni" placeholder="ej. Q1-2025, Ene-Mar 2025" />
+                                    </div>
+                                    <div class="field">
+                                        <label>Importe base del rappel</label>
+                                        <input type="number" id="nc-base-boni" step="0.01" placeholder="0.00" />
+                                    </div>
+                                    <div class="field">
+                                        <label>% de bonificación pactado <span class="req">*</span></label>
+                                        <input type="number" id="nc-pct-boni" step="0.01" min="0" max="100" placeholder="0" oninput="calcBoni()" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-body" style="border-top:1px solid var(--edge);">
+                    <div class="form-grid cols-3">
+                        <div class="field">
+                            <label>Folio NC <span class="req">*</span></label>
+                            @{ <input type="text" id="nc-folio" name="folio" value=@Model.Folio /> }
+                        </div>
+                        <div class="field">
+                            <label>Fecha de emisión <span class="req">*</span></label>
+                            <input type="date" id="nc-fecha-emision" name="fechaEmision" />
+                        </div>
+                        <div class="field">
+                            <label>Moneda <span class="req">*</span></label>
+                            <select id="nc-moneda" name="moneda"></select>
+                        </div>
+                        <div class="field">
+                            <label>Tipo de cambio (paridad)</label>
+                            <input type="number" id="nc-paridad" name="paridad" value="1" step="0.0001" />
+                        </div>
+                        <div class="field">
+                            <label>Serie NC</label>
+                            <input type="text" id="nc-serie" name="serie" value="NC" placeholder="NC" />
+                        </div>
+                        <div class="field">
+                            <label>Interno / Externo</label>
+                            <select id="nc-alcance" name="alcance">
+                                <option value="externo">Externo (cliente ve la NC)</option>
+                                <option value="interno">Interno (ajuste contable)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-nav">
+                    <div></div>
+                    <button type="button" class="btn-step next" onclick="gotoStep(2)">
+                        Siguiente <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+            </div>
+                <!-- ══════════════════════════════════════════
+             PASO 3 — PARTIDAS
+        ════════════════════════════════════════════ -->
+                <div class="panel" id="panel-2">
+
+                    <div class="section-card">
+                        <div class="section-head">
+                            <div class="section-icon purple"><i class="fas fa-boxes"></i></div>
+                            <div>
+                                <div class="section-title">Artículos y Partidas</div>
+                                <div class="section-sub">Puedes cargarlas desde la factura o capturarlas manualmente</div>
+                            </div>
+                        </div>
+                        <div class="section-body" style="padding:0;">
+                            <div class="partidas-toolbar">
+                                <div class="partidas-toolbar-title">
+                                    <i class="fas fa-list-ul" style="color:var(--primary-blue)"></i>
+                                    Lista de Partidas
+                                    <span class="badge err" id="partidas-count-badge">0</span>
+                                </div>
+                                <div class="partidas-toolbar-actions">
+                                    <button type="button" class="btn-icon" onclick="importFromRef()">
+                                        <i class="fas fa-file-import"></i> Importar de factura
+                                    </button>
+                                    <button type="button" class="btn-icon ok" onclick="pmAddRow()">
+                                        <i class="fas fa-plus"></i> Agregar fila
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="partidas-wrap">
+                                <table class="partidas-tbl">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:36px">#</th>
+                                            <th style="min-width:90px">Clave</th>
+                                            <th style="min-width:200px">Descripción</th>
+                                            <th style="width:80px">Cantidad</th>
+                                            <th style="width:90px">Precio Unit.</th>
+                                            <th style="width:70px">Desc %</th>
+                                            <th style="width:70px">IVA %</th>
+                                            <th style="width:80px">IEPS %</th>
+                                            <th style="width:100px; text-align:right">Importe</th>
+                                            <th style="width:40px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="partidas-body">
+                                        <tr class="empty-state-row">
+                                            <td colspan="10">
+                                                <span class="empty-state-icon"><i class="fas fa-box-open"></i></span>
+                                                Sin partidas — importa de la factura de referencia o agrega manualmente
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nc-ctx" id="ctx-devolucion-partidas">
+                        <div class="section-card">
+                            <div class="section-head">
+                                <div class="section-icon purple"><i class="fas fa-warehouse"></i></div>
+                                <div>
+                                    <div class="section-title">Reingreso a Inventario por Partida</div>
+                                    <div class="section-sub">Confirma qué cantidad de cada artículo regresa físicamente al almacén</div>
+                                </div>
+                            </div>
+                            <div class="section-body" style="padding:0;">
+                                <div class="partidas-wrap">
+                                    <table class="partidas-tbl">
+                                        <thead>
+                                            <tr>
+                                                <th>Clave</th>
+                                                <th>Descripción</th>
+                                                <th>Cant. NC</th>
+                                                <th>Cant. recibida</th>
+                                                <th>Unidad</th>
+                                                <th>Lote / Serie</th>
+                                                <th>Condición</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="devolucion-body">
+                                            <tr class="empty-state-row">
+                                                <td colspan="7">
+                                                    <span class="empty-state-icon"><i class="fas fa-pallet"></i></span>
+                                                    Las partidas del paso anterior aparecerán aquí
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-nav">
+                        <button type="button" class="btn-step back" onclick="gotoStep(1)"><i class="fas fa-arrow-left"></i> Anterior</button>
+                        <button type="button" class="btn-step next" onclick="gotoStep(3)">Siguiente <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════
+             PASO 4 — CONDICIONES FISCALES
+        ════════════════════════════════════════════ -->
+                <div class="panel" id="panel-3">
+
+                    <div class="section-card">
+                        <div class="section-head">
+                            <div class="section-icon warn"><i class="fas fa-file-invoice-dollar"></i></div>
+                            <div>
+                                <div class="section-title">Condiciones Fiscales CFDI 4.0</div>
+                                <div class="section-sub">Configura el complemento fiscal correcto según el tipo de NC</div>
+                            </div>
+                        </div>
+                        <div class="section-body">
+                            <div class="form-grid cols-2">
+                                <div class="field">
+                                    <label>Método de pago</label>
+                                    <select id="nc-metodo-pago" name="metodoPago">
+                                        <option value="PUE">PUE — Pago en una sola exhibición</option>
+                                        <option value="PPD">PPD — Pago en parcialidades o diferido</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Forma de pago SAT</label>
+                                    <select id="nc-forma-pago" name="formaPago">
+                                        <option value="01">01 — Efectivo</option>
+                                        <option value="02">02 — Cheque nominativo</option>
+                                        <option value="03">03 — Transferencia electrónica</option>
+                                        <option value="04">04 — Tarjeta de crédito</option>
+                                        <option value="28">28 — Tarjeta de débito</option>
+                                        <option value="99">99 — Por definir</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Uso CFDI</label>
+                                    <select id="nc-uso-cfdi" name="usoCFDI">
+                                        <option value="G03">G03 — Gastos en general</option>
+                                        <option value="D01">D01 — Honorarios médicos</option>
+                                        <option value="P01">P01 — Por definir</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Régimen fiscal receptor</label>
+                                    <select id="nc-regimen">
+                                        <option value="601">601 — General de Ley Personas Morales</option>
+                                        <option value="605">605 — Sueldos y Salarios</option>
+                                        <option value="612">612 — Personas Físicas con actividades</option>
+                                        <option value="616">616 — Sin obligaciones fiscales</option>
+                                        <option value="626">626 — Resico</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Código postal fiscal receptor <span class="req">*</span></label>
+                                    <input type="text" id="nc-cp" name="cp" maxlength="5" placeholder="76000" />
+                                </div>
+                            </div>
+                           
+                        </div>
+                    </div>
+
+                    <div id="nc-aplicacion-anchor"></div>
+
+                    <div class="separator"></div>
+
+                    <div class="section-card d-none">
+                        <div class="section-head">
+                            <div class="section-icon"><i class="fas fa-shield-alt"></i></div>
+                            <div>
+                                <div class="section-title">Flujo de Autorización</div>
+                                <div class="section-sub">Nivel requerido para validar la emisión</div>
+                            </div>
+                        </div>
+                        <div class="section-body">
+                            <div class="form-grid cols-3">
+                                <div class="field">
+                                    <label>Nivel de autorización requerido</label>
+                                    <select id="nc-auth-level" name="nivelAutorizacion" onchange="updateApprovalTrack()">
+                                        <option value="directo">Ninguno — emisión directa</option>
+                                        <option value="supervisor">Supervisor de ventas</option>
+                                        <option value="gerencia">Gerencia comercial</option>
+                                        <option value="direccion">Dirección (NC > $50,000)</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Autorizado por</label>
+                                    <input type="text" id="nc-autorizado-por" name="autorizadoPor" placeholder="Nombre del autorizador" />
+                                </div>
+                                <div class="field">
+                                    <label>Número de autorización</label>
+                                    <input type="text" id="nc-num-auth" name="numAutorizacion" placeholder="AUTH-001" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-nav">
+                        <button type="button" class="btn-step back" onclick="gotoStep(3)">
+                            <i class="fas fa-arrow-left"></i> Anterior
+                        </button>
+                        <button type="button" class="btn-step next" onclick="gotoStep(4)">
+                            Revisar NC <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" id="nc-decision-saldo-hidden" name="decisionSaldo" value="saldo_favor" />
+                <input type="hidden" id="nc-monto-deuda-hidden" name="montoADeuda" value="0" />
+                <input type="hidden" id="nc-monto-cartera-hidden" name="montoACartera" value="0" />
+
+
+                <!-- ══════════════════════════════════════════
+             PASO 5 — REVISIÓN Y EMISIÓN
+        ════════════════════════════════════════════ -->
+                <div class="panel" id="panel-4">
+
+                    <div class="section-card">
+                        <div class="section-head">
+                            <div class="section-icon ok"><i class="fas fa-clipboard-check"></i></div>
+                            <div>
+                                <div class="section-title">Revisión Final</div>
+                                <div class="section-sub">Verifica todos los datos antes de emitir</div>
+                            </div>
+                        </div>
+                        <div class="section-body" id="review-body">
+                            <div style="text-align:center; color:var(--ink-ghost); padding:20px; font-size:12px;">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Compilando resumen...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card d-none">
+                        <div class="section-head">
+                            <div class="section-icon info"><i class="fas fa-paper-plane"></i></div>
+                            <div><div class="section-title">Acciones de Emisión</div></div>
+                        </div>
+                        <div class="section-body">
+                            <div class="form-grid cols-3">
+                                <div class="field">
+                                    <label>Enviar por email al emitir</label>
+                                    <select id="nc-env-email" name="envEmail">
+                                        <option value="si">Sí — enviar automáticamente</option>
+                                        <option value="no">No por ahora</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Generar PDF</label>
+                                    <select id="nc-gen-pdf" name="genPdf">
+                                        <option value="si">Sí — descargar al emitir</option>
+                                        <option value="no">No</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Timbrar CFDI en SAT</label>
+                                    <select id="nc-timbrar" name="timbrar">
+                                        <option value="si">Sí — timbrar al guardar</option>
+                                        <option value="diferido">Diferido — solo borrador</option>
+                                        <option value="no">No (interno)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex gap-10 mt-14" style="flex-wrap:wrap;">
+                                <button type="button" class="btn-icon" onclick="openPreview()">
+                                    <i class="fas fa-eye"></i> Vista previa del documento
+                                </button>
+                                <button type="button" class="btn-icon" onclick="downloadPDF()">
+                                    <i class="fas fa-file-pdf" style="color:var(--primary-blue)"></i> Descargar PDF
+                                </button>
+                                <button type="button" class="btn-icon ok" onclick="guardarNC()">
+                                    <i class="fas fa-paper-plane"></i> Emitir Nota de Crédito
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-nav">
+                        <button type="button" class="btn-step back" onclick="gotoStep(4)"><i class="fas fa-arrow-left"></i> Anterior</button>
+                        <button type="button" class="btn-step finish" onclick="guardarNC()">
+                            <i class="fas fa-check-circle"></i> Emitir NC
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CAMPOS OCULTOS -->
+                <input type="hidden" id="nc-subtotal" name="subtotal" value="0" />
+                <input type="hidden" id="nc-descuentos" name="descuentos" value="0" />
+                <input type="hidden" id="nc-base" name="base" value="0" />
+                <input type="hidden" id="nc-iva" name="iva" value="0" />
+                <input type="hidden" id="nc-ieps" name="ieps" value="0" />
+                <input type="hidden" id="nc-total" name="total" value="0" />
+                <input type="hidden" id="nc-tipo-sel" name="tipoNC" value="" />
+                <input type="hidden" id="nc-refs-json" name="refs" value="[]" />
+                <input type="hidden" id="nc-encabezado-id" name="encabezadoId" value="" />
+                <input type="hidden" id="nc-id-cliente" name="idCliente" value="" />
+                <input type="hidden" id="nc-regimen-hidden" name="regimen" value="601" />
+                <input type="hidden" id="nc-partidas-json" name="partidas" value="[]" />
+
+        </form>
+</div><!-- /main-col -->
+<!-- ═══════════════════════════════════════════
+     BARRA LATERAL — NUEVO DISEÑO v2
+══════════════════════════════════════════════ -->
+<div class="side-col">
+
+    <!-- Header oscuro con strip de pasos -->
+    <div class="sb2-header">
+        <div class="sb2-header-top">
+            <div class="sb2-brand">
+                <div class="sb2-brand-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M2 3.5h10M2 7h6.5M2 10.5h8" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <span class="sb2-brand-title">Resumen NC</span>
+            </div>
+            <span class="sb2-estado-badge" id="sb2-estado">BORRADOR</span>
+        </div>
+        <div class="sb2-steps-strip">
+            <div class="sb2-stp active" data-step="1" onclick="gotoStep(1)">
+                <span class="sb2-stp-num">1</span>
+                <div class="sb2-stp-dot"></div>
+            </div>
+            <div class="sb2-stp pending" data-step="2" onclick="gotoStep(2)">
+                <span class="sb2-stp-num">2</span>
+                <div class="sb2-stp-dot"></div>
+            </div>
+            <div class="sb2-stp pending" data-step="3" onclick="gotoStep(3)">
+                <span class="sb2-stp-num">3</span>
+                <div class="sb2-stp-dot"></div>
+            </div>
+            <div class="sb2-stp pending" data-step="4" onclick="gotoStep(4)">
+                <span class="sb2-stp-num">4</span>
+                <div class="sb2-stp-dot"></div>
+            </div>
+            <div class="sb2-stp pending" data-step="5" onclick="gotoStep(5)">
+                <span class="sb2-stp-num">5</span>
+                <div class="sb2-stp-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tipo de NC -->
+    <div class="sb2-section">
+        <div class="sb2-section-lbl">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <rect x="1" y="1" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.2" />
+                <circle cx="5.5" cy="5.5" r="1.5" fill="currentColor" />
+            </svg>
+            Tipo
+        </div>
+        <div class="sb2-type-row">
+            <div class="sb2-type-swatch" id="side-type-dot"></div>
+            <div>
+                <div class="sb2-type-name" id="side-type-name">Sin seleccionar</div>
+                <div class="sb2-type-folio">NC · <span id="sb2-folio-lbl">—</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cliente y referencias -->
+    <div class="sb2-section">
+        <div class="sb2-section-lbl">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <circle cx="5.5" cy="3.5" r="2" stroke="currentColor" stroke-width="1.2" />
+                <path d="M1.5 10c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
+            Cliente
+        </div>
+        <div class="sb2-cli-name" id="side-cliente">—</div>
+        <div class="sb2-refs-pills" id="side-refs-pills">
+            <span class="sb2-no-refs" id="side-refs">0 documentos</span>
+        </div>
+    </div>
+
+    <!-- Desglose fiscal -->
+    <div class="sb2-section">
+        <div class="sb2-section-lbl">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <path d="M5.5 1v9M2 3.5h5a1.5 1.5 0 010 3H3a1.5 1.5 0 000 3h5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
+            Desglose fiscal
+        </div>
+        <div class="sb2-dg-row"><span class="sb2-dg-lbl">Subtotal</span><span class="sb2-dg-val" id="side-subtotal">$0.00</span></div>
+        <div class="sb2-dg-row"><span class="sb2-dg-lbl">Descuentos</span><span class="sb2-dg-val neg" id="side-descuentos">−$0.00</span></div>
+        <div class="sb2-dg-sep"></div>
+        <div class="sb2-dg-row"><span class="sb2-dg-lbl">Base gravable</span><span class="sb2-dg-val" id="side-base">$0.00</span></div>
+        <div class="sb2-dg-row"><span class="sb2-dg-lbl">IVA</span><span class="sb2-dg-val" id="side-iva">$0.00</span></div>
+        <div class="sb2-dg-row" id="ieps-line" style="display:none">
+            <span class="sb2-dg-lbl">IEPS</span><span class="sb2-dg-val" id="side-ieps">$0.00</span>
+        </div>
+        <div class="sb2-total-card">
+            <div>
+                <div class="sb2-total-lbl">Total NC</div>
+                <div class="sb2-total-ccy" id="side-moneda-note">MXN · 1.0000</div>
+            </div>
+            <div class="sb2-total-val" id="side-total">$0.00</div>
+        </div>
+        <!-- Barra de límite vs referencias — visible solo si tipo limita por ref -->
+        <div class="sb2-bar-wrap" id="sb2-bar-wrap" style="display:none">
+            <div class="sb2-bar-row">
+                <span class="sb2-bar-lbl">Límite vs. facturas ref.</span>
+                <span class="sb2-bar-pct" id="sb2-bar-pct">0%</span>
+            </div>
+            <div class="sb2-bar-track">
+                <div class="sb2-bar-fill" id="sb2-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paso actual -->
+    <div class="sb2-section sb2-section-paso">
+        <div class="sb2-section-lbl">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" stroke-width="1.2" />
+                <path d="M5.5 3v3l1.5 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+            </svg>
+            Paso actual
+        </div>
+        <div class="sb2-paso-chip">
+            <div class="sb2-paso-num" id="sb2-paso-num">1</div>
+            <div>
+                <div class="sb2-paso-name" id="sb2-paso-name">Tipo y origen</div>
+                <div class="sb2-paso-sub" id="sb2-paso-sub">Selecciona el tipo de NC</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="sb2-actions">
+        <button type="button" class="sb2-btn-primary" onclick="guardarNC()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2 6.5l3.5 3.5 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Emitir Nota de Crédito
+        </button>
+        <button type="button" class="sb2-btn-secondary" onclick="openPreview()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2" />
+                <circle cx="6" cy="6" r="2" stroke="currentColor" stroke-width="1.2" />
+            </svg>
+            Vista previa
+        </button>
+    </div>
+
+</div><!-- /side-col -->
+</div><!-- /layout -->
+<!-- MODAL — BUSCAR FACTURAS -->
+<div class="modal-overlay" id="modal-facturas">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span class="modal-title"><i class="fas fa-file-invoice me-2"></i>Buscar Factura de Referencia</span>
+            <button class="modal-close" onclick="closeModal('modal-facturas')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-search">
+            <input type="text" id="search-facturas" placeholder="Folio, cliente, RFC..." oninput="filterFacturasDebounce(this.value)" />
+            <button class="btn-icon" onclick="document.getElementById('search-facturas').value=''; filterFacturas('')"><i class="fas fa-eraser"></i></button>
+        </div>
+        <div class="modal-list" id="list-facturas">
+            <div style="text-align:center;padding:30px;color:var(--ink-ghost);font-size:12px;">
+                <i class="fas fa-search fa-2x" style="opacity:.3;display:block;margin-bottom:8px;"></i>Escribe para buscar facturas
+            </div>
+        </div>
+        <div class="modal-footer">
+            <span id="facturas-count-txt"></span>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn-icon" id="btn-facturas-prev" onclick="facturasPrevPage()" style="display:none"><i class="fas fa-chevron-left"></i></button>
+                <span id="facturas-page-txt" style="font-size:11px;color:var(--ink-soft);"></span>
+                <button class="btn-icon" id="btn-facturas-next" onclick="facturasNextPage()" style="display:none"><i class="fas fa-chevron-right"></i></button>
+                <button class="btn-icon" onclick="closeModal('modal-facturas')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL — BUSCAR CLIENTES -->
+<div class="modal-overlay" id="modal-clientes">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span class="modal-title"><i class="fas fa-users me-2"></i>Buscar Cliente</span>
+            <button class="modal-close" onclick="closeModal('modal-clientes')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-search">
+            <input type="text" id="search-clientes" placeholder="Nombre o clave de cliente..." oninput="filterClientesDebounce(this.value)" />
+            <button class="btn-icon" onclick="document.getElementById('search-clientes').value=''; filterClientes('')"><i class="fas fa-eraser"></i></button>
+        </div>
+        <div class="modal-list" id="list-clientes">
+            <div style="text-align:center;padding:30px;color:var(--ink-ghost);font-size:12px;">
+                <i class="fas fa-search fa-2x" style="opacity:.3;display:block;margin-bottom:8px;"></i>Escribe para buscar clientes
+            </div>
+        </div>
+        <div class="modal-footer">
+            <span id="clientes-count-txt"></span>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn-icon" id="btn-clientes-prev" onclick="clientesPrevPage()" style="display:none"><i class="fas fa-chevron-left"></i></button>
+                <span id="clientes-page-txt" style="font-size:11px;color:var(--ink-soft);"></span>
+                <button class="btn-icon" id="btn-clientes-next" onclick="clientesNextPage()" style="display:none"><i class="fas fa-chevron-right"></i></button>
+                <button class="btn-icon" onclick="closeModal('modal-clientes')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL — VISTA PREVIA -->
+<div class="modal-overlay" id="modal-preview">
+    <div class="modal-box preview-modal" style="max-width:860px;">
+        <div class="modal-header">
+            <span class="modal-title"><i class="fas fa-file-alt me-2"></i>Vista Previa — Nota de Crédito</span>
+            <button class="modal-close" onclick="closeModal('modal-preview')"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="background:#525659; padding:20px; overflow-y:auto; max-height:75vh;">
+            <div class="preview-paper" id="preview-paper"></div>
+        </div>
+        <div class="modal-footer">
+            <span>Documento generado en tiempo real</span>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-icon" onclick="closeModal('modal-preview')">Cerrar</button>
+                <button class="btn-icon danger" onclick="downloadPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+@section scripts {
+    <script src="~/Scripts/Facturas/manejo-respuestas.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.7.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/Facturas/nota-credito.js"></script>
+    <script src="~/Scripts/Facturas/nc-business-rules.js"></script>
+}

@@ -1,0 +1,476 @@
+﻿@{
+    ViewBag.Title = "EstatusDocumento";
+    ViewBag.PageTitle = "Estatus";
+}
+<style>
+    .main-container {
+        background-color: var(--bg-light);
+        border-radius: 12px;
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border-light);
+    }
+
+    .document-header {
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 2rem;
+    }
+
+    .status-badge {
+        background-color: var(--accent-blue);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .process-timeline {
+        position: relative;
+        padding: 2rem 0;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding: 1.5rem 0;
+        margin-left: 3rem;
+    }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -3rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--border-light);
+        }
+
+        .timeline-item:last-child::before {
+            bottom: 50%;
+        }
+
+    .timeline-icon {
+        position: absolute;
+        left: -3.75rem;
+        top: 1.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: white;
+        z-index: 2;
+    }
+
+        .timeline-icon.completed {
+            background-color: #22c55e;
+        }
+
+        .timeline-icon.current {
+            background-color: var(--primary-blue);
+            box-shadow: 0 0 0 4px var(--light-blue);
+        }
+
+        .timeline-icon.pending {
+            background-color: var(--text-light);
+        }
+
+    .timeline-content {
+        background-color: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+        .timeline-content.current {
+            border-color: var(--primary-blue);
+            background-color: var(--very-light-blue);
+        }
+
+        .timeline-content.completed {
+            border-color: #22c55e;
+            background-color: #f0fdf4;
+        }
+
+    .process-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+    }
+
+    .process-description {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .process-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .assignee {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .assignee-avatar {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background-color: var(--primary-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+
+    .date-info {
+        font-size: 0.875rem;
+        color: var(--text-light);
+    }
+
+    .document-info {
+        background-color: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+    .info-label {
+        font-weight: 500;
+        color: var(--text-light);
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .progress-bar-container {
+        background-color: var(--border-light);
+        height: 8px;
+        border-radius: 4px;
+        margin: 1rem 0;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-blue), var(--accent-blue));
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    @@media (max-width: 768px) {
+        .timeline-item {
+            margin-left: 2rem;
+        }
+
+        .timeline-icon {
+            left: -2.75rem;
+        }
+
+        .timeline-item::before {
+            left: -2rem;
+        }
+
+        .process-details {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    [data-theme="dark"] .timeline-content.current {
+        background-color: var(--very-light-blue);
+    }
+
+    [data-theme="dark"] .timeline-content.completed {
+        background-color: #064e3b;
+    }
+
+    /* Estilos por defecto (modo claro) */
+    .tom-select .ts-control {
+        background-color: #fff;
+        color: #212529;
+        border-color: #ced4da;
+    }
+
+    .tom-select .ts-dropdown {
+        background-color: #fff;
+        color: #212529;
+    }
+
+    /* Estilos para modo oscuro */
+    .dark-mode .tom-select .ts-control,
+    .bg-dark .tom-select .ts-control {
+        background-color: #343a40; /* igual a .bg-dark */
+        color: #f8f9fa; /* igual a .text-light */
+        border-color: #495057;
+    }
+
+    .dark-mode .tom-select .ts-dropdown,
+    .bg-dark .tom-select .ts-dropdown {
+        background-color: #343a40;
+        color: #f8f9fa;
+    }
+
+    .dark-mode .tom-select .option:hover,
+    .bg-dark .tom-select .option:hover {
+        background-color: #495057;
+        color: #ffffff;
+    }
+</style>
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<div class="mb-3 w-75 d-flex gap-1 align-items-end">
+    <div class="w-50">
+        <label for="documentos" class="form-label">Busca documentos por folio</label>
+        <select id="documentos" class="form-select">
+            <option value="">Selecciona un documento</option>
+            @foreach (var doc in Model["documentos"])
+            {
+                var folio = doc["nuevo_codigo"]?.ToString();
+                <option value="@doc["uuid"]">@folio</option>
+            }
+        </select>
+    </div>
+    <div class="w-25">
+        <button id="btnFiltrar" class="btn btn-primary">
+            <i class="fa-regular fa-magnifying-glass-arrows-rotate"></i>
+        </button>
+    </div>
+</div>
+
+<div class="main-container" id="main-container">
+
+</div>
+<link href="~/lib/jquery/jquery.min.js" rel="stylesheet" />
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script>
+    // Inicializa TomSelect
+    new TomSelect("#documentos", {
+        maxItems: 1,
+        allowEmptyOption: true,
+        create: false,
+        render: {
+            option: function (data, escape) {
+                return `<div style="color: var(--text-dark);">${escape(data.text)}</div>`;
+            }
+        }
+    });
+
+    // Al hacer clic en el botón de "Filtrar"
+    document.getElementById("btnFiltrar").addEventListener("click", function () {
+        const select = document.getElementById("documentos");
+        const selectedUUID = select.value;
+
+        if (selectedUUID) {
+            obtenerEstatusDocumento(selectedUUID);
+        } else {
+            alert("Selecciona un documento primero.");
+        }
+    });
+
+    // Función para obtener el estatus del documento
+    function obtenerEstatusDocumento(uuid) {
+        const content = document.getElementById('main-container');
+        content.innerHTML = '<div class="d-flex align-items-center justify-content-center mt-4 mb-4"><i class="fa-solid fa-rotate fa-spin"></i></div>'
+
+        GetData({
+            path: '/Compras/GetEstatusDocumentos',
+            data: { uuid: uuid }
+        }).then((_res) => {
+            const documentosOrdenados = ordenarDocumentosEncadenados(_res.encabezadosAnteriores);
+            const docActualId = _res.documento[0].id_encabezado;
+            const encabezado = _res.documento[0];
+
+            const aprobadores = [
+                { rol: 'Solicitante', nombre: encabezado.solicitante, fecha: encabezado.fch0 },
+                { rol: 'Gerente de Área', nombre: encabezado.gerente, fecha: encabezado.fch1 },
+                { rol: 'Compras', nombre: encabezado.comprador, fecha: encabezado.fch2 },
+                { rol: 'Gerente Revisión', nombre: encabezado.gerenterevision, fecha: encabezado.fch3 },
+            ];
+
+            aprobadores.push(
+                { rol: 'Revisión Presupuesto', nombre: encabezado.compradorrevision, fecha: encabezado.fch5 },
+                { rol: 'Dirección', nombre: encabezado.direccion, fecha: encabezado.fch6 }
+            );
+
+            const descuentoDoc = parseFloat(encabezado.dto) || 0;
+            const etapaActual = obtenerEtapaActual(aprobadores);
+            const totalEtapas = aprobadores.length;
+            const completadas = aprobadores.filter(a => a.fecha).length;
+            const porcentaje = Math.round((completadas / totalEtapas) * 100);
+
+            let html = `
+                <!-- Header del documento -->
+                <div class="document-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="h3 mb-2">${encabezado.tipo_documento || 'Documento sin título'}</h1>
+                            <p class="mb-0 opacity-75">${encabezado.folio || 'Sin folio'} • Creado el ${dateFormatter(encabezado.fch_cap)}</p>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <div class="status-badge">
+                                <i class="fas fa-clock me-2"></i>
+                                ${porcentaje == 100 ? 'Completado' : 'Pendiente' || 'Sin estado'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de progreso -->
+                    <div class="progress-bar-container mt-3 mb-1">
+                        <div class="progress-bar-fill" style="width: ${porcentaje}%"></div>
+                    </div>
+                    <small class="opacity-75">Progreso: ${completadas} de ${totalEtapas} etapas completadas (${porcentaje}%)</small>
+                </div>
+
+                <div class="p-4">
+                    <!-- Información del documento -->
+                    <div class="document-info">
+                        <h5 class="mb-3">
+                            <i class="fas fa-info-circle me-2" style="color: var(--primary-blue);"></i>
+                            Información del Documento
+                        </h5>
+                        <div class="info-item">
+                            <span class="info-label">Tipo de Documento</span>
+                            <span class="info-value">${encabezado.tipo_documento || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Autor</span>
+                            <span class="info-value">${encabezado.solicitante || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Departamento</span>
+                            <span class="info-value">${encabezado.usr_dep || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Subtotal</span>
+                            <span class="info-value">${Currency.format(parseFloat(encabezado.sub) || 0)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Descuento</span>
+                            <span class="info-value text-danger">${descuentoDoc > 0 ? `- ${Currency.format(descuentoDoc)}` : Currency.format(0)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Importe</span>
+                            <span class="info-value fw-bold">${Currency.format(parseFloat(encabezado.imp) || 0)}</span>
+                        </div>
+                    </div>
+
+                    <!-- Timeline de procesos -->
+                    <h5 class="mb-4 mt-5">
+                        <i class="fas fa-route me-2" style="color: var(--primary-blue);"></i>
+                        Flujo de Aprobación
+                    </h5>
+
+                    <div class="process-timeline">`;
+
+            aprobadores.forEach((ap, i) => {
+                let clase = '';
+                if (ap.fecha) {
+                    clase = 'completed';
+                } else if (i === etapaActual) {
+                    clase = 'current';
+                } else {
+                    clase = 'pending';
+                }
+
+                html += `
+                        <div class="timeline-item">
+                            <div class="timeline-icon ${clase}">
+                                <i class="fas ${clase === 'completed' ? 'fa-check' : clase === 'current' ? 'fa-clock' : 'fa-pause'}"></i>
+                            </div>
+                            <div class="timeline-content ${clase}">
+                                <div class="process-title">${i + 1}. ${ap.rol}</div>
+                                <div class="process-details">
+                                    <div class="assignee">
+                                        <div class="assignee-avatar">${ap.nombre?.substring(0, 2).toUpperCase() || '--'}</div>
+                                        <span>${ap.nombre || 'No asignado'}</span>
+                                    </div>
+                                    <div class="date-info">
+                                        ${ap.fecha
+                        ? `<i class="fas fa-check-circle text-success me-1"></i> Completado: ${dateFormatter(ap.fecha)}`
+                        : clase === 'current'
+                            ? `<i class="fas fa-hourglass-half text-warning me-1"></i> En proceso`
+                            : `<i class="fas fa-calendar text-muted me-1"></i> Pendiente`
+                    }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+            });
+
+            html += `</div>
+
+                    <!-- Acciones adicionales -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" onclick="GenerarPDFGeneral(${encabezado.id_encabezado})">
+                                    <i class="fas fa-download me-2"></i>
+                                    Descargar Documento
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+
+                        </div>
+                    </div>
+                </div>`;
+
+            content.innerHTML = html;
+        });
+    }
+
+    function ordenarDocumentosEncadenados(documentos) {
+        const mapa = new Map(documentos.map(d => [d.id_encabezado, d]));
+        const resultado = [];
+
+        // buscar el documento inicial (padre == 0)
+        let actual = documentos.find(d => d.encabezados_padre == 0);
+        while (actual) {
+            resultado.push(actual);
+            actual = documentos.find(d => d.encabezados_padre == actual.id_encabezado);
+        }
+
+        return resultado;
+    }
+
+    function obtenerEtapaActual(aprobadores) {
+        for (let i = 0; i < aprobadores.length; i++) {
+            if (!aprobadores[i].fecha) {
+                return i;
+            }
+        }
+        return aprobadores.length; // todas completadas
+    }
+
+</script>

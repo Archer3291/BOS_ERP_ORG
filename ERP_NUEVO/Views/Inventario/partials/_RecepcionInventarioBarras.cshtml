@@ -1,0 +1,697 @@
+<style>
+    .rib-wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    .rib-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+    }
+
+        .rib-head h5 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin: 0 0 .3rem;
+        }
+
+        .rib-head p {
+            margin: 0;
+            font-size: .85rem;
+            color: var(--text-light);
+        }
+
+    .rib-formato {
+        font-size: .75rem;
+        color: var(--text-light);
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: .5rem .8rem;
+        white-space: nowrap;
+    }
+
+        .rib-formato b {
+            color: var(--text-dark);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+    .rib-drop {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .35rem;
+        padding: 2.25rem 1rem;
+        border: 2px dashed var(--border-light);
+        border-radius: 12px;
+        background: var(--bg-gray);
+        cursor: pointer;
+        transition: border-color .18s, background .18s;
+    }
+
+        .rib-drop:hover,
+        .rib-drop.rib-drag {
+            border-color: var(--accent-blue);
+            background: rgba(59,130,246,.05);
+        }
+
+        .rib-drop i {
+            font-size: 1.9rem;
+            color: var(--accent-blue);
+            margin-bottom: .35rem;
+        }
+
+    .rib-drop-title {
+        margin: 0;
+        font-size: .9rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .rib-drop-hint {
+        margin: 0;
+        font-size: .75rem;
+        color: var(--text-light);
+    }
+
+    .rib-file {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        margin-top: 1rem;
+        padding: .6rem .9rem;
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        background: var(--bg-light);
+        font-size: .85rem;
+        color: var(--text-dark);
+    }
+
+        .rib-file i {
+            color: var(--success-color);
+        }
+
+    .rib-file-clear {
+        margin-left: auto;
+        border: none;
+        background: transparent;
+        color: var(--text-light);
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 6px;
+    }
+
+        .rib-file-clear:hover {
+            color: var(--danger-color);
+            background: rgba(220,38,38,.08);
+        }
+
+    .rib-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: .6rem;
+        padding: 2rem 1rem;
+        font-size: .85rem;
+        color: var(--text-light);
+    }
+
+    .rib-spin {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        border: 2px solid var(--border-light);
+        border-top-color: var(--accent-blue);
+        border-radius: 50%;
+        animation: ribSpin .6s linear infinite;
+    }
+
+    @@keyframes ribSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .rib-resumen {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .6rem;
+        margin: 1.15rem 0 .75rem;
+    }
+
+    .rib-stat {
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+        flex: 1;
+        min-width: 120px;
+        padding: .6rem .85rem;
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        background: var(--bg-light);
+    }
+
+    .rib-stat-label {
+        font-size: .64rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: var(--text-light);
+    }
+
+    .rib-stat-val {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        font-variant-numeric: tabular-nums;
+    }
+
+        .rib-stat-val.ok {
+            color: var(--success-color);
+        }
+
+        .rib-stat-val.err {
+            color: var(--danger-color);
+        }
+
+    .rib-empty {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: var(--text-light);
+        font-size: .85rem;
+    }
+
+        .rib-empty i {
+            font-size: 2.2rem;
+            opacity: .35;
+            display: block;
+            margin-bottom: .6rem;
+        }
+
+    .rib-tabla-wrap {
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        overflow: auto;
+        max-height: 46vh;
+    }
+
+    .rib-tabla {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 12.5px;
+    }
+
+        .rib-tabla thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: var(--bg-gray);
+            padding: 10px 14px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-light);
+            border-bottom: 1px solid var(--border-light);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .rib-tabla tbody td {
+            padding: 9px 14px;
+            border-top: 1px solid var(--border-light);
+            background: var(--bg-light);
+            color: var(--text-dark);
+            vertical-align: middle;
+        }
+
+        .rib-tabla tbody tr:first-child td {
+            border-top: none;
+        }
+
+        .rib-tabla tbody tr.rib-fila-error td {
+            background: rgba(220,38,38,.04);
+        }
+
+        .rib-tabla tbody tr.rib-fila-ok td {
+            background: rgba(5,150,105,.04);
+        }
+
+    .rib-idx {
+        color: var(--text-light);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .rib-mono {
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 600;
+    }
+
+    .rib-num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .rib-tabla thead th.rib-num {
+        text-align: right;
+    }
+
+    .rib-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: 2px 10px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.6;
+    }
+
+    .rib-badge-pend {
+        background: rgba(71,85,105,.1);
+        color: var(--secondary-blue);
+    }
+
+    .rib-badge-ok {
+        background: rgba(5,150,105,.1);
+        color: var(--success-color);
+    }
+
+    .rib-badge-err {
+        background: rgba(220,38,38,.1);
+        color: var(--danger-color);
+    }
+
+    .rib-badge-run {
+        background: rgba(59,130,246,.1);
+        color: var(--accent-blue);
+    }
+
+    .rib-detalle {
+        display: block;
+        font-size: 11px;
+        color: var(--text-light);
+        margin-top: .2rem;
+    }
+
+    .rib-acciones {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 1.15rem;
+    }
+
+    .rib-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        background: var(--success-color);
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        padding: .65rem 1.35rem;
+        font-weight: 600;
+        font-size: .875rem;
+        cursor: pointer;
+        transition: opacity .18s, transform .1s;
+    }
+
+        .rib-btn:hover:not(:disabled) {
+            opacity: .88;
+        }
+
+        .rib-btn:active:not(:disabled) {
+            transform: scale(.98);
+        }
+
+        .rib-btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .rib-btn .rib-spin {
+            border-color: rgba(255,255,255,.35);
+            border-top-color: #fff;
+        }
+</style>
+
+<div class="rib-wrap">
+    <div class="rib-head">
+        <div>
+            <h5>Ingreso de inventario de barras</h5>
+            <p>Carga el archivo CSV con las barras ya configuradas para darlas de alta en el inventario.</p>
+        </div>
+        <span class="rib-formato">Columnas: <b>clave, longitud, cantidad, unidad, comentario</b></span>
+    </div>
+
+    <input type="file" id="ribFileInput" accept=".csv,text/csv" class="d-none">
+
+    <div class="rib-drop" id="ribDrop">
+        <i class="fa-solid fa-file-csv"></i>
+        <p class="rib-drop-title">Arrastra el archivo CSV o haz clic para seleccionarlo</p>
+        <p class="rib-drop-hint">Se admite una fila de encabezados; el comentario es opcional</p>
+    </div>
+
+    <div class="rib-file d-none" id="ribFileInfo">
+        <i class="fa-solid fa-file-csv"></i>
+        <span id="ribFileName"></span>
+        <button type="button" class="rib-file-clear" id="ribBtnLimpiar" title="Quitar archivo">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <div class="rib-loader d-none" id="ribLoader">
+        <span class="rib-spin"></span> Procesando archivo...
+    </div>
+
+    <div class="rib-resumen d-none" id="ribResumen">
+        <div class="rib-stat">
+            <span class="rib-stat-label">Filas</span>
+            <span class="rib-stat-val" id="ribTotalFilas">0</span>
+        </div>
+        <div class="rib-stat">
+            <span class="rib-stat-label">Válidas</span>
+            <span class="rib-stat-val ok" id="ribValidas">0</span>
+        </div>
+        <div class="rib-stat">
+            <span class="rib-stat-label">Con error</span>
+            <span class="rib-stat-val err" id="ribInvalidas">0</span>
+        </div>
+        <div class="rib-stat">
+            <span class="rib-stat-label">Piezas</span>
+            <span class="rib-stat-val" id="ribPiezas">0</span>
+        </div>
+        <div class="rib-stat">
+            <span class="rib-stat-label">Total</span>
+            <span class="rib-stat-val" id="ribMetros">0.00</span>
+        </div>
+    </div>
+
+    <div class="rib-empty" id="ribEmpty">
+        <i class="fa-solid fa-barcode"></i>
+        Selecciona un archivo CSV para revisar las barras antes de darlas de alta
+    </div>
+
+    <div class="rib-tabla-wrap d-none" id="ribTablaWrap">
+        <table class="rib-tabla">
+            <thead>
+                <tr>
+                    <th style="width:46px">#</th>
+                    <th>Clave</th>
+                    <th class="rib-num">Longitud</th>
+                    <th class="rib-num">Cantidad</th>
+                    <th>Unidad</th>
+                    <th class="rib-num">Total</th>
+                    <th>Comentario</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody id="ribTablaBody"></tbody>
+        </table>
+    </div>
+
+    <div class="rib-acciones">
+        <button type="button" class="rib-btn" id="ribBtnProcesar" disabled>
+            <i class="fa-solid fa-cloud-arrow-up"></i> Dar de alta las barras
+        </button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+<script>
+    (function () {
+        const drop = document.getElementById('ribDrop');
+        const input = document.getElementById('ribFileInput');
+        const fileInfo = document.getElementById('ribFileInfo');
+        const fileName = document.getElementById('ribFileName');
+        const loader = document.getElementById('ribLoader');
+        const resumen = document.getElementById('ribResumen');
+        const empty = document.getElementById('ribEmpty');
+        const tablaWrap = document.getElementById('ribTablaWrap');
+        const tablaBody = document.getElementById('ribTablaBody');
+        const btnProcesar = document.getElementById('ribBtnProcesar');
+        const btnLimpiar = document.getElementById('ribBtnLimpiar');
+        const etiquetaProcesar = btnProcesar.innerHTML;
+
+        let filas = [];
+        let procesando = false;
+
+        function escapar(valor) {
+            const div = document.createElement('div');
+            div.textContent = valor ?? '';
+            return div.innerHTML;
+        }
+
+        function aNumero(valor) {
+            const limpio = String(valor ?? '').trim().replace(/\s+/g, '').replace(',', '.');
+            if (!limpio) return null;
+            const num = Number(limpio);
+            return isNaN(num) ? null : num;
+        }
+
+        function esEncabezado(fila) {
+            return aNumero(fila[1]) === null && aNumero(fila[2]) === null;
+        }
+
+        function mapear(fila) {
+            const clave = String(fila[0] ?? '').trim();
+            const longitud = aNumero(fila[1]);
+            const cantidad = aNumero(fila[2]);
+            const unidad = String(fila[3] ?? '').trim();
+            const comentario = String(fila[4] ?? '').trim();
+
+            let error = null;
+            if (!clave) error = 'Falta la clave del producto';
+            else if (longitud === null || longitud <= 0) error = 'Longitud inválida';
+            else if (cantidad === null || cantidad <= 0) error = 'Cantidad inválida';
+            else if (!unidad) error = 'Falta la unidad';
+
+            return { clave, longitud, cantidad, unidad, comentario, error, estado: error ? 'error' : 'pendiente', detalle: error };
+        }
+
+        function limpiar() {
+            filas = [];
+            input.value = '';
+            tablaBody.innerHTML = '';
+            fileInfo.classList.add('d-none');
+            resumen.classList.add('d-none');
+            tablaWrap.classList.add('d-none');
+            empty.classList.remove('d-none');
+            btnProcesar.disabled = true;
+        }
+
+        function badge(fila) {
+            if (fila.estado === 'ok') return `<span class="rib-badge rib-badge-ok"><i class="fa-solid fa-check"></i>Registrada</span>`;
+            if (fila.estado === 'error') return `<span class="rib-badge rib-badge-err"><i class="fa-solid fa-triangle-exclamation"></i>Error</span>`;
+            if (fila.estado === 'enviando') return `<span class="rib-badge rib-badge-run"><i class="fa-solid fa-spinner fa-spin"></i>Enviando</span>`;
+            return `<span class="rib-badge rib-badge-pend"><i class="fa-solid fa-clock"></i>Pendiente</span>`;
+        }
+
+        function filaHtml(fila, i) {
+            return `
+                <tr class="${fila.estado === 'error' ? 'rib-fila-error' : fila.estado === 'ok' ? 'rib-fila-ok' : ''}">
+                    <td class="rib-idx">${i + 1}</td>
+                    <td><span class="rib-mono">${escapar(fila.clave) || '-'}</span></td>
+                    <td class="rib-num">${fila.longitud !== null ? fila.longitud.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '-'}</td>
+                    <td class="rib-num">${fila.cantidad !== null ? fila.cantidad.toLocaleString('es-MX') : '-'}</td>
+                    <td>${escapar(fila.unidad) || '-'}</td>
+                    <td class="rib-num">${fila.longitud !== null && fila.cantidad !== null ? (fila.longitud * fila.cantidad).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+                    <td>${escapar(fila.comentario) || '-'}</td>
+                    <td>
+                        ${badge(fila)}
+                        ${fila.detalle ? `<span class="rib-detalle">${escapar(fila.detalle)}</span>` : ''}
+                    </td>
+                </tr>`;
+        }
+
+        function renderTabla() {
+            tablaBody.innerHTML = filas.map(filaHtml).join('');
+        }
+
+        function actualizarFila(fila) {
+            const i = filas.indexOf(fila);
+            const tr = tablaBody.children[i];
+            if (tr) tr.outerHTML = filaHtml(fila, i);
+        }
+
+        function renderResumen() {
+            const validas = filas.filter(f => f.estado !== 'error');
+            const piezas = validas.reduce((total, f) => total + (f.cantidad ?? 0), 0);
+            const metros = validas.reduce((total, f) => total + (f.longitud ?? 0) * (f.cantidad ?? 0), 0);
+
+            document.getElementById('ribTotalFilas').textContent = filas.length;
+            document.getElementById('ribValidas').textContent = validas.length;
+            document.getElementById('ribInvalidas').textContent = filas.length - validas.length;
+            document.getElementById('ribPiezas').textContent = piezas.toLocaleString('es-MX');
+            document.getElementById('ribMetros').textContent = metros.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function cargarArchivo(file) {
+            if (!file) return;
+
+            if (!/\.csv$/i.test(file.name)) {
+                toastMixin.fire({ icon: 'error', title: 'El archivo debe ser un CSV' });
+                return;
+            }
+
+            limpiar();
+            fileName.textContent = file.name;
+            fileInfo.classList.remove('d-none');
+            empty.classList.add('d-none');
+            loader.classList.remove('d-none');
+
+            Papa.parse(file, {
+                skipEmptyLines: true,
+                complete: function (resultado) {
+                    loader.classList.add('d-none');
+
+                    let datos = resultado.data.filter(fila => fila.some(celda => String(celda ?? '').trim() !== ''));
+                    if (datos.length && esEncabezado(datos[0])) datos = datos.slice(1);
+
+                    if (!datos.length) {
+                        empty.classList.remove('d-none');
+                        toastMixin.fire({ icon: 'warning', title: 'El archivo no tiene filas para procesar' });
+                        return;
+                    }
+
+                    filas = datos.map(mapear);
+                    tablaWrap.classList.remove('d-none');
+                    resumen.classList.remove('d-none');
+                    btnProcesar.disabled = filas.every(f => f.estado === 'error');
+
+                    renderTabla();
+                    renderResumen();
+                },
+                error: function (err) {
+                    loader.classList.add('d-none');
+                    empty.classList.remove('d-none');
+                    toastMixin.fire({ icon: 'error', title: 'No se pudo leer el archivo', text: err.message });
+                }
+            });
+        }
+
+        async function procesar() {
+            const pendientes = filas.filter(f => f.estado === 'pendiente');
+
+            if (!pendientes.length) {
+                toastMixin.fire({ icon: 'warning', title: 'No hay filas válidas por procesar' });
+                return;
+            }
+
+            const piezas = pendientes.reduce((total, f) => total + f.cantidad, 0);
+            const metros = pendientes.reduce((total, f) => total + f.longitud * f.cantidad, 0);
+            const descartadas = filas.filter(f => f.estado === 'error').length;
+
+            const confirmacion = await _Swal.fire({
+                icon: 'warning',
+                title: '¿Dar de alta las barras?',
+                html: `Se registrarán <b>${pendientes.length}</b> configuraciones `
+                    + `(<b>${piezas.toLocaleString('es-MX')}</b> piezas, `
+                    + `<b>${metros.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> en total).`
+                    + (descartadas ? `<br><br><b style="color: var(--danger-color);">${descartadas}</b> filas con error se quedan fuera.` : ''),
+                confirmButtonText: 'Continuar',
+                cancelButtonText: 'Volver a revisar',
+                footer: '<b style="color: red;">ADVERTENCIA - Este cambio no se puede revertir</b>'
+            });
+
+            if (!confirmacion.isConfirmed) return;
+
+            procesando = true;
+            btnProcesar.disabled = true;
+            btnLimpiar.disabled = true;
+            input.disabled = true;
+            drop.style.pointerEvents = 'none';
+            btnProcesar.innerHTML = '<span class="rib-spin"></span> Registrando barras...';
+
+            pendientes.forEach(fila => {
+                fila.estado = 'enviando';
+                fila.detalle = null;
+                actualizarFila(fila);
+            });
+
+            const respuesta = await fetch('/Inventario/RecibirTuboBarra', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pendientes.map(fila => ({
+                    productoId: fila.clave,
+                    longitud: fila.longitud,
+                    cantidad: fila.cantidad,
+                    unidad: fila.unidad,
+                    comentario: fila.comentario
+                })))
+            })
+                .then(res => res.json())
+                .catch(() => null);
+
+            if (respuesta && respuesta.icon === 'success') {
+                pendientes.forEach((fila, i) => {
+                    fila.estado = 'ok';
+                    fila.detalle = respuesta.barras?.[i]?.folio ? `Folio ${respuesta.barras[i].folio}` : null;
+                    actualizarFila(fila);
+                });
+            } else {
+                pendientes.forEach(fila => {
+                    fila.estado = 'pendiente';
+                    fila.detalle = null;
+                    actualizarFila(fila);
+                });
+            }
+
+            procesando = false;
+            btnLimpiar.disabled = false;
+            input.disabled = false;
+            drop.style.pointerEvents = '';
+            btnProcesar.innerHTML = etiquetaProcesar;
+            btnProcesar.disabled = !filas.some(f => f.estado === 'pendiente');
+            renderResumen();
+
+            if (!respuesta) {
+                _Swal.fire({ icon: 'error', title: 'No se pudo contactar al servidor', showCancelButton: false });
+                return;
+            }
+
+            _Swal.fire({
+                icon: respuesta.icon,
+                title: respuesta.title,
+                html: respuesta.html ?? (respuesta.icon === 'success'
+                    ? `Se registraron <b>${pendientes.length}</b> configuraciones de barra.`
+                    : ''),
+                showCancelButton: false,
+                confirmButtonText: 'Aceptar'
+            });
+        }
+
+        drop.addEventListener('click', () => { if (!procesando) input.click(); });
+        input.addEventListener('change', e => cargarArchivo(e.target.files[0]));
+        btnLimpiar.addEventListener('click', () => { if (!procesando) limpiar(); });
+        btnProcesar.addEventListener('click', procesar);
+
+        ['dragenter', 'dragover'].forEach(evento => {
+            drop.addEventListener(evento, e => {
+                e.preventDefault();
+                if (!procesando) drop.classList.add('rib-drag');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evento => {
+            drop.addEventListener(evento, e => {
+                e.preventDefault();
+                drop.classList.remove('rib-drag');
+            });
+        });
+
+        drop.addEventListener('drop', e => {
+            if (procesando) return;
+            cargarArchivo(e.dataTransfer.files[0]);
+        });
+    })();
+</script>

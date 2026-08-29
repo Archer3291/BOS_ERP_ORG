@@ -1,0 +1,491 @@
+﻿<style>
+    .container {
+        max-width: 1400px;
+        padding: 2rem;
+    }
+
+    .btn-primary-custom {
+        background-color: var(--primary-blue);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        cursor: pointer;
+    }
+
+        .btn-primary-custom:hover {
+            background-color: var(--primary-blue-dark);
+        }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-light);
+    }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+    .file-input-wrapper {
+        position: relative;
+        display: flex;
+    }
+
+    #fileInput {
+        display: none;
+    }
+
+    .info-badge {
+        display: inline-block;
+        background-color: var(--light-blue);
+        color: var(--text-dark);
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        margin-top: 1rem;
+    }
+
+    .loader-container {
+        display: none;
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .loader {
+        border: 4px solid var(--border-light);
+        border-top: 4px solid var(--primary-blue);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loader-text {
+        color: var(--text-light);
+        font-size: 0.95rem;
+    }
+</style>
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<div class="table-container">
+    <div class="container">
+        <h5>Visor de Documentos CSV</h5>
+        <p style="color: var(--text-light); margin-bottom: 1.5rem;">
+            Carga un archivo CSV para visualizar su contenido en formato de tabla
+        </p>
+
+        <div class="row">
+            <div class="col-md-4 mb-2">
+                <input type="file" id="fileInput" accept=".csv" onchange="handleFileSelect(event)">
+                <button type="button" class="btn-primary-custom" onclick="document.getElementById('fileInput').click()">
+                    Seleccionar archivo CSV
+                </button>
+            </div>
+            <div class="col-md-3 mb-2">
+                <select id="clienteSearchExt" placeholder="Buscar cliente internacional..." style="display:none;">
+                    <option style="color: var(--text-dark)" value="0">Selecciona un cliente</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <select id="vendedorSearchExt" placeholder="Buscar vendedor internacional..." style="display:none;">
+                    <option style="color: var(--text-dark)" value="0">Selecciona un Vendedor</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="fileInfo" class="info-badge" style="display: none;">
+        Archivo cargado: <span id="fileName"></span>
+    </div>
+
+    <div id="loaderState" class="loader-container">
+        <div class="loader"></div>
+        <p class="loader-text">Procesando archivo...</p>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <p>No hay datos para mostrar</p>
+        <p style="font-size: 0.875rem;">Selecciona un archivo CSV para comenzar</p>
+    </div>
+
+    <div id="tableWrapper" style="display: none;">
+        <table class="table modern-table" id="dataTable">
+            <thead>
+                <tr>
+                    <th>Clave</th>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Unidad</th>
+                    <th>Precio unitario</th>
+                    <th>Descuento</th>
+                    <th>Cantidad descuento</th>
+                    <th>Total</th>
+                    <th>Fraccion arancelaria</th>
+                    <th>Remision kepler</th>
+                    <th>Paridad</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+    <div class="d-flex justify-content-end">
+        <button type="button" class="btn-primary-custom" id="processBtn" onclick="processData()" style="display: none; background-color: var(--success-color); margin-right: 0px;">
+            <i class="fa fa-save"></i> Guardar Documento
+        </button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+
+<script>
+    let currentData = [];
+    let currentFile = null;
+
+    var cliTomS = new TomSelect("#clienteSearchExt", {
+        create: false,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        render: {
+            option: function (data, escape) {
+                return `<div style="color: var(--text-dark);">${escape(data.text)}`;
+            },
+            item: function (data, escape) {
+                return `` +
+                    '<div>' +
+                    `   <span style="color:#6C757D;"> ${escape(data.text)} </span>` +
+                    '</div>';
+            }
+        }
+    });
+
+    var venTomS = new TomSelect("#vendedorSearchExt", {
+        create: false,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        render: {
+            option: function (data, escape) {
+                return `<div style="color: var(--text-dark);">${escape(data.text)}`;
+            },
+            item: function (data, escape) {
+                return `` +
+                    '<div>' +
+                    `   <span style="color:#6C757D;"> ${escape(data.text)} </span>` +
+                    '</div>';
+            }
+        }
+    });
+
+    cliTomS.wrapper.style.display = "none";
+    venTomS.wrapper.style.display = "none";
+
+    function clearCurrentData() {
+        currentData = [];
+        currentFile = null;
+        document.getElementById('tableBody').innerHTML = '';
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('tableWrapper').style.display = 'none';
+        document.getElementById('processBtn').style.display = 'none';
+        document.getElementById('clienteSearchExt').style.display = 'none';
+        document.getElementById('vendedorSearchExt').style.display = 'none';
+        cliTomS.wrapper.style.display = "none";
+        venTomS.wrapper.style.display = "none";
+    }
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Limpiar datos anteriores
+        clearCurrentData();
+
+        // Guardar el archivo para enviarlo despues
+        currentFile = file;
+
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileInfo').style.display = 'inline-block';
+
+        // Mostrar loader
+        document.getElementById('loaderState').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('tableWrapper').style.display = 'none';
+
+        Papa.parse(file, {
+            skipEmptyLines: true,
+            complete: function (results) {
+                // Ocultar loader despues de procesar
+                document.getElementById('loaderState').style.display = 'none';
+                renderTable(results.data);
+            },
+            error: function (error) {
+                document.getElementById('loaderState').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+                alert('Error al procesar el archivo: ' + error.message);
+            }
+        });
+    }
+
+    function renderTable(data) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+
+        if (data.length === 0) {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('tableWrapper').style.display = 'none';
+            document.getElementById('processBtn').style.display = 'none';
+            document.getElementById('clienteSearchExt').style.display = 'none';
+            document.getElementById('vendedorSearchExt').style.display = 'none';
+            cliTomS.wrapper.style.display = "block";
+            venTomS.wrapper.style.display = "block";
+            return;
+        }
+
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('tableWrapper').style.display = 'block';
+        document.getElementById('processBtn').style.display = 'inline-block';
+        document.getElementById('clienteSearchExt').style.display = 'inline-block';
+        document.getElementById('vendedorSearchExt').style.display = 'inline-block';
+        cliTomS.wrapper.style.display = "block";
+        venTomS.wrapper.style.display = "block";
+
+        // Guardar datos en variable global
+        currentData = [];
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+
+            // Crear objeto con los datos de la fila
+            const rowData = {
+                clave: row[0]?.trim() || null,
+                descripcion: row[1]?.trim() || null,
+                cantidad: row[2]?.trim() || null,
+                unidad: row[3]?.trim() || null,
+                precio: row[4]?.trim() || null,
+                descuento: row[5]?.trim() || null,
+                cantidadDescuento: row[6]?.trim() || null,
+                total: row[7]?.trim() || null,
+                faccionArancelaria: row[8]?.trim() || null,
+                referencia: row[9]?.trim() || null,
+                paridad: row[10]?.trim() || null,
+            };
+
+            currentData.push(rowData);
+
+            // Asegurar que tenemos 11 columnas
+            for (let i = 0; i < 11; i++) {
+                const td = document.createElement('td');
+                const value = row[i] || '';
+                td.textContent = value.trim() || '-';
+                tr.appendChild(td);
+            }
+
+            tableBody.appendChild(tr);
+        });
+    }
+
+    function processData() {
+        if (!currentFile) {
+            alert('No hay archivo para procesar');
+            return;
+        }
+
+        if (cliTomS.getValue() === '0') {
+            _Swal.fire({
+                icon: 'error',
+                title: 'El cliente es obligatorio',
+                html: 'Por favor seleccione el cliente al que se le vender el material',
+                showCancelButton: false,
+            });
+            throw new Error('El cliente es obligaorio')
+            return
+        }
+
+        if (venTomS.getValue() === '0') {
+            _Swal.fire({
+                icon: 'error',
+                title: 'El vendedor es obligatorio',
+                html: 'Por favor seleccione el vendedor del producto',
+                showCancelButton: false,
+            });
+            throw new Error('El cliente es obligaorio')
+            return
+        }
+
+        // Mostrar loader
+        document.getElementById('loaderState').style.display = 'block';
+        document.getElementById('tableWrapper').style.display = 'none';
+
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+            <style>
+                .flip {
+                    animation: spinY 2s linear infinite;
+                    transform-origin: center;
+                }
+                @@keyframes spinY {
+                    0%   { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                }
+            </style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g>
+        </svg>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: 'Estas seguro?',
+            html: 'Por favor revisa que toda la informacion de la tabla sea correcta antes de continuar.',
+            confirmButtonText: 'Continuar',
+            cancelButtonText: 'Volver a revisar',
+            footer: '<b style="color: red;">ADVERTENCIA - Este cambio no se puede revertir</b>',
+            customClass: {
+                icon: 'p-0 bg-transparent border-0 shadow-none'
+            },
+            preConfirm: () => {
+                swal.fire({
+                    timerProgressBar: false,
+                    timer: undefined,
+                    title: 'Procesando archivo...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                });
+
+                // Enviar al backend
+                GetData({
+                    path: '/Inventario/RecibirMaterialExtraordinario',
+                    data: {
+                        file: currentFile,
+                        cliente: parseInt(cliTomS.getValue()),
+                        vendedor: venTomS.getValue(),
+                    }
+                }).then((_res) => {
+                    if (_res.icon === "success") {
+                        _SwalReload(_res, '/Inventario/Recepcion');
+                    } else {
+                        if (_res.crearProducto) {
+                            _Swal.fire({
+                                icon: _res.icon,
+                                title: _res.title,
+                                html: _res.html,
+                                confirmButtonText: "Agregarlos con esta informacion",
+                                cancelButtonText: "No agregarlos",
+                                preConfirm: () => {
+                                    swal.fire({
+                                        timerProgressBar: false,
+                                        timer: undefined,
+                                        title: 'Procesando archivo...',
+                                        allowOutsideClick: false,
+                                        allowEscapeKey: false,
+                                        didOpen: () => {
+                                            Swal.showLoading();
+                                        },
+                                    }); 
+
+                                    GetData({
+                                        path: '/Inventario/CrearProducto',
+                                        data: {
+                                            file: currentFile,
+                                        },
+                                        swalResponse: true,
+                                        swalType: 'modal',
+                                        swalPath: '/Inventario/Recepcion',
+                                    })
+                                }
+                            });
+                        } else if (_res.crearFraccion) {
+                            _Swal.fire({
+                                icon: _res.icon,
+                                title: _res.title,
+                                html: _res.html,
+                                confirmButtonText: "Agregarlos con esta informacion",
+                                cancelButtonText: "No agregarlos",
+                                preConfirm: () => {
+                                    swal.fire({
+                                        timerProgressBar: false,
+                                        timer: undefined,
+                                        title: 'Procesando archivo...',
+                                        allowOutsideClick: false,
+                                        allowEscapeKey: false,
+                                        didOpen: () => {
+                                            Swal.showLoading();
+                                        },
+                                    });
+
+                                    GetData({
+                                        path: '/Inventario/CrearFraccion',
+                                        data: {
+                                            file: currentFile,
+                                        },
+                                        swalResponse: true,
+                                        swalType: 'modal',
+                                        swalPath: '/Inventario/Recepcion',
+                                    })
+                                }
+                            });
+                        } else {
+                            _Swal.fire(_res)
+                        }
+                    }
+                })
+            }
+        })
+
+        // Ocultar loader
+        document.getElementById('loaderState').style.display = 'none';
+        document.getElementById('tableWrapper').style.display = 'block';
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const opciones = await GetData({
+            path: '/Inventario/GetListaClientes',
+        });
+
+        const clientes = opciones.clientes.map(c => ({
+            value: c.id_cliente,   // o c.cve_cli si eso quieres guardar
+            text: `${c.cve_cli} - ${c.n_cli}`
+        }));
+
+        cliTomS.addOptions(clientes);
+        cliTomS.refreshOptions(false);
+
+        const vendedores = opciones.vendedores.map(c => ({
+            value: c.clave_vendedor,   // o c.cve_cli si eso quieres guardar
+            text: `${c.clave_vendedor} - ${c.nombre}`
+        }));
+
+        venTomS.addOptions(vendedores);
+        venTomS.refreshOptions(false);
+    });
+
+</script>

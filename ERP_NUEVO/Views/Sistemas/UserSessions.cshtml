@@ -1,0 +1,396 @@
+﻿@{
+    ViewBag.Title = "Sesiones de usuario";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <style>
+    /* ── Layout ─────────────────────────────────────────────────────── */
+    .us-page { padding: 1.5rem 0; }
+
+    /* ── Cards ───────────────────────────────────────────────────────── */
+    .panel-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+    }
+    .panel-header {
+        background: var(--bg-gray);
+        border-bottom: 1px solid var(--border-light);
+        padding: .875rem 1.1rem;
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: .5rem;
+    }
+    .panel-title {
+        font-size: 13px; font-weight: 700; color: var(--text-dark);
+        display: flex; align-items: center; gap: 7px; margin: 0;
+    }
+
+    /* ── KPI strip ───────────────────────────────────────────────────── */
+    .kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: .75rem;
+        margin-bottom: 1rem;
+    }
+    @@media (max-width: 900px) { .kpi-strip { grid-template-columns: repeat(2,1fr); } }
+    @@media (max-width: 500px) { .kpi-strip { grid-template-columns: 1fr; } }
+
+    .kpi-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: .9rem 1rem;
+        display: flex; flex-direction: column; gap: 4px;
+        box-shadow: var(--shadow);
+    }
+    .kpi-label { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .05em; }
+    .kpi-value { font-size: 1.5rem; font-weight: 800; color: var(--text-dark); line-height: 1; }
+    .kpi-sub   { font-size: 11px; color: var(--text-light); }
+    .kpi-card.active  { border-left: 3px solid #10b981; }
+    .kpi-card.expired { border-left: 3px solid #94a3b8; }
+    .kpi-card.total   { border-left: 3px solid var(--primary-blue); }
+    .kpi-card.devices { border-left: 3px solid #f59e0b; }
+
+    /* ── Tabla ───────────────────────────────────────────────────────── */
+    .us-table { font-size: 13px; margin: 0; width: 100%; }
+    .us-table thead { background: var(--bg-gray); border-bottom: 1px solid var(--border-light); }
+    .us-table thead th {
+        font-size: 11px; font-weight: 700; color: var(--text-light);
+        text-transform: uppercase; letter-spacing: .05em;
+        padding: 9px 12px; border: none; white-space: nowrap;
+    }
+    .us-table tbody td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border-light);
+        color: var(--text-dark); vertical-align: middle;
+    }
+    .us-table tbody tr:last-child td { border-bottom: none; }
+    .us-table tbody tr:hover td { background: var(--bg-gray); }
+
+    /* ── Page header ─────────────────────────────────────────────────── */
+    .page-title    { font-size: 1.2rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+    .page-subtitle { font-size: 13px; color: var(--text-light); margin: 2px 0 0; }
+
+    /* ── Badges ──────────────────────────────────────────────────────── */
+    .badge-status {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 2px 9px; border-radius: 20px;
+        font-size: 11px; font-weight: 600;
+    }
+    .badge-activo   { background: #d1fae5; color: #065f46; }
+    .badge-expirado { background: #f1f5f9; color: #475569; }
+    .badge-count {
+        background: #dbeafe; color: var(--primary-blue);
+        border-radius: 20px; padding: 1px 8px;
+        font-size: 11px; font-weight: 700;
+    }
+    .dot-active {
+        display: inline-block; width: 7px; height: 7px;
+        border-radius: 50%; background: #10b981;
+        box-shadow: 0 0 0 2px #d1fae5;
+    }
+    .dot-inactive {
+        display: inline-block; width: 7px; height: 7px;
+        border-radius: 50%; background: #94a3b8;
+    }
+
+    /* ── Botones acción ──────────────────────────────────────────────── */
+    .btn-action {
+        width: 28px; height: 28px; padding: 0;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 7px; border: 1px solid var(--border-light);
+        background: var(--bg-light); color: var(--text-light);
+        font-size: 11px; cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+    .btn-action:hover { background: var(--bg-gray); color: var(--text-dark); }
+    .btn-action.del:hover  { border-color: var(--danger-color);  color: var(--danger-color);  background: #fef2f2; }
+    .btn-action.kill:hover { border-color: var(--warning-color); color: var(--warning-color); background: #fffbeb; }
+
+    /* ── Btn primario ────────────────────────────────────────────────── */
+    .btn-primary-custom {
+        background: var(--primary-blue); color: #fff;
+        border: none; border-radius: 8px;
+        padding: 7px 14px; font-size: 12px; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px;
+        cursor: pointer; transition: opacity var(--transition-fast);
+    }
+    .btn-primary-custom:hover { opacity: .88; color: #fff; }
+
+    .btn-danger-custom {
+        background: var(--danger-color); color: #fff;
+        border: none; border-radius: 8px;
+        padding: 7px 14px; font-size: 12px; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px;
+        cursor: pointer; transition: opacity var(--transition-fast);
+    }
+    .btn-danger-custom:hover { opacity: .88; color: #fff; }
+
+    /* ── Filtros ─────────────────────────────────────────────────────── */
+    .filter-bar {
+        padding: .75rem 1rem;
+        border-bottom: 1px solid var(--border-light);
+        display: flex; gap: .5rem; flex-wrap: wrap; align-items: center;
+    }
+    .filter-bar input,
+    .filter-bar select {
+        padding: 6px 10px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px; font-size: 12px;
+        background: var(--bg-light); color: var(--text-dark);
+        flex: 1; min-width: 140px;
+    }
+    .filter-bar input:focus,
+    .filter-bar select:focus { outline: none; border-color: var(--accent-blue); }
+
+    /* ── Toast ───────────────────────────────────────────────────────── */
+    .toast-custom {
+        position: fixed; bottom: 1.5rem; right: 1.5rem;
+        padding: 9px 14px; border-radius: 10px;
+        font-size: 13px; font-weight: 600;
+        z-index: 9999; opacity: 0; transform: translateY(8px);
+        transition: all .22s; pointer-events: none;
+        display: flex; align-items: center; gap: 7px;
+        min-width: 200px; box-shadow: var(--shadow-lg);
+    }
+    .toast-custom.show { opacity: 1; transform: translateY(0); }
+    .toast-custom.ok  { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .toast-custom.err { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    /* ── Device chip ─────────────────────────────────────────────────── */
+    .device-chip {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #f1f5f9; border-radius: 6px;
+        padding: 2px 7px; font-size: 11px; color: var(--text-light);
+        font-family: Consolas, monospace; max-width: 160px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-light); font-size: 13px; }
+    .empty-state i { font-size: 2rem; margin-bottom: .5rem; opacity: .3; }
+
+    /* ── Paginación ──────────────────────────────────────────────────── */
+    .pag-bar {
+        padding: .6rem 1rem;
+        border-top: 1px solid var(--border-light);
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 12px; color: var(--text-light); flex-wrap: wrap; gap: .5rem;
+    }
+    .pag-btn {
+        width: 28px; height: 28px; border-radius: 7px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-light); font-size: 12px; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        transition: all var(--transition-fast);
+    }
+    .pag-btn:hover:not(:disabled) { background: var(--bg-gray); }
+    .pag-btn:disabled { opacity: .4; cursor: default; }
+    .pag-btn.active {
+        background: var(--primary-blue); color: #fff;
+        border-color: var(--primary-blue);
+    }
+    </style>
+    <link href="~/content/tablebuilder.css" rel="stylesheet" />
+}
+
+<div class="us-page">
+    <div class="container-fluid px-0">
+
+        @* ── Header ──────────────────────────────────────────────────────────── *@
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div>
+                <h1 class="page-title">
+                    <i class="fas fa-shield-halved me-2" style="color:var(--primary-blue)"></i>
+                    Sesiones de usuario
+                </h1>
+                <p class="page-subtitle">Monitorea y administra las sesiones activas del sistema</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn-primary-custom" onclick="cargarDatos()">
+                    <i class="fas fa-rotate-right"></i> Actualizar
+                </button>
+                <button class="btn-danger-custom" onclick="cerrarTodasActivas()">
+                    <i class="fas fa-power-off"></i> Cerrar todas las activas
+                </button>
+            </div>
+        </div>
+
+        @* ── KPI strip ───────────────────────────────────────────────────────── *@
+        <div class="kpi-strip" id="kpi-strip">
+            <div class="kpi-card total">
+                <div class="kpi-label">Total sesiones</div>
+                <div class="kpi-value" id="kpi-total">—</div>
+                <div class="kpi-sub">registradas</div>
+            </div>
+            <div class="kpi-card active">
+                <div class="kpi-label">Activas</div>
+                <div class="kpi-value" id="kpi-activas">—</div>
+                <div class="kpi-sub">en curso</div>
+            </div>
+            <div class="kpi-card expired">
+                <div class="kpi-label">Expiradas / cerradas</div>
+                <div class="kpi-value" id="kpi-inactivas">—</div>
+                <div class="kpi-sub">finalizadas</div>
+            </div>
+            <div class="kpi-card devices">
+                <div class="kpi-label">Dispositivos únicos</div>
+                <div class="kpi-value" id="kpi-devices">—</div>
+                <div class="kpi-sub">identificadores distintos</div>
+            </div>
+        </div>
+
+        @* ── Tabla de sesiones ────────────────────────────────────────────────── *@
+        <div class="panel-card">
+            <div id="sessions-table"></div>
+        </div>
+
+    </div>
+</div>
+
+@* ── Toast ────────────────────────────────────────────────────────────────── *@
+<div class="toast-custom" id="toast-custom"></div>
+
+@section scripts {
+    <script src="~/scripts/tablebuilder.js"></script>
+
+    <script>
+        const TOKEN = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)[1];
+
+        const URL_SESIONES    = '@Url.Action("ObtenerSesiones",          "UserSessions")';
+        const URL_KPI         = '@Url.Action("ObtenerKPIs",              "UserSessions")';
+        const URL_CERRAR      = '@Url.Action("CerrarSesion",             "UserSessions")';
+        const URL_ELIMINAR    = '@Url.Action("EliminarSesion",           "UserSessions")';
+        const URL_CERRAR_TODAS = '@Url.Action("CerrarTodasActivas",      "UserSessions")';
+
+        const PAGE_SIZE = 20;
+        let pagActual   = 1;
+        let totalPags   = 1;
+
+        // ── helpers ──────────────────────────────────────────────────────────────────
+        async function postJson(url, data) {
+            const body = new URLSearchParams({ ...data, __RequestVerificationToken: TOKEN });
+            const res  = await fetch(url, { method: 'POST', body });
+            return res.json();
+        }
+        let toastTimer;
+        function toast(msg, ok = true) {
+            const el = document.getElementById('toast-custom');
+            el.innerHTML = `<i class="fas ${ok ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+            el.className = 'toast-custom show ' + (ok ? 'ok' : 'err');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.className = 'toast-custom', 3500);
+        }
+        function parseDate(v) {
+            if (!v) return null;
+            const m = String(v).match(/Date\((\d+)\)/);
+            const d = m ? new Date(+m[1]) : new Date(v);
+            return isNaN(d) ? null : d;
+        }
+        function fmtFecha(v) {
+            const d = parseDate(v);
+            return d ? d.toLocaleDateString('es-MX') + ' ' +
+                d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' }) : '—';
+        }
+        function estaActiva(s) {
+            return s.isactive && parseDate(s.expirytime) > new Date();
+        }
+        function esc(s) { return String(s ?? '').replace(/'/g,"\'").replace(/"/g,'&quot;'); }
+        function resetPage() { pagActual = 1; }
+
+        // ── KPIs ─────────────────────────────────────────────────────────────────────
+        async function cargarKPIs() {
+            const res  = await fetch(URL_KPI);
+            const json = await res.json();
+            if (!json.exito) return;
+            const d = json.datos;
+            document.getElementById('kpi-total').textContent    = d.total ?? 0;
+            document.getElementById('kpi-activas').textContent  = d.activas ?? 0;
+            document.getElementById('kpi-inactivas').textContent = d.inactivas ?? 0;
+            document.getElementById('kpi-devices').textContent  = d.dispositivosUnicos ?? 0;
+        }
+
+        // ── Sesiones ─────────────────────────────────────────────────────────────────
+        async function cargarSesiones() {
+            var tablaSesiones = createTable({
+                path: '@Url.Action("ObtenerSesiones", "UserSessions")',
+                selector: '#sessions-table',
+                columns:[
+                    { title: 'Usuario', data: 'usuario' },
+                    { title: 'Nombre de usuario', data: 'nombreusuario' },
+                    { title: 'Empresa', data: 'empresa' },
+                    { title: 'Ultima actividad', data: 'ultima_actividad', formatter: (v) => v.substring(0,10) },
+                    { title: 'Estado', field: 'activo', formatter: (v) => {
+                            return `` +
+                            `<span class="badge-status ${v === 'true' ? 'badge-activo' : 'badge-expirado'}">` + 
+                                `<span class="${v === 'true' ? 'dot-active' : 'dot-inactive'}"></span>
+                                ${v === 'true' ? 'Activo' : 'Expirado'}
+                            </span>`;   
+                        } 
+                    },
+                ],
+                actions: [
+                    { icon: 'fa-power-off', color: 'kill btn-action', title: 'Cerrar sesión', onClick: row => cerrarSesion(row.sessionid), visible: row => row.activo == true },
+                    { icon: 'fa-trash', color: 'del btn-action', title: 'Eliminar registro', onClick: row => eliminarSesion(row.sessionid) },
+                ],
+            });
+        }
+
+        function irPagina(p) {
+            if (p < 1 || p > totalPags) return;
+            pagActual = p;
+            cargarSesiones();
+        }
+
+        async function cargarDatos() {
+            await Promise.all([cargarKPIs(), cargarSesiones()]);
+        }
+
+        // ── Acciones ──────────────────────────────────────────────────────────────────
+        async function cerrarSesion(sessionId) {
+            const r = await Swal.fire({
+                title: 'Cerrar sesión',
+                text: '¿Desactivar esta sesión? El usuario perderá el acceso hasta que inicie sesión de nuevo.',
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: 'Cerrar', cancelButtonText: 'Cancelar'
+            });
+            if (!r.isConfirmed) return;
+            const json = await postJson(URL_CERRAR, { sessionId });
+            toast(json.mensaje, json.exito);
+            if (json.exito) cargarDatos();
+        }
+
+        async function eliminarSesion(sessionId) {
+            const r = await Swal.fire({
+                title: 'Eliminar registro',
+                text: '¿Eliminar este registro del historial de sesiones?',
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar'
+            });
+            if (!r.isConfirmed) return;
+            const json = await postJson(URL_ELIMINAR, { sessionId });
+            toast(json.mensaje, json.exito);
+            if (json.exito) cargarDatos();
+        }
+
+        async function cerrarTodasActivas() {
+            const r = await Swal.fire({
+                title: 'Cerrar todas las sesiones activas',
+                html: 'Se desactivarán <strong>todas</strong> las sesiones activas del sistema.<br>Los usuarios tendrán que volver a iniciar sesión.',
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: 'Sí, cerrar todas', cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#ef4444'
+            });
+            if (!r.isConfirmed) return;
+            const json = await postJson(URL_CERRAR_TODAS, {});
+            toast(json.mensaje, json.exito);
+            if (json.exito) cargarDatos();
+        }
+
+        // ── Init ──────────────────────────────────────────────────────────────────────
+        cargarDatos();
+    </script>
+}

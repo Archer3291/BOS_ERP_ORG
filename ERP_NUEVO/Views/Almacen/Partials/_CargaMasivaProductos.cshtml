@@ -1,0 +1,714 @@
+﻿@* ═══════════════════════════════════════════════
+       PARCIAL: _CargaMasivaProductos.cshtml
+       Carga masiva de productos via CSV
+       Dependencias: PapaParse 5.3.2, Bootstrap, Font Awesome
+    ════════════════════════════════════════════════ *@
+
+<style>
+    /* ── Drop Zone ── */
+    .bulk-drop-zone {
+        border: 2px dashed var(--border-light);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition-fast, .18s ease);
+        background: var(--bg-gray);
+        position: relative;
+    }
+
+        .bulk-drop-zone.dragover {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, .06);
+        }
+
+        .bulk-drop-zone .drop-icon {
+            font-size: 2.2rem;
+            color: var(--accent-blue);
+            margin-bottom: .7rem;
+            display: block;
+            opacity: .7;
+        }
+
+        .bulk-drop-zone p {
+            margin: 0 0 .3rem;
+            font-size: .92rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .bulk-drop-zone small {
+            font-size: .76rem;
+            color: var(--text-light);
+        }
+
+        .bulk-drop-zone input[type="file"] {
+            display: none;
+        }
+
+    /* ── Toolbar ── */
+    .bulk-toolbar {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        flex-wrap: wrap;
+        margin-bottom: .9rem;
+    }
+
+    .bulk-info-badge {
+        margin-left: auto;
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 20px;
+        padding: .28rem .8rem;
+        font-size: .76rem;
+        color: var(--text-light);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+        .bulk-info-badge span {
+            color: var(--accent-blue);
+            font-weight: 700;
+        }
+
+    /* ── Table wrapper ── */
+    .bulk-table-wrapper {
+        overflow-x: auto;
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        max-height: 380px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-light) transparent;
+    }
+
+    .bulk-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: .82rem;
+    }
+
+        .bulk-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+            .bulk-table thead th {
+                background: var(--primary-blue-dark);
+                color: #fff;
+                font-weight: 600;
+                font-size: .73rem;
+                text-transform: uppercase;
+                letter-spacing: .06em;
+                padding: .65rem .9rem;
+                white-space: nowrap;
+                border-right: 1px solid rgba(255,255,255,.08);
+            }
+
+                .bulk-table thead th:last-child {
+                    border-right: none;
+                }
+
+                .bulk-table thead th .req-star {
+                    color: #f87171;
+                    margin-left: 2px;
+                }
+
+        .bulk-table tbody tr {
+            transition: background .12s;
+        }
+
+            .bulk-table tbody tr:nth-child(even) {
+                background: var(--bg-gray);
+            }
+
+            .bulk-table tbody tr:hover {
+                background: var(--light-blue);
+            }
+
+        .bulk-table td {
+            padding: .45rem .9rem;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-dark);
+            vertical-align: middle;
+        }
+
+            .bulk-table td input {
+                background: none;
+                border: none;
+                outline: none;
+                color: var(--text-dark);
+                font-size: .82rem;
+                width: 100%;
+                min-width: 90px;
+            }
+
+                .bulk-table td input:focus {
+                    border-bottom: 1.5px solid var(--accent-blue);
+                }
+
+            .bulk-table td.cell-invalid {
+                background: rgba(220, 38, 38, .07);
+            }
+
+                .bulk-table td.cell-invalid input {
+                    color: var(--danger-color);
+                }
+
+    /* ── Row status ── */
+    .bulk-row-status {
+        width: 26px;
+        text-align: center;
+        font-size: .85rem;
+    }
+
+    .row-ok {
+        color: var(--success-color);
+    }
+
+    .row-err {
+        color: var(--danger-color);
+    }
+
+    /* ── Empty state ── */
+    .bulk-empty {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: var(--text-light);
+    }
+
+        .bulk-empty i {
+            font-size: 2rem;
+            margin-bottom: .6rem;
+            display: block;
+            opacity: .4;
+        }
+
+        .bulk-empty p {
+            margin: 0;
+            font-size: .85rem;
+        }
+
+    /* ── Error panel ── */
+    .bulk-error-panel {
+        background: rgba(220, 38, 38, .05);
+        border: 1px solid rgba(220, 38, 38, .2);
+        border-radius: 8px;
+        padding: .75rem 1rem;
+        margin-top: .8rem;
+        font-size: .8rem;
+        color: var(--danger-color);
+        display: none;
+    }
+
+        .bulk-error-panel ul {
+            margin: .4rem 0 0;
+            padding-left: 1.2rem;
+        }
+
+    /* ── Progress ── */
+    .bulk-progress-bar {
+        height: 4px;
+        background: var(--border-light);
+        border-radius: 99px;
+        overflow: hidden;
+        margin-top: .7rem;
+        display: none;
+    }
+
+        .bulk-progress-bar .bar-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            border-radius: 99px;
+            width: 0%;
+            transition: width .3s ease;
+        }
+
+    /* ── Template download link ── */
+    .bulk-template-link {
+        font-size: .78rem;
+        color: var(--accent-blue);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+        .bulk-template-link:hover {
+            text-decoration: underline;
+        }
+</style>
+@* ═══ MODAL ═══ *@
+<div class="modal fade prod-modal prod-modal--layout" id="modalCargaMasiva" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <div class="prod-icon">
+                    <i class="fa-solid fa-file-csv"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title">Carga masiva por layout</h5>
+                    <span class="modal-subtitle">Sube un CSV, revisa la previsualización y guarda sólo si no hay errores.</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+
+                @* ── Drop zone ── *@
+                <div class="bulk-drop-zone" id="bulkDropZone" onclick="document.getElementById('bulkFileInput').click()">
+                    <i class="fas fa-cloud-arrow-up drop-icon"></i>
+                    <p>Arrastra tu archivo CSV aquí o haz clic para seleccionarlo</p>
+                    <small>Solo archivos .csv · Máximo 2 000 filas</small>
+                    <input type="file" id="bulkFileInput" accept=".csv" />
+                </div>
+
+                @* ── Template download ── *@
+                <div style="margin:.7rem 0 1rem;display:flex;align-items:center;gap:.8rem">
+                    <a class="bulk-template-link" id="bulkDownloadTemplate" title="Descargar plantilla CSV">
+                        <i class="fas fa-download"></i>Descargar plantilla CSV
+                    </a>
+                    <span style="color:var(--border-light)">|</span>
+                    <span style="font-size:.75rem;color:var(--text-light)">
+                        Columnas requeridas marcadas con <span style="color:var(--danger-color);font-weight:700">*</span>
+                    </span>
+                </div>
+
+                @* ── Toolbar ── *@
+                <div class="bulk-toolbar" id="bulkToolbar" style="display:none!important">
+                    <button type="button" class="prod-btn prod-btn-ghost prod-btn-sm" onclick="bulkLimpiar()">
+                        <i class="fa-solid fa-trash-can"></i>Limpiar
+                    </button>
+                    <button type="button" class="prod-btn prod-btn-soft prod-btn-sm" onclick="bulkRevalidar()">
+                        <i class="fa-solid fa-rotate"></i>Revalidar
+                    </button>
+                    <div class="bulk-info-badge">
+                        <i class="fas fa-table"></i>
+                        <span id="bulkTotalRows">0</span> filas &nbsp;·&nbsp;
+                        <span id="bulkErrCount" style="color:var(--danger-color)">0</span> con errores
+                    </div>
+                </div>
+
+                @* ── Tabla preview ── *@
+                <div class="bulk-table-wrapper" id="bulkTableWrapper">
+                    <div class="bulk-empty">
+                        <i class="fas fa-file-arrow-up"></i>
+                        <p>Sube un archivo CSV para previsualizar los productos</p>
+                    </div>
+                </div>
+
+                @* ── Error panel ── *@
+                <div class="bulk-error-panel" id="bulkErrorPanel">
+                    <strong><i class="fas fa-triangle-exclamation me-1"></i>Errores encontrados — corrige antes de guardar:</strong>
+                    <ul id="bulkErrorList"></ul>
+                </div>
+
+                @* ── Progress ── *@
+                <div class="bulk-progress-bar" id="bulkProgressBar">
+                    <div class="bar-fill" id="bulkBarFill"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="prod-btn prod-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>Cancelar
+                </button>
+                <button type="button" class="prod-btn prod-btn-success" id="btnGuardarMasivo" onclick="guardarCargaMasiva()" disabled>
+                    <i class="fa-solid fa-cloud-arrow-up"></i>Guardar productos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+<script>
+    (function () {
+        /* ════════════════════════════════════════════════
+           CONFIGURACIÓN DE COLUMNAS
+           Agrega / quita según tus campos obligatorios
+        ════════════════════════════════════════════════ */
+        const BULK_COLUMNS = [
+            { key: 'clave', header: 'Clave', required: true, type: 'text', width: '130px' },
+            { key: 'descripcion', header: 'Descripción', required: true, type: 'text', width: '220px' },
+            { key: 'linea', header: 'Línea', required: true, type: 'text', width: '100px' },
+            { key: 'tipo', header: 'Tipo', required: true, type: 'text', width: '90px' },
+            { key: 'grupo', header: 'Grupo', required: true, type: 'text', width: '100px' },
+            { key: 'clave_proveedor', header: 'Clave Proveedor', required: true, type: 'text', width: '100px' },
+            { key: 'clave_secundaria', header: 'Clave Secundaria', required: true, type: 'text', width: '100px' },
+            { key: 'unidad', header: 'Unidad', required: true, type: 'text', width: '80px' },
+            { key: 'unidad_alternativa', header: 'Unidad Alternativa', required: false, type: 'text', width: '80px' },
+            { key: 'factor_conversion', header: 'Factor de Conversion', required: true, type: 'number', width: '80px' },
+            { key: 'iva', header: 'IVA', required: true, type: 'number', width: '80px' },
+            { key: 'impuesto_especial', header: 'Impuesto Especial', required: false, type: 'number', width: '80px' },
+            { key: 'moneda', header: 'Moneda', required: true, type: 'text', width: '80px' },
+            { key: 'importacion', header: 'Importacion', required: true, type: 'text', width: '80px' },
+            { key: 'pais_origen', header: 'Pais Origen', required: true, type: 'text', width: '80px' },
+            { key: 'moneda_compra', header: 'Moneda Compra', required: true, type: 'text', width: '80px' },
+            { key: 'naturaleza', header: 'Naturaleza', required: true, type: 'text', width: '100px' },
+            { key: 'status', header: 'Estado (A/I)', required: true, type: 'text', width: '100px' },
+            { key: 'tipo_costo', header: 'Tipo de Costo', required: true, type: 'text', width: '100px' },
+            { key: 'clave_producto', header: 'Clave Producto', required: true, type: 'text', width: '80px' },
+            { key: 'unidad_medida', header: 'Unidad de Medida', required: true, type: 'text', width: '80px' },
+            { key: 'unidad_secundaria', header: 'Unidad Secundaria', required: false, type: 'text', width: '80px' },
+            { key: 'iva_excento', header: 'IVA excento', required: true, type: 'text', width: '80px' },
+            { key: 'objeto_impuesto', header: 'Objeto de Impuesto', required: true, type: 'text', width: '80px' },
+        ];
+
+        let currentFile;
+
+        const MAX_ROWS = 2000;
+        let bulkRows = [];   // [{ _rowIdx, _errors, ...campos }]
+
+        /* ── Helpers DOM ── */
+        const $ = id => document.getElementById(id);
+        const el = sel => document.querySelector(sel);
+
+        /* ════════════════════════════════════════════════
+           ABRIR MODAL
+        ════════════════════════════════════════════════ */
+        window.abrirModalCargaMasiva = function () {
+            bulkLimpiar();
+            new bootstrap.Modal($('modalCargaMasiva')).show();
+        };
+
+        /* ════════════════════════════════════════════════
+           DROP ZONE
+        ════════════════════════════════════════════════ */
+        const dropZone = $('bulkDropZone');
+
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                currentFile = file;
+                parsearCSV(file);
+            }
+        });
+        $('bulkFileInput').addEventListener('change', e => {
+            if (e.target.files[0]) {
+                currentFile = e.target.files[0];
+                parsearCSV(e.target.files[0]);
+            }
+            e.target.value = '';
+        });
+
+        /* ════════════════════════════════════════════════
+           PARSE CSV
+        ════════════════════════════════════════════════ */
+        function parsearCSV(file) {
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                return toastMixin?.fire?.({ icon: 'error', title: 'Solo se permiten archivos .csv' })
+                    || alert('Solo archivos .csv');
+            }
+
+            Papa.parse(file, {
+                header: false,
+                skipEmptyLines: true,
+                encoding: 'UTF-8',
+                complete: result => {
+                    const raw = result.data;
+                    const dataRows = raw.slice(1); // ignorar fila 0 (header del CSV)
+
+                    if (dataRows.length === 0) {
+                        return alertBulk('El archivo está vacío o no tiene filas de datos.');
+                    }
+                    if (dataRows.length > MAX_ROWS) {
+                        return alertBulk(`Máximo ${MAX_ROWS} filas. El archivo tiene ${dataRows.length}.`);
+                    }
+
+                    console.log('data: ', dataRows)
+                    bulkRows = dataRows.map((row, i) => {
+                        const obj = { _rowIdx: i };
+                        console.log('objeto: ', obj, 'indice: ', i)
+                        BULK_COLUMNS.forEach((col, colIdx) => {
+                            obj[col.key] = (row[colIdx] ?? '').toString().trim();
+                        });
+                        obj._errors = validarFila(obj);
+                        return obj;
+                    });
+
+                    renderTabla();
+                    actualizarContadores();
+                },
+                error: err => alertBulk('Error al leer el CSV: ' + err.message)
+            });
+        }
+
+        /* ════════════════════════════════════════════════
+           VALIDAR FILA
+        ════════════════════════════════════════════════ */
+        function validarFila(row) {
+            const errs = [];
+            BULK_COLUMNS.forEach(col => {
+                if (col.required && !row[col.key]) {
+                    errs.push(col.header);
+                }
+                if (col.type === 'number' && row[col.key] && isNaN(Number(row[col.key]))) {
+                    errs.push(`${col.header} debe ser numérico`);
+                }
+                if (col.key === 'stat' && row[col.key] && !['A', 'I'].includes(row[col.key].toUpperCase())) {
+                    errs.push('Estado debe ser A o I');
+                }
+            });
+            return errs;
+        }
+
+        /* ════════════════════════════════════════════════
+           RENDER TABLA
+        ════════════════════════════════════════════════ */
+        function renderTabla() {
+            const wrapper = $('bulkTableWrapper');
+
+            if (bulkRows.length === 0) {
+                wrapper.innerHTML = `<div class="bulk-empty"><i class="fas fa-file-arrow-up"></i><p>Sube un archivo CSV para previsualizar los productos</p></div>`;
+                $('bulkToolbar').style.setProperty('display', 'none', 'important');
+                $('btnGuardarMasivo').disabled = true;
+                return;
+            }
+
+            /* Encabezado */
+            const ths = `<th class="bulk-row-status">#</th>` +
+                BULK_COLUMNS.map(c =>
+                    `<th style="min-width:${c.width}">${c.header}${c.required ? '<span class="req-star">*</span>' : ''}</th>`
+                ).join('') +
+                `<th style="width:36px"></th>`;
+
+            /* Filas */
+            const trs = bulkRows.map((row, ri) => {
+                const hasErr = row._errors.length > 0;
+                const statusIcon = hasErr
+                    ? `<i class="fas fa-circle-xmark row-err" title="${row._errors.join(', ')}"></i>`
+                    : `<i class="fas fa-circle-check row-ok"></i>`;
+
+                const cells = BULK_COLUMNS.map(col => {
+                    const isEmpty = col.required && !row[col.key];
+                    return `<td class="${isEmpty ? 'cell-invalid' : ''}" data-ri="${ri}" data-key="${col.key}">
+                    <input value="${escHtml(row[col.key])}"
+                           data-ri="${ri}" data-key="${col.key}"
+                           onchange="bulkCellChange(this)"
+                           placeholder="${col.required ? 'requerido' : ''}" />
+                </td>`;
+                }).join('');
+
+                return `<tr data-ri="${ri}">
+                <td class="bulk-row-status">${statusIcon}</td>
+                ${cells}
+                <td style="text-align:center">
+                    <button type="button" class="prod-chip-remove" onclick="bulkEliminarFila(${ri})" title="Eliminar fila">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            </tr>`;
+            }).join('');
+
+            wrapper.innerHTML = `
+            <table class="bulk-table">
+                <thead><tr>${ths}</tr></thead>
+                <tbody id="bulkTbody">${trs}</tbody>
+            </table>`;
+
+            $('bulkToolbar').style.removeProperty('display');
+            actualizarContadores();
+        }
+
+        /* ════════════════════════════════════════════════
+           CELL CHANGE (edición inline)
+        ════════════════════════════════════════════════ */
+        window.bulkCellChange = function (input) {
+            const ri = +input.dataset.ri;
+            const key = input.dataset.key;
+            bulkRows[ri][key] = input.value.trim();
+            bulkRows[ri]._errors = validarFila(bulkRows[ri]);
+            refrescarFila(ri);
+            actualizarContadores();
+        };
+
+        function refrescarFila(ri) {
+            const row = bulkRows[ri];
+            const hasErr = row._errors.length > 0;
+            const tr = document.querySelector(`#bulkTbody tr[data-ri="${ri}"]`);
+            if (!tr) return;
+
+            // Ícono de estado
+            const statusTd = tr.querySelector('.bulk-row-status');
+            if (statusTd) {
+                statusTd.innerHTML = hasErr
+                    ? `<i class="fas fa-circle-xmark row-err" title="${row._errors.join(', ')}"></i>`
+                    : `<i class="fas fa-circle-check row-ok"></i>`;
+            }
+
+            // Celdas inválidas
+            BULK_COLUMNS.forEach(col => {
+                const td = tr.querySelector(`td[data-key="${col.key}"]`);
+                if (!td) return;
+                const isEmpty = col.required && !row[col.key];
+                td.classList.toggle('cell-invalid', !!isEmpty);
+            });
+        }
+
+        /* ════════════════════════════════════════════════
+           ELIMINAR FILA
+        ════════════════════════════════════════════════ */
+        window.bulkEliminarFila = function (ri) {
+            bulkRows.splice(ri, 1);
+            // Re-indexar
+            bulkRows.forEach((r, i) => r._rowIdx = i + 2);
+            renderTabla();
+        };
+
+        /* ════════════════════════════════════════════════
+           REVALIDAR TODAS
+        ════════════════════════════════════════════════ */
+        window.bulkRevalidar = function () {
+            bulkRows.forEach(r => { r._errors = validarFila(r); });
+            renderTabla();
+        };
+
+        /* ════════════════════════════════════════════════
+           LIMPIAR
+        ════════════════════════════════════════════════ */
+        window.bulkLimpiar = function () {
+            bulkRows = [];
+            renderTabla();
+            $('bulkErrorPanel').style.display = 'none';
+            $('bulkProgressBar').style.display = 'none';
+            $('bulkFileInput').value = '';
+        };
+
+        /* ════════════════════════════════════════════════
+           CONTADORES Y BOTÓN GUARDAR
+        ════════════════════════════════════════════════ */
+        function actualizarContadores() {
+            const total = bulkRows.length;
+            const errs = bulkRows.filter(r => r._errors.length > 0).length;
+            $('bulkTotalRows').textContent = total;
+            $('bulkErrCount').textContent = errs;
+            $('btnGuardarMasivo').disabled = (total === 0 || errs > 0);
+
+            // Panel de errores detallado
+            const errPanel = $('bulkErrorPanel');
+            const errList = $('bulkErrorList');
+            if (errs > 0) {
+                const items = bulkRows
+                    .filter(r => r._errors.length > 0)
+                    .slice(0, 20)
+                    .map(r => `<li>Fila ${r._rowIdx}: ${r._errors.join(' · ')}</li>`)
+                    .join('');
+                errList.innerHTML = items + (errs > 20 ? `<li>…y ${errs - 20} más</li>` : '');
+                errPanel.style.display = 'block';
+            } else {
+                errPanel.style.display = 'none';
+            }
+        }
+
+        /* ════════════════════════════════════════════════
+           GUARDAR (POST al servidor)
+        ════════════════════════════════════════════════ */
+        window.guardarCargaMasiva = async function () {
+            if (bulkRows.some(r => r._errors.length > 0)) return;
+
+            const CHUNK = 50;
+            const chunks = [];
+            for (let i = 0; i < bulkRows.length; i += CHUNK) {
+                chunks.push(bulkRows.slice(i, i + CHUNK));
+            }
+
+            for (let ci = 0; ci < chunks.length; ci++) {
+                const payload = chunks[ci].map(r => {
+                    const obj = {};
+                    BULK_COLUMNS.forEach(c => { obj[c.key] = r[c.key]; });
+                    return obj;
+                });
+
+                const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+                    <style>
+                        .flip {
+                            animation: spinY 2s linear infinite;
+                            transform-origin: center;
+                        }
+                        @@keyframes spinY {
+                            0%   { transform: rotateY(0deg); }
+                            100% { transform: rotateY(360deg); }
+                        }
+                    </style>
+                    <g class="flip">
+                        <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                        <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="32" cy="48" r="3" fill="#000"/>
+                    </g>
+                </svg>`;
+
+                _Swal.fire({
+                    iconHtml: warningIcon,
+                    title: "Confirmar Accion",
+                    html: `¿Está seguro que desea proceder con la carga de los productos por medio del layout?`,
+                    footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+                    customClass: {
+                        icon: "p-0 bg-transparent border-0 shadow-none"
+                    },
+                    preConfirm: () => {
+                        Swal.fire({
+                            title: 'Guardando layout de productos...',
+                            html: 'Esto pueda tardar unos minutos',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        GetData({
+                            path: '/Productos/CargaLayOut',
+                            data: {
+                                file: currentFile
+                            },
+                            swalResponse: true,
+                            swalType: 'modal',
+                        });
+                    }
+                })
+            }
+        };
+
+        /* ════════════════════════════════════════════════
+           DESCARGAR PLANTILLA CSV
+        ════════════════════════════════════════════════ */
+        $('bulkDownloadTemplate').addEventListener('click', () => {
+            const header = BULK_COLUMNS.map(c => c.key).join(',');
+            const example = BULK_COLUMNS.map(c => {
+                if (c.key === 'stat') return 'A';
+                if (c.type === 'number') return '0';
+                return '';
+            }).join(',');
+            const csv = `${header}\n${example}`;
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'plantilla_productos.csv'; a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        /* ── Util ── */
+        function escHtml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function alertBulk(msg) {
+            window.toastMixin?.fire?.({ icon: 'error', title: msg }) || alert(msg);
+        }
+
+    })();
+</script>

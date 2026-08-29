@@ -1,0 +1,232 @@
+﻿@{
+    ViewBag.Title = "Consulta movimientos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<div class="page-traslados">
+
+    <!-- ── Filtros ──────────────────────────────────────────────────── -->
+    <div class="filters-panel">
+        <div class="panel-label">
+            <i class="fa-solid fa-sliders"></i> Filtros
+        </div>
+        <div class="row align-items-end g-2">
+            <div class="col-md-3 col-sm-12">
+                <label class="form-label mb-1" style="font-size:13px;color:var(--text-light);">Empresa</label>
+                <select id="filEmpresa" placeholder="Selecciona una empresa..."></select>
+            </div>
+            <div class="col-md-3 col-sm-12">
+                <label class="form-label mb-1" style="font-size:13px;color:var(--text-light);">Sucursal</label>
+                <select id="filSucursal" placeholder="Selecciona una sucursal..."></select>
+            </div>
+            <div class="col-md-3 col-sm-12">
+                <label class="form-label mb-1" style="font-size:13px;color:var(--text-light);">Almacén</label>
+                <select id="filAlmacen" placeholder="Selecciona un almacén..."></select>
+            </div>
+            <div class="col-md-2 col-sm-12">
+                <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros" title="Limpiar filtros">
+                    <i class="fa-solid fa-filter-slash"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Tabla (createTable) ──────────────────────────────────────── -->
+    <div id="tablaTraslados"></div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/TableBuilder.js"></script>
+
+    <script>
+        /* ================================================================
+            ESTADO GLOBAL
+        ================================================================ */
+        let ubicaciones = {};
+        let inventoryData = [];
+        let currentProduct = null;
+        let keplerProductos = [];
+        let keplerAlmacenSelect;
+        let tableInstance;
+
+        // Mapa de productos seleccionados en la tabla principal: id_producto+ulocation → row
+        const productosBD = new Map();
+
+        /* ================================================================
+            TOM-SELECT: filtros
+        ================================================================ */
+        const filtroAlmacen = new TomSelect('#filAlmacen', {
+            create: false,
+            maxItems: 1,
+            valueField: 'id_almacen',
+            searchField: ['cve_almacen', 'almacen_descripcion', 'cve_sucursal', 'sucursal_descripcion'],
+            render: {
+                option: (d, e) => `<div><span class="title" style="color:black;">${e(d.cve_almacen)}</span> <span class="url" style="color:black;">${e(d.cve_sucursal)} – ${e(d.almacen_descripcion)}</span></div>`,
+                item: (d, e) => `<div><span style="color:black;">${e(d.cve_sucursal)} – ${e(d.almacen_descripcion)}</span></div>`
+            }
+        });
+
+        const filtroSucursal = new TomSelect('#filSucursal', {
+            create: false,
+            maxItems: 1,
+            valueField: 'id_sucursal',
+            searchField: ['cve_sucursal', 'descripcion'],
+            render: {
+                option: (d, e) => `<div><span class="title">${e(d.cve_sucursal)}</span> <span class="url">${e(d.descripcion)}</span></div>`,
+                item: (d, e) => `<div><span style="color:black;">${e(d.cve_sucursal)} – ${e(d.descripcion)}</span></div>`
+            }
+        });
+
+        const filtroEmpresa = new TomSelect('#filEmpresa', {
+            create: false,
+            maxItems: 1,
+            valueField: 'empresaid',
+            searchField: ['nombre'],
+            render: {
+                option: (d, e) => `<div><span class="title">${e(d.nombre)}</span></div>`,
+                item: (d, e) => `<div><span style="color:black;">${e(d.nombre)}</span></div>`
+            }
+        });
+
+        /* ================================================================
+            TABLA PRINCIPAL — createTable
+        ================================================================ */
+        function initTabla() {
+            tableInstance = createTable({
+                selector: '#tablaTraslados',
+                path: '/Solicitudes/GetMovimientosAlmacen',
+                rowKey: 'id_producto',
+                searchPlaceholder: 'Buscar producto...',
+                exports: [
+                    { label: 'Exportar Tabla Actual', type: 'excel', fileName: 'Reporte de Movimientos' },
+                    { label: 'Exportar Todo', type: 'excel', path: '/Solicitudes/GetTodoMovientosAlmacen', fileName: 'Reporte de Movimientos', data: () => ({
+                        id_empresa: filtroEmpresa.getValue() || '',
+                        id_sucursal: filtroSucursal.getValue() || '',
+                        id_almacen: filtroAlmacen.getValue() || ''
+                    }) }
+                ],
+                data: () => ({
+                    id_empresa: filtroEmpresa.getValue() || '',
+                    id_sucursal: filtroSucursal.getValue() || '',
+                    id_almacen: filtroAlmacen.getValue() || ''
+                }),
+                columns: [
+                    { title: 'Código', data: 'cve_prod', formatter: v => `<strong>${v}</strong>` },
+                    { title: 'Producto', data: 'descr_prod' },
+                    { title: 'Unidad', data: 'cve_udm' },
+                    { title: 'Cantidad Movida', data: 'cantidad' },
+                    { title: 'Tipo Movimiento', data: 'tipo_movimiento', formatter: v => v.replace('_', ' ').toUpperCase() },
+                    { title: 'Fecha', data: 'fecha', formatter: v => v.substring(0, 10) },
+                    {
+                        title: 'Ubicación origen',
+                        data: 'origen',
+                        formatter: v => {
+                            return v === '-' ?
+                                `<span style="color:var(--text-light);font-size:13px;">${v}</span>` :
+                                `<span style="color:var(--text-light);font-size:13px;"><i class="fas fa-map-marker-alt me-1"></i>${v}</span>`
+                        }
+                    },
+                    {
+                        title: 'Ubicación destino',
+                        data: 'destino',
+                        formatter: v => {
+                            return v === '-' ?
+                                `<span style="color:var(--text-light);font-size:13px;">${v}</span>` :
+                                `<span style="color:var(--text-light);font-size:13px;"><i class="fas fa-map-marker-alt me-1"></i>${v}</span>`
+                        }
+                    },
+                    { title: 'Comentario', data: 'comentario' },
+                    { title: 'Documento', data: 'folio' },
+                    { title: 'Responsable', data: 'usuario' },
+                ],
+                GlobalEvents: {
+                    onDataLoaded: response => {
+                        inventoryData = response.data ?? response;
+                    }
+                }
+            });
+        }
+
+        /* ================================================================
+            FILTROS — eventos
+        ================================================================ */
+        document.getElementById('filEmpresa').addEventListener('change', () => {
+            const idEmp = parseInt(filtroEmpresa.getValue());
+
+            const sucsFiltradas = ubicaciones.sucursales?.filter(s => s.empresa_id == idEmp) ?? [];
+
+            filtroSucursal.clear(true);
+            filtroSucursal.clearOptions();
+            filtroSucursal.addOption(sucsFiltradas);
+            filtroSucursal.refreshOptions(false);
+
+            filtroAlmacen.clear(true);
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.refreshOptions(false);
+
+            tableInstance?.reload();
+        });
+
+        document.getElementById('filSucursal').addEventListener('change', () => {
+            const idSuc = parseInt(filtroSucursal.getValue());
+
+            const almsFiltrados = ubicaciones.almacenes?.filter(a => a.id_sucursal === idSuc) ?? [];
+
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(almsFiltrados);
+            filtroAlmacen.refreshOptions(false);
+            filtroAlmacen.clear(true);
+
+            const tarimasFil = ubicaciones.tarimas?.filter(a => a.id_sucursal === idSuc) ?? [];
+
+            tableInstance?.reload();
+        });
+
+        document.getElementById('filAlmacen').addEventListener('change', () => tableInstance?.reload());
+
+        document.getElementById('btnLimpiarFiltros').addEventListener('click', () => {
+            filtroSucursal.clear(true);
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(ubicaciones.almacenes ?? []);
+            filtroAlmacen.refreshOptions(false);
+            filtroAlmacen.clear(true);
+            tableInstance?.reload();
+        });
+
+        /* ================================================================
+            INIT
+        ================================================================ */
+        document.addEventListener('DOMContentLoaded', async () => {
+            ubicaciones = await GetData({
+                path: '/ConsultaInventario/GetUbicaciones'
+            });
+
+            filtroEmpresa.clearOptions();
+            filtroEmpresa.addOption(ubicaciones.empresas ?? []);
+            filtroEmpresa.refreshOptions(false);
+            filtroEmpresa.setValue('@Context.Session.GetInt32("Empresa")', true);
+
+            const idEmpInicial = parseInt(filtroEmpresa.getValue());
+            const sucInicial = ubicaciones.sucursales?.filter(s => s.empresa_id === idEmpInicial) ?? [];
+            filtroSucursal.clearOptions();
+            filtroSucursal.addOption(sucInicial);
+            filtroSucursal.refreshOptions(false);
+            filtroSucursal.setValue('@Context.Session.GetInt32("Sucursal")', true);
+
+            const idSucInicial = parseInt(filtroSucursal.getValue());
+            const almsIniciales = ubicaciones.almacenes?.filter(a => a.id_sucursal === idSucInicial) ?? [];
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(almsIniciales);
+            filtroAlmacen.refreshOptions(false);
+
+            const tarimasIniciales = ubicaciones.tarimas?.filter(a => a.id_sucursal === idSucInicial) ?? [];
+
+            initTabla();
+        });
+    </script>
+}
+

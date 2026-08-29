@@ -1,0 +1,103 @@
+@using BOS_ERP.Controllers
+@using BOS_ERP.Models
+@{
+    // Chrome de barra superior horizontal (layout "topbar"). Reutiliza el MISMO _Menu y conserva
+    // id="sidebar" + .sidebar-nav para que el JS existente (tema, acordeón) siga funcionando.
+    //
+    // Modo "solo iconos": aplica también aquí vía la clase .tb-icons cuando el usuario tiene
+    // sidebar_modo == "iconos". OJO: NO usamos data-sb-modo="iconos" (eso activaría el icon-mode
+    // VERTICAL de sidebar.css); el icon-only horizontal lo maneja layouts.css con .tb-icons.
+    var tema = ViewData["Tema"] as UsuarioTema;
+    var sbHover = tema?.SidebarHoverEfecto ?? "slide";
+    var tbIcons = (tema?.SidebarModo == "iconos");
+}
+<!-- Topbar -->
+<div class="topbar sb-hover-@sbHover @(tbIcons ? "tb-icons" : "")" id="sidebar" data-sb-modo="normal">
+    <div class="topbar-brand">
+        <a class="navbar-brand" href="@Url.Action("Index", "Home")">
+            <img src="~/content/img/@Utilities.GetEmpresaName(User.Identity.Name)/logo-light.png" id="header_logo" height="40" alt="SRS Logo" loading="lazy" />
+        </a>
+    </div>
+
+    <nav class="sidebar-nav topbar-nav">
+        @await Html.PartialAsync("_Menu")
+    </nav>
+
+    <div class="theme-toggle topbar-theme-toggle">
+        <label class="theme-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="theme-slider"></span>
+        </label>
+    </div>
+</div>
+
+<script>
+    // Navegación "priority+": muestra en la barra lo que quepa y reubica el resto
+    // en un menú "⋯ Más" desplegable. Se re-evalúa al redimensionar. Autocontenido
+    // (no toca sidebar.js; los items conservan sus listeners al moverse en el DOM).
+    (function () {
+        var tb = document.getElementById('sidebar');
+        if (!tb || !tb.classList.contains('topbar')) return;
+        var nav = tb.querySelector('.topbar-nav');
+        if (!nav) return;
+
+        // 1) Aplanar: subir a hijos directos los dropdowns que venían dentro del
+        //    <div> contenedor sin clase del _Menu (para poder moverlos uno por uno).
+        nav.querySelectorAll(':scope > div:not(.nav-item)').forEach(function (wrap) {
+            while (wrap.firstElementChild) nav.insertBefore(wrap.firstElementChild, wrap);
+            wrap.remove();
+        });
+
+        // 2) Crear el botón "Más" con su panel al final de la barra.
+        var more = document.createElement('div');
+        more.className = 'nav-item topbar-more';
+        more.innerHTML =
+            '<a href="#" class="nav-link topbar-more-toggle" aria-label="Más opciones">' +
+            '<i class="fa-solid fa-ellipsis"></i><span class="tb-more-label">Más</span></a>' +
+            '<div class="topbar-more-menu"></div>';
+        nav.appendChild(more);
+        var moreMenu = more.querySelector('.topbar-more-menu');
+        var moreToggle = more.querySelector('.topbar-more-toggle');
+
+        moreToggle.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            more.classList.toggle('open');
+        });
+        // cerrar el panel al hacer click fuera
+        document.addEventListener('click', function (e) {
+            if (!more.contains(e.target)) more.classList.remove('open');
+        });
+
+        function barItems() {
+            return Array.prototype.filter.call(nav.children, function (c) {
+                return c !== more && c.classList && c.classList.contains('nav-item');
+            });
+        }
+
+        function relayout() {
+            more.classList.remove('open');
+            // devolver todo a la barra (antes del botón Más), preservando el orden
+            while (moreMenu.firstElementChild) nav.insertBefore(moreMenu.firstElementChild, more);
+
+            // ¿cabe todo sin el botón Más?
+            more.style.display = 'none';
+            if (nav.scrollWidth <= nav.clientWidth + 1) return;
+
+            // no cabe: mostrar "Más" y mover items desde el final hasta que quepa
+            more.style.display = '';
+            var its = barItems();
+            var i = its.length - 1;
+            while (i >= 0 && nav.scrollWidth > nav.clientWidth + 1) {
+                moreMenu.insertBefore(its[i], moreMenu.firstElementChild);
+                i--;
+            }
+        }
+
+        var t;
+        window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(relayout, 120); });
+        requestAnimationFrame(relayout);
+        // recalcular cuando terminen de cargar fuentes/iconos (cambian los anchos)
+        window.addEventListener('load', relayout);
+    })();
+</script>

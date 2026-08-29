@@ -1,0 +1,660 @@
+﻿@{
+    ViewBag.Title = "DocumentosPendientes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .page-header {
+        background-color: var(--bg-light);
+        border-bottom: 1px solid var(--border-light);
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .page-title {
+        color: var(--primary-blue);
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border-left: 4px solid var(--accent-blue);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .stat-card.danger {
+            border-left-color: var(--danger-color);
+        }
+
+        .stat-card.success {
+            border-left-color: var(--success-color);
+        }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+        .stat-icon.primary {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .stat-icon.warning {
+            background-color: rgba(217, 119, 6, 0.1);
+            color: var(--warning-color);
+        }
+
+        .stat-icon.danger {
+            background-color: rgba(220, 38, 38, 0.1);
+            color: var(--danger-color);
+        }
+
+        .stat-icon.success {
+            background-color: rgba(5, 150, 105, 0.1);
+            color: var(--success-color);
+        }
+
+    .stat-label {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .area-section {
+        background: var(--bg-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+    .area-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-light);
+    }
+
+    .area-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-blue);
+        margin: 0;
+    }
+
+    .area-badge {
+        background-color: var(--danger-color);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .document-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 8px;
+        background-color: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+        .document-item:hover {
+            background-color: var(--light-blue);
+            border-color: var(--accent-blue);
+            transform: translateX(4px);
+        }
+
+    .doc-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        background-color: var(--bg-light);
+        color: var(--text-light);
+    }
+
+    .doc-info {
+        flex: 1;
+    }
+
+    .doc-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .doc-meta {
+        font-size: 0.875rem;
+        color: var(--text-light);
+    }
+
+    .doc-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .priority-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .priority-high {
+        background-color: rgba(220, 38, 38, 0.1);
+        color: var(--danger-color);
+    }
+
+    .priority-medium {
+        background-color: rgba(217, 119, 6, 0.1);
+        color: var(--warning-color);
+    }
+
+    .priority-low {
+        background-color: rgba(59, 130, 246, 0.1);
+        color: var(--accent-blue);
+    }
+
+    .days-pending {
+        font-size: 0.875rem;
+        color: var(--text-light);
+    }
+
+    .filter-section {
+        background: var(--bg-light);
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+    .btn-custom {
+        background-color: var(--accent-blue);
+        color: white;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+        .btn-custom:hover {
+            background-color: var(--primary-blue);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-light);
+    }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+</style>
+
+<div class="">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="page-title">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Documentos Pendientes
+                </h1>
+                <button class="btn-custom" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-2"></i>
+                    Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Tarjetas de estadísticas -->
+        <div class="stats-cards">
+            <div class="stat-card danger">
+                <div class="stat-icon danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div class="stat-label">Urgente</div>
+                <div class="stat-value" id="stat-urgente">0</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-label">Próximos a vencer</div>
+                <div class="stat-value" id="stat-prox-vencer">0</div>
+            </div>
+            <div class="stat-card primary">
+                <div class="stat-icon primary">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="stat-label">Total pendientes</div>
+                <div class="stat-value" id="stat-total">0</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-label">Completados hoy</div>
+                <div class="stat-value">0</div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filter-section">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <select class="form-select" id="filter-area">
+                        <option value="">Todas las áreas</option>
+                        <option value="contabilidad">Contabilidad</option>
+                        <option value="ventas">Ventas</option>
+                        <option value="compras">Compras</option>
+                        <option value="finanzas">Finanzas</option>
+                        <option value="almacen">Almacén</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="filter-prioridad">
+                        <option value="">Todas las prioridades</option>
+                        <option value="alta">Alta</option>
+                        <option value="media">Media</option>
+                        <option value="baja">Baja</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="filter-buscar" placeholder="Buscar documento...">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn-custom w-100" onclick="aplicarFiltros()">
+                        <i class="fas fa-filter me-2"></i>
+                        Aplicar filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenedores de áreas -->
+        <div id="area-contabilidad"></div>
+        <div id="area-ventas"></div>
+        <div id="area-compras"></div>
+        <div id="area-finanzas"></div>
+        <div id="area-almacen"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ============================================
+        // CONFIGURACIÓN DE ÁREAS
+        // ============================================
+        const AREAS_CONFIG = {
+            contabilidad: {
+                titulo: 'Contabilidad',
+                icono: 'fas fa-calculator',
+                endpoint: '/DocumentosPendientes/GetDocumentosPendientes',
+                mapearDatos: (item) => ({
+                    id: item.id_poliza,
+                    titulo: `${item.folio} - ${item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1)}`,
+                    descripcion: item.descripcion,
+                    fecha: item.fecha_creacion,
+                    estado: item.estado,
+                    metadata: `Creado: ${formatDate(item.fecha_creacion)}`,
+                    icono: getTipoIcon(item.tipo),
+                    esPendiente: item.tiene_discrepancia && !item.cancelada,
+                    datosOriginales: item // Guardamos los datos originales para el click
+                }),
+                onClickItem: (itemMapeado) => {
+                    const poliza = itemMapeado.datosOriginales;
+                    //console.log('Ver detalle de póliza:', poliza);
+                    //alert(`Ver detalle de póliza: ${poliza.folio}\nID: ${poliza.id_poliza}`);
+                    // Descomenta cuando tengas la ruta:
+                    window.location.href = `/Operaciones/PolizasDiscrepancia?q=${poliza.folio}`;
+                }
+            },
+
+            //// EJEMPLO: Área de Ventas (adapta según tus datos reales)
+            //ventas: {
+            //    titulo: 'Ventas',
+            //    icono: 'fas fa-shopping-cart',
+            //    endpoint: '/Ventas/GetPedidosPendientes', // Cambia por tu endpoint real
+            //    mapearDatos: (item) => ({
+            //        id: item.id_pedido,
+            //        titulo: `Pedido #${item.numero_pedido}`,
+            //        descripcion: `Cliente: ${item.nombre_cliente}`,
+            //        fecha: item.fecha_pedido,
+            //        estado: item.estado_pedido,
+            //        metadata: `Total: $${item.total} | ${formatDate(item.fecha_pedido)}`,
+            //        icono: '<i class="fas fa-shopping-bag"></i>',
+            //        esPendiente: item.estado_pedido === 'Pendiente',
+            //        datosOriginales: item
+            //    }),
+            //    onClickItem: (itemMapeado) => {
+            //        window.location.href = `/Ventas/Detalle/${itemMapeado.id}`;
+            //    }
+            //},
+        };
+
+        // ============================================
+        // FUNCIONES AUXILIARES
+        // ============================================
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const timestamp = parseInt(dateString.match(/\d+/)[0]);
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('es-MX', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function getDaysPending(dateString) {
+            if (!dateString) return 0;
+            const timestamp = parseInt(dateString.match(/\d+/)[0]);
+            const date = new Date(timestamp);
+            const today = new Date();
+            const diffTime = Math.abs(today - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
+        function getPriorityByDays(days) {
+            if (days >= 7) return { class: 'priority-high', text: 'Alta' };
+            if (days >= 3) return { class: 'priority-medium', text: 'Media' };
+            return { class: 'priority-low', text: 'Baja' };
+        }
+
+        function getEstadoBadge(estado) {
+            const estadoLower = estado.toLowerCase();
+            return `<span class="estado-badge estado-${estadoLower}">${estado}</span>`;
+        }
+
+        function getTipoIcon(tipo) {
+            if (tipo.toLowerCase() === 'egreso') {
+                return '<i class="fas fa-arrow-up text-danger"></i>';
+            } else if (tipo.toLowerCase() === 'ingreso') {
+                return '<i class="fas fa-arrow-down text-success"></i>';
+            }
+            return '<i class="fas fa-file-invoice"></i>';
+        }
+
+        // ============================================
+        // CLASE PARA MANEJAR ÁREAS
+        // ============================================
+        class AreaManager {
+            constructor() {
+                this.datosAreas = {};
+                this.datosOriginales = {}; // Para guardar datos sin filtrar
+                this.filtros = {
+                    area: '',
+                    prioridad: '',
+                    buscar: ''
+                };
+            }
+
+            async cargarArea(nombreArea) {
+                const config = AREAS_CONFIG[nombreArea];
+                if (!config) {
+                    console.error(`Área "${nombreArea}" no configurada`);
+                    return;
+                }
+
+                try {
+                    const datos = await GetData({ path: config.endpoint });
+
+                    // Mapear y filtrar datos
+                    this.datosOriginales[nombreArea] = datos
+                        .map(config.mapearDatos)
+                        .filter(item => item.esPendiente);
+
+                    this.datosAreas[nombreArea] = [...this.datosOriginales[nombreArea]];
+
+                    return this.datosAreas[nombreArea];
+                } catch (error) {
+                    console.error(`Error al cargar ${nombreArea}:`, error);
+                    this.datosOriginales[nombreArea] = [];
+                    this.datosAreas[nombreArea] = [];
+                    return [];
+                }
+            }
+
+            async cargarTodasLasAreas() {
+                const promesas = Object.keys(AREAS_CONFIG).map(area => this.cargarArea(area));
+                await Promise.all(promesas);
+            }
+
+            renderizarArea(nombreArea, contenedorId) {
+                const config = AREAS_CONFIG[nombreArea];
+                const datos = this.datosAreas[nombreArea] || [];
+                const container = document.getElementById(contenedorId);
+
+                if (!container) return;
+
+                if (datos.length === 0) {
+                    container.innerHTML = this.crearSeccionVacia(config);
+                    return;
+                }
+
+                // Ordenar por días pendientes
+                const datosOrdenados = [...datos].sort((a, b) => {
+                    return getDaysPending(b.fecha) - getDaysPending(a.fecha);
+                });
+
+                const documentosHTML = datosOrdenados
+                    .map(item => this.crearItemDocumento(item, nombreArea))
+                    .join('');
+
+                container.innerHTML = `
+                                <div class="area-section">
+                                    <div class="area-header">
+                                        <h2 class="area-title">
+                                            <i class="${config.icono}"></i>
+                                            ${config.titulo}
+                                        </h2>
+                                        <span class="area-badge">${datos.length} pendiente${datos.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                    ${documentosHTML}
+                                </div>
+                            `;
+            }
+
+            crearSeccionVacia(config) {
+                return `
+                                <div class="area-section">
+                                    <div class="area-header">
+                                        <h2 class="area-title">
+                                            <i class="${config.icono}"></i>
+                                            ${config.titulo}
+                                        </h2>
+                                        <span class="area-badge">0 pendientes</span>
+                                    </div>
+                                    <div class="empty-state">
+                                        <i class="fas fa-check-circle"></i>
+                                        <p>No hay documentos pendientes en ${config.titulo}</p>
+                                    </div>
+                                </div>
+                            `;
+            }
+
+            crearItemDocumento(item, nombreArea) {
+                const days = getDaysPending(item.fecha);
+                const priority = getPriorityByDays(days);
+
+                return `
+                                <div class="document-item" onclick="areaManager.handleClick('${nombreArea}', ${item.id})">
+                                    <div class="doc-icon">
+                                        ${item.icono}
+                                    </div>
+                                    <div class="doc-info">
+                                        <div class="doc-name">${item.titulo}</div>
+                                        <div class="doc-meta">
+                                            ${item.descripcion} | ${item.metadata} | ${getEstadoBadge(item.estado)}
+                                        </div>
+                                    </div>
+                                    <div class="doc-status">
+                                        <span class="priority-badge ${priority.class}">${priority.text}</span>
+                                        <span class="days-pending">${days} día${days !== 1 ? 's' : ''}</span>
+                                    </div>
+                                </div>
+                            `;
+            }
+
+            handleClick(nombreArea, itemId) {
+                const config = AREAS_CONFIG[nombreArea];
+                const datos = this.datosAreas[nombreArea] || [];
+                const item = datos.find(d => d.id === itemId);
+
+                if (item && config.onClickItem) {
+                    config.onClickItem(item);
+                }
+            }
+
+            renderizarTodasLasAreas() {
+                Object.keys(AREAS_CONFIG).forEach((nombreArea) => {
+                    const contenedorId = `area-${nombreArea}`;
+                    this.renderizarArea(nombreArea, contenedorId);
+                });
+            }
+
+            actualizarEstadisticas() {
+                let totalUrgentes = 0;
+                let totalProxVencer = 0;
+                let totalPendientes = 0;
+
+                Object.values(this.datosAreas).forEach(datos => {
+                    datos.forEach(item => {
+                        const days = getDaysPending(item.fecha);
+                        if (days >= 7) totalUrgentes++;
+                        else if (days >= 3) totalProxVencer++;
+                        totalPendientes++;
+                    });
+                });
+
+                document.getElementById('stat-urgente').textContent = totalUrgentes;
+                document.getElementById('stat-prox-vencer').textContent = totalProxVencer;
+                document.getElementById('stat-total').textContent = totalPendientes;
+            }
+
+            aplicarFiltros(filtros) {
+                this.filtros = { ...this.filtros, ...filtros };
+
+                // Restaurar datos originales y aplicar filtros
+                Object.keys(this.datosOriginales).forEach(nombreArea => {
+                    const datosSinFiltrar = [...this.datosOriginales[nombreArea]];
+
+                    this.datosAreas[nombreArea] = datosSinFiltrar.filter(item => {
+                        // Filtro de área
+                        if (this.filtros.area && this.filtros.area !== nombreArea) return false;
+
+                        // Filtro de prioridad
+                        if (this.filtros.prioridad) {
+                            const days = getDaysPending(item.fecha);
+                            const priority = getPriorityByDays(days);
+                            if (priority.text.toLowerCase() !== this.filtros.prioridad) return false;
+                        }
+
+                        // Filtro de búsqueda
+                        if (this.filtros.buscar) {
+                            const searchText = `${item.titulo} ${item.descripcion}`.toLowerCase();
+                            if (!searchText.includes(this.filtros.buscar.toLowerCase())) return false;
+                        }
+
+                        return true;
+                    });
+                });
+
+                this.renderizarTodasLasAreas();
+                this.actualizarEstadisticas();
+            }
+        }
+
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+        const areaManager = new AreaManager();
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await areaManager.cargarTodasLasAreas();
+                areaManager.renderizarTodasLasAreas();
+                areaManager.actualizarEstadisticas();
+            } catch (error) {
+                console.error('Error al cargar áreas:', error);
+                // Mostrar mensaje de error en la UI
+                document.querySelector('.container-fluid').innerHTML = `
+                                <div class="area-section">
+                                    <div class="empty-state text-danger">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <p>Error al cargar los documentos. Por favor, recarga la página.</p>
+                                    </div>
+                                </div>
+                            `;
+            }
+        });
+
+        function aplicarFiltros() {
+            const filtros = {
+                area: document.getElementById('filter-area').value.toLowerCase(),
+                prioridad: document.getElementById('filter-prioridad').value.toLowerCase(),
+                buscar: document.getElementById('filter-buscar').value
+            };
+
+            areaManager.aplicarFiltros(filtros);
+        }
+    </script>
+}

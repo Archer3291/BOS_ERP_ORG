@@ -1,0 +1,291 @@
+﻿@* _ModalRemisionesParciales_VIN.cshtml *@
+
+<style>
+    .vin-fac-tabla-partidas thead th {
+        background: var(--primary-blue);
+        color: white;
+        font-size: 0.78rem;
+        padding: 0.5rem 0.6rem;
+        white-space: nowrap;
+    }
+
+    .vin-fac-tabla-partidas td {
+        font-size: 0.82rem;
+        padding: 0.45rem 0.6rem;
+        vertical-align: middle;
+    }
+
+    .vin-fac-tabla-partidas tbody tr:hover {
+        background: var(--very-light-blue);
+    }
+
+    #vin-fac-listaRemisiones .list-group-item-action:hover {
+        transform: translateX(4px);
+        border-left: 3px solid var(--accent-blue);
+    }
+
+    #vin-fac-listaRemisiones .list-group-item.list-group-item-success {
+        border-left: 4px solid #10b981;
+    }
+
+    #vin-fac-resumenSeleccion {
+        max-height: 420px;
+        overflow-y: auto;
+        font-size: 0.83rem;
+    }
+
+    .vin-fac-cant-facturar {
+        border: 2px solid var(--accent-blue);
+        border-radius: 6px;
+        transition: border-color 0.2s;
+    }
+
+        .vin-fac-cant-facturar:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+
+        .vin-fac-cant-facturar.is-invalid {
+            border-color: #dc2626 !important;
+            animation: vin-shake 0.3s;
+        }
+
+    @@keyframes vin-shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        25% {
+            transform: translateX(-4px);
+        }
+
+        75% {
+            transform: translateX(4px);
+        }
+    }
+
+    .vin-fac-rem-col-left {
+        width: 38%;
+        border-right: 1px solid var(--border-light);
+    }
+
+    .vin-fac-rem-col-mid {
+        width: 62%;
+    }
+
+    .vin-fac-rem-col-right {
+        width: 38%;
+        border-left: 1px solid var(--border-light);
+    }
+
+    @@media (max-width: 992px) {
+        .vin-fac-rem-col-left,
+        .vin-fac-rem-col-mid,
+        .vin-fac-rem-col-right {
+            width: 100%;
+            border: none;
+        }
+    }
+
+    .vin-fac-resumen-sticky {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 2;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--light-blue);
+        margin-bottom: 0.75rem;
+    }
+</style>
+
+<div class="modal fade"
+     id="vin-fac-modalRemisionesParciales"
+     tabindex="-1"
+     aria-labelledby="vin-fac-modalRemisionesParciales-label"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-fullscreen-lg-down modal-xl" style="max-width:1400px;">
+        <div class="modal-content" style="min-height:80vh;">
+
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,var(--primary-blue),var(--accent-blue));color:white;">
+                <h5 class="modal-title" id="vin-fac-modalRemisionesParciales-label">
+                    <i class="fas fa-file-invoice me-2"></i>
+                    Seleccionar Remisiones Internacionales para Facturar
+                    <small class="ms-3 opacity-75" style="font-size:0.75rem;">
+                        Selecciona una o varias remisiones y elige qué partidas (y qué cantidad) facturar
+                    </small>
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body p-0 d-flex flex-wrap" style="overflow:hidden;">
+
+                <!-- COLUMNA 1: Lista de remisiones -->
+                <div class="vin-fac-rem-col-left p-3 d-flex flex-column" style="overflow:hidden;">
+
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="fas fa-list me-1"></i> Remisiones Pendientes
+                        </h6>
+                        <span id="vin-fac-totalRemisiones" class="badge bg-secondary">0</span>
+                        <div id="vin-fac-spinnerRemisiones"
+                             class="spinner-border spinner-border-sm text-primary d-none ms-auto"
+                             role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group mb-2">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text"
+                               id="vin-fac-inputBuscarRemision"
+                               class="form-control form-control-sm"
+                               placeholder="Folio o cliente…">
+                    </div>
+
+                    <div class="mb-2 d-flex align-items-center gap-2">
+                        <label class="form-label mb-0 fw-bold" style="white-space:nowrap;font-size:0.82rem;">
+                            Modo:
+                        </label>
+                        <select id="vin-fac-selectorModo" class="form-select form-select-sm">
+                            <option value="parciales">Parciales (mostrar saldo pendiente)</option>
+                            <option value="multiple">Múltiple completo (varias remisiones)</option>
+                            <option value="documento">Documento individual</option>
+                        </select>
+                    </div>
+
+                    <ul class="list-group list-group-flush flex-grow-1"
+                        id="vin-fac-listaRemisiones"
+                        style="overflow-y:auto;max-height:520px;">
+                        <li class="list-group-item text-center text-muted py-5">
+                            <i class="fas fa-search fa-2x mb-2 d-block opacity-25"></i>
+                            Cargando remisiones…
+                        </li>
+                    </ul>
+
+                    <nav class="mt-2">
+                        <ul class="pagination pagination-sm justify-content-center mb-0"
+                            id="vin-fac-paginationRemisiones"></ul>
+                    </nav>
+                </div>
+
+                <!-- COLUMNA 2: Partidas -->
+                <div class="vin-fac-rem-col-mid p-3 d-flex flex-column">
+
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <h6 class="mb-0 fw-bold text-primary" id="vin-fac-headerTablaPartidas">
+                            <i class="fas fa-boxes me-1"></i> Partidas
+                        </h6>
+                        <small class="text-muted ms-2">
+                            Edita las cantidades a facturar (≤ pendiente)
+                        </small>
+                    </div>
+
+                    <div id="vin-fac-tablaPartidas" style="display:none;overflow-x:auto;flex-grow:1;">
+                        <table class="table table-bordered vin-fac-tabla-partidas mb-2"
+                               style="min-width:680px;">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;" class="text-center">✓</th>
+                                    <th>Clave</th>
+                                    <th>Descripción</th>
+                                    <th>Estado</th>
+                                    <th class="text-end">Original</th>
+                                    <th class="text-end">Pendiente</th>
+                                    <th class="text-center">A Facturar</th>
+                                    <th class="text-end">Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vin-fac-tbodyPartidas"></tbody>
+                        </table>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    id="vin-fac-btnMarcarTodas">
+                                <i class="fas fa-check-double me-1"></i>Marcar todas
+                            </button>
+                            <button type="button"
+                                    id="vin-fac-btnAgregarSeleccion"
+                                    class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus me-1"></i>
+                                Agregar partidas al resumen
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="vin-fac-estadoVacioPartidas"
+                         class="flex-grow-1 d-flex align-items-center justify-content-center text-muted"
+                         style="min-height:200px;">
+                        <div class="text-center">
+                            <i class="fas fa-hand-point-left fa-3x mb-3 opacity-25"></i>
+                            <p>Selecciona una remisión de la izquierda<br>para ver sus partidas pendientes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMNA 3: Resumen -->
+                <div class="vin-fac-rem-col-right p-3 d-flex flex-column" style="overflow:hidden;">
+
+                    <div class="vin-fac-resumen-sticky">
+                        <h6 class="fw-bold text-success mb-0">
+                            <i class="fas fa-shopping-cart me-1"></i>
+                            Resumen a Facturar
+                        </h6>
+                    </div>
+
+                    <div id="vin-fac-resumenSeleccion" class="flex-grow-1">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Sin partidas seleccionadas
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div class="me-auto small text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Las partidas no facturadas quedarán pendientes para futuras facturas
+                </div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button"
+                        id="vin-fac-btnAplicarRemisiones"
+                        class="btn btn-success fw-bold">
+                    <i class="fas fa-check me-1"></i>
+                    Aplicar selección al formulario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="vin-fac-remisiones-ids" name="remisionesIds" value="">
+<input type="hidden" id="vin-fac-remisiones-detalle" name="remisionesParcialesJSON" value="">
+
+<script>
+    document.getElementById('vin-fac-btnMarcarTodas')?.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('#vin-fac-tbodyPartidas .vin-fac-chk-partida');
+        const allChecked = Array.from(checkboxes).every(c => c.checked);
+        checkboxes.forEach(c => {
+            c.checked = !allChecked;
+            const input = c.closest('tr').querySelector('.vin-fac-cant-facturar');
+            if (input) input.disabled = allChecked;
+        });
+    });
+
+    const vinTablaPartidas = document.getElementById('vin-fac-tablaPartidas');
+    const vinEstadoVacio = document.getElementById('vin-fac-estadoVacioPartidas');
+
+    const vinTablaObserver = new MutationObserver(() => {
+        const visible = vinTablaPartidas.style.display !== 'none';
+        if (vinEstadoVacio) vinEstadoVacio.style.display = visible ? 'none' : '';
+    });
+    if (vinTablaPartidas) {
+        vinTablaObserver.observe(vinTablaPartidas, { attributes: true, attributeFilter: ['style'] });
+    }
+</script>

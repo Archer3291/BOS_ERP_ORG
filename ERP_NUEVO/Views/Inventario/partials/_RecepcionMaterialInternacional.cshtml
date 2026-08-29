@@ -1,0 +1,699 @@
+﻿<style>
+    .dom-search-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .dom-document-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        display: none;
+    }
+
+        .dom-document-card.show {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .dom-product-item {
+        background: var(--light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+
+        .dom-product-item:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .dom-product-item.dom-checked {
+            background-color: rgba(5, 150, 105, 0.1);
+            border-color: var(--success-color);
+        }
+
+        .dom-product-item.dom-error {
+            background-color: rgba(220, 38, 38, 0.1);
+            border-color: var(--danger-color);
+        }
+
+    .form-check-input:checked {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    .tom-select .ts-control {
+        background-color: var(--bg-light);
+        border-color: var(--border-light);
+        color: var(--text-dark);
+    }
+
+    .tom-select .ts-dropdown {
+        background-color: var(--bg-light);
+        border-color: var(--border-light);
+        color: var(--text-dark);
+    }
+
+    .dom-stats-summary {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .dom-stat-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: default;
+    }
+
+        .dom-stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+    .dom-stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-blue-dark);
+    }
+
+    .dom-stat-label {
+        font-size: 0.95rem;
+        margin-top: 0.5rem;
+        color: var(--text-light);
+    }
+
+    /* Variantes de color */
+    .dom-stat-success .dom-stat-number {
+        color: var(--success-color);
+    }
+
+    .dom-stat-warning .dom-stat-number {
+        color: var(--warning-color);
+    }
+
+    .dom-stat-danger .dom-stat-number {
+        color: var(--danger-color);
+    }
+
+    .dom-alert-info {
+        position: relative;
+        background: var(--light-blue);
+        padding: 10px 10px 10px 20px;
+        color: var(--text-dark);
+    }
+
+        .dom-alert-info::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background-color: var(--accent-blue);
+        }
+
+    .dom-discrepancia {
+        border: 1px solid var(--bs-body-bg);
+        background-color: var(--bg-gray);
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 7px;
+    }
+</style>
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<!-- Main Container -->
+<div class="dom-table-container">
+    <!-- Search Section -->
+    <div class="dom-search-card">
+        <h3 class="mb-4">
+            <i class="fas fa-search me-2 text-primary"></i>
+            Buscar orden de compra internacional
+        </h3>
+
+        <div class="row align-items-end">
+            <div class="col-md-6 mb-2">
+                <label for="domDocumentSearch" class="form-label">Seleccionar Documento</label>
+                <select id="domDocumentSearch" placeholder="Buscar documento nacional...">
+                    <option style="color: var(--text-dark)" value="0">Selecciona un folio</option>
+                    @{
+                        foreach (var folio in Model["folios_internacionales"])
+                        {
+                            <option style="color: var(--text-dark)" value="@folio["uuid"]">@folio["folio"]</option>
+                        }
+                    }
+
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <button type="button" class="btn btn-primary w-100" id="domSearchBtn">
+                    <i class="fas fa-search me-1"></i>
+                    Buscar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Information -->
+    <div class="dom-document-card" id="domDocumentCard">
+        <!-- Statistics Summary -->
+        <div class="dom-stats-summary container-fluid">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="dom-stat-card">
+                        <div class="dom-stat-number" id="domTotalProducts">0</div>
+                        <div class="dom-stat-label">Total Productos</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dom-stat-card dom-stat-success">
+                        <div class="dom-stat-number" id="domCheckedProducts">0</div>
+                        <div class="dom-stat-label">Verificados</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dom-stat-card dom-stat-warning">
+                        <div class="dom-stat-number" id="domUncheckedProducts">0</div>
+                        <div class="dom-stat-label">Pendientes</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dom-stat-card dom-stat-danger">
+                        <div class="dom-stat-number" id="domErrorProducts">0</div>
+                        <div class="dom-stat-label">Con Error</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row d-flex justify-content-between align-items-center mb-4">
+            <h4 class="col-md-5 col-sm-12 mb-1 mb-1">
+                <i class="fas fa-file-invoice me-2 text-primary"></i>
+                <span id="domDocumentTitle">Información del Documento Nacional</span>
+            </h4>
+            <button type="button" class="btn btn-success col-md-2 col-sm-12 mb-1" id="generearEtiquetas">
+                <i class="fa-solid fa-tags"></i>
+                Etiquetas
+            </button>
+            <button type="button" class="btn btn-success col-md-2 col-sm-12 mb-1" id="domCheckAllBtn">
+                <i class="fas fa-check-double me-1"></i>
+                Marcar
+            </button>
+            <button type="button" class="btn btn-warning col-md-2 col-sm-12 mb-1" id="domUncheckAllBtn">
+                <i class="fas fa-times me-1"></i>
+                Desmarcar
+            </button>
+        </div>
+
+        <div class="dom-alert-info mb-4">
+            <p class="mb-1">
+                <i class="fas fa-info-circle me-2"></i>
+                Marca los productos que han sido verificados correctamente.
+                Los productos sin marcar quedarán como pendientes.
+            </p>
+        </div>
+
+
+        <div id="domProductsList" class="dom-products-list">
+            <!-- Products will be dynamically loaded here -->
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-success" id="domSaveChangesBtn">
+                <i class="fas fa-save me-1"></i>
+                Guardar Cambios
+            </button>
+            <button type="button" class="btn btn-secondary" id="domResetBtn">
+                <i class="fas fa-undo me-1"></i>
+                Resetear
+            </button>
+        </div>
+    </div>
+</div>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script src="~/lib/jspdf/jspdf.umd.min.js"></script>
+
+<script>
+    var domCurrentDocument = null;
+    var domProductStates = {};
+    var domDocumentsData;
+
+    // Initialize Tom Select
+    var domTomS = new TomSelect("#domDocumentSearch", {
+        create: false,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        render: {
+            option: function (data, escape) {
+                return `<div style="color: var(--text-dark);">${escape(data.text)} <small style="color:#f59e0b;"> - en transito </small></div>`;
+            },
+            item: function (data, escape) {
+                return `` +
+                    '<div>' +
+                    `   <span style="color:#6C757D;"> ${escape(data.text)} </span>` +
+                    '</div>';
+            }
+        }
+    });
+
+    // Load document and its products
+    function domLoadDocument(documentId) {
+        document.querySelector('.tab-content').style.removeProperty('height')
+        if (documentId == 0) {
+            toastMixin.fire({
+                icon: "warning",
+                title: "Selecciona un folio para poder filtrar."
+            })
+
+            return;
+        }
+        GetData({
+            path: "/Inventario/GetOrdenesCompra",
+            data: {
+                uuid: documentId,
+            }
+        }).then((docData) => {
+            if (docData.ordenCompra.length === 0) {
+                console.error("Document not found");
+                toastMixin.fire({
+                    icon: "error",
+                    title: "Documento no encontrado",
+                })
+                return;
+            }
+
+            domDocumentsData = docData;
+            document.getElementById("domDocumentTitle").textContent = `${docData.ordenCompra.folio}`;
+
+            // Generate products list
+            const productsList = document.getElementById("domProductsList");
+            productsList.innerHTML = "";
+
+            domProductStates = {};
+            docData.partidas.forEach((product, index) => {
+                const productElement = domCreateProductElement(product, index);
+                productsList.appendChild(productElement);
+                domProductStates[product.id_pedimento_partida] = { checked: false, hasError: false };
+            });
+
+            // Show document card
+            document.getElementById("domDocumentCard").classList.add("show");
+
+            // Update statistics
+            domUpdateStatistics();
+
+            // Scroll to document card
+            document.getElementById("domDocumentCard").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        })
+    }
+
+    // Create product element
+    function domCreateProductElement(product, index) {
+        const div = document.createElement("div");
+        div.className = "dom-product-item";
+        console.log(product)
+        div.innerHTML = `
+                <div class="row align-items-center">
+                    <div class="col-md-1">
+                        <input class="btn-check dom-product-checkbox" type="radio" name="dom_status_${product.id_pedimento_partida}" id="dom_product_${product.id_pedimento_partida}" data-product-id="${product.id_pedimento_partida}">
+                        <label class="btn btn-outline-success" for="dom_product_${product.id_pedimento_partida}" title="Marcar como correcto">
+                            <i class="fa-solid fa-badge-check"></i>
+                        </label>
+                    </div>
+                    <div class="col-md-6 col-sm-12">
+                        <h6 class="mb-1">${product.descripcion}</h6>
+                        <small class="text-muted">Codigo: ${product.codigo}</small>
+                    </div>
+                    <div class="col-md-2 col-sm-12">
+                        <button type="button" class="btn amber-500" onclick="verPedimentos(${product.id_pedimento}, ${product.id_partidas})">
+                            <i class="fa-solid fa-pallet-boxes"></i>
+                        </button>
+                    </div>
+                    <div class="col-md-2 col-sm-12">
+                        <span class="badge bg-secondary">Cant: ${product.cantidad} ${product.ud}</span>
+                    </div>
+                    <div class="col-md-1">
+                        <input class="btn-check dom-product-error-checkbox" type="radio" name="dom_status_${product.id_pedimento_partida}" id="dom_error_${product.id_pedimento_partida}" data-product-id="${product.id_pedimento_partida}">
+                        <label class="btn btn-outline-danger" for="dom_error_${product.id_pedimento_partida}" title="Marcar como discrepancia">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </label>
+                    </div>
+                </div>
+            `;
+
+        // Add event listeners
+        const checkbox = div.querySelector(".dom-product-checkbox");
+        const errorCheckbox = div.querySelector(".dom-product-error-checkbox");
+
+        checkbox.addEventListener("change", (e) => {
+            domHandleProductCheck(product.id_pedimento_partida, e.target.checked, div);
+        });
+
+        errorCheckbox.addEventListener("change", (e) => {
+            domHandleProductError(product.id_pedimento_partida, e.target.checked, div);
+        });
+
+        return div;
+    }
+
+    // Handle product checkbox change
+    function domHandleProductCheck(productId, isChecked, element) {
+        domProductStates[productId].checked = isChecked;
+        domProductStates[productId].hasError = false;
+
+        const product = domDocumentsData.partidas.find(p => p.id_pedimento_partida === productId);
+        domProductStates[productId].quantity = product.cantidad;
+
+        domUpdateProductElementState(element, isChecked, false, productId);
+        domUpdateStatistics();
+    }
+
+    function domHandleProductError(productId, hasError, element) {
+        domProductStates[productId].hasError = hasError;
+        domProductStates[productId].checked = false;
+
+        const product = domDocumentsData.partidas.find(p => p.id_pedimento_partida === productId);
+        domProductStates[productId].quantity = product.cantidad;
+
+        domUpdateProductElementState(element, false, hasError);
+        domUpdateStatistics();
+    }
+
+    // Update product element visual state
+    function domUpdateProductElementState(element, isChecked, hasError, productId) {
+        element.classList.remove("dom-checked", "dom-error");
+
+        if (hasError) {
+            element.classList.add("dom-error");
+        } else if (isChecked) {
+            element.classList.add("dom-checked");
+        }
+    }
+
+    // Update statistics
+    function domUpdateStatistics() {
+        const total = domDocumentsData.partidas.length;
+        let checked = 0;
+        let errors = 0;
+
+        Object.values(domProductStates).forEach(state => {
+            if (state.hasError) errors++;
+            else if (state.checked) checked++;
+        });
+
+        const pending = total - checked - errors;
+
+        document.getElementById("domTotalProducts").textContent = total;
+        document.getElementById("domCheckedProducts").textContent = checked;
+        document.getElementById("domUncheckedProducts").textContent = pending;
+        document.getElementById("domErrorProducts").textContent = errors;
+    }
+
+    function verPedimentos(pedimento_id, partida_id) {
+        GetData({
+            path: '/Inventario/GetPartidasPedimentos',
+            data: { partida_id: partida_id, pedimento_id }
+        }).then((_res) => {
+            let html = `<div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Pedimento</th><th>Fecha</th><th>Producto</th><th>Cantidad</th></tr></thead><tbody>`;
+            if (_res.length > 0) {
+                _res.forEach(p => {
+                    html += `<tr>
+                                <td>${p.pedimento_sat}</td>
+                                <td>${dateFormatter(p.fecha)}</td>
+                                <td>${p.codigo}</td>
+                                <td>${p.cantidad}</td>
+                            </tr>`;
+                });
+            } else {
+                html += `<tr><td colspan="5" class="text-center">No hay pedimentos asociados a esta partida.</td></tr>`;
+            }
+            html += `</tbody></table></div>`;
+            _Swal.fire({
+                title: 'Pedimentos asociados',
+                html: html,
+                width: '600px',
+                confirmButtonText: 'Cerrar',
+                customClass: {
+                    popup: 'swal-wide'
+                },
+                showCancelButton: false
+            });
+        })
+    }
+
+    // Event listeners
+    document.addEventListener("DOMContentLoaded", () => {
+        // Search button
+        document.getElementById("domSearchBtn").addEventListener("click", () => {
+            const selectedDoc = domTomS.getValue();
+            if (selectedDoc !== "0") {
+                domLoadDocument(selectedDoc);
+            } else {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+            }
+        });
+
+        // Check all button
+        document.getElementById("domCheckAllBtn").addEventListener("click", () => {
+            const selectedDoc = domTomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            Object.keys(domProductStates).forEach(productId => {
+                if (!domProductStates[productId].hasError) {
+                    const checkbox = document.getElementById(`dom_product_${productId}`);
+                    const productElement = checkbox.closest(".dom-product-item");
+                    checkbox.checked = true;
+                    domHandleProductCheck(parseInt(productId), true, productElement)
+                    domUpdateProductElementState(productElement, true, false, productId);
+                }
+            });
+
+            domUpdateStatistics();
+            toastMixin.fire({ title: "Todos los productos han sido verificados (excepto con discrepancias)", icon: "info" });
+        });
+
+        // Uncheck all button
+        document.getElementById("domUncheckAllBtn").addEventListener("click", () => {
+            const selectedDoc = domTomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            Object.keys(domProductStates).forEach(productId => {
+                domProductStates[productId].checked = false;
+                domProductStates[productId].hasError = false;
+
+                const checkbox = document.getElementById(`dom_product_${productId}`);
+                const errorCheck = document.getElementById(`dom_error_${productId}`);
+                const productElement = checkbox.closest(".dom-product-item");
+                checkbox.checked = false;
+                errorCheck.checked = false;
+
+                $(".dom-remove-discrepancy").click()
+
+                domUpdateProductElementState(productElement, false, false, productId);
+            });
+
+            domUpdateStatistics();
+            toastMixin.fire({ title: "Se han desmarcado todos los productos", icon: "info" });
+        });
+
+        // Save changes button
+        document.getElementById("domSaveChangesBtn").addEventListener("click", () => {
+            const selectedDoc = domTomS.getValue();
+
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            const checkedCount = Object.values(domProductStates).filter(s => s.checked).length;
+            const errorCount = Object.values(domProductStates).filter(s => s.hasError).length;
+
+            if (checkedCount == 0 && errorCount == 0) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Debes seleccionar al menos un elemento para guardar."
+                })
+                return;
+            }
+
+            if (domDocumentsData.partidas.length > (checkedCount + errorCount)) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Hay campos sin seleccionar, revisa antes de continuar."
+                })
+                return;
+            }
+
+            let payloadInter = [];
+            for (const [productId, state] of Object.entries(domProductStates)) {
+                const partidas = domDocumentsData.partidas.find(p => p.id_pedimento_partida == productId)
+
+                // normalizar proveedor
+                let proveedor = partidas.proveedorid;
+
+                if (proveedor === "" || proveedor === "null" || proveedor === undefined) {
+                    proveedor = null;
+                }
+
+                if (state.hasError) {
+                    payloadInter.push({
+                        productId,
+                        status: false,
+                        cantidad: state.quantity,
+                        motivo: null,
+                        unidad: partidas.unidad,
+                        cve_unidad: partidas.ud,
+                        encabezado: domDocumentsData.ordenCompra.id_encabezado,
+                        proveedor: domDocumentsData.ordenCompra.refe,
+                        proveedor_nombre: domDocumentsData.ordenCompra.n_prov,
+                        id_producto: partidas.id_catproductos,
+                        codigo: partidas.codigo,
+                        descripcion: partidas.descripcion,
+                        idp: partidas.idp,
+                        f_pago: partidas.fp,
+                    });
+                } else if (state.checked) {
+                    payloadInter.push({
+                        productId,
+                        status: true,
+                        cantidad: state.quantity,
+                        motivo: null,
+                        unidad: partidas.unidad,
+                        cve_unidad: partidas.ud,
+                        encabezado: domDocumentsData.ordenCompra.id_encabezado,
+                        proveedor: domDocumentsData.ordenCompra.refe,
+                        proveedor_nombre: domDocumentsData.ordenCompra.n_prov,
+                        id_producto: partidas.id_catproductos,
+                        codigo: partidas.codigo,
+                        descripcion: partidas.descripcion,
+                        idp: partidas.idp,
+                        f_pago: partidas.fp,
+                    });
+                }
+            };
+
+            const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+                <style>
+                    .flip {
+                        animation: spinY 2s linear infinite;
+                        transform-origin: center;
+                    }
+                    @@keyframes spinY {
+                        0%   { transform: rotateY(0deg); }
+                        100% { transform: rotateY(360deg); }
+                    }
+                </style>
+                <g class="flip">
+                    <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                    <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="32" cy="48" r="3" fill="#000"/>
+                </g>
+            </svg>`;
+
+            _Swal.fire({
+                iconHtml: warningIcon,
+                title: "Confirmar recepción nacional",
+                html: `¿Está seguro que desea proceder con la recepcion del material nacional con el folio ${domDocumentsData.ordenCompra.folio} ? <br> Correctos: ${checkedCount} -- Discrepancias: ${errorCount}`,
+                footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+                customClass: {
+                    icon: "p-0 bg-transparent border-0 shadow-none"
+                },
+                input: "textarea",
+                inputLabel: "Comentarios extra",
+                inputPlaceholder: "Comentarios extra...",
+                inputAttributes: {
+                    "aria-label": "Comentarios extra"
+                },
+                preConfirm: (comentario) => {
+                    console.log(JSON.stringify(payloadInter))
+                    GetData({
+                        path: "/Inventario/RecibirMaterialInternacional",
+                        data: {
+                            productos: JSON.stringify(payloadInter),
+                            comentario: comentario,
+                            id_encabezado: parseInt(domDocumentsData.ordenCompra.id_encabezado),
+                        },
+                        swalType: 'modal',
+                        swalResponse: true,
+                        swalPath: "/Inventario/Recepcion"
+                    })
+                }
+            })
+
+        });
+
+        // Reset button
+        document.getElementById("domResetBtn").addEventListener("click", () => {
+            const selectedDoc = domTomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            _Swal.fire({
+                title: "¿Estás seguro de que quieres resetear todos los cambios?",
+                preConfirm: () => {
+                    Object.keys(domProductStates).forEach(productId => {
+                        domProductStates[productId].checked = false;
+                        domProductStates[productId].hasError = false;
+
+                        const checkbox = document.getElementById(`dom_product_${productId}`);
+                        const productElement = checkbox.closest(".dom-product-item");
+                        checkbox.checked = false;
+                        domUpdateProductElementState(productElement, false, false, productId);
+                    });
+                    $(".dom-remove-discrepancy").click()
+                    domUpdateStatistics();
+                    toastMixin.fire({ title: "Se han reseteado todos los cambios", icon: "info" });
+                }
+            })
+        });
+
+        // Tom Select change event
+        domTomS.on("change", (value) => {
+            if (value) {
+                domLoadDocument(value);
+            }
+        });
+
+        document.getElementById('generearEtiquetas').addEventListener('click', () => {
+            generarEtiquetas(domDocumentsData.partidas, domDocumentsData.ordenCompra)
+        })
+    });
+</script>

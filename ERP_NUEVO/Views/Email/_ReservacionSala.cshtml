@@ -1,0 +1,165 @@
+@model BOS_ERP.Models.ReservacionSalaEmailModel
+
+@{
+    Layout = null;
+    var cultura = new System.Globalization.CultureInfo("es-MX");
+
+    var tipo = (Model.Tipo ?? "invitacion").ToLowerInvariant();
+
+    var acento = tipo switch
+    {
+        "cancelacion" => "#b91c1c",
+        "actualizacion" => "#c2410c",
+        _ => "#1e3a5f"
+    };
+
+    var encabezado = tipo switch
+    {
+        "cancelacion" => "Reunión cancelada",
+        "actualizacion" => "Cambios en tu reunión",
+        _ => "Invitación a reunión"
+    };
+
+    var icono = tipo switch
+    {
+        "cancelacion" => "&#10060;",
+        "actualizacion" => "&#128260;",
+        _ => "&#128197;"
+    };
+
+    var entradilla = tipo switch
+    {
+        "cancelacion" => "canceló la reservación de sala en la que participabas.",
+        "actualizacion" => "modificó una reservación de sala en la que participas.",
+        _ => "te agregó como participante en una reservación de sala."
+    };
+
+    var duracion = (int)(Model.Fin - Model.Inicio).TotalMinutes;
+}
+
+<table width='100%' cellpadding='0' cellspacing='0' style='font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;'>
+    <tr>
+        <td align='center'>
+            <table width='620' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
+                <tr style='background-color: @acento; color: #ffffff;'>
+                    <td style='padding: 22px; text-align: center;'>
+                        <span style='font-size: 22px; font-weight: bold;'>@Html.Raw(icono) @encabezado</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style='padding: 28px 30px 10px;'>
+                        <p style='font-size: 16px; color: #333; margin: 0 0 14px;'>
+                            Hola@(string.IsNullOrWhiteSpace(Model.Destinatario) ? "" : " " + Model.Destinatario),
+                        </p>
+                        <p style='font-size: 15px; color: #333; margin: 0;'>
+                            <strong>@Model.Organizador</strong> @entradilla
+                        </p>
+                    </td>
+                </tr>
+
+                @if (tipo == "cancelacion")
+                {
+                    <tr>
+                        <td style='padding: 16px 30px 0;'>
+                            <table width='100%' cellpadding='12' cellspacing='0' style='background-color: #fef2f2; border-left: 4px solid #b91c1c; border-radius: 6px;'>
+                                <tr>
+                                    <td style='font-size: 14px; color: #7f1d1d;'>
+                                        <strong>Motivo de cancelación:</strong>
+                                        @(string.IsNullOrWhiteSpace(Model.Motivo) ? "No se especificó." : Model.Motivo)
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                }
+
+                <tr>
+                    <td style='padding: 20px 30px 0;'>
+                        <table width='100%' cellpadding='7' cellspacing='0' style='font-size: 15px; color: #444; border-collapse: collapse;'>
+                            <tr>
+                                <td style='font-weight: bold; width: 165px; border-bottom: 1px solid #eee;'>&#128221; Asunto</td>
+                                <td style='border-bottom: 1px solid #eee;'>@Model.Asunto</td>
+                            </tr>
+                            <tr>
+                                <td style='font-weight: bold; border-bottom: 1px solid #eee;'>&#127970; Sala</td>
+                                <td style='border-bottom: 1px solid #eee;'>@Model.Sala</td>
+                            </tr>
+                            <tr>
+                                <td style='font-weight: bold; border-bottom: 1px solid #eee;'>&#128197; Fecha</td>
+                                <td style='border-bottom: 1px solid #eee; text-transform: capitalize;'>@Model.Inicio.ToString("dddd d 'de' MMMM 'de' yyyy", cultura)</td>
+                            </tr>
+                            <tr>
+                                <td style='font-weight: bold; border-bottom: 1px solid #eee;'>&#128336; Horario</td>
+                                <td style='border-bottom: 1px solid #eee;'>
+                                    @Model.Inicio.ToString("HH:mm", cultura) a @Model.Fin.ToString("HH:mm", cultura) hrs
+                                    <span style='color: #888;'>(@duracion min)</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style='font-weight: bold; border-bottom: 1px solid #eee;'>&#128100; Organizador</td>
+                                <td style='border-bottom: 1px solid #eee;'>
+                                    @Model.Organizador
+                                    @if (!string.IsNullOrWhiteSpace(Model.OrganizadorEmail))
+                                    {
+                                        <br />
+                                        <a href='mailto:@Model.OrganizadorEmail' style='color: @acento; text-decoration: none; font-size: 13px;'>@Model.OrganizadorEmail</a>
+                                    }
+                                </td>
+                            </tr>
+                            @if (Model.Participantes != null && Model.Participantes.Count > 0)
+                            {
+                                <tr>
+                                    <td style='font-weight: bold; border-bottom: 1px solid #eee; vertical-align: top;'>&#128101; Participantes</td>
+                                    <td style='border-bottom: 1px solid #eee;'>@string.Join(", ", Model.Participantes)</td>
+                                </tr>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.Comentarios))
+                            {
+                                <tr>
+                                    <td style='font-weight: bold; border-bottom: 1px solid #eee; vertical-align: top;'>&#128203; Descripción</td>
+                                    <td style='border-bottom: 1px solid #eee;'>@Model.Comentarios</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td style='font-weight: bold;'>&#127915; Folio</td>
+                                <td style='color: #888;'>@Model.Folio</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                @if (!string.IsNullOrWhiteSpace(Model.URL) && tipo != "cancelacion")
+                {
+                    <tr>
+                        <td style='padding: 10px 30px 0;'>
+                            <table cellpadding='0' cellspacing='0' border='0' align='center' style='margin: 22px auto 0 auto;'>
+                                <tr bgcolor='@acento'>
+                                    <td style='background-color: @acento; border-radius: 6px; text-align: center;'>
+                                        <a href='@Model.URL' style='display: inline-block; padding: 12px 26px; color: #ffffff; font-size: 15px; text-decoration: none; font-weight: bold; font-family: Arial, sans-serif;'>
+                                            &#128197; Ver en el calendario
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                }
+
+                <tr>
+                    <td style='padding: 24px 30px 28px;'>
+                        <p style='margin: 0; font-size: 13px; color: #888;'>
+                            @(tipo == "cancelacion"
+                                ? "La sala quedó liberada en ese horario. Este correo es solo para fines de notificación."
+                                : "Si no puedes asistir, avísale directamente al organizador. Este correo es solo para fines de notificación.")
+                        </p>
+                    </td>
+                </tr>
+                <tr style='background-color: #f0f0f0;'>
+                    <td style='padding: 18px; text-align: center; font-size: 12px; color: #999;'>
+                        &copy; @DateTime.Now.Year Sellos y Retenes. Todos los derechos reservados.
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>

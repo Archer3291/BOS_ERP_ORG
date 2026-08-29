@@ -1,0 +1,188 @@
+@*
+    Modal de EDICIÓN de producto.
+    Comparte formulario y guardado con el alta; lo propio de aquí
+    es traer el detalle del producto y volcarlo en los campos.
+*@
+<div class="modal fade prod-modal" id="modalEditarProducto" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="prod-icon">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title">Editar producto</h5>
+                    <span class="modal-subtitle" id="editarProductoTitle"></span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formEditar" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    @Html.Partial("Partials/_ProductoFormFields", "editar")
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="prod-btn prod-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>Cancelar
+                </button>
+                <button type="button" class="prod-btn prod-btn-success" onclick="guardarProducto('editar')">
+                    <i class="fa-solid fa-floppy-disk"></i>Guardar cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        const PREF = 'e_';
+
+        /** Asigna un valor si el campo existe en el formulario */
+        const set = (id, valor) => {
+            const el = document.getElementById(PREF + id);
+            if (el) el.value = valor ?? '';
+        };
+
+        /** Redondea a 2 decimales; '' si no hay valor y no se admite cero */
+        const money = valor => parseFloat(valor || 0).toFixed(2);
+
+        /* ── Abre el modal y carga el detalle ─────────────────────── */
+        window.abrirModalEditar = async function (row) {
+            document.getElementById('editarProductoTitle').textContent = `Clave ${row.id}`;
+            new bootstrap.Modal('#modalEditarProducto').show();
+
+            await initForm('editar');
+
+            const res = await fetch(`/Almacen/Producto/BuscarProducto?idproducto=${row.id}`);
+            const detalle = await res.json();
+            const d = detalle[0];
+
+            volcarGenerales(d);
+            volcarImagen(d);
+            volcarPrecios(d);
+            volcarComercioExterior(d);
+            await volcarSat(d);
+            volcarCamposNoExpuestos(d);
+
+            await initNormalToggles();
+        };
+
+        /* ── Pestaña General ──────────────────────────────────────── */
+        function volcarGenerales(d) {
+            set('nombreProducto', d.cve_prod);
+            set('claveAlternativa', d.cve_secundaria);
+            set('claveContratipo', d.cve_contratipo);
+            // La clave es la llave del producto: no se puede renombrar
+            document.getElementById(PREF + 'nombreProducto')?.setAttribute('readonly', true);
+
+            ProductosState.setToggle(PREF + 'estadoProducto', (d.stat || '').trim().toUpperCase() === 'A');
+            ProductosState.setToggle(PREF + 'eskit', d.es_kit === true || d.es_kit == 1);
+
+            set('descripcion', d.descr_prod);
+            set('lineaProducto', d.lin_prod);
+            set('tipoProducto', d.tp);
+            set('grupoProducto', d.gpo);
+            set('naturalezaProducto', d.fmcan);
+            set('unidadProducto', d.udm);
+        }
+
+        function volcarImagen(d) {
+            const img = document.getElementById(PREF + 'imagenPreview');
+            if (!img) return;
+
+            img.src = d.n_img ? `/${d.n_img}` : '../imagenes/not-found.png';
+            img.style.display = 'block';
+            img.previousElementSibling?.classList.add('d-none');
+        }
+
+        /* ── Pestaña Control Interno ──────────────────────────────── */
+        function volcarPrecios(d) {
+            set('precioGuadalajara', money(d.pv1));
+            set('precioD3', money(d.pv4));
+            set('precioD2', money(d.pv3));
+            set('precioD1', money(d.pv2));
+            set('precioMayoreoGDL', money(d.pv5));
+            set('precioMedioMayoreo', money(d.pv6));
+            set('precioFrecuente', money(d.pv7));
+            set('precioMostrador', money(d.pv8));
+        }
+
+        function volcarComercioExterior(d) {
+            set('peso', money(d.peso_prod || d.peso));
+            set('peso2', d.peso2 != null ? money(d.peso2) : '');
+            set('peso3', d.peso3 != null ? money(d.peso3) : '');
+            set('fracc', d.frac || d.fr_ar);
+        }
+
+        /* ── Selects del SAT (Tom Select) ─────────────────────────── */
+        async function volcarSat(d) {
+            const tom = ProductosState.tomSelects.editar;
+
+            // El catálogo SAT se carga por búsqueda: hay que traer la
+            // opción guardada antes de poder seleccionarla.
+            if (d.prod_sat && tom?.prod_sat) {
+                const lista = await fetch(`/Almacen/producto/BuscarProductosSat?q=${encodeURIComponent(d.prod_sat)}`)
+                    .then(r => r.json())
+                    .catch(() => []);
+
+                const found = lista.find(p => p.cve_producto === d.prod_sat);
+                if (found) {
+                    tom.prod_sat.addOption(found);
+                    tom.prod_sat.setValue(d.prod_sat);
+                }
+            }
+
+            tom?.unidadMedida?.setValue(d.ud_sat);
+            tom?.unidadSecundaria?.setValue(d.ud_sec);
+            tom?.objetoImpuesto?.setValue(d.obj_impto);
+
+            set('ivaExento', d.iva_ex);
+        }
+
+        /**
+         * Campos que el detalle devuelve pero que el formulario aún no
+         * muestra (inventario, proveedores, impuestos, control de lotes).
+         * set() los ignora si el input no existe; se conservan para que
+         * al agregar esos campos al formulario ya queden conectados.
+         */
+        function volcarCamposNoExpuestos(d) {
+            set('codigoBarras', d.cbr);
+            set('factorConversion', d.conv_ud);
+            set('pesoProducto', money(d.peso_prod || d.peso));
+            set('comentarioProducto', d.coment_prod1);
+
+            set('iva', d.iva_prod ?? 16);
+            set('ieps', d.impto_by_s ?? 0);
+            set('moneda', d.cve_ccy_pv);
+
+            set('minimo', d.niv_inv_min ?? 0);
+            set('puntoReorden', d.pto_ro_estn2 ?? 0);
+            set('maximo', d.niv_inv_max ?? 0);
+
+            ProductosState.setToggle(PREF + 'numeroSerie', d.sn === 'S');
+            ProductosState.setToggle(PREF + 'controlUbicacion', d.ub === 'S');
+            ProductosState.setToggle(PREF + 'importacion', d.imp === 'S');
+
+            set('controlLotes', d.ctr_lot ?? 'N');
+            set('controlTallaColor', d.ctmc ?? '0');
+            set('ubicacionAlmacen', d.cve_ub_alm);
+
+            set('codigoProveedor', d.cod_prov);
+            set('precioLista', d.pv_prov);
+            set('descuentoProveedor', d.dto_prov);
+            set('monedaCompra', d.cve_ccy_comp);
+            set('descripcionProveedor', d.coment_prod2);
+
+            set('fraccionArancelaria', d.frac || d.fr_ar);
+            set('dta', d.dto_ad_val);
+            set('paisOrigen', d.cve_pais_orig);
+
+            ProductosState.proveedores.editar?.proveedor1?.setValue(d.cve_prov_ppal);
+        }
+    })();
+</script>

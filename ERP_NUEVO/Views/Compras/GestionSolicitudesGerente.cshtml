@@ -1,0 +1,29 @@
+﻿@using BOS_ERP.Controllers
+
+@{
+    ViewBag.Title = "Acciones gerente";
+    ViewBag.PageTitle = "Acciones gerente";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var role = Utilities.GetUserRole(User.Identity.Name, "ERP_SRS");
+
+    // El gerente de cualquier area aprueba las requisiciones de su gente (estatus 1)
+    // y elige la cotizacion ganadora cuando Compras devuelve las opciones (estatus 3).
+    var esGerente = role == "Gerente";
+    var esAdmin = role == "Super Administrador" || Utilities.GetAreaName(User.Identity.Name) == "Sistemas";
+}
+
+<link href="~/content/Site.css" rel="stylesheet" />
+
+@if (esGerente || esAdmin)
+{
+    @await Html.PartialAsync("OpPartials/_RequisisionMaterialGerente")
+}
+else
+{
+    ViewBag.PageTitle = "Acceso denegado";
+    <div class="d-flex flex-column align-items-center justify-content-center gap-3">
+        <img src="https://http.cat/403" alt="Acceso denegado" />
+        <p class="text-muted">Esta pantalla es para los gerentes de area.</p>
+    </div>
+}

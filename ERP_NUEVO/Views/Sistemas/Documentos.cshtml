@@ -1,0 +1,287 @@
+﻿
+@section styles {
+
+}
+<form id="formTipoDocumento">
+    @Html.AntiForgeryToken()
+</form>
+<div class="card">
+    <div class="card-header text-bg-primary">
+        <h2 class="animate__animated animate__rubberBand">Tipos de Documento</h2>
+    </div>
+
+    <div class="d-flex justify-content-end m-2">
+        <button id="btnAgregarTipoDocumento" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEditarTipoDocumento">
+            <i class="fas fa-plus me-1"></i> Agregar Tipo de Documento
+        </button>
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive-sm">
+            <table id="tablaDocumentos" class="table table-striped table-bordered table-hover w-100">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>ID</th>
+                        <th>Área</th>
+                        <th>Tipo Documento</th>
+                        <th>Abreviatura</th>
+                        <th>Consecutivo</th>
+                        <th>Descripción</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Agregar/Editar Tipo de Documento -->
+<div class="modal fade" id="modalEditarTipoDocumento" tabindex="-1" aria-labelledby="modalEditarTipoDocumentoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalEditarTipoDocumentoLabel">
+                    <i class="fas fa-pen-to-square me-2"></i>Editar Tipo de Documento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarTipoDocumento">
+                    <input type="hidden" name="idtpdoc" id="idtpdoc">
+
+                    <div class="mb-3">
+                        <label for="idarea" class="form-label">Área</label>
+                        <input type="number" name="idarea" class="form-control" id="idarea" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="tpdoc" class="form-label">Tipo Documento</label>
+                        <input type="text" class="form-control" name="tpdoc" id="tpdoc" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="abreviaturatpdoc" class="form-label">Abreviatura</label>
+                        <input type="text" class="form-control" name="abreviaturatpdoc" id="abreviaturatpdoc" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="consec" class="form-label">Consecutivo</label>
+                        <input type="number" class="form-control" name="consec" id="consec" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descr" class="form-label">Descripción</label>
+                        <textarea class="form-control" name="descr" id="descr" rows="3" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fch" class="form-label">Fecha</label>
+                        <input type="date" class="form-control" name="fch" id="fch" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary" form="formEditarTipoDocumento">
+                    <i class="fas fa-save me-1"></i>Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal fade" id="modalEliminarTipoDocumento" tabindex="-1" aria-labelledby="modalEliminarTipoDocumentoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalEliminarTipoDocumentoLabel">
+                    <i class="fas fa-trash-alt me-2"></i>Eliminar Tipo de Documento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    <i class="fas fa-triangle-exclamation text-warning me-2"></i>
+                    ¿Estás seguro de que deseas eliminar el tipo de documento <strong id="nombreTipoDocumentoEliminar"></strong>?
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarEliminarTipoDocumento">
+                    <i class="fas fa-trash me-1"></i>Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var tablaDocumentos;
+
+        $(document).ready(function () {
+            tablaDocumentos = $('#tablaDocumentos').DataTable({
+                ajax: {
+                    url: '/TipoDocumento/ObtenerTipoDocumentos',
+                    type: 'GET',
+                    dataType: 'json',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'Id', title: 'ID' },
+                    { data: 'Area', title: 'Área' },
+                    { data: 'Tipo', title: 'Tipo Documento' },
+                    { data: 'Abreviatura', title: 'Abreviatura' },
+                    { data: 'Consecutivo', title: 'Consecutivo' },
+                    { data: 'Descripcion', title: 'Descripción' },
+                    {
+                        data: 'Fecha',
+                        title: 'Fecha',
+                        render: function (data) {
+                            if (!data) return '';
+                            const match = /\/Date\((\d+)\)\//.exec(data);
+                            if (!match) return 'Fecha inválida';
+
+                            const fecha = new Date(parseInt(match[1]));
+                            return fecha.toLocaleDateString('es-MX');
+                        }
+                    },
+                    {
+                        data: null,
+                        title: 'Acciones',
+                        orderable: false,
+                        searchable: false,
+                        render: function (data, type, row) {
+                            return `
+                                <button class="btn btn-sm btn-outline-warning editar-doc" data-id="${row.Id}">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger eliminar-doc" data-id="${row.Id}">
+                                    <i class="fas fa-trash-alt"></i> Borrar
+                                </button>
+                            `;
+                        }
+                    }
+                ],
+                responsive: true
+            });
+
+            let documentoActual = null;
+
+            // Abrir modal de edición
+            $('#tablaDocumentos tbody').on('click', '.editar-doc', function () {
+                const fila = tablaDocumentos.row($(this).parents('tr')).data();
+                documentoActual = fila;
+
+                $('#idtpdoc').val(fila.Id);
+                $('#idarea').val(fila.Area);
+                $('#tpdoc').val(fila.Tipo);
+                $('#abreviaturatpdoc').val(fila.Abreviatura);
+                $('#consec').val(fila.Consecutivo);
+                $('#descr').val(fila.Descripcion);
+
+                if (fila.Fecha) {
+                    const match = /\/Date\((\d+)\)\//.exec(fila.Fecha);
+                    if (match) {
+                        const fecha = new Date(parseInt(match[1]));
+                        $('#fch').val(fecha.toISOString().split('T')[0]);
+                    } else {
+                        $('#fch').val('');
+                    }
+                } else {
+                    $('#fch').val('');
+                }
+
+                const modal = new bootstrap.Modal(document.getElementById('modalEditarTipoDocumento'));
+                modal.show();
+            });
+
+            // Abrir modal de eliminación
+            $('#tablaDocumentos tbody').on('click', '.eliminar-doc', function () {
+                const fila = tablaDocumentos.row($(this).parents('tr')).data();
+                documentoActual = fila;
+
+                $('#nombreTipoDocumentoEliminar').text(fila.Tipo);
+                const modal = new bootstrap.Modal(document.getElementById('modalEliminarTipoDocumento'));
+                modal.show();
+            });
+
+            // Guardar cambios (crear o editar)
+            $('#formEditarTipoDocumento').on('submit', async function (e) {
+                e.preventDefault();
+
+                const form = document.getElementById('formEditarTipoDocumento');
+                const formData = new FormData(form);
+
+                const url = $('#idtpdoc').val() ? '/TipoDocumento/Editar' : '/TipoDocumento/Crear';
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('modalEditarTipoDocumento')).hide();
+                        toastr.success(result.message || 'Tipo de documento guardado correctamente');
+                        tablaDocumentos.ajax.reload();
+                    } else {
+                        toastr.error(result.message || 'Error al guardar');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    toastr.error('Error de comunicación con el servidor');
+                }
+            });
+
+            // Confirmar eliminación
+            $('#btnConfirmarEliminarTipoDocumento').on('click', async function () {
+                if (!documentoActual || !documentoActual.Id) {
+                    toastr.warning('Documento no válido para eliminar.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('idtpdoc', documentoActual.Id);
+
+                try {
+                    const response = await fetch('/TipoDocumento/Eliminar', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('modalEliminarTipoDocumento')).hide();
+                        toastr.success(result.message || 'Documento eliminado correctamente');
+                        tablaDocumentos.ajax.reload();
+                    } else {
+                        toastr.error(result.message || 'Error al eliminar');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    toastr.error('Error de comunicación con el servidor');
+                }
+            });
+
+            // Abrir modal vacío al presionar "Agregar"
+            $('#btnAgregarTipoDocumento').on('click', function () {
+                documentoActual = null;
+                $('#formEditarTipoDocumento')[0].reset();
+                $('#idtpdoc').val('');
+            });
+        });
+    </script>
+
+
+}

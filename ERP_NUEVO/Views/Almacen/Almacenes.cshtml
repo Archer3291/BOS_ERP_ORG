@@ -1,0 +1,268 @@
+@{
+    ViewData["Title"] = "Almacenes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Almacenes";
+}
+
+@section styles {
+    <!-- Agrega estilos personalizados aquí si es necesario -->
+}
+
+<div class="contenedor-tabla">
+    <div class="card-body">
+        <!-- Botón Buscar Almacén -->
+        <div class="d-flex justify-content-between mb-3">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregarAlmacen">
+                <i class="fas fa-plus"></i> Agregar nuevo
+            </button>
+
+            <button type="button" class="btn btn-primary shadow-lg" data-bs-toggle="modal" data-bs-target="#modalBuscarAlmacen">
+                <i class="fas fa-search"></i> Buscar almacén
+            </button>
+        </div>
+    </div>
+    <form id="formAlmacenes">
+        @Html.AntiForgeryToken()
+        <div class="row g-3 align-items-center">
+            <!-- Clave del almacén -->
+            <div class="form-floating">
+                <select id="selectSucursalFiltro1" name="Sucursal" class="form-select" aria-label="Filtro por sucursal">
+                    <option value="">Cargando sucursales...</option>
+                    <option value="central">Central</option>
+                    <option value="norte">Norte</option>
+                </select>
+                <label for="selectSucursalFiltro">Filtrar por sucursal</label>
+            </div>
+            <div class="col-md-6">
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="claveAlmacen" name="Clave">
+                    <label for="claveAlmacen">Numero almacén</label>
+                </div>
+            </div>
+
+            <!-- Nombre del almacén -->
+            <div class="col-md-6">
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="nombreAlmacen" name="Description">
+                    <label for="nombreAlmacen">Descripcion</label>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="text-end mt-4">
+        <button type="button" class="btn btn-primary" id="editTypeButton" title="Editar">
+            Editar almacen
+        </button>
+    </div>
+</div>
+
+<!-- Modal Buscar Almacén -->
+<div class="modal fade" id="modalBuscarAlmacen" tabindex="-1" aria-labelledby="modalBuscarAlmacenLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalBuscarAlmacenLabel">Buscar Almacén</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="inputBuscarNombreAlmacen" placeholder="Ej. Central, Norte, etc.">
+                            <button class="btn btn-outline-secondary" type="button" id="btnLimpiarResultadosAlmacen">
+                                <i class="bi bi-x-circle me-1"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            <select id="selectSucursalFiltro" class="form-select" aria-label="Filtro por sucursal">
+                                <option value="">Cargando sucursales...</option>
+                                <option value="central">Central</option>
+                                <option value="norte">Norte</option>
+                            </select>
+                            <label for="selectSucursalFiltro">Filtrar por sucursal</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border rounded-3 p-2 bg-light-subtle">
+                    <ul class="list-group list-group-flush" id="listaResultadosAlmacenes" style="max-height: 400px; overflow-y: auto;">
+                    </ul>
+                </div>
+            </div>
+            <div id="pagination-almacenes" class="d-flex justify-content-around mt-3">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAgregarAlmacen" tabindex="-1" aria-labelledby="modalAgregarAlmacenLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <form id="formNuevoAlmacen" class="needs-validation" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAgregarAlmacenLabel">Agregar nuevo almacén</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="SucursalId" class="form-label">Sucursal</label>
+                        <select id="SucursalId" name="Sucursal" class="form-select" required>
+                            <option value="">Seleccione una sucursal</option>
+                        </select>
+                        <div class="invalid-feedback">Seleccione una sucursal</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ClaveAlmacen" class="form-label">Clave del almacén</label>
+                        <input type="text" id="ClaveAlmacen" name="Clave" class="form-control" required>
+                        <div class="invalid-feedback">Ingrese la clave del almacén</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="DescripcionAlmacen" class="form-label">Descripción</label>
+                        <input type="text" id="DescripcionAlmacen" name="Description" class="form-control" required>
+                        <div class="invalid-feedback">Ingrese una descripción</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section scripts {
+    <script src="~/Scripts/formularios.js"></script>
+    <script src="~/Scripts/General/general.js"></script>
+    <script>
+        document.getElementById('formAlmacenes').addEventListener('submit', function (e) {
+            e.preventDefault();
+            // lógica de guardado aquí...
+            alert("Formulario de almacén enviado.");
+        });
+
+        document.getElementById("btnLimpiarResultadosAlmacen").addEventListener("click", function () {
+            document.getElementById("inputBuscarNombreAlmacen").value = "";
+            document.getElementById("listaResultadosAlmacenes").innerHTML = "";
+        });
+
+        document.getElementById('modalBuscarAlmacen').addEventListener('show.bs.modal', function () {
+            fetch('/Almacen/Almacenes/BuscarSucursales')
+                .then(response => response.json())
+                .then(data => {
+                    llenarSelect('selectSucursalFiltro', data.sucursales, 'c1', 'c2');
+                })
+                .catch(error => {
+                    console.error('Error al obtener las sucursales:', error);
+                });
+        });
+        fetch('/Almacen/Almacenes/BuscarSucursales')
+            .then(response => response.json())
+            .then(data => {
+                llenarSelect('selectSucursalFiltro1', data.sucursales, 'c1', 'c2');
+
+            })
+            .catch(error => {
+                console.error('Error al obtener los datos:', error);
+            });
+
+        crearBuscador({
+            modalId: 'modalBuscarAlmacen',
+            inputBusquedaId: 'inputBuscarNombreAlmacen',
+            listaResultadosId: 'listaResultadosAlmacenes',
+            paginacionId: 'pagination-almacenes',
+            urlBusqueda: '/Almacen/Almacenes/Buscar',
+            urlDetalle: '/Almacen/Almacenes/BuscarAlmacenes',
+            extraParams: () => ({
+                sucursal: document.getElementById('selectSucursalFiltro').value
+            }),
+            onSelect: almacen => {
+                document.getElementById('selectSucursalFiltro1').value = almacen.c1 || '';
+                document.getElementById('claveAlmacen').value = almacen.c2 || '';
+                document.getElementById('nombreAlmacen').value = almacen.c3 || '';
+            }
+        });
+
+
+        document.getElementById('selectSucursalFiltro').addEventListener('change', function () {
+            const input = document.getElementById('inputBuscarNombreAlmacen');
+            input.dispatchEvent(new Event('input')); // Refresca resultados al cambiar filtro
+        });
+
+        // Limpieza de búsqueda
+        document.getElementById("btnLimpiarResultadosAlmacen").addEventListener("click", function () {
+            document.getElementById("inputBuscarNombreAlmacen").value = "";
+            document.getElementById("listaResultadosAlmacenes").innerHTML = "";
+        });
+
+
+        GetData({
+            path: '/Almacenes/Datos',
+        }).then((data) => {
+            const sucursalSelect = document.getElementById('SucursalId');
+            if (sucursalSelect) {
+                llenarSelect('SucursalId', data.sucursales, 'c1', 'c2');
+            }
+        }).catch((error) => {
+            console.error('Error al obtener los datos de sucursales:', error);
+        })
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("formNuevoAlmacen");
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault(); // evitar que se recargue la página
+
+                postFormData("formNuevoAlmacen", "/Almacenes/Guardar").then((_res) => {
+                    if (_res.success) {
+                        toastMixin.fire({
+                            icon: "success",
+                            title: "Almacén guardado correctamente."
+                        });
+                        $('#modalAgregarAlmacen').modal('hide');
+                        form.reset();
+                    } else {
+                        toastMixin.fire({
+                            icon: "error",
+                            title: "Ocurrió un error al guardar el almacén. Por favor, inténtelo de nuevo."
+                        });
+                    }
+                });
+            });
+        });
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const editBtn = document.getElementById("editTypeButton");
+            const form = document.getElementById("formAlmacenes");
+
+            editBtn.addEventListener("click", function () {
+                postFormData("formAlmacenes", "/Almacenes/Editar").then((_res) => {
+                    if (_res.success) {
+                        toastMixin.fire({
+                            icon: "success",
+                            title: "Almacén editado correctamente."
+                        });
+                        form.reset();
+                    } else {
+                        toastMixin.fire({
+                            icon: "error",
+                            title: "Ocurrió un error al editar el almacén. Por favor, inténtelo de nuevo."
+                        });
+                    }
+                });
+            });
+        });
+
+
+
+    </script>
+}

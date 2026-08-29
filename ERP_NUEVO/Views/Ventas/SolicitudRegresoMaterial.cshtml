@@ -1,0 +1,401 @@
+﻿@{
+    ViewBag.Title = "Reporte de Material Dañado";
+    ViewBag.PageTitle = "Reporte de Material Dañado";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/content/Facturacion/reporte-danado.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<!-- ══════════════════════════════════════════
+     LAYOUT PRINCIPAL
+══════════════════════════════════════════ -->
+<div class="rmd-layout container-fluid px-0">
+    <div class="row g-0 align-items-start">
+
+        <!-- ══════════════════════════════════════════
+             COLUMNA PRINCIPAL
+        ══════════════════════════════════════════ -->
+        <div class="col-12 col-xl-9 rmd-main p-3 p-md-4">
+
+            <!-- TABS -->
+            <div class="rmd-tabs">
+                <div class="rmd-tab active" data-tab="nueva" onclick="rmdSwitchTab('nueva')">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Nuevo reporte
+                </div>
+                <div class="rmd-tab" data-tab="historial" onclick="rmdSwitchTab('historial')">
+                    <i class="fas fa-history me-2"></i>Mis reportes
+                </div>
+            </div>
+
+            <!-- ══════════ PANEL NUEVO REPORTE ══════════ -->
+            <div class="rmd-tab-panel active" id="rmd-panel-nueva">
+
+                <!-- AVISO INFORMATIVO -->
+                <div class="rmd-info-banner mb-4">
+                    <div class="rmd-info-icon"><i class="fas fa-info-circle"></i></div>
+                    <div class="rmd-info-body">
+                        <div class="rmd-info-title">¿Cómo funciona este módulo?</div>
+                        <div class="rmd-info-desc">
+                            Selecciona las facturas con material dañado o incompleto. El equipo de inventario
+                            recibirá el reporte, confirmará la recepción del material y generará el documento
+                            de devolución correspondiente.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtros extra (desde/hasta) — createTable ya provee búsqueda de texto -->
+                <div class="section-card mb-3">
+                    <div class="section-head">
+                        <div class="section-icon info"><i class="fas fa-calendar-alt"></i></div>
+                        <div>
+                            <div class="section-title">Filtrar por fecha</div>
+                            <div class="section-sub">Rango opcional — la búsqueda por texto está en la tabla</div>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-6 col-sm-4 col-md-auto">
+                                <label class="rmd-filter-label">Desde</label>
+                                <input type="date" id="rmd-filter-desde" class="form-control form-control-sm"
+                                       style="min-width:130px;"
+                                       onchange="rmdTblInstance && rmdTblInstance.reload()" />
+                            </div>
+                            <div class="col-6 col-sm-4 col-md-auto">
+                                <label class="rmd-filter-label">Hasta</label>
+                                <input type="date" id="rmd-filter-hasta" class="form-control form-control-sm"
+                                       style="min-width:130px;"
+                                       onchange="rmdTblInstance && rmdTblInstance.reload()" />
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn-icon" onclick="
+                        document.getElementById('rmd-filter-desde').value='';
+                        document.getElementById('rmd-filter-hasta').value='';
+                        rmdTblInstance && rmdTblInstance.reload();">
+                                    <i class="fas fa-eraser"></i> Limpiar fechas
+                                </button>
+                            </div>
+                            <div class="col-auto ms-auto">
+                                <!-- Botón de acción (se muestra cuando hay selección) -->
+                                <button class="btn-icon danger" id="rmd-btn-procesar-head"
+                                        onclick="rmdAbrirModalReporte()" style="display:none;">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    Reportar daño (<span id="rmd-sel-count-head">0</span>)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenedor de createTable -->
+                <div class="section-card">
+                    <div class="section-head">
+                        <div class="section-icon danger"><i class="fas fa-file-invoice"></i></div>
+                        <div>
+                            <div class="section-title">Mis Facturas</div>
+                            <div class="section-sub">Solo se muestran facturas asignadas a tu cuenta</div>
+                        </div>
+                    </div>
+                    <div class="section-body p-2">
+                        <div id="rmd-facturas-table"></div>
+                    </div>
+                </div>
+
+            </div><!-- /panel-nueva -->
+            <!-- ══════════ PANEL HISTORIAL ══════════ -->
+            <div class="rmd-tab-panel" id="rmd-panel-historial">
+                <div class="section-card">
+                    <div class="section-head flex-wrap gap-2">
+                        <div class="section-icon amber"><i class="fas fa-history"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="section-title">Mis Reportes de Material Dañado</div>
+                            <div class="section-sub">Seguimiento de reportes enviados a inventario</div>
+                        </div>
+                        <div class="ms-auto d-flex gap-2 flex-wrap">
+                            <select id="rmd-hist-filtro-estatus"
+                                    class="form-select form-select-sm"
+                                    style="width:auto;"
+                                    onchange="RMD_HIST.estatus=this.value;RMD_HIST.page=1;rmdLoadHistorial()">
+                                <option value="">Todos los estados</option>
+                                <option value="PENDIENTE">Pendiente revisión</option>
+                                <option value="RECIBIDO">Material recibido</option>
+                                <option value="DOC_GENERADO">Documento generado</option>
+                                <option value="CANCELADO">Cancelado</option>
+                            </select>
+                            <button class="btn-icon" onclick="rmdLoadHistorial()">
+                                <i class="fas fa-sync-alt"></i> Actualizar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="section-body p-0">
+                        <div class="rmd-table-wrap">
+                            <table class="rmd-tbl">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha reporte</th>
+                                        <th>Folios</th>
+                                        <th class="d-none d-md-table-cell">Tipo de daño</th>
+                                        <th class="d-none d-lg-table-cell">Descripción</th>
+                                        <th>Estado</th>
+                                        <th class="d-none d-sm-table-cell">Inventario</th>
+                                        <th>Doc. generado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rmd-hist-tbody">
+                                    <tr>
+                                        <td colspan="7" style="text-align:center;padding:40px;color:var(--ink-ghost);">
+                                            Selecciona la pestaña "Mis reportes" para cargar
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /panel-historial -->
+
+        </div><!-- /col main -->
+        <!-- ══════════════════════════════════════════
+             SIDEBAR — RESUMEN SELECCIÓN
+        ══════════════════════════════════════════ -->
+        <div class="col-12 col-xl-3 rmd-side">
+            <div class="rmd-sb-header">
+                <div class="rmd-sb-top">
+                    <div class="rmd-sb-brand">
+                        <div class="rmd-sb-brand-icon">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M7 2v5M7 9.5v1" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" />
+                                <path d="M2.5 12h9L7 2 2.5 12z" stroke="#ef4444" stroke-width="1.4" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <span class="rmd-sb-brand-title">Material Dañado</span>
+                    </div>
+                    <span class="rmd-sb-badge" id="rmd-sb-badge">Sin selección</span>
+                </div>
+            </div>
+
+            <!-- Lista de seleccionadas -->
+            <div class="rmd-sb-section" style="flex:1;overflow-y:auto;">
+                <div class="rmd-sb-lbl">
+                    <i class="fas fa-file-invoice" style="font-size:9px;"></i>
+                    Facturas a reportar
+                </div>
+                <div id="rmd-sb-list">
+                    <div class="rmd-sb-empty">
+                        <i class="fas fa-hand-pointer me-2" style="opacity:.4;"></i>
+                        Selecciona facturas de la tabla
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total -->
+            <div class="rmd-sb-section">
+                <div class="rmd-sb-lbl">
+                    <i class="fas fa-dollar-sign" style="font-size:9px;"></i>
+                    Importe en reporte
+                </div>
+                <div class="rmd-sb-total-card">
+                    <div>
+                        <div class="rmd-sb-total-lbl">Importe acumulado</div>
+                        <div class="rmd-sb-total-count" id="rmd-sb-count">0 facturas</div>
+                    </div>
+                    <div class="rmd-sb-total-val" id="rmd-sb-total-val">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="rmd-sb-actions">
+                <button class="rmd-btn-primary" id="rmd-btn-procesar"
+                        onclick="rmdAbrirModalReporte()" disabled>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Reportar Material Dañado
+                </button>
+                <button class="rmd-btn-secondary" onclick="RMD_STATE.seleccionadas=[];rmdUpdateSidebar();">
+                    <i class="fas fa-times"></i>
+                    Limpiar selección
+                </button>
+            </div>
+        </div><!-- /col sidebar -->
+
+    </div><!-- /row -->
+</div><!-- /container -->
+<!-- ══════════════════════════════════════════
+     MODAL — REPORTAR MATERIAL DAÑADO
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="rmd-modal-reporte">
+    <div class="modal-box" style="max-width:680px;">
+        <div class="modal-header danger-header">
+            <span class="modal-title">
+                <i class="fas fa-exclamation-triangle me-2"></i>Reporte de Material Dañado / Incompleto
+            </span>
+            <button class="modal-close" onclick="closeRmdModal('rmd-modal-reporte')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+
+            <!-- Resumen facturas seleccionadas -->
+            <div id="rmd-modal-resumen" style="margin-bottom:16px;"></div>
+
+            <!-- Tipo de daño -->
+            <div style="margin-bottom:16px;">
+                <div class="field-section-label">
+                    Tipo de daño <span style="color:var(--danger-color);">*</span>
+                </div>
+                <div class="tipo-danio-grid" id="rmd-tipo-grid">
+                    <div class="tipo-card" data-tipo="fisico" style="--td-color:#dc2626"
+                         onclick="rmdSelectTipo(this,'fisico')">
+                        <div class="tipo-icon" style="--td-color:#dc2626"><i class="fas fa-box-open"></i></div>
+                        <div class="tipo-label">Daño físico</div>
+                        <div class="tipo-desc">Golpes, roturas, abolladuras</div>
+                    </div>
+                    <div class="tipo-card" data-tipo="incompleto" style="--td-color:#d97706"
+                         onclick="rmdSelectTipo(this,'incompleto')">
+                        <div class="tipo-icon" style="--td-color:#d97706"><i class="fas fa-puzzle-piece"></i></div>
+                        <div class="tipo-label">Incompleto</div>
+                        <div class="tipo-desc">Piezas o accesorios faltantes</div>
+                    </div>
+                    <div class="tipo-card" data-tipo="caducado" style="--td-color:#7c3aed"
+                         onclick="rmdSelectTipo(this,'caducado')">
+                        <div class="tipo-icon" style="--td-color:#7c3aed"><i class="fas fa-calendar-times"></i></div>
+                        <div class="tipo-label">Caducado / Vencido</div>
+                        <div class="tipo-desc">Producto fuera de fecha</div>
+                    </div>
+                    <div class="tipo-card" data-tipo="calidad" style="--td-color:#0891b2"
+                         onclick="rmdSelectTipo(this,'calidad')">
+                        <div class="tipo-icon" style="--td-color:#0891b2"><i class="fas fa-ban"></i></div>
+                        <div class="tipo-label">Problema de calidad</div>
+                        <div class="tipo-desc">Defecto de fabricación</div>
+                    </div>
+                    <div class="tipo-card" data-tipo="mojado" style="--td-color:#059669"
+                         onclick="rmdSelectTipo(this,'mojado')">
+                        <div class="tipo-icon" style="--td-color:#059669"><i class="fas fa-tint"></i></div>
+                        <div class="tipo-label">Humedad / Mojado</div>
+                        <div class="tipo-desc">Daño por agua o condensación</div>
+                    </div>
+                    <div class="tipo-card" data-tipo="otro" style="--td-color:#64748b"
+                         onclick="rmdSelectTipo(this,'otro')">
+                        <div class="tipo-icon" style="--td-color:#64748b"><i class="fas fa-ellipsis-h"></i></div>
+                        <div class="tipo-label">Otro</div>
+                        <div class="tipo-desc">Especificar en descripción</div>
+                    </div>
+                </div>
+                <input type="hidden" id="rmd-tipo-hidden" />
+            </div>
+
+            <!-- Partidas dañadas (se cargan dinámicamente) -->
+            <div id="rmd-partidas-wrap" style="display:none;margin-bottom:16px;">
+                <div class="field-section-label">
+                    Partidas con daño <span style="color:var(--danger-color);">*</span>
+                    <span style="font-weight:400;font-size:10px;color:var(--ink-ghost);margin-left:6px;">
+                        Selecciona los productos afectados e indica la cantidad dañada
+                    </span>
+                </div>
+                <div id="rmd-partidas-lista" class="rmd-partidas-container"></div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="field mb-3">
+                <label>Descripción del daño <span class="req">*</span></label>
+                <select id="rmd-descripcion-tipo" onchange="rmdOnDescTipoChange(this)">
+                    <option value="">— Selecciona una descripción —</option>
+                    <option value="Producto llegó con el empaque roto o aplastado">Empaque roto o aplastado</option>
+                    <option value="Producto presenta golpes o abolladuras visibles">Golpes o abolladuras visibles</option>
+                    <option value="Producto llegó mojado o con daño por humedad">Mojado o daño por humedad</option>
+                    <option value="Producto incompleto: faltan piezas o accesorios">Faltan piezas o accesorios</option>
+                    <option value="Producto caducado o fuera de fecha de vigencia">Caducado / fuera de fecha</option>
+                    <option value="Producto con defecto de fabricación evidente">Defecto de fabricación</option>
+                    <option value="Producto con derrame o contaminación interna">Derrame o contaminación</option>
+                    <option value="Producto llegó en condición diferente a la solicitada">Condición diferente a la solicitada</option>
+                    <option value="otro">Otro (especificar)</option>
+                </select>
+            </div>
+            <div class="field mb-3" id="rmd-descripcion-otro-wrap" style="display:none;">
+                <label>Especifica el daño <span class="req">*</span></label>
+                <textarea id="rmd-descripcion"
+                          rows="3"
+                          placeholder="Describe el daño observado: cómo llegó el producto, qué piezas están dañadas, condición del empaque, etc."></textarea>
+            </div>
+
+            <!-- Evidencia y urgencia -->
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-sm-6">
+                    <div class="field">
+                        <label>Urgencia</label>
+                        <select id="rmd-urgencia">
+                            <option value="normal">Normal</option>
+                            <option value="alta">Alta — cliente esperando resolución</option>
+                            <option value="critica">Crítica — afecta operación del cliente</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="field">
+                        <label>Referencia de entrega (guía / orden)</label>
+                        <input type="text" id="rmd-referencia"
+                               placeholder="Ej: OC-1234, Guía 9876..." />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ubicación del material -->
+            <div class="field mb-3">
+                <label>¿Dónde se encuentra actualmente el material?</label>
+                <select id="rmd-ubicacion">
+                    <option value="">Selecciona una opción</option>
+                    <option value="cliente">En instalaciones del cliente</option>
+                    <option value="transito">En tránsito / con transportista</option>
+                    <option value="almacen_propio">En nuestro almacén</option>
+                    <option value="otro">Otra ubicación</option>
+                </select>
+            </div>
+
+            <!-- Nota sobre el flujo siguiente -->
+            <div class="rmd-flujo-nota">
+                <i class="fas fa-route" style="color:var(--accent-blue);margin-right:8px;"></i>
+                <div>
+                    <strong>Siguiente paso:</strong> El equipo de inventario recibirá este reporte,
+                    confirmará la recepción del material dañado y generará el documento de devolución con las
+                    partidas afectadas.
+                </div>
+            </div>
+
+        </div><!-- /modal-body -->
+        <div class="modal-footer">
+            <span style="font-size:11px;color:var(--ink-ghost);">
+                Las facturas pasarán a estatus "Material dañado — Pendiente de revisión"
+            </span>
+            <button class="btn-icon" onclick="closeRmdModal('rmd-modal-reporte')">Cancelar</button>
+            <button class="btn-icon danger" id="rmd-btn-confirmar" onclick="rmdGuardarReporte()">
+                <i class="fas fa-paper-plane"></i> Enviar a inventario
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL — VER DETALLE FACTURA -->
+<div class="modal-overlay" id="rmd-modal-detalle">
+    <div class="modal-box" style="max-width:700px;">
+        <div class="modal-header">
+            <span class="modal-title"><i class="fas fa-file-invoice me-2"></i>Detalle de Factura</span>
+            <button class="modal-close" onclick="closeRmdModal('rmd-modal-detalle')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="rmd-detalle-body">
+            <div style="text-align:center;padding:30px;color:var(--ink-ghost);">
+                <i class="fas fa-spinner fa-spin fa-2x" style="opacity:.4;"></i>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-icon" onclick="closeRmdModal('rmd-modal-detalle')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div id="rmd-toast-container"></div>
+<form>@Html.AntiForgeryToken()</form>
+
+@section scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script src="~/Scripts/Facturas/reporte-danado.js"></script>
+}

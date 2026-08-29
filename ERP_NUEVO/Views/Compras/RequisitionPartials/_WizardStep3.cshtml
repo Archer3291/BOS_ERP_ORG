@@ -1,0 +1,445 @@
+﻿@* step 3 Resumen *@
+@using BOS_ERP.Controllers;
+
+<div id="step-3" class="wizard-panel" role="tabpanel" aria-label="Resumen">
+    <h3>Resumen</h3>
+    <div class="mt-5">
+        <div id="resumen" class="table-responsive"></div>
+        <div class="text-end mt-4">
+            <button id="btn-enviar" class="btn btn-success">
+                <i class="bi bi-send-fill"></i> Enviar solicitud
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // STEP 3: Resumen y envío de la solicitud
+    // ============================================
+
+    document.getElementById("btn-enviar").addEventListener("click", async function () {
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+            <style>
+                .flip {
+                    animation: spinY 2s linear infinite;
+                    transform-origin: center;
+                }
+                @@keyframes spinY {
+                    0%   { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                }
+            </style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g>
+        </svg>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: 'Seguro?',
+            text: '¿Está seguro que desea crear una solicitud?',
+            footer: '<b style="color: red;">ADVERTENCIA - Este cambio no se puede revertir</b>',
+            customClass: {
+                icon: 'p-0 bg-transparent border-0 shadow-none'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Sí, crear',
+            cancelButtonText: 'Cancelar',
+            preConfirm: async () => {
+                const inputModoCompra = document.getElementById('modoCompraDirecta');
+                const esCompraDirecta = inputModoCompra ? inputModoCompra.checked : false;
+                const esVenta = document.getElementById("venta")?.checked === true;
+
+                if (!validarDatos()) {
+                    return false;
+                }
+
+                const observaciones = document.getElementById("observaciones").value.trim();
+                const comprador = document.getElementById("comprador").value;
+                const tipoSeleccionado = document.querySelector('input[name="tpnom"]:checked').value;
+                const presupuesto = document.getElementById("productoPresupuesto");
+                const archivo = document.getElementById("archivo");
+
+                if (!comprador) {
+                    Swal.fire('Error', 'Debes seleccionar un comprador.', 'error');
+                    return false;
+                }
+
+                let datosEnvio;
+
+                if (esCompraDirecta) {
+                    const director = document.getElementById("director")?.value;
+                    const centro = document.getElementById("centro").value;
+
+                    @{
+                                if (Utilities.GetEmpresaName(User.Identity.Name) == "SRS")
+                                {
+                                            <text>
+                                                    if (!director) {
+                                                        Swal.fire('Error', 'Debes seleccionar un director.', 'error');
+                                                        return false;
+                                                    }
+                                            </text>
+                                }
+                    }
+
+                    if (!centro) {
+                        Swal.fire('Error', 'Debes seleccionar un centro de costos.', 'error');
+                        return false;
+                    }
+
+                    if (totalGeneralCompra <= 0) {
+                        Swal.fire('Error', 'El total debe ser mayor a 0.', 'error');
+                        return false;
+                    }
+
+                    const proveedores = [];
+
+                    for (const [proveedorId, proveedorData] of Object.entries(proveedoresActivos)) {
+                        const cardId = proveedorData.id;
+                        const filas = document.querySelectorAll(`#tabla-${cardId} tbody tr`);
+                        const productos = [];
+
+                        filas.forEach((fila) => {
+                            const d = leerFila(fila);
+
+                            productos.push({
+                                CantUd: d.cantidad,
+                                CveProd: d.codigo,
+                                DescrProd: d.descripcion,
+                                Ud: d.unidad,
+                                PvProd: d.precio,
+                                Dto1: d.dto1,
+                                total: netoPartida(d.cantidad, d.precio, d.dto1),
+                                ...(esVenta && { CtoVtaPart: d.precioVenta })
+                            });
+                        });
+
+                        const impuestoSelect = document.querySelectorAll(`.select-impuesto-${cardId}`);
+                        const impuestos = [];
+
+                        for (const select of impuestoSelect) {
+                            if (!select.value.trim()) {
+                                Swal.fire('Error', 'Todos los impuestos deben seleccionarse.', 'error');
+                                return false;
+                            }
+                            impuestos.push({ IdImpuesto: parseInt(select.value) });
+                        }
+
+                        proveedores.push({
+                            Id_Prov: parseInt(proveedorId),
+                            N_Prov: proveedorData.nombre,
+                            Impuestos: impuestos,
+                            totalProveedor: proveedorData.total,
+                            Productos: productos
+                        });
+                    }
+
+                    datosEnvio = {
+                        observaciones,
+                        compradorseleccionado: comprador,
+                        centro_costos: centro,
+                        total: totalGeneralCompra,
+                        proveedores: JSON.stringify(proveedores),
+                        tpnom: tipoSeleccionado,
+                        tipo_producto: esVenta ? 'directo' : 'indirecto',
+                        archivo: archivo.files[0],
+                        @{
+                                    if (Utilities.GetEmpresaName(User.Identity.Name) == "SRS")
+                                    {
+                                            <text>
+                                                        directorSeleccionado: director,
+                                                        presupuesto: presupuesto.checked,
+                                            </text>
+                                    }
+                        }
+                    };
+
+                } else {
+                    const total = limpiarNumero(document.getElementById("total").value);
+                    const centro = document.getElementById("centro").value;
+
+                    if (total <= 0) {
+                        Swal.fire('Error', 'El total debe ser mayor a 0.', 'error');
+                        return false;
+                    }
+
+                    if (!centro) {
+                        Swal.fire('Error', 'Debes seleccionar un centro de costos.', 'error');
+                        return false;
+                    }
+
+                    const filasMateriales = [...document.querySelectorAll("#tabla-materiales tbody tr")].map(fila => {
+                        const d = leerFila(fila);
+
+                        return {
+                            cantidad: d.cantidad,
+                            codigo: d.codigo,
+                            descripcion: d.descripcion,
+                            unidad: d.unidad,
+                            costoUnitario: d.precio,
+                            descuento: d.dto1,
+                            total: netoPartida(d.cantidad, d.precio, d.dto1),
+                            ...(esVenta && { precioVenta: d.precioVenta })
+                        };
+                    });
+
+                    datosEnvio = {
+                        observaciones,
+                        centro_costos: centro,
+                        compradorseleccionado: comprador,
+                        total,
+                        materiales: JSON.stringify(filasMateriales),
+                        tpnom: tipoSeleccionado,
+                        tipo_producto: esVenta ? 'directo' : 'indirecto',
+                        archivo: archivo.files[0],
+                        @{
+                                    if (Utilities.GetEmpresaName(User.Identity.Name) == "SRS")
+                                    {
+                                            <text>
+                                                        presupuesto: presupuesto.checked,
+                                            </text>
+                                    }
+                        }
+                    };
+                }
+
+                Swal.fire({
+                    title: esCompraDirecta ? 'Generando orden de compra directa' : 'Creando solicitud',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    const res = await GetData({
+                        path: esCompraDirecta ? '/Requisicion/OCDirecta' : '/Requisition/Create',
+                        data: datosEnvio
+                    });
+
+                    Swal.close();
+
+                    if (res.success) {
+                        _SwalReload({
+                            icon: 'success',
+                            title: esCompraDirecta ? 'Orden de compra directa creada' : 'Solicitud creada',
+                            html: res.message,
+                            showCancelButton: false,
+                        });
+                    } else {
+                        Swal.fire('Error', res.message || 'No se pudo completar el proceso.', 'error');
+                    }
+                } catch (err) {
+                    Swal.close();
+                    console.error('Error al enviar:', err);
+                    Swal.fire('Error', 'Ocurrió un error al enviar la solicitud.', 'error');
+                }
+            }
+        });
+    });
+
+    function generarResumen() {
+        const resumenDiv = document.getElementById('resumen');
+        resumenDiv.innerHTML = '';
+
+        const esVenta = document.getElementById("venta")?.checked === true;
+        const esCompraDirecta = document.getElementById("modoCompraDirecta")?.checked === true;
+
+        const comprador = document.getElementById("comprador")?.selectedOptions?.[0]?.text || '—';
+        const director = document.getElementById("director")?.selectedOptions?.[0]?.text || '—';
+        const observaciones = document.getElementById("observaciones")?.value.trim() || '—';
+
+        let total;
+        if (esCompraDirecta) {
+            total = totalGeneralCompra;
+        } else {
+            total = limpiarNumero(document.getElementById("total")?.value || "0");
+        }
+
+        const totalesResumen = esCompraDirecta
+            ? null
+            : totalizarPartidas([...document.querySelectorAll("#tabla-materiales tbody tr")], leerFila);
+
+        const datos = [
+            { titulo: "Comprador", valor: comprador },
+            ...(esCompraDirecta ? [{ titulo: "Director", valor: director }] : []),
+            ...(totalesResumen ? [
+                { titulo: "Subtotal", valor: Currency.format(totalesResumen.subtotal) },
+                { titulo: "Descuento", valor: `- ${Currency.format(totalesResumen.descuento)}` },
+            ] : []),
+            { titulo: "Total", valor: `${Currency.format(total)}`, badge: true },
+            { titulo: "Observaciones", valor: observaciones },
+        ];
+
+        let cardsHtml = '';
+        datos.forEach(d => {
+            const colClass = d.titulo === 'Observaciones' ? 'col-12' : 'col-md-4';
+            cardsHtml += `
+            <div class="${colClass}">
+                <div class="card-resumen mb-3">
+                    <h6>${d.titulo}</h6>
+                    <p>
+                        ${d.badge ? `<span class="badge-tag">${d.valor}</span>` : d.valor}
+                    </p>
+                </div>
+            </div>
+        `;
+        });
+
+        let tipoMensaje = '';
+        if (document.getElementById("venta")?.checked) {
+            tipoMensaje = 'Estos productos fueron seleccionados para <strong>venta</strong>.';
+        } else if (document.getElementById("interno")?.checked) {
+            tipoMensaje = 'Estos productos fueron seleccionados para <strong>uso interno</strong>.';
+        } else if (document.getElementById("servicio")?.checked) {
+            tipoMensaje = 'Esta solicitud es para la <strong>contratación de un servicio</strong>.';
+        }
+
+        let tablasHTML = '';
+
+        if (esCompraDirecta) {
+            for (const [proveedorId, proveedorData] of Object.entries(proveedoresActivos)) {
+                const cardId = proveedorData.id;
+                const materiales = [];
+
+                document.querySelectorAll(`#tabla-${cardId} tbody tr`).forEach((fila) => {
+                    const d = leerFila(fila);
+
+                    materiales.push({
+                        cantidad: d.cantidad,
+                        codigo: d.codigo,
+                        descripcion: d.descripcion,
+                        unidad: d.unidad,
+                        costoUnitario: d.precio,
+                        ...(esVenta && { precioVenta: d.precioVenta }),
+                        descuento: d.dto1,
+                        subtotal: brutoPartida(d.cantidad, d.precio),
+                        total: netoPartida(d.cantidad, d.precio, d.dto1)
+                    });
+                });
+
+                tablasHTML += `
+                <div class="col-12 mb-3">
+                    <div class="card-resumen">
+                        <h6 style="color: var(--primary-blue); margin-bottom: 1rem;">
+                            <i class="fas fa-building"></i> ${proveedorData.nombre}
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table-resumen">
+                                <thead>
+                                    <tr>
+                                        <th>Cantidad</th>
+                                        <th>Código</th>
+                                        <th>Descripción</th>
+                                        <th>Unidad</th>
+                                        <th>Costo Unitario</th>
+                                        ${esVenta ? '<th>Precio Venta</th>' : ''}
+                                        <th>Descuento %</th>
+                                        <th>Subtotal</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${materiales.map(mat => `
+                                        <tr>
+                                            <td>${mat.cantidad}</td>
+                                            <td>${mat.codigo}</td>
+                                            <td>${mat.descripcion}</td>
+                                            <td>${mat.unidad}</td>
+                                            <td>${Currency.format(mat.costoUnitario)}</td>
+                                            ${esVenta ? `<td>${Currency.format(mat.precioVenta)}</td>` : ''}
+                                            <td>${formatoPorcentaje(mat.descuento)}</td>
+                                            <td>${Currency.format(mat.subtotal)}</td>
+                                            <td>${Currency.format(mat.total)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background-color: rgba(59, 130, 246, 0.1); font-weight: 600;">
+                                        <td colspan="${esVenta ? 8 : 7}" style="text-align: right;">Total Proveedor:</td>
+                                        <td>${Currency.format(proveedorData.total)}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }
+        } else {
+            const materiales = [...document.querySelectorAll("#tabla-materiales tbody tr")].map(fila => {
+                const d = leerFila(fila);
+
+                return {
+                    cantidad: d.cantidad,
+                    codigo: d.codigo,
+                    descripcion: d.descripcion,
+                    unidad: d.unidad,
+                    costoUnitario: d.precio,
+                    ...(esVenta && { precioVenta: d.precioVenta }),
+                    descuento: d.dto1,
+                    subtotal: brutoPartida(d.cantidad, d.precio),
+                    total: netoPartida(d.cantidad, d.precio, d.dto1)
+                };
+            });
+
+            tablasHTML = `
+            <div class="col-12">
+                <div class="card-resumen">
+                    <h6>Materiales</h6>
+                    <div class="table-responsive">
+                        <table class="table-resumen">
+                            <thead>
+                                <tr>
+                                    <th>Cantidad</th>
+                                    <th>Código</th>
+                                    <th>Descripción</th>
+                                    <th>Unidad</th>
+                                    <th>Costo Unitario</th>
+                                    ${esVenta ? '<th>Precio Venta</th>' : ''}
+                                    <th>Descuento %</th>
+                                    <th>Subtotal</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${materiales.map(mat => `
+                                    <tr>
+                                        <td>${mat.cantidad}</td>
+                                        <td>${mat.codigo}</td>
+                                        <td>${mat.descripcion}</td>
+                                        <td>${mat.unidad}</td>
+                                        <td>${Currency.format(mat.costoUnitario)}</td>
+                                        ${esVenta ? `<td>${Currency.format(mat.precioVenta)}</td>` : ''}
+                                        <td>${formatoPorcentaje(mat.descuento)}</td>
+                                        <td>${Currency.format(mat.subtotal)}</td>
+                                        <td>${Currency.format(mat.total)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
+
+        resumenDiv.innerHTML = `
+        <div class="alert-info-resumen">
+            ${tipoMensaje}
+        </div>
+        <div class="row">
+            ${cardsHtml}
+        </div>
+        <div class="row">
+            ${tablasHTML}
+        </div>
+    `;
+    }
+</script>

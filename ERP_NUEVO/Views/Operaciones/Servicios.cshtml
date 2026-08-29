@@ -1,0 +1,123 @@
+﻿
+@{
+    ViewBag.Title = "Servicios";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/content/contabilidad/style.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+@*Tabla de resultados*@
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Resultados</h5>
+    </div>
+    <div class="card-body">
+        <div id="tablaPolizas"></div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script src="~/Scripts/Switch.js"></script>
+
+<script>
+    let tomManager;
+    let polizaActual = null;
+    let partidasEditables = [];
+    let cuentasContables = [];
+    let centrosCostos = [];
+
+    async function cerrarServicio(doc) {
+        console.log(doc)
+        const warningIcon =
+            `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">` +
+            `   <style>` +
+            `       .flip {` +
+            `           animation: spinY 2s linear infinite;` +
+            `           transform-origin: center;` +
+            `       }` +
+            `       @@keyframes spinY {` +
+            `           0%   { transform: rotateY(0deg); }` +
+            `           100% { transform: rotateY(360deg); }` +
+            `       }` +
+            `   </style>` +
+            `   <g class="flip">` +
+            `       <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>` +
+            `       <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>` +
+            `       <circle cx="32" cy="48" r="3" fill="#000"/>` +
+            `   </g>` +
+            `</svg>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: 'Seguro?',
+            text: '¿Está seguro que desea aceptar esta solicitud?',
+            footer: '<b style="color: red;">ADVERTENCIA - Este cambio no se puede revertir</b>',
+            customClass: {
+                icon: 'p-0 bg-transparent border-0 shadow-none'
+            },
+            preConfirm: async (comentario) => {
+                GetData({
+                    path: '/Servicios/CerrarServicio',
+                    data: {
+                        encabezado: doc.id_encabezado,
+                    }
+                }).then((_res) => {
+                    if (_res.icon === 'success') {
+                        _SwalReload(_res)
+                    } else {
+                        _Swal.fire(_res)
+                    }
+                })
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const tablaPolizas = createTable({
+            selector: '#tablaPolizas',
+            path: '/Servicios/GetServicios',
+            searchPlaceholder: 'Buscar poliza...',
+            //exports: ['excel'],
+            columns: [
+                {
+                    title: 'Folio',
+                    data: 'folio',
+                },
+                {
+                    title: 'Proveedor de servicio',
+                    data: 'cli_prov',
+                },
+                { title: 'Fecha de aprobacion', data: 'fch', formatter: (v) => dateFormatter(v) },
+                {
+                    title: 'Area',
+                    data: 'nombre_area',
+                },
+                {
+                    title: 'Usuario solicitante',
+                    data: 'responsable',
+                },
+            ],
+            actions: [
+                { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalle', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                { icon: 'fa-badge-check', color: 'green-500', title: 'Editar', onClick: row => cerrarServicio(row) },
+            ],
+            RowsEvents: {
+                onRowDblClick: row => GetInfoGeneral(row.id_encabezado),
+                onKeyPress: (event, row) => {
+                    if (event.key === 'F4') GetInfoGeneral(row.id_encabezado);
+                }
+            },
+        });
+
+        // Asignar la tabla a una variable global para usarla en guardarEdicion
+        window.tablaPolizas = tablaPolizas;
+    })
+</script>

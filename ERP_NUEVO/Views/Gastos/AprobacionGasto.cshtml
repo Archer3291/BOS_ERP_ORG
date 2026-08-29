@@ -1,0 +1,1944 @@
+﻿@{
+    ViewBag.Title = "Aprobación de Solicitudes de Gasto";
+    ViewBag.PageTitle = "Solicitud de Gastos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+    <style>
+        /* ═══════════════════════════════════════════════
+           DESIGN SYSTEM
+        ═══════════════════════════════════════════════ */
+        :root {
+            --navy: #0b1829;
+            --navy-2: #152337;
+            --navy-3: #1e3450;
+            --blue: #1d4ed8;
+            --blue-lt: #dbeafe;
+            --ok: #059669;
+            --ok-lt: #d1fae5;
+            --warn: #d97706;
+            --warn-lt: #fef3c7;
+            --danger: #dc2626;
+            --danger-lt: #fee2e2;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-600: #475569;
+            --ink: #0f172a;
+            --white: #ffffff;
+
+            --radius-sm: 4px;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 3px rgba(11,24,41,.07), 0 2px 8px rgba(11,24,41,.05);
+            --shadow: 0 2px 8px rgba(11,24,41,.08), 0 8px 24px rgba(11,24,41,.06);
+            --shadow-lg: 0 8px 32px rgba(11,24,41,.16);
+        }
+
+        /* ── PAGE HEADER ─────────────────────────────── */
+        .sg-page-header {
+            background: var(--navy);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 2px 20px rgba(0,0,0,.3);
+        }
+
+        .sg-header-top {
+            padding: 16px 24px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .sg-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sg-pill {
+            background: #f59e0b;
+            color: var(--navy);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            letter-spacing: .1em;
+        }
+
+        .sg-page-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--white);
+            letter-spacing: -.02em;
+        }
+
+        .sg-page-sub {
+            font-size: 11px;
+            color: rgba(255,255,255,.38);
+            margin-top: 1px;
+        }
+
+        /* ── KPI STRIP ───────────────────────────────── */
+        .kpi-strip {
+            display: flex;
+            overflow-x: auto;
+            border-top: 1px solid rgba(255,255,255,.07);
+            margin-top: 14px;
+            scrollbar-width: none;
+        }
+
+            .kpi-strip::-webkit-scrollbar {
+                display: none;
+            }
+
+        .kpi-item {
+            flex: 1;
+            min-width: 110px;
+            padding: 12px 18px 13px;
+            border-right: 1px solid rgba(255,255,255,.05);
+            cursor: default;
+            transition: background .18s;
+        }
+
+            .kpi-item:last-child {
+                border-right: none;
+            }
+
+            .kpi-item:hover {
+                background: rgba(255,255,255,.04);
+            }
+
+        .kpi-label {
+            font-size: 8px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.3);
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--white);
+            white-space: nowrap;
+        }
+
+            .kpi-value.v-amber {
+                color: #f59e0b;
+            }
+
+            .kpi-value.v-ok {
+                color: #34d399;
+            }
+
+            .kpi-value.v-danger {
+                color: #f87171;
+            }
+
+            .kpi-value.v-blue {
+                color: #93c5fd;
+            }
+
+        .kpi-sub {
+            font-size: 9px;
+            color: rgba(255,255,255,.22);
+            margin-top: 2px;
+        }
+
+        /* ── BODY ────────────────────────────────────── */
+        .sg-body {
+            padding: 24px;
+        }
+
+        /* ── FILTER CARD ─────────────────────────────── */
+        .filter-card {
+            background: var(--bg-light);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+        }
+
+        .filter-card-title {
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--slate-400);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sg-label {
+            display: block;
+            font-size: 9.5px;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--slate-600);
+            margin-bottom: 5px;
+        }
+
+        .sg-input, .sg-select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-sm);
+            font-family: var(--body);
+            font-size: 12px;
+            background: var(--bg-gray);
+            outline: none;
+            transition: border-color .18s, box-shadow .18s;
+            height: 36px;
+        }
+
+            .sg-input:focus, .sg-select:focus {
+                border-color: #f59e0b;
+                box-shadow: 0 0 0 3px rgba(245,158,11,.14);
+            }
+
+            .sg-input::placeholder {
+                color: var(--slate-400);
+            }
+
+        /* ── BOTONES ─────────────────────────────────── */
+        .btn-sg {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-family: var(--body);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all .18s;
+            white-space: nowrap;
+            height: 36px;
+        }
+
+        .btn-sg-primary {
+            background: var(--navy);
+            color: var(--white);
+        }
+
+            .btn-sg-primary:hover {
+                background: var(--navy-2);
+            }
+
+        .btn-sg-ghost {
+            background: var(--slate-100);
+            color: var(--slate-600);
+            border: 1px solid var(--slate-200);
+        }
+
+            .btn-sg-ghost:hover {
+                background: var(--slate-200);
+            }
+
+        .btn-sg-ok {
+            background: var(--ok);
+            color: var(--white);
+        }
+
+            .btn-sg-ok:hover {
+                filter: brightness(.92);
+            }
+
+        .btn-sg-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+            .btn-sg-danger:hover {
+                filter: brightness(.9);
+            }
+
+        .btn-sg-amber {
+            background: #f59e0b;
+            color: var(--navy);
+        }
+
+            .btn-sg-amber:hover {
+                filter: brightness(.93);
+            }
+
+        .btn-sg-sm {
+            padding: 5px 12px;
+            font-size: 11px;
+            height: 30px;
+        }
+
+        .btn-sg:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        /* ── BADGES ──────────────────────────────────── */
+        .sg-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .sb-pending {
+            background: var(--warn-lt);
+            color: #92400e;
+        }
+
+        .sb-approved {
+            background: var(--ok-lt);
+            color: #065f46;
+        }
+
+        .sb-rejected {
+            background: var(--danger-lt);
+            color: #991b1b;
+        }
+
+        .sb-draft {
+            background: var(--slate-100);
+            color: var(--slate-600);
+            border: 1px solid var(--slate-200);
+        }
+
+        /* ── MONTO BAR ───────────────────────────────── */
+        .monto-fill {
+            height: 3px;
+            border-radius: 2px;
+            background: var(--blue);
+            margin-top: 3px;
+            transition: width .3s;
+        }
+
+        /* ── ROW HIGHLIGHT para pendientes ───────────── */
+        /* TableBuilder aplica clase a la <tr>; si no lo soporta, ignorar */
+        tr.row-pendiente {
+            background: #fffbeb !important;
+        }
+
+        /* ═══════════════════════════════════════════════
+           MODAL DETALLE / APROBACIÓN
+        ═══════════════════════════════════════════════ */
+        #modal-detalle .modal-dialog {
+            max-width: 1000px;
+        }
+
+        #modal-detalle .modal-content {
+            border: none;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ── Cabecera oscura ─────────────────────────── */
+        .md-head {
+            background: var(--navy);
+            padding: 20px 24px 0;
+        }
+
+        .md-head-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 16px;
+        }
+
+        .md-folio {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .md-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .md-meta-item {
+            font-size: 10px;
+            color: rgba(255,255,255,.4);
+        }
+
+            .md-meta-item strong {
+                display: block;
+                color: rgba(255,255,255,.8);
+                font-size: 11px;
+                margin-top: 1px;
+            }
+
+        .md-close {
+            background: rgba(255,255,255,.1);
+            border: none;
+            color: rgba(255,255,255,.6);
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all .15s;
+            flex-shrink: 0;
+        }
+
+            .md-close:hover {
+                background: rgba(255,255,255,.18);
+                color: var(--white);
+            }
+
+        /* ── Totals strip ────────────────────────────── */
+        .md-totals {
+            display: flex;
+            background: var(--navy-3);
+            border-top: 1px solid rgba(255,255,255,.06);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+            .md-totals::-webkit-scrollbar {
+                display: none;
+            }
+
+        .mdt-item {
+            flex: 1;
+            min-width: 90px;
+            padding: 11px 16px;
+            border-right: 1px solid rgba(255,255,255,.05);
+        }
+
+            .mdt-item:last-child {
+                border-right: none;
+            }
+
+        .mdt-lbl {
+            font-size: 8px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.3);
+            margin-bottom: 3px;
+        }
+
+        .mdt-val {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--white);
+            white-space: nowrap;
+        }
+
+            .mdt-val.v-amber {
+                color: #f59e0b;
+            }
+
+            .mdt-val.v-ok {
+                color: #34d399;
+            }
+
+            .mdt-val.v-danger {
+                color: #f87171;
+            }
+
+            .mdt-val.v-blue {
+                color: #93c5fd;
+            }
+
+        /* ── Tabs ────────────────────────────────────── */
+        .md-tabs {
+            display: flex;
+            background: var(--slate-100);
+            border-bottom: 1px solid var(--slate-200);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+            .md-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+        .md-tab-btn {
+            padding: 11px 16px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--slate-400);
+            border: none;
+            background: transparent;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all .15s;
+        }
+
+            .md-tab-btn:hover {
+                color: var(--ink);
+            }
+
+            .md-tab-btn.active {
+                color: var(--navy);
+                border-bottom-color: #f59e0b;
+                background: var(--white);
+            }
+        /* Badge numérico en tab */
+        .tab-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--danger);
+            color: var(--white);
+            font-size: 8px;
+            font-weight: 700;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            padding: 0 4px;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .md-tab-panel {
+            display: none;
+            padding: 22px 24px;
+        }
+
+            .md-tab-panel.active {
+                display: block;
+            }
+
+        /* ── Section titles ──────────────────────────── */
+        .md-sec {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--slate-400);
+            padding-bottom: 7px;
+            border-bottom: 1px solid var(--slate-200);
+            margin-bottom: 14px;
+            margin-top: 18px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .md-sec:first-child {
+                margin-top: 0;
+            }
+
+        /* ── Info items ──────────────────────────────── */
+        .md-info-item label {
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--slate-400);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .md-info-item span {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* ── Flujo de aprobación ─────────────────────── */
+        .aprov-panel {
+            background: var(--bg-gray);
+            border: 1.5px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            margin-bottom: 16px;
+        }
+
+        .aprov-title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--slate-600);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .aprov-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--slate-200);
+        }
+
+            .aprov-step:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+        .aprov-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+            .aprov-icon.done {
+                background: var(--ok-lt);
+                color: var(--ok);
+            }
+
+            .aprov-icon.pending {
+                background: var(--warn-lt);
+                color: var(--warn);
+            }
+
+            .aprov-icon.waiting {
+                background: var(--slate-100);
+                color: var(--slate-400);
+            }
+
+            .aprov-icon.rejected {
+                background: var(--danger-lt);
+                color: var(--danger);
+            }
+
+        .aprov-step-name {
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .aprov-step-meta {
+            font-size: 10px;
+            color: var(--slate-400);
+
+            margin-top: 2px;
+        }
+
+        /* ═══════════════════════════════════════════════
+           PANEL DE DECISIÓN — diseño destacado
+        ═══════════════════════════════════════════════ */
+        .decision-panel {
+            background: var(--white);
+            border: 2px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .decision-header {
+            background: var(--navy);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .decision-header-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--white);
+        }
+
+        .decision-header-sub {
+            font-size: 9px;
+            color: rgba(255,255,255,.4);
+            margin-top: 2px;
+        }
+
+        .decision-body {
+            padding: 20px;
+        }
+
+        /* Resumen rápido de la solicitud dentro del panel */
+        .decision-summary {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            margin-bottom: 18px;
+        }
+
+        .ds-item {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .ds-label {
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--slate-400);
+            margin-bottom: 2px;
+        }
+
+        .ds-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+            .ds-value.amber {
+                color: var(--warn);
+            }
+
+        .sg-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid var(--slate-200);
+            border-radius: var(--radius);
+            font-family: var(--body);
+            font-size: 12px;
+            resize: vertical;
+            min-height: 80px;
+            outline: none;
+            transition: border-color .18s, box-shadow .18s;
+        }
+
+            .sg-textarea:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(29,78,216,.1);
+            }
+
+        /* Botones de decisión grandes */
+        .decision-btns {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .btn-decision {
+            flex: 1;
+            min-width: 140px;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            font-family: var(--body);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+            .btn-decision:disabled {
+                opacity: .5;
+                cursor: not-allowed;
+            }
+
+        .btn-dec-ok {
+            background: var(--ok);
+            color: var(--white);
+            box-shadow: 0 4px 14px rgba(5,150,105,.3);
+        }
+
+            .btn-dec-ok:hover {
+                filter: brightness(.92);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 18px rgba(5,150,105,.35);
+            }
+
+        .btn-dec-danger {
+            background: var(--danger);
+            color: var(--white);
+            box-shadow: 0 4px 14px rgba(220,38,38,.3);
+        }
+
+            .btn-dec-danger:hover {
+                filter: brightness(.92);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 18px rgba(220,38,38,.35);
+            }
+
+        .btn-dec-comment {
+            background: var(--slate-100);
+            color: var(--slate-600);
+            border: 1.5px solid var(--slate-200);
+        }
+
+            .btn-dec-comment:hover {
+                background: var(--slate-200);
+            }
+
+        /* Estado: ya procesada */
+        .ya-procesada-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+            .ya-procesada-banner.aprobada {
+                background: var(--ok-lt);
+                color: #065f46;
+                border: 1px solid #6ee7b7;
+            }
+
+            .ya-procesada-banner.rechazada {
+                background: var(--danger-lt);
+                color: #991b1b;
+                border: 1px solid #fca5a5;
+            }
+
+            .ya-procesada-banner.otro {
+                background: var(--slate-100);
+                color: var(--slate-600);
+                border: 1px solid var(--slate-200);
+            }
+
+        /* ── Archivos adjuntos ───────────────────────── */
+        .file-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius);
+            margin-bottom: 7px;
+            background: var(--slate-50);
+            font-size: 11px;
+            transition: border-color .15s;
+        }
+
+            .file-row:hover {
+                border-color: #f59e0b;
+            }
+
+            .file-row i {
+                color: var(--slate-400);
+                font-size: 14px;
+            }
+
+        .file-name {
+            flex: 1;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .file-size {
+            font-size: 10px;
+            color: var(--slate-400);
+        }
+
+        /* ── Historial ───────────────────────────────── */
+        .hist-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--slate-100);
+        }
+
+            .hist-item:last-child {
+                border-bottom: none;
+            }
+
+        .hist-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #435670;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .hist-name {
+            font-weight: 700;
+            font-size: 12px;
+
+        }
+
+        .hist-date {
+            font-size: 10px;
+            color: var(--slate-400);
+            margin-left: 8px;
+        }
+
+        .hist-action-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            margin-left: 6px;
+            text-transform: uppercase;
+        }
+
+            .hist-action-badge.aprobado {
+                background: var(--ok-lt);
+                color: #065f46;
+            }
+
+            .hist-action-badge.rechazado {
+                background: var(--danger-lt);
+                color: #991b1b;
+            }
+
+            .hist-action-badge.comentario {
+                background: var(--blue-lt);
+                color: #1e40af;
+            }
+
+        .hist-body {
+            font-size: 12px;
+            color: var(--slate-600);
+            margin-top: 5px;
+            line-height: 1.5;
+        }
+
+        /* ── Toast ───────────────────────────────────── */
+        .toast-area {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .sg-toast {
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            font-size: 12px;
+            font-family: var(--body);
+            font-weight: 500;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 220px;
+            max-width: 340px;
+            pointer-events: auto;
+            animation: toastIn .22s ease;
+        }
+
+        @@keyframes toastIn {
+            from {
+                transform: translateY(8px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .sg-toast.t-ok {
+            background: var(--ok-lt);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .sg-toast.t-err {
+            background: var(--danger-lt);
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .sg-toast.t-inf {
+            background: var(--blue-lt);
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        @@media (max-width: 768px) {
+            .sg-body {
+                padding: 12px;
+            }
+
+            .sg-header-top {
+                padding: 12px 16px 0;
+            }
+
+            .kpi-item {
+                min-width: 100px;
+                padding: 10px 14px 11px;
+            }
+
+            .kpi-value {
+                font-size: 13px;
+            }
+
+            #modal-detalle .modal-dialog {
+                margin: 8px;
+            }
+
+            .md-tab-btn {
+                padding: 10px 12px;
+                font-size: 9px;
+            }
+
+            .md-tab-panel {
+                padding: 16px;
+            }
+
+            .decision-btns {
+                flex-direction: column;
+            }
+
+            .btn-decision {
+                min-width: unset;
+            }
+        }
+    </style>
+}
+
+<!-- ══════════════════════════════════════════
+     HEADER + KPI
+══════════════════════════════════════════ -->
+@*<div class="sg-page-header">
+    <div class="sg-header-top">
+        <div class="sg-brand">
+            <span class="sg-pill">APROBACIÓN</span>
+            <div>
+                <div class="sg-page-title">Solicitudes de Gasto</div>
+                <div class="sg-page-sub">Panel de aprobación · Sólo acceso autorizado</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="kpi-strip">
+        <div class="kpi-item">
+            <div class="kpi-label">Total</div>
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-sub">en el período</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-label">Monto total</div>
+            <div class="kpi-value v-amber" id="kpi-monto">—</div>
+            <div class="kpi-sub">solicitado</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-label">Pendientes</div>
+            <div class="kpi-value v-amber" id="kpi-pendientes">—</div>
+            <div class="kpi-sub">por aprobar</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-label">Aprobadas</div>
+            <div class="kpi-value v-ok" id="kpi-aprobadas">—</div>
+            <div class="kpi-sub">solicitudes</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-label">Rechazadas</div>
+            <div class="kpi-value v-danger" id="kpi-rechazadas">—</div>
+            <div class="kpi-sub">solicitudes</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-label">Urgentes</div>
+            <div class="kpi-value v-danger" id="kpi-urgentes">—</div>
+            <div class="kpi-sub">pendientes hoy</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-label">Monto aprobado</div>
+            <div class="kpi-value v-ok" id="kpi-monto-aprobado">—</div>
+            <div class="kpi-sub">período</div>
+        </div>
+        <div class="kpi-item">
+            <div class="kpi-label">Tiempo promedio</div>
+            <div class="kpi-value v-blue" id="kpi-tiempo">—</div>
+            <div class="kpi-sub">días de respuesta</div>
+        </div>
+    </div>
+</div>*@
+
+<!-- ══════════════════════════════════════════
+     BODY — FILTROS + TABLA
+══════════════════════════════════════════ -->
+<div class="sg-body">
+
+        <div class="filter-card d-none">
+            <div class="filter-card-title">
+                <i class="fas fa-sliders-h"></i> Filtros de búsqueda
+            </div>
+
+            <!-- ROW 1 -->
+            <div class="row g-2 mb-2">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="sg-label">Folio SG</label>
+                    <input type="text" id="f-folio" class="sg-input" placeholder="SG-2025-..." />
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="sg-label">Categoría</label>
+                    <select id="f-categoria" class="sg-select">
+                        <option value="">Todas</option>
+                        <option value="Gastos Operativos">Operativos</option>
+                        <option value="Gastos Administrativos">Administrativos</option>
+                        <option value="Viáticos">Viáticos</option>
+                        <option value="Gastos Directos">Directos</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="sg-label">Estatus</label>
+                    <select id="f-estatus" class="sg-select">
+                        <option value="1">Pendiente ⏳</option>
+                        <option value="">Todos</option>
+                        <option value="2">Aprobado ✅</option>
+                        <option value="3">Rechazado ❌</option>
+                        <option value="0">Borrador</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="sg-label">Urgencia</label>
+                    <select id="f-urgencia" class="sg-select">
+                        <option value="">Cualquiera</option>
+                        <option value="inmediato">Inmediato</option>
+                        <option value="urgente">Urgente</option>
+                        <option value="normal">Normal</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ROW 2 -->
+            <div class="row g-2">
+                <div class="col-12 col-sm-4 col-lg-2">
+                    <label class="sg-label">Desde</label>
+                    <input type="date" id="f-fecha-desde" class="sg-input" />
+                </div>
+
+                <div class="col-12 col-sm-4 col-lg-2">
+                    <label class="sg-label">Hasta</label>
+                    <input type="date" id="f-fecha-hasta" class="sg-input" />
+                </div>
+
+                <div class="col-12 col-sm-4 col-lg-8 d-flex justify-content-end align-items-end gap-2">
+                    <button class="btn-sg btn-sg-primary" onclick="recargarTabla()">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+
+                    <button class="btn-sg btn-sg-ghost" onclick="limpiarFiltros()">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    <div id="tabla-sg"></div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL DETALLE / APROBACIÓN
+══════════════════════════════════════════ -->
+<div class="modal fade" id="modal-detalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <!-- CABECERA OSCURA -->
+            <div class="md-head">
+                <div class="md-head-top">
+                    <div>
+                        <div class="md-folio" id="md-folio">—</div>
+                        <div class="md-meta">
+                            <div class="md-meta-item">Solicitante<strong id="md-creador">—</strong></div>
+                            <div class="md-meta-item">Fecha<strong id="md-fecha">—</strong></div>
+                            <div class="md-meta-item">Categoría<strong id="md-categoria">—</strong></div>
+                            <div class="md-meta-item">Subcategoría<strong id="md-subcategoria">—</strong></div>
+                            <div class="md-meta-item">Estatus<strong id="md-estatus-hd"></strong></div>
+                        </div>
+                    </div>
+                    <button class="md-close" data-bs-dismiss="modal"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="md-totals">
+                    <div class="mdt-item">
+                        <div class="mdt-lbl">Monto solicitado</div>
+                        <div class="mdt-val v-amber" id="md-monto">—</div>
+                    </div>
+                    <div class="mdt-item">
+                        <div class="mdt-lbl">Moneda</div>
+                        <div class="mdt-val" id="md-moneda">—</div>
+                    </div>
+                    <div class="mdt-item">
+                        <div class="mdt-lbl">Centro de costo</div>
+                        <div class="mdt-val v-blue" id="md-cc">—</div>
+                    </div>
+                    <div class="mdt-item">
+                        <div class="mdt-lbl">Urgencia</div>
+                        <div class="mdt-val" id="md-urgencia-hd">—</div>
+                    </div>
+                    <div class="mdt-item">
+                        <div class="mdt-lbl">Aprobador asignado</div>
+                        <div class="mdt-val v-ok" id="md-aprobador-hd">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS -->
+            <div class="md-tabs">
+                <button class="md-tab-btn active" onclick="showMdTab('mdt-general',this)">
+                    <i class="fas fa-info-circle me-1"></i>General
+                </button>
+                <button class="md-tab-btn" onclick="showMdTab('mdt-documentos',this)">
+                    <i class="fas fa-paperclip me-1"></i>Documentos
+                    <span class="tab-badge" id="tab-badge-docs" style="display:none;"></span>
+                </button>
+                <button class="md-tab-btn" onclick="showMdTab('mdt-historial',this)">
+                    <i class="fas fa-history me-1"></i>Historial
+                    <span class="tab-badge" id="tab-badge-hist" style="display:none;"></span>
+                </button>
+                <button class="md-tab-btn" id="md-tab-aprov-btn" onclick="showMdTab('mdt-aprobacion',this)">
+                    <i class="fas fa-stamp me-1"></i>Decisión
+                </button>
+            </div>
+
+            <div class="modal-body p-0" style="overflow-y:auto; max-height: 70vh;">
+
+                <!-- TAB: GENERAL -->
+                <div class="md-tab-panel active" id="mdt-general">
+                    <div class="md-sec"><i class="fas fa-user"></i> Datos de la solicitud</div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-sm-6">
+                            <div class="md-info-item"><label>Solicitante</label><span id="md-solicitante">—</span></div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="md-info-item"><label>Área / Departamento</label><span id="md-area">—</span></div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="md-info-item"><label>Proveedor / Beneficiario</label><span id="md-proveedor">—</span></div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="md-info-item"><label>Concepto</label><span id="md-concepto">—</span></div>
+                        </div>
+                        <div class="col-12">
+                            <div class="md-info-item"><label>Justificación</label><span id="md-justificacion">—</span></div>
+                        </div>
+                        <div class="col-12">
+                            <div class="md-info-item"><label>Notas adicionales</label><span id="md-notas">—</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Campos específicos de subcategoría -->
+                    <div class="md-sec" id="md-sec-dinamicos" style="display:none;">
+                        <i class="fas fa-list-check"></i>
+                        Detalles específicos — <span id="md-subcat-label"></span>
+                    </div>
+                    <div class="row g-3 mb-3" id="md-campos-dinamicos"></div>
+
+                    <div class="md-sec"><i class="fas fa-route"></i> Flujo de autorización</div>
+                    <div class="aprov-panel" id="md-flujo-panel">
+                        <div style="color:var(--slate-400);font-size:12px;">Cargando…</div>
+                    </div>
+                </div>
+
+                <!-- TAB: DOCUMENTOS -->
+                <div class="md-tab-panel" id="mdt-documentos">
+                    <div class="md-sec"><i class="fas fa-paperclip"></i> Archivos adjuntos</div>
+                    <div id="md-archivos-body">
+                        <p style="color:var(--slate-400);font-size:12px;">Sin archivos adjuntos.</p>
+                    </div>
+                </div>
+
+                <!-- TAB: HISTORIAL -->
+                <div class="md-tab-panel" id="mdt-historial">
+                    <div class="md-sec"><i class="fas fa-history"></i> Historial de acciones</div>
+                    <div id="md-historial-body">
+                        <p style="color:var(--slate-400);font-size:12px;">Sin acciones registradas.</p>
+                    </div>
+                </div>
+
+                <!-- TAB: DECISIÓN -->
+                <div class="md-tab-panel" id="mdt-aprobacion">
+
+                    <!-- Panel de decisión (visible cuando estatus = 1) -->
+                    <div id="aprov-form-wrap">
+                        <div class="decision-panel">
+                            <div class="decision-header">
+                                <i class="fas fa-stamp" style="color:#f59e0b;font-size:16px;"></i>
+                                <div>
+                                    <div class="decision-header-title">Registra tu decisión</div>
+                                    <div class="decision-header-sub">Esta acción quedará registrada en el historial y notificará al solicitante</div>
+                                </div>
+                            </div>
+                            <div class="decision-body">
+
+                                <!-- Resumen rápido -->
+                                <div class="decision-summary">
+                                    <div class="ds-item">
+                                        <div class="ds-label">Folio</div>
+                                        <div class="ds-value" id="ds-folio">—</div>
+                                    </div>
+                                    <div class="ds-item">
+                                        <div class="ds-label">Solicitante</div>
+                                        <div class="ds-value" id="ds-solicitante">—</div>
+                                    </div>
+                                    <div class="ds-item">
+                                        <div class="ds-label">Monto</div>
+                                        <div class="ds-value amber" id="ds-monto">—</div>
+                                    </div>
+                                    <div class="ds-item">
+                                        <div class="ds-label">Categoría</div>
+                                        <div class="ds-value" id="ds-categoria">—</div>
+                                    </div>
+                                </div>
+
+                                <label class="sg-label" style="margin-bottom:6px;">
+                                    Comentario
+                                    <span style="color:var(--slate-400);font-weight:400;text-transform:none;
+                                                  letter-spacing:0;font-family:var(--body);">
+                                        — opcional para aprobación, obligatorio para rechazo
+                                    </span>
+                                </label>
+                                <textarea class="sg-textarea" id="aprov-comentario"
+                                          placeholder="Escribe un comentario o motivo de rechazo…"
+                                          rows="3"></textarea>
+
+                                <div class="decision-btns">
+                                    <button class="btn-decision btn-dec-ok" id="btn-aprobar"
+                                            onclick="procesarDecision('aprobar')">
+                                        <i class="fas fa-check-circle"></i> Aprobar solicitud
+                                    </button>
+                                    <button class="btn-decision btn-dec-danger" id="btn-rechazar"
+                                            onclick="procesarDecision('rechazar')">
+                                        <i class="fas fa-times-circle"></i> Rechazar solicitud
+                                    </button>
+                                    <button class="btn-decision btn-dec-comment"
+                                            onclick="procesarDecision('comentar')">
+                                        <i class="fas fa-comment-alt"></i> Solo comentar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Banner: ya procesada -->
+                    <div id="aprov-ya-procesada" style="display:none;">
+                        <div class="ya-procesada-banner" id="ya-procesada-banner">
+                            <i class="fas fa-info-circle" style="font-size:18px;"></i>
+                            <span id="ya-procesada-msg">Esta solicitud ya fue procesada y no puede modificarse.</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-area" id="toast-area"></div>
+
+@section scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+        /* ══════════════════════════════════════════════════
+           ESTADO GLOBAL
+        ══════════════════════════════════════════════════ */
+        const S = {
+            bsModal: null,
+            tabla: null,
+            idActual: null,
+            folioActual: null,
+            datosActual: null,   // objeto solicitud completo
+        };
+
+        /* ══════════════════════════════════════════════════
+           UTILIDADES
+        ══════════════════════════════════════════════════ */
+        const $el = id => document.getElementById(id);
+        const setText = (id, v) => { const e = $el(id); if (e) e.textContent = v ?? '—'; };
+        const setHtml = (id, v) => { const e = $el(id); if (e) e.innerHTML = v ?? ''; };
+        const esc = t => { const d = document.createElement('div'); d.textContent = String(t ?? ''); return d.innerHTML; };
+
+        const fmtMoney = (n, ccy = 'MXN') => {
+            const sym = { MXN: '$', USD: 'US$', EUR: '€' };
+            return (sym[ccy] || '$') + Number(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        };
+
+        /* ── Toast ─────────────────────────────────────── */
+        function sgToast(msg, type = 'info') {
+            const zone = $el('toast-area');
+            const t = document.createElement('div');
+            const cls = { ok: 't-ok', err: 't-err', info: 't-inf' };
+            const ico = { ok: 'check-circle', err: 'exclamation-circle', info: 'info-circle' };
+            t.className = `sg-toast ${cls[type] || 't-inf'}`;
+            t.innerHTML = `<i class="fas fa-${ico[type] || 'info-circle'}"></i> ${esc(msg)}`;
+            zone.appendChild(t);
+            setTimeout(() => {
+                t.style.transition = 'opacity .3s, transform .3s';
+                t.style.opacity = '0';
+                t.style.transform = 'translateY(6px)';
+                setTimeout(() => t.remove(), 320);
+            }, 3500);
+        }
+
+        /* ══════════════════════════════════════════════════
+           BADGES
+        ══════════════════════════════════════════════════ */
+        function badgeEstatus(s) {
+            const map = {
+                '1': ['sb-pending', 'fa-clock', 'Pendiente'],
+                '2': ['sb-approved', 'fa-check-circle', 'Aprobado'],
+                '3': ['sb-rejected', 'fa-times-circle', 'Rechazado'],
+                '0': ['sb-draft', 'fa-file-alt', 'Borrador'],
+            };
+            const [cls, ico, lbl] = map[String(s)] || ['sb-draft', 'fa-question', s ?? '—'];
+            return `<span class="sg-badge ${cls}"><i class="fas ${ico}"></i>${lbl}</span>`;
+        }
+
+        function badgeUrgencia(u) {
+            if (!u) return '—';
+            const map = {
+                inmediato: ['#ef4444', 'fa-bolt', 'Inmediato'],
+                urgente: ['#f59e0b', 'fa-exclamation-circle', 'Urgente'],
+                normal: ['#64748b', 'fa-clock', 'Normal'],
+            };
+            const key = (u || '').toLowerCase();
+            const hit = Object.entries(map).find(([k]) => key.includes(k));
+            const [color, ico, lbl] = hit ? hit[1] : ['#64748b', 'fa-clock', u];
+            return `<span class="sg-badge" style="background:${color}18;color:${color};border:1px solid ${color}38;">
+                        <i class="fas ${ico}"></i>${esc(lbl)}
+                    </span>`;
+        }
+
+        function colorCategoria(cat) {
+            const map = {
+                'Gastos Operativos': '#1d4ed8',
+                'Gastos Administrativos': '#7c3aed',
+                'Viáticos': '#d97706',
+                'Gastos Directos': '#059669',
+            };
+            return map[cat] || '#475569';
+        }
+
+        /* ══════════════════════════════════════════════════
+           KPI
+        ══════════════════════════════════════════════════ */
+        async function cargarKPI() {
+            const desde = $el('f-fecha-desde')?.value || '';
+            const hasta = $el('f-fecha-hasta')?.value || '';
+            try {
+                const res = await fetch(`/Gastos/ResumenKPI?fechaDesde=${desde}&fechaHasta=${hasta}`);
+                const d = await res.json();
+                setText('kpi-total', d.total || '0');
+                setText('kpi-monto', fmtMoney(d.monto_total));
+                setText('kpi-pendientes', d.pendientes || '0');
+                setText('kpi-aprobadas', d.aprobadas || '0');
+                setText('kpi-rechazadas', d.rechazadas || '0');
+                setText('kpi-urgentes', d.urgentes || '0');
+                setText('kpi-monto-aprobado', fmtMoney(d.monto_aprobado));
+                setText('kpi-tiempo', d.tiempo_promedio != null ? d.tiempo_promedio + ' días' : '—');
+            } catch { /* no crítico */ }
+        }
+
+        /* ══════════════════════════════════════════════════
+           FILTROS
+        ══════════════════════════════════════════════════ */
+        function getFiltrosExtra() {
+            return {
+                folio: $el('f-folio')?.value || '',
+                categoria: $el('f-categoria')?.value || '',
+                estatus: $el('f-estatus')?.value || '',
+                urgencia: $el('f-urgencia')?.value || '',
+                fechaDesde: $el('f-fecha-desde')?.value || '',
+                fechaHasta: $el('f-fecha-hasta')?.value || '',
+            };
+        }
+
+        function recargarTabla() { S.tabla?.reload(''); cargarKPI(); }
+
+        function limpiarFiltros() {
+            $el('f-folio').value = '';
+            $el('f-categoria').value = '';
+            $el('f-estatus').value = '1'; // vuelve a "Pendiente" por defecto
+            $el('f-urgencia').value = '';
+            $el('f-fecha-desde').value = '';
+            $el('f-fecha-hasta').value = '';
+            recargarTabla();
+        }
+
+        /* ══════════════════════════════════════════════════
+           INICIALIZAR TABLA
+        ══════════════════════════════════════════════════ */
+        document.addEventListener('DOMContentLoaded', () => {
+            // Rango por defecto: último mes
+            const hoy = new Date();
+            const hace = new Date(); hace.setMonth(hace.getMonth() - 1);
+            const iso = d => d.toISOString().slice(0, 10);
+            $el('f-fecha-desde').value = iso(hace);
+            $el('f-fecha-hasta').value = iso(hoy);
+            cargarKPI();
+
+            S.tabla = createTable({
+                selector: '#tabla-sg',
+                path: '/Gastos/BuscarSolicitudes',
+                searchPlaceholder: 'Solicitante, proveedor o concepto…',
+                defaultPageSize: 25,
+                pageSizeOptions: [10, 25, 50, 100],
+                data: () => getFiltrosExtra(),
+                exports: [{ type: 'excel', label: 'Exportar Excel', fileName: 'aprobacion_gastos' }],
+
+                columns: [
+                    {
+                        title: 'Folio', data: 'folio',
+                        formatter: v =>
+                            `<span style="font-family:var(--mono);font-weight:700;font-size:12px;">
+                                ${esc(v || '—')}
+                             </span>`
+                    },
+                    {
+                        title: 'Solicitante', data: 'solicitante',
+                        formatter: (v, row) => {
+                            const ini = (v || '?').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+                            return `
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <div style="width:28px;height:28px;border-radius:50%;
+                                                background:var(--navy);color:#fff;
+                                                display:flex;align-items:center;justify-content:center;
+                                                font-size:10px;font-weight:700;flex-shrink:0;">
+                                        ${esc(ini)}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight:600;font-size:12px;">${esc(v || '—')}</div>
+                                        <div style="font-size:10px;color:var(--slate-400);">${esc(row.area || '')}</div>
+                                    </div>
+                                </div>`;
+                        }
+                    },
+                    {
+                        title: 'Proveedor / Concepto', data: 'proveedor',
+                        formatter: (v, row) =>
+                            `<div style="font-weight:500;font-size:12px;max-width:170px;
+                                         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                                  title="${esc(v)}">${esc(v || '—')}</div>
+                             <div style="font-size:10px;color:var(--slate-400);max-width:170px;
+                                         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                                  title="${esc(row.concepto)}">${esc(row.concepto || '')}</div>`
+                    },
+                    {
+                        title: 'Categoría', data: 'categoria',
+                        formatter: (v, row) => {
+                            const c = colorCategoria(v);
+                            return `<div style="font-size:11px;font-weight:700;color:${c};">${esc(v || '—')}</div>
+                                    <div style="font-size:10px;color:var(--slate-400);">${esc(row.subcategoria || '')}</div>`;
+                        }
+                    },
+                    {
+                        title: 'Fecha', data: 'fecha',
+                        formatter: v =>
+                            `<span style="font-family:var(--mono);font-size:11px;color:var(--slate-600);">
+                                ${dateFormatter(v)}
+                             </span>`
+                    },
+                    {
+                        title: 'Urgencia', data: 'urgencia',
+                        formatter: v => badgeUrgencia(v)
+                    },
+                    {
+                        title: 'Monto', data: 'monto', className: 'text-end',
+                        formatter: (v, row) => {
+                            const m = parseFloat(v) || 0;
+                            const pct = Math.min(Math.round((m / 100000) * 100), 100);
+                            return `
+                                <div style="font-family:var(--mono);font-size:12px;font-weight:700;">
+                                    ${fmtMoney(m, row.moneda)}
+                                </div>
+                                <div class="monto-fill" style="width:${pct}%;"></div>
+                                <div style="font-size:9px;color:var(--slate-400);font-family:var(--mono);
+                                            text-align:right;margin-top:1px;">${esc(row.moneda || 'MXN')}</div>`;
+                        }
+                    },
+                    {
+                        title: 'Estatus', data: 'estatus',
+                        formatter: v => badgeEstatus(v)
+                    },
+                    {
+                        // Columna de acción rápida
+                        title: '', data: 'estatus',
+                        formatter: (v, row) => {
+                            if (String(v) !== '1') return '';   // solo pendientes
+                            return `
+                                <button class="btn-sg btn-sg-amber btn-sg-sm"
+                                        onclick="event.stopPropagation(); abrirDetalle(${row.id})">
+                                    <i class="fas fa-stamp"></i> Revisar
+                                </button>`;
+                        }
+                    },
+                ],
+
+                RowsEvents: { onRowClick: row => abrirDetalle(row.id) },
+                GlobalEvents: { onDataLoaded: () => cargarKPI() },
+            });
+
+            // Enter en filtros dispara búsqueda
+            ['f-folio', 'f-categoria', 'f-estatus', 'f-urgencia', 'f-fecha-desde', 'f-fecha-hasta']
+                .forEach(id => $el(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') recargarTabla(); }));
+        });
+
+        function renderCamposDinamicos(campos, subcategoria) {
+            const sec = $el('md-sec-dinamicos');
+            const body = $el('md-campos-dinamicos');
+
+            if (!campos || !campos.length) {
+                sec.style.display = 'none';
+                body.innerHTML = '';
+                return;
+            }
+
+            sec.style.display = '';
+            setText('md-subcat-label', subcategoria || '');
+
+            // Campos que ocupan ancho completo por su contenido largo
+            const fullWidthIds = new Set([
+                'ef-items', 'ef-mercancias', 'ef-pap', 'ef-legal-asunto',
+                'ef-hon-alcance', 'ef-proj-mat', 'ef-justif', 'ef-rep-asist',
+                'ef-ali-clientes', 'ef-cap-participantes'
+            ]);
+
+            body.innerHTML = campos.map(c => {
+                const isFull = fullWidthIds.has(c.id);
+                const colClass = isFull ? 'col-12' : 'col-12 col-sm-6 col-lg-4';
+
+                // Valor vacío
+                if (!c.valor || c.valor === '[]') return '';
+
+                // Tag-input: viene como JSON array ["nombre1","nombre2"]
+                let display = esc(c.valor);
+                try {
+                    const arr = JSON.parse(c.valor);
+                    if (Array.isArray(arr) && arr.length) {
+                        display = arr.map(t =>
+                            `<span style="display:inline-flex;align-items:center;gap:4px;
+                                  padding:2px 8px;border-radius:20px;font-size:11px;
+                                  background:var(--blue-lt);color:#1e40af;
+                                  border:1px solid #93c5fd;margin:2px;">
+                        ${esc(t)}
+                     </span>`
+                        ).join('');
+                    }
+                } catch { /* no es JSON, usar el valor directo */ }
+
+                return `
+            <div class="${colClass}">
+                <div class="md-info-item">
+                    <label>${esc(c.label)}</label>
+                    <span style="white-space:pre-wrap;">${display}</span>
+                </div>
+            </div>`;
+            }).join('');
+        }
+
+
+        /* ══════════════════════════════════════════════════
+           MODAL — ABRIR DETALLE
+        ══════════════════════════════════════════════════ */
+        async function abrirDetalle(id) {
+            if (!S.bsModal)
+                S.bsModal = new bootstrap.Modal($el('modal-detalle'), { backdrop: true, keyboard: true });
+            S.bsModal.show();
+            showMdTab('mdt-general', null, true);
+
+            // Reset
+            ['md-folio', 'md-creador', 'md-fecha', 'md-categoria', 'md-subcategoria',
+                'md-monto', 'md-moneda', 'md-cc', 'md-aprobador-hd',
+                'md-solicitante', 'md-area', 'md-proveedor', 'md-concepto',
+                'md-justificacion', 'md-notas',
+                'ds-folio', 'ds-solicitante', 'ds-monto', 'ds-categoria']
+                .forEach(i => setText(i, '…'));
+            setHtml('md-estatus-hd', '');
+            setHtml('md-urgencia-hd', '');
+            setHtml('md-flujo-panel', '<div style="padding:8px;color:var(--slate-400);font-size:12px;">Cargando…</div>');
+            setHtml('md-archivos-body', '');
+            setHtml('md-historial-body', '');
+            $el('aprov-comentario').value = '';
+            $el('tab-badge-docs').style.display = 'none';
+            $el('tab-badge-hist').style.display = 'none';
+
+            S.idActual = id;
+
+            try {
+                const res = await fetch(`/Gastos/DetalleSolicitud?id=${id}`);
+                const data = await res.json();
+                if (!data.success) { sgToast(data.message || 'Error al cargar', 'err'); return; }
+
+                const enc = data.solicitud;
+                S.folioActual = enc.folio;
+                S.datosActual = enc;
+
+                // Cabecera modal
+                setText('md-folio', enc.folio || '—');
+                setText('md-creador', enc.creador || '—');
+                setText('md-fecha', dateFormatter(enc.fecha));
+                setText('md-categoria', enc.categoria || '—');
+                setText('md-subcategoria', enc.subcategoria || '—');
+                setHtml('md-estatus-hd', badgeEstatus(enc.estatus));
+
+                // Strip totals
+                setText('md-monto', fmtMoney(enc.monto, enc.moneda));
+                setText('md-moneda', enc.moneda || 'MXN');
+                setText('md-cc', enc.centro_costo || '—');
+                setHtml('md-urgencia-hd', badgeUrgencia(enc.urgencia));
+                setText('md-aprobador-hd', enc.aprobador || '—');
+
+                // Tab general
+                setText('md-solicitante', enc.creador || '—');
+                setText('md-area', enc.area || '—');
+                setText('md-proveedor', enc.proveedor || '—');
+                setText('md-concepto', enc.concepto || '—');
+                setText('md-justificacion', enc.justificacion || '—');
+                setText('md-notas', enc.notas || '—');
+
+                // Flujo
+                renderFlujo(enc);
+
+                // Archivos
+                renderArchivos(data.archivos || []);
+
+                // Historial
+                renderHistorial(data.historial || []);
+
+                // Campos dinámicos
+                renderCamposDinamicos(data.camposDinamicos || [], enc.subcategoria);
+
+                // Badges en tabs
+                const nDocs = (data.archivos || []).length;
+                const nHist = (data.historial || []).length;
+                if (nDocs > 0) { $el('tab-badge-docs').textContent = nDocs; $el('tab-badge-docs').style.display = ''; }
+                if (nHist > 0) { $el('tab-badge-hist').textContent = nHist; $el('tab-badge-hist').style.display = ''; }
+
+                // Panel de decisión: visible solo si estatus = 1 (Pendiente)
+                const esPendiente = String(enc.estatus) === '1';
+
+                // Resumen rápido en panel decisión
+                setText('ds-folio', enc.folio || '—');
+                setText('ds-solicitante', enc.creador || '—');
+                setText('ds-monto', fmtMoney(enc.monto, enc.moneda));
+                setText('ds-categoria', enc.categoria || '—');
+
+                $el('aprov-form-wrap').style.display = esPendiente ? '' : 'none';
+                $el('aprov-ya-procesada').style.display = esPendiente ? 'none' : '';
+
+                if (!esPendiente) {
+                    const banner = $el('ya-procesada-banner');
+                    const cls = enc.estatus == 2 ? 'aprobada' : enc.estatus == 3 ? 'rechazada' : 'otro';
+                    const ico = enc.estatus == 2 ? 'fa-check-circle' : enc.estatus == 3 ? 'fa-times-circle' : 'fa-info-circle';
+                    const msg = enc.estatus == 2
+                        ? 'Esta solicitud ya fue <strong>aprobada</strong> y no puede modificarse.'
+                        : enc.estatus == 3
+                            ? 'Esta solicitud fue <strong>rechazada</strong> y no puede modificarse.'
+                            : 'Esta solicitud ya fue procesada.';
+
+                    banner.className = `ya-procesada-banner ${cls}`;
+                    banner.innerHTML = `<i class="fas ${ico}" style="font-size:18px;"></i><span>${msg}</span>`;
+                }
+
+            } catch (e) { sgToast('Error de conexión: ' + e.message, 'err'); }
+        }
+
+        /* ── Flujo ──────────────────────────────────────── */
+        function renderFlujo(enc) {
+            const pasos = [
+                {
+                    label: 'Solicitud creada',
+                    persona: enc.creador,
+                    fecha: enc.fecha,
+                    estado: 'done',
+                    ico: 'fa-check',
+                },
+                {
+                    label: 'Revisión — Aprobador asignado',
+                    persona: enc.aprobador,
+                    fecha: enc.estatus == 2 || enc.estatus == 3 ? enc.fecha_captura : null,
+                    estado: enc.estatus == 2 ? 'done' : enc.estatus == 3 ? 'rejected' : 'pending',
+                    ico: enc.estatus == 2 ? 'fa-check' : enc.estatus == 3 ? 'fa-times' : 'fa-clock',
+                },
+            ];
+
+            const labelEstado = { done: 'Completado', pending: 'En espera', waiting: 'Sin iniciar', rejected: 'Rechazado' };
+            const bgColor = { done: 'var(--ok-lt)', rejected: 'var(--danger-lt)', pending: 'var(--warn-lt)', waiting: 'var(--slate-100)' };
+            const txtColor = { done: '#065f46', rejected: '#991b1b', pending: '#92400e', waiting: 'var(--slate-600)' };
+
+            setHtml('md-flujo-panel',
+                `<div class="aprov-title"><i class="fas fa-route"></i> Flujo de autorización</div>` +
+                pasos.map(p => `
+                    <div class="aprov-step">
+                        <div class="aprov-icon ${p.estado}"><i class="fas ${p.ico}"></i></div>
+                        <div style="flex:1;">
+                            <div class="aprov-step-name">${esc(p.label)}</div>
+                            <div class="aprov-step-meta">
+                                ${esc(p.persona || '—')}
+                                ${p.fecha ? ` · ${dateFormatter(p.fecha)}` : ''}
+                                <span class="sg-badge ms-2"
+                                      style="font-size:8px;padding:1px 6px;
+                                             background:${bgColor[p.estado]};
+                                             color:${txtColor[p.estado]};">
+                                    ${labelEstado[p.estado]}
+                                </span>
+                            </div>
+                        </div>
+                    </div>`).join('')
+            );
+        }
+
+        /* ── Archivos ───────────────────────────────────── */
+        function renderArchivos(archivos) {
+            const body = $el('md-archivos-body');
+            if (!archivos.length) {
+                body.innerHTML = `<p style="color:var(--slate-400);font-size:12px;padding:8px 0;">Sin archivos adjuntos registrados.</p>`;
+                return;
+            }
+            const extIcon = ext => {
+                ext = (ext || '').toLowerCase().replace('.', '');
+                if (ext === 'pdf') return 'fa-file-pdf';
+                if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) return 'fa-file-image';
+                if (['xlsx', 'xls'].includes(ext)) return 'fa-file-excel';
+                return 'fa-file-alt';
+            };
+            body.innerHTML = archivos.map(a => `
+                <div class="file-row">
+                    <i class="fas ${extIcon(a.extencion)}" style="color:var(--warn);"></i>
+                    <span class="file-name">${esc(a.nombre_original || 'Archivo')}</span>
+                    <span class="file-size">${esc(a.extencion || '')}</span>
+                    <a href="/Gastos/DescargarArchivo?uuid=${esc(a.uuid)}&ext=${esc(a.extencion)}"
+                       class="btn-sg btn-sg-ghost btn-sg-sm" target="_blank">
+                        <i class="fas fa-download"></i> Descargar
+                    </a>
+                </div>`).join('');
+        }
+
+        /* ── Historial ──────────────────────────────────── */
+        function renderHistorial(historial) {
+            const body = $el('md-historial-body');
+            if (!historial.length) {
+                body.innerHTML = `<p style="color:var(--slate-400);font-size:12px;">Sin acciones registradas aún.</p>`;
+                return;
+            }
+            body.innerHTML = historial.map(h => {
+                const ini = (h.usuario || '?').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+                const cls = { Aprobado: 'aprobado', Rechazado: 'rechazado', Comentario: 'comentario' }[h.accion] || 'comentario';
+                return `
+                    <div class="hist-item">
+                        <div class="hist-avatar">${esc(ini)}</div>
+                        <div style="flex:1;">
+                            <div>
+                                <span class="hist-name">${esc(h.usuario || '—')}</span>
+                                <span class="hist-date">${dateFormatter(h.fecha)}</span>
+                                ${h.accion ? `<span class="hist-action-badge ${cls}">${esc(h.accion)}</span>` : ''}
+                            </div>
+                            ${h.comentario ? `<div class="hist-body">${esc(h.comentario)}</div>` : ''}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        /* ══════════════════════════════════════════════════
+           PROCESAR DECISIÓN
+        ══════════════════════════════════════════════════ */
+        async function procesarDecision(accion) {
+            const comentario = ($el('aprov-comentario')?.value || '').trim();
+
+            if (accion === 'rechazar' && !comentario) {
+                sgToast('El motivo de rechazo es obligatorio', 'err');
+                $el('aprov-comentario')?.focus();
+                return;
+            }
+
+            // Confirmación para aprobar/rechazar
+            if (accion === 'aprobar' || accion === 'rechazar') {
+                const msgConf = accion === 'aprobar'
+                    ? `¿Confirmas la aprobación de la solicitud ${S.folioActual}?`
+                    : `¿Confirmas el rechazo de la solicitud ${S.folioActual}?\nMotivo: ${comentario}`;
+                if (!confirm(msgConf)) return;
+            }
+
+            const btnId = accion === 'aprobar' ? 'btn-aprobar' : accion === 'rechazar' ? 'btn-rechazar' : null;
+            const btn = btnId ? $el(btnId) : null;
+            const origHtml = btn?.innerHTML;
+
+            try {
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando…'; }
+
+                const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                const body = new URLSearchParams({
+                    id: S.idActual,
+                    accion: accion,
+                    comentario: comentario,
+                });
+                if (token) body.append('__RequestVerificationToken', token.value);
+
+                const res = await fetch('/Gastos/ProcesarDecision', { method: 'POST', body });
+                const result = await res.json();
+
+                if (!result.success) { sgToast(result.message || 'Error al procesar', 'err'); return; }
+
+                const label = { aprobar: 'aprobada ✅', rechazar: 'rechazada ❌', comentar: 'comentada 💬' };
+                sgToast(`Solicitud ${result.folio} ${label[accion]} correctamente`, 'ok');
+
+                S.bsModal?.hide();
+                recargarTabla();
+
+            } catch (e) {
+                sgToast('Error de conexión: ' + e.message, 'err');
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+           TABS DEL MODAL
+        ══════════════════════════════════════════════════ */
+        function showMdTab(tabId, btn, force = false) {
+            document.querySelectorAll('.md-tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.md-tab-btn').forEach(b => b.classList.remove('active'));
+            $el(tabId)?.classList.add('active');
+            if (btn) {
+                btn.classList.add('active');
+            } else {
+                // Activar el btn correspondiente
+                document.querySelectorAll('.md-tab-btn').forEach(b => {
+                    if ((b.getAttribute('onclick') || '').includes(tabId)) b.classList.add('active');
+                });
+            }
+        }
+    </script>
+}

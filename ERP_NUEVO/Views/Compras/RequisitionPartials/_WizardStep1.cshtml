@@ -1,0 +1,139 @@
+﻿@* step 1 seleccionar el tipo de operacion *@
+
+@using BOS_ERP.Controllers;
+
+<div id="step-1" class="wizard-panel" role="tabpanel" aria-label="Tipo de producto">
+    <form id="form-1" novalidate>
+        <div class="row g-3 justify-content-between">
+            @{
+                if (Utilities.DoesUserHasRight(User.Identity.Name, "usar_compra_directa"))
+                {
+                    <!-- Purchase Mode Toggle (solo para Compras Nacionales) -->
+                    <div class="purchase-mode-toggle col-md-12 col-lg-5">
+                        <div class="form-check form-switch d-flex align-items-center">
+                            <input class="form-check-input modern-switch me-2" type="checkbox" id="modoCompraDirecta"
+                            @(Utilities.GetEmpresaName(User.Identity.Name) != "SRS" ? "disabled checked" : "")>
+                            <label class="form-check-label switch-label mb-0" for="modoCompraDirecta">
+                                <i class="fa-duotone fa-thin fa-bolt"></i>&nbsp;
+                                <span class="switch-text">Compra Directas</span>
+                            </label>
+                        </div>
+                    </div>
+                }
+            }
+            <div class="purchase-mode-toggle col-md-12 col-lg-5">
+                <div class="form-check form-switch d-flex align-items-center">
+                    <input class="form-check-input modern-switch me-2" type="checkbox" id="productoPresupuesto"
+                    @(Utilities.GetEmpresaName(User.Identity.Name) != "SRS" ? "disabled checked" : "")>
+                    <label class="form-check-label switch-label mb-0" for="productoPresupuesto">
+                        <i class="fa-duotone fa-light fa-arrow-trend-up"></i>&nbsp;&nbsp;
+                        <span class="switch-text">Producto en presupuesto</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Header -->
+        <div class="form-header">
+            <h4>Selecciona el tipo de producto que se va a registrar</h4>
+            <p>Elige la opción que mejor describa el propósito de tu producto o servicio</p>
+        </div>
+
+        <!-- Product Options -->
+        <fieldset class="row g-3" aria-required="true">
+            <legend class="visually-hidden">Tipo de producto</legend>
+
+            <!-- Solicitud de cotización -->
+            <div class="col-sm-12 col-md-6">
+                <div class="product-card" data-option="cotizacion">
+                    <input type="radio" value="SCTZ" class="btn-check" name="tpnom" id="cotizacion" autocomplete="off" required>
+                    <label for="cotizacion" class="w-100 h-100 d-block">
+                        <div class="product-title">Solicitud de cotización</div>
+                        <div class="product-description">
+                            Solicitud para obtener precios y condiciones de compra de productos o servicios antes de realizar una adquisición.
+                        </div>
+                        <div class="product-features">
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Comparación de proveedores</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Evaluación de precios y condiciones</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Base para autorización de compra</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-sm-12 col-md-6">
+                <!-- Solicitud de gasto -->
+                <div class="product-card" data-option="gasto">
+                    <input type="radio" value="SGTO" class="btn-check" name="tpnom" id="gasto" autocomplete="off" required>
+                    <label for="gasto" class="w-100 h-100 d-block">
+                        <div class="product-title">Solicitud de gasto</div>
+                        <div class="product-description">
+                            Solicitud para registrar o autorizar un gasto relacionado con operaciones internas de la empresa.
+                        </div>
+                        <div class="product-features">
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Registro de gastos operativos</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Control y autorización de egresos</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-check"></i>
+                                <span>Seguimiento contable del gasto</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>
+
+<script>
+    // ============================================
+    // Lógica propia del paso 1: selección visual de tarjeta
+    // y cambio de endpoint de búsqueda según el tipo elegido.
+    // `endpointBusqueda` es usada por el modal de búsqueda (_ModalBuscarProducto).
+    // ============================================
+
+    let endpointBusqueda = '/Almacen/Producto/Buscar';
+
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.addEventListener('click', function () {
+            // Remover selección anterior
+            document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+
+            // Seleccionar la tarjeta actual
+            this.classList.add('selected');
+
+            // Marcar el radio button y disparar el evento change
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('input[name="tpnom"]')) {
+            const btnSpan = document.querySelector('#buscar_producto span');
+            if (e.target.value === 'SGTO') {
+                endpointBusqueda = '/Almacen/Producto/BuscarServicio';
+                if (btnSpan) btnSpan.textContent = 'Consultar Servicios';
+            } else {
+                endpointBusqueda = '/Almacen/Producto/Buscar';
+                if (btnSpan) btnSpan.textContent = 'Consultar Productos';
+            }
+        }
+    });
+</script>

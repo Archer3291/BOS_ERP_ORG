@@ -1,0 +1,703 @@
+@{
+    ViewBag.Title = "Consulta de documentos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+    <style>
+        .cd-page-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 1.25rem 0 1rem;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 1.25rem;
+        }
+
+            .cd-page-header h1 {
+                font-size: 1.4rem;
+                font-weight: 700;
+                color: var(--text-dark);
+                margin: 0 0 .3rem;
+                letter-spacing: -.3px;
+            }
+
+                .cd-page-header h1 span {
+                    color: var(--accent-blue);
+                }
+
+        .cd-subtitle {
+            display: block;
+            font-size: .8rem;
+            color: var(--text-light);
+        }
+
+        .cd-total-chip {
+            display: inline-flex;
+            align-items: baseline;
+            gap: .5rem;
+            background: rgba(59,130,246,.08);
+            border: 1px solid rgba(59,130,246,.18);
+            border-radius: 10px;
+            padding: .5rem .9rem;
+        }
+
+            .cd-total-chip .cd-total-label {
+                font-size: .68rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .07em;
+                color: var(--text-light);
+            }
+
+            .cd-total-chip .cd-total-val {
+                font-size: 1.15rem;
+                font-weight: 700;
+                color: var(--accent-blue);
+                font-variant-numeric: tabular-nums;
+            }
+
+        .cd-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .cd-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            flex-wrap: wrap;
+            padding: .85rem 1.15rem;
+            background: var(--bg-gray);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+            .cd-card-header h5 {
+                margin: 0;
+                font-size: .95rem;
+                font-weight: 600;
+                color: var(--text-dark);
+            }
+
+        .cd-card-body {
+            padding: .35rem 1.15rem 1.15rem;
+        }
+
+        .cd-loading {
+            display: none;
+            align-items: center;
+            gap: .5rem;
+            font-size: .75rem;
+            color: var(--text-light);
+        }
+
+            .cd-loading.show {
+                display: inline-flex;
+            }
+
+        .cd-spin {
+            width: 13px;
+            height: 13px;
+            border: 2px solid var(--border-light);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: cdSpin .6s linear infinite;
+        }
+
+        @@keyframes cdSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #tablaDocumentos .modern-table tbody tr {
+            cursor: pointer;
+        }
+
+        .cd-folio {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        .cd-fecha {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .cd-hora {
+            margin-left: .4rem;
+            font-size: 11px;
+            color: var(--text-light);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cd-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .02em;
+            background: var(--bg-gray);
+            border: 1px solid var(--border-light);
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        .cd-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .02em;
+            line-height: 1.6;
+            white-space: nowrap;
+        }
+
+            .cd-badge i {
+                font-size: 9.5px;
+            }
+
+        .cd-badge-in {
+            background: rgba(5,150,105,.1);
+            color: var(--success-color);
+        }
+
+        .cd-badge-out {
+            background: rgba(220,38,38,.1);
+            color: var(--danger-color);
+        }
+
+        .cd-badge-move {
+            background: rgba(59,130,246,.1);
+            color: var(--accent-blue);
+        }
+
+        .cd-badge-adjust {
+            background: rgba(217,119,6,.1);
+            color: var(--warning-color);
+        }
+
+        .cd-badge-neutral {
+            background: rgba(71,85,105,.1);
+            color: var(--secondary-blue);
+        }
+
+        .cd-user {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            white-space: nowrap;
+        }
+
+        .cd-avatar {
+            width: 26px;
+            height: 26px;
+            flex: 0 0 26px;
+            border-radius: 50%;
+            background: rgba(59,130,246,.12);
+            color: var(--accent-blue);
+            font-size: 10px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: .02em;
+        }
+
+        .cd-coment {
+            display: block;
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-light);
+        }
+
+        .cd-muted {
+            color: var(--text-light);
+        }
+
+        .cd-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .modal-content {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            border-bottom: none;
+            border-radius: 13px 13px 0 0;
+            padding: .95rem 1.25rem;
+        }
+
+        .modal-title {
+            font-size: .95rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+            .modal-title .cd-modal-folio {
+                font-family: 'IBM Plex Mono', monospace;
+                font-weight: 700;
+            }
+
+        .modal-body {
+            padding: 1.25rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-light);
+            padding: .8rem 1.25rem;
+        }
+
+        .cd-doc-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+            gap: .9rem 1.25rem;
+            background: var(--bg-gray);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 1rem 1.15rem;
+            margin-bottom: 1.15rem;
+        }
+
+        .cd-doc-field {
+            display: flex;
+            flex-direction: column;
+            gap: .3rem;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+            .cd-doc-field.cd-doc-wide {
+                grid-column: 1 / -1;
+            }
+
+        .cd-doc-label {
+            font-size: .66rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-light);
+        }
+
+        .cd-doc-val {
+            font-size: .85rem;
+            color: var(--text-dark);
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            min-width: 0;
+        }
+
+        .cd-partidas-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            margin-bottom: .55rem;
+        }
+
+            .cd-partidas-header h6 {
+                margin: 0;
+                font-size: .85rem;
+                font-weight: 600;
+                color: var(--text-dark);
+            }
+
+        .cd-partidas-count {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            background: rgba(59,130,246,.08);
+            padding: 3px 11px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+
+        .cd-partidas-wrap {
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            overflow: auto;
+            max-height: 48vh;
+        }
+
+        .cd-partidas {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 12.5px;
+        }
+
+            .cd-partidas thead th {
+                position: sticky;
+                top: 0;
+                z-index: 1;
+                background: var(--bg-gray);
+                padding: 10px 14px;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .07em;
+                color: var(--text-light);
+                border-bottom: 1px solid var(--border-light);
+                text-align: left;
+                white-space: nowrap;
+            }
+
+                .cd-partidas thead th.cd-num {
+                    text-align: right;
+                }
+
+            .cd-partidas tbody td {
+                padding: 9px 14px;
+                border-top: 1px solid var(--border-light);
+                background: var(--bg-light);
+                color: var(--text-dark);
+            }
+
+            .cd-partidas tbody tr:first-child td {
+                border-top: none;
+            }
+
+            .cd-partidas tbody tr:hover td {
+                background: rgba(59,130,246,.05);
+            }
+
+        .cd-partidas-idx {
+            color: var(--text-light);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cd-partidas-loading,
+        .cd-partidas-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            padding: 2rem 1rem;
+            font-size: .8rem;
+            color: var(--text-light);
+            border: 1px dashed var(--border-light);
+            border-radius: 10px;
+        }
+
+        .cd-partidas-error {
+            color: var(--danger-color);
+            border-color: rgba(220,38,38,.3);
+        }
+
+        @@media (max-width: 768px) {
+            .cd-coment {
+                max-width: 150px;
+            }
+
+            .cd-card-body {
+                padding: .35rem .6rem .6rem;
+            }
+        }
+    </style>
+}
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="cd-page-header">
+    <div>
+        <h1>Consulta de <span>documentos</span></h1>
+        <span class="cd-subtitle">Documentos de inventario de la sucursal &middot; abre un documento para ver su detalle y partidas</span>
+    </div>
+    <div class="cd-total-chip">
+        <span class="cd-total-label">Documentos</span>
+        <span class="cd-total-val" id="cdTotal">0</span>
+    </div>
+</div>
+
+<div class="cd-card">
+    <div class="cd-card-header">
+        <h5><i class="fa-solid fa-file-lines me-2" style="color:var(--accent-blue)"></i>Documentos de inventario</h5>
+        <span class="cd-loading" id="cdLoading"><span class="cd-spin"></span> Cargando...</span>
+    </div>
+    <div class="cd-card-body">
+        <div id="tablaDocumentos"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDocumento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-file-lines me-2"></i>
+                    Documento <span class="cd-modal-folio" id="mdTituloFolio"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="cd-doc-info">
+                    <div class="cd-doc-field">
+                        <span class="cd-doc-label">Folio</span>
+                        <span class="cd-doc-val" id="mdFolio">—</span>
+                    </div>
+                    <div class="cd-doc-field">
+                        <span class="cd-doc-label">Fecha</span>
+                        <span class="cd-doc-val" id="mdFecha">—</span>
+                    </div>
+                    <div class="cd-doc-field">
+                        <span class="cd-doc-label">Tipo de documento</span>
+                        <span class="cd-doc-val" id="mdTipoDocumento">—</span>
+                    </div>
+                    <div class="cd-doc-field">
+                        <span class="cd-doc-label">Tipo de proceso</span>
+                        <span class="cd-doc-val" id="mdTipoProceso">—</span>
+                    </div>
+                    <div class="cd-doc-field">
+                        <span class="cd-doc-label">Usuario</span>
+                        <span class="cd-doc-val" id="mdUsuario">—</span>
+                    </div>
+                    <div class="cd-doc-field cd-doc-wide">
+                        <span class="cd-doc-label">Comentario</span>
+                        <span class="cd-doc-val" id="mdComentario">—</span>
+                    </div>
+                </div>
+
+                <div class="cd-partidas-header">
+                    <h6><i class="fa-solid fa-boxes-stacked me-2" style="color:var(--accent-blue)"></i>Partidas del documento</h6>
+                    <span class="cd-partidas-count" id="mdConteo"></span>
+                </div>
+
+                <div id="mdPartidas"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/TableBuilder.js?v=@DateTime.Now.Ticks"></script>
+    <script>
+        let modalDocumento;
+
+        const PROCESOS = [
+            { match: /entrada|recepcion|alta|ingreso/i, cls: 'cd-badge-in', icon: 'fa-arrow-down-to-line' },
+            { match: /salida|baja|merma|consumo/i, cls: 'cd-badge-out', icon: 'fa-arrow-up-from-line' },
+            { match: /traspaso|traslado|migracion|movimiento/i, cls: 'cd-badge-move', icon: 'fa-right-left' },
+            { match: /ajuste|inventario|conteo|correccion/i, cls: 'cd-badge-adjust', icon: 'fa-sliders' }
+        ];
+
+        function esc(value) {
+            const div = document.createElement('div');
+            div.textContent = value ?? '';
+            return div.innerHTML;
+        }
+
+        function badgeProceso(value) {
+            if (!value) return '<span class="cd-muted">—</span>';
+            const texto = String(value).replace(/_/g, ' ').trim();
+            const label = texto.charAt(0).toUpperCase() + texto.slice(1);
+            const tipo = PROCESOS.find(p => p.match.test(value)) ?? { cls: 'cd-badge-neutral', icon: 'fa-tag' };
+            return `<span class="cd-badge ${tipo.cls}"><i class="fa-solid ${tipo.icon}"></i>${esc(label)}</span>`;
+        }
+
+        function iniciales(nombre) {
+            return String(nombre ?? '')
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map(p => p.charAt(0).toUpperCase())
+                .join('') || '?';
+        }
+
+        function cantidadFormat(value) {
+            const num = Number(value);
+            if (value === null || value === '' || isNaN(num)) return '<span class="cd-muted">—</span>';
+            return num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        }
+
+        function folioFormat(value) {
+            return value ? `<span class="cd-folio">${esc(value)}</span>` : '<span class="cd-muted">—</span>';
+        }
+
+        function chipFormat(value) {
+            return value ? `<span class="cd-chip">${esc(value)}</span>` : '<span class="cd-muted">—</span>';
+        }
+
+        function fechaFormat(value) {
+            if (!value) return '<span class="cd-muted">—</span>';
+            const [fecha, hora] = dateFormatter(value).split(' ');
+            return `<span class="cd-fecha">${esc(fecha)}</span>`
+                + (hora && hora !== '00:00' ? `<span class="cd-hora">${esc(hora)}</span>` : '');
+        }
+
+        function usuarioFormat(value) {
+            if (!value) return '<span class="cd-muted">—</span>';
+            return `<span class="cd-user"><span class="cd-avatar">${esc(iniciales(value))}</span>${esc(value)}</span>`;
+        }
+
+        function comentarioFormat(value) {
+            const texto = String(value ?? '').trim();
+            return texto ? esc(texto) : '<span class="cd-muted">Sin comentario</span>';
+        }
+
+        function abrirModalDocumento(row) {
+            document.getElementById('mdTituloFolio').textContent = row.folio ?? '';
+            document.getElementById('mdFolio').innerHTML = folioFormat(row.folio);
+            document.getElementById('mdFecha').innerHTML = fechaFormat(row.fecha);
+            document.getElementById('mdTipoDocumento').innerHTML = chipFormat(row.dipo_documento);
+            document.getElementById('mdTipoProceso').innerHTML = badgeProceso(row.tipo_proceso);
+            document.getElementById('mdUsuario').innerHTML = usuarioFormat(row.usuario);
+            document.getElementById('mdComentario').innerHTML = comentarioFormat(row.comentario);
+
+            document.getElementById('mdConteo').textContent = '';
+            document.getElementById('mdPartidas').innerHTML =
+                '<div class="cd-partidas-loading"><span class="cd-spin"></span> Cargando partidas...</div>';
+
+            modalDocumento ??= new bootstrap.Modal(document.getElementById('modalDocumento'));
+            modalDocumento.show();
+
+            cargarPartidas(row.id_encabezado);
+        }
+
+        async function cargarPartidas(id) {
+            const contenedor = document.getElementById('mdPartidas');
+            const conteo = document.getElementById('mdConteo');
+
+            const respuesta = await GetData({ path: '/Inventario/GetPartidasDocumento', data: { id } });
+            const partidas = respuesta?.data ?? respuesta;
+
+            if (!Array.isArray(partidas)) {
+                conteo.textContent = '';
+                contenedor.innerHTML = '<div class="cd-partidas-empty cd-partidas-error">'
+                    + '<i class="fa-solid fa-triangle-exclamation"></i> No se pudieron cargar las partidas del documento.</div>';
+                return;
+            }
+
+            if (!partidas.length) {
+                conteo.textContent = '0 partidas';
+                contenedor.innerHTML = '<div class="cd-partidas-empty">'
+                    + '<i class="fa-solid fa-box-open"></i> Este documento no tiene partidas registradas</div>';
+                return;
+            }
+
+            conteo.textContent = `${partidas.length} ${partidas.length === 1 ? 'partida' : 'partidas'}`;
+            contenedor.innerHTML = `
+                <div class="cd-partidas-wrap">
+                    <table class="cd-partidas">
+                        <thead>
+                            <tr>
+                                <th style="width:46px">#</th>
+                                <th>Clave</th>
+                                <th>Descripción</th>
+                                <th class="cd-num">Cantidad</th>
+                                <th>Unidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${partidas.map((p, i) => `
+                                <tr>
+                                    <td class="cd-partidas-idx">${i + 1}</td>
+                                    <td>${folioFormat(p.cve_prod)}</td>
+                                    <td>${esc(p.descr_prod) || '<span class="cd-muted">—</span>'}</td>
+                                    <td class="cd-num">${cantidadFormat(p.cant_ud)}</td>
+                                    <td>${chipFormat(p.ud)}</td>
+                                </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createTable({
+                selector: '#tablaDocumentos',
+                path: '/Inventario/GetDocumentos',
+                rowKey: 'id_encabezado',
+                searchPlaceholder: 'Buscar folio, tipo, usuario o comentario...',
+                defaultPageSize: 25,
+                pageSizeOptions: [10, 25, 50, 100],
+                sortDir: 'desc',
+                columns: [
+                    {
+                        title: 'Folio', data: 'folio',
+                        formatter: v => folioFormat(v)
+                    },
+                    {
+                        title: 'Fecha', data: 'fecha',
+                        formatter: v => fechaFormat(v)
+                    },
+                    {
+                        title: 'Tipo de documento', data: 'dipo_documento',
+                        formatter: v => chipFormat(v)
+                    },
+                    {
+                        title: 'Tipo de proceso', data: 'tipo_proceso',
+                        formatter: v => badgeProceso(v)
+                    },
+                    {
+                        title: 'Usuario', data: 'usuario',
+                        formatter: v => usuarioFormat(v)
+                    },
+                    {
+                        title: 'Comentario', data: 'comentario',
+                        formatter: v => {
+                            const texto = String(v ?? '').trim();
+                            if (!texto) return '<span class="cd-muted">Sin comentario</span>';
+                            return `<span class="cd-coment" title="${esc(texto)}">${esc(texto)}</span>`;
+                        }
+                    }
+                ],
+                actions: [
+                    {
+                        title: 'Ver documento',
+                        icon: 'fa-eye',
+                        color: 'btn-outline-primary',
+                        onClick: row => abrirModalDocumento(row)
+                    }
+                ],
+                RowsEvents: {
+                    onRowClick: row => abrirModalDocumento(row),
+                    onKeyPress: (e, row) => {
+                        if (e.key === 'Enter') abrirModalDocumento(row);
+                    }
+                },
+                GlobalEvents: {
+                    onLoading: cargando => {
+                        document.getElementById('cdLoading').classList.toggle('show', cargando);
+                    },
+                    onDataLoaded: response => {
+                        const total = Number(response.total ?? 0);
+                        document.getElementById('cdTotal').textContent = total.toLocaleString('es-MX');
+                    },
+                    onError: () => {
+                        toastMixin.fire({ icon: 'error', title: 'No se pudieron cargar los documentos' });
+                    }
+                }
+            });
+        });
+    </script>
+}

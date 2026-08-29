@@ -1,0 +1,904 @@
+﻿@{
+    ViewBag.Title = "Cargar Excel";
+    ViewBag.PageTitle = "Planeador de Comercio Exterior";
+}
+<style>
+    :root {
+        --primary-green: #10b981;
+        --primary-green-dark: #059669;
+        --accent-teal: #14b8a6;
+        --light-green: #ecfdf5;
+        --very-light-green: #f0fdf4;
+        --dark-green: #065f46;
+        --text-dark: #111827;
+        --text-light: #6b7280;
+        --text-muted: #9ca3af;
+        --border-color: #e5e7eb;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --gradient-primary: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+        --gradient-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        --glass-bg: rgba(255, 255, 255, 0.9);
+        --glass-border: rgba(255, 255, 255, 0.2);
+    }
+
+    .header-section {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .upload-title {
+        color: var(--text-dark);
+        font-size: 2.25rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.2;
+    }
+
+    .upload-description {
+        color: var(--text-light);
+        text-align: center;
+        font-size: 1.1rem;
+        font-weight: 400;
+        line-height: 1.6;
+    }
+
+    .file-upload-section {
+        position: relative;
+        margin-bottom: 35px;
+    }
+
+    .file-input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .upload-box {
+        border: 2px dashed var(--border-color);
+        border-radius: 20px;
+        padding: 60px 30px;
+        text-align: center;
+        background: var(--very-light-blue);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+        .upload-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, var(--primary-green), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            animation: rotate 3s linear infinite;
+            z-index: 1;
+        }
+
+        .upload-box:hover::before {
+            opacity: 0.1;
+        }
+
+        .upload-box > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        .upload-box:hover {
+            border-color: var(--primary-green);
+            background: var(--primary-blue);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: var(--shadow-xl);
+            border-style: solid;
+        }
+
+        .upload-box.drag-over {
+            border-color: var(--primary-green);
+            background: var(--light-green);
+            border-style: solid;
+            transform: scale(1.05);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .upload-box.file-ready {
+            border-color: var(--primary-green);
+            background: var(--light-green);
+            border-style: solid;
+        }
+
+    @@keyframes rotate {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    @@keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .upload-icon-container {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 25px;
+        background: var(--gradient-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--shadow-lg);
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .upload-box:hover .upload-icon-container {
+        transform: scale(1.15) rotate(5deg);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .upload-icon {
+        width: 50px;
+        height: 50px;
+        fill: white;
+        transition: all 0.3s ease;
+    }
+
+    .upload-main-text {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 10px;
+        line-height: 1.3;
+    }
+
+    .upload-sub-text {
+        color: var(--text-light);
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .selected-file {
+        margin-top: 25px;
+        padding: 20px;
+        background: white;
+        border: 2px solid var(--primary-green);
+        border-radius: 16px;
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: var(--shadow-md);
+        transition: all 0.3s ease;
+    }
+
+        .selected-file:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .file-icon {
+        width: 32px;
+        height: 32px;
+        fill: var(--primary-green);
+        margin-right: 15px;
+    }
+
+    .file-name {
+        font-weight: 600;
+        color: var(--dark-green);
+        font-size: 1rem;
+    }
+
+    .remove-file {
+        background: #fee2e2;
+        border: 2px solid #fecaca;
+        color: #dc2626;
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .remove-file:hover {
+            background: #fecaca;
+            border-color: #f87171;
+            transform: scale(1.1);
+        }
+
+    .submit-button {
+        width: 100%;
+        padding: 20px;
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+        .submit-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .submit-button:hover:not(:disabled)::before {
+            left: 100%;
+        }
+
+        .submit-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .submit-button:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+    .button-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    .loading-dots {
+        display: none;
+        margin-right: 15px;
+    }
+
+        .loading-dots span {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: white;
+            margin: 0 3px;
+            animation: loading 1.4s infinite ease-in-out both;
+        }
+
+            .loading-dots span:nth-child(1) {
+                animation-delay: -0.32s;
+            }
+
+            .loading-dots span:nth-child(2) {
+                animation-delay: -0.16s;
+            }
+
+    @@keyframes loading {
+        0%, 80%, 100% {
+            transform: scale(0.8);
+            opacity: 0.5;
+        }
+
+        40% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+    }
+
+    .file-requirements {
+        margin-top: 30px;
+        padding: 25px;
+        background: var(--bg-gray);
+        border-radius: 7px;
+        border: 2px solid var(--border-color);
+        position: relative;
+        overflow: visible;
+    }
+
+        .file-requirements::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-primary);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .file-requirements h4 {
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+            .file-requirements h4::before {
+                content: '📋';
+                margin-right: 10px;
+                font-size: 1.2rem;
+            }
+
+    .requirements-list {
+        list-style: none;
+        font-size: 0.95rem;
+        color: var(--text-light);
+    }
+
+        .requirements-list li {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            position: relative;
+            font-weight: 500;
+        }
+
+            .requirements-list li::before {
+                content: '✓';
+                color: var(--primary-green);
+                margin-right: 12px;
+                font-weight: bold;
+                font-size: 1.1rem;
+            }
+
+    .tooltip-trigger {
+        cursor: help;
+        color: var(--primary-green);
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        position: relative;
+        font-weight: 600;
+        transition: color 0.3s ease;
+        z-index: 1;
+    }
+
+        .tooltip-trigger:hover {
+            color: var(--primary-green-dark);
+        }
+
+    .tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-light);
+        border: 2px solid var(--primary-green);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: var(--shadow-xl);
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 500px;
+        margin-bottom: 15px;
+        pointer-events: none;
+    }
+
+        .tooltip.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-5px);
+            pointer-events: auto;
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 10px solid transparent;
+            border-top-color: var(--primary-green);
+        }
+
+    .tooltip-title {
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 15px;
+        font-size: 1rem;
+    }
+
+    .excel-preview {
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        font-size: 0.65rem;
+        box-shadow: var(--shadow-sm);
+        overflow-x: auto;
+    }
+
+    .excel-header {
+        background: var(--gradient-primary);
+        font-weight: 700;
+        color: white;
+    }
+
+    .excel-row {
+        border-top: 1px solid var(--border-color);
+        background: var(--bg-gray);
+    }
+
+        .excel-row:nth-child(even) {
+            background: var(--bg-gray);
+        }
+
+    .excel-cell {
+        padding: 8px 6px;
+        border-right: 1px solid var(--border-color);
+        text-align: left;
+        font-size: 0.65rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+        .excel-cell:last-child {
+            border-right: none;
+        }
+
+    @@media (max-width: 768px) {
+        .main-container {
+            max-width: 95%;
+            margin: 10px;
+        }
+
+        .upload-panel {
+            padding: 40px 25px 30px;
+        }
+
+        .upload-title {
+            font-size: 1.8rem;
+        }
+
+        .upload-description {
+            font-size: 1rem;
+        }
+
+        .upload-box {
+            padding: 40px 20px;
+        }
+
+        .upload-icon-container {
+            width: 80px;
+            height: 80px;
+        }
+
+        .upload-icon {
+            width: 40px;
+            height: 40px;
+        }
+
+        .tooltip {
+            width: 95vw;
+            left: 2.5vw;
+            transform: none;
+            max-width: 600px;
+        }
+
+            .tooltip.show {
+                transform: translateY(-5px);
+            }
+    }
+
+    @@media (max-width: 480px) {
+        .upload-panel {
+            padding: 30px 20px;
+        }
+
+        .upload-title {
+            font-size: 1.6rem;
+        }
+
+        .tooltip {
+            width: 95vw;
+            max-width: 500px;
+        }
+    }
+</style>
+
+<div class="upload-panel">
+    <div class="header-section">
+        <h2 class="upload-title">Cargar Archivo Excel</h2>
+        <p class="upload-description">Sube tu archivo de datos para comenzar el análisis</p>
+    </div>
+
+    <form action="/PlaneadorComercioInternacional/GuardarExcel" method="post" enctype="multipart/form-data" id="uploadForm">
+        <div class="file-upload-section">
+            <input type="file" name="archivoExcel" accept=".xlsx" required class="file-input" id="fileInput">
+            <div class="upload-box" id="uploadBox">
+                <div class="upload-icon-container">
+                    <svg class="upload-icon" viewBox="0 0 24 24">
+                        <path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z" />
+                    </svg>
+                </div>
+                <div class="upload-main-text">Seleccionar archivo</div>
+                <div class="upload-sub-text">Arrastra y suelta tu archivo .xlsx aquí</div>
+            </div>
+
+            <div class="selected-file" id="selectedFile">
+                <div class="file-info">
+                    <svg class="file-icon" viewBox="0 0 24 24">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                    </svg>
+                    <span class="file-name" id="fileName"></span>
+                </div>
+                <button type="button" class="remove-file" id="removeFile">✕</button>
+            </div>
+        </div>
+        <div class="col-md-6 mb-2">
+            <label for="director" class="form-label">Seleccionar Director</label>
+            <select id="director" name="director" class="form-select">
+                <option value="0">Selecciona un director</option>
+                @{
+                    foreach (var folio in Model["directores"])
+                    {
+                        <option value="@folio["usuarioid"]">@folio["nombreusuario"]</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="form-group mb-4">
+            <label for="observaciones" class="form-label fw-semibold">
+                <i class="fas fa-comment-alt text-primary me-2"></i>Observaciones:
+            </label>
+            <textarea name="observaciones" id="observaciones" class="form-control shadow-sm border border-primary-subtle rounded-3" rows="4" placeholder="Escribe alguna observación relevante para el planeador o área responsable..."></textarea>
+        </div>
+
+
+
+        <button type="submit" class="submit-button" id="submitBtn" disabled>
+            <div class="button-content">
+                <div class="loading-dots" id="loadingDots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <span id="btnText">Selecciona un archivo</span>
+            </div>
+        </button>
+    </form>
+
+    <div class="file-requirements">
+        <h4>Requisitos del archivo:</h4>
+        <ul class="requirements-list">
+            <li>Formato: Excel (.xlsx)</li>
+            <li>Tamaño máximo: 10 MB</li>
+            <li>
+                <span class="tooltip-trigger" id="dataTooltip">Debe contener el siguiente formto</span>
+                <div class="tooltip" id="tooltip">
+                    <div class="tooltip-title">Ejemplo de estructura requerida:</div>
+                    <div class="table-responsive ">
+                        <table class="excel-preview">
+                            <thead class="excel-header">
+                                <tr>
+                                    <th class="excel-cell">No. Parte SRS</th>
+                                    <th class="excel-cell">Descripción producto</th>
+                                    <th class="excel-cell">Unidad de Medida</th>
+                                    <th class="excel-cell">Total Almacenes</th>
+                                    <th class="excel-cell">Con. Mes</th>
+                                    <th class="excel-cell">Por cubrir</th>
+                                    <th class="excel-cell">En Fabricación (Listo para entrega)</th>
+                                    <th class="excel-cell">En Fabricación</th>
+                                    <th class="excel-cell">Invt. Maximo</th>
+                                    <th class="excel-cell">Peso</th>
+                                    <th class="excel-cell">Peso total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="excel-row">
+                                    <td class="excel-cell">BC-006</td>
+                                    <td class="excel-cell">BARRA CROMADA 75K PSI 6MM</td>
+                                    <td class="excel-cell">MTR </td>
+                                    <td class="excel-cell">0.9</td>
+                                    <td class="excel-cell">8.57</td>
+                                    <td class="excel-cell">51.43</td>
+                                    <td class="excel-cell">81.6</td>
+                                    <td class="excel-cell">17.5</td>
+                                    <td class="excel-cell">102.86</td>
+                                    <td class="excel-cell">0.22</td>
+                                    <td class="excel-cell">0.6292</td>
+
+                                </tr>
+                                <tr class="excel-row">
+                                    <td class="excel-cell">BC-008</td>
+                                    <td class="excel-cell">BARRA CROMADA 75K PSI 8MM</td>
+                                    <td class="excel-cell">MTR</td>
+                                    <td class="excel-cell">22.67</td>
+                                    <td class="excel-cell">16.66</td>
+                                    <td class="excel-cell">99.96</td>
+                                    <td class="excel-cell">0</td>
+                                    <td class="excel-cell">126</td>
+                                    <td class="excel-cell">199.93</td>
+                                    <td class="excel-cell">0.39</td>
+                                    <td class="excel-cell">19.9914</td>
+                                </tr>
+                                <tr class="excel-row">
+                                    <td class="excel-cell">BC-010</td>
+                                    <td class="excel-cell">BARRA CROMADA 75K PSI 10MM</td>
+                                    <td class="excel-cell">MTR</td>
+                                    <td class="excel-cell">35.02</td>
+                                    <td class="excel-cell">21.71</td>
+                                    <td class="excel-cell">130.29</td>
+                                    <td class="excel-cell">0</td>
+                                    <td class="excel-cell">140</td>
+                                    <td class="excel-cell">260.58</td>
+                                    <td class="excel-cell">0.62</td>
+                                    <td class="excel-cell">53.0472</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const uploadBox = document.getElementById('uploadBox');
+    const selectedFile = document.getElementById('selectedFile');
+    const fileName = document.getElementById('fileName');
+    const removeFile = document.getElementById('removeFile');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const loadingDots = document.getElementById('loadingDots');
+    const uploadForm = document.getElementById('uploadForm');
+
+    // Prevenir comportamientos por defecto en toda la página
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Prevenir drag and drop en toda la página EXCEPTO en uploadBox
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.addEventListener(eventName, (e) => {
+            if (!uploadBox.contains(e.target)) {
+                preventDefaults(e);
+            }
+        }, false);
+    });
+
+    // Eventos drag and drop específicos del upload box
+    uploadBox.addEventListener('dragenter', (e) => {
+        preventDefaults(e);
+        uploadBox.classList.add('drag-over');
+    });
+
+    uploadBox.addEventListener('dragover', (e) => {
+        preventDefaults(e);
+        uploadBox.classList.add('drag-over');
+    });
+
+    uploadBox.addEventListener('dragleave', (e) => {
+        preventDefaults(e);
+        // Solo remover la clase si realmente salimos del uploadBox
+        if (!uploadBox.contains(e.relatedTarget)) {
+            uploadBox.classList.remove('drag-over');
+        }
+    });
+
+    uploadBox.addEventListener('drop', (e) => {
+        preventDefaults(e);
+        uploadBox.classList.remove('drag-over');
+        handleDrop(e);
+    });
+
+    function handleDrop(e) {
+        const files = e.dataTransfer.files;
+
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.name.toLowerCase().endsWith('.xlsx')) {
+                // Verificar tamaño del archivo (10MB = 10 * 1024 * 1024 bytes)
+                if (file.size > 10 * 1024 * 1024) {
+                    showError('El archivo es demasiado grande. El tamaño máximo es 10MB.');
+                    return;
+                }
+
+                // Crear un nuevo DataTransfer para asignar el archivo al input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                handleFileSelect();
+            } else {
+                showError('Por favor selecciona un archivo .xlsx válido');
+            }
+        }
+    }
+
+    // Manejar selección de archivo del input
+    fileInput.addEventListener('change', handleFileSelect);
+
+    function handleFileSelect() {
+        const file = fileInput.files[0];
+        if (file) {
+            if (file.name.toLowerCase().endsWith('.xlsx')) {
+                // Verificar tamaño del archivo (10MB = 10 * 1024 * 1024 bytes)
+                if (file.size > 10 * 1024 * 1024) {
+                    showError('El archivo es demasiado grande. El tamaño máximo es 10MB.');
+                    resetUpload();
+                    return;
+                }
+
+                fileName.textContent = file.name;
+                selectedFile.style.display = 'flex';
+                uploadBox.classList.add('file-ready');
+                submitBtn.disabled = false;
+                btnText.textContent = 'Procesar Archivo';
+            } else {
+                showError('Por favor selecciona un archivo .xlsx válido');
+                resetUpload();
+            }
+        } else {
+            resetUpload();
+        }
+    }
+
+    function resetUpload() {
+        fileInput.value = '';
+        selectedFile.style.display = 'none';
+        uploadBox.classList.remove('file-ready');
+        submitBtn.disabled = true;
+        btnText.textContent = 'Selecciona un archivo';
+    }
+
+    function showError(message) {
+        alert(message);
+    }
+
+    // Manejar click en el botón de eliminar archivo
+    removeFile.addEventListener('click', function (e) {
+        // Prevenir completamente la propagación del evento
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        resetUpload();
+        return false;
+    });
+
+    // Manejar click en el upload box para abrir selector de archivos
+    uploadBox.addEventListener('click', function (e) {
+        // Verificar si el click fue en el área de archivo seleccionado o sus hijos
+        if (selectedFile.contains(e.target) || e.target.closest('.selected-file')) {
+            return false; // No hacer nada si se hace click en el área del archivo
+        }
+        fileInput.click();
+    });
+
+    // Manejar envío del formulario
+    uploadForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        if (!fileInput.files[0]) {
+            showError('Por favor selecciona un archivo Excel antes de continuar');
+            return;
+        }
+
+        // Mostrar estado de carga
+        loadingDots.style.display = 'block';
+        btnText.textContent = 'Procesando datos...';
+        submitBtn.disabled = true;
+
+        const formData = new FormData(uploadForm);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        try {
+            const response = await fetch('/PlaneadorComercioInternacional/GuardarExcel', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                resetUpload(); // Limpiar formulario si es necesario
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    html: result.message.replace(/\n/g, '<br>')
+                }).then(() => {
+                    // Esto se ejecuta cuando el usuario cierra el SweetAlert
+                    location.reload();
+                });
+            } else {
+                // ⚠️ Mostrar error si success = false
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    html: result.message.replace(/\n/g, '<br>')
+                });
+            }
+
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error inesperado',
+                text: error.message
+            });
+        }
+ finally {
+            // Restaurar estado del botón
+            loadingDots.style.display = 'none';
+            btnText.textContent = 'Selecciona un archivo';
+            submitBtn.disabled = false;
+        }
+    });
+
+
+
+    // Funcionalidad del tooltip modificada para funcionar con click
+    const tooltipTrigger = document.getElementById('dataTooltip');
+    const tooltip = document.getElementById('tooltip');
+
+    // Manejar click en el trigger del tooltip
+    tooltipTrigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        tooltip.classList.toggle('show');
+    });
+
+    // Prevenir que el tooltip se cierre cuando se hace click dentro de él
+    tooltip.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Cerrar tooltip al hacer click fuera de él
+    document.addEventListener('click', (e) => {
+        if (!tooltipTrigger.contains(e.target) && !tooltip.contains(e.target)) {
+            tooltip.classList.remove('show');
+        }
+    });
+
+</script>

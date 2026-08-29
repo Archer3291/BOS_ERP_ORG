@@ -1,0 +1,1034 @@
+﻿@using BOS_ERP.Controllers
+@model BOS_ERP.Models.FolioInfoGroup
+@{
+        ViewBag.Title = "Zonas";
+        ViewBag.PageTitle = "Ventas Sucursales " + Utilities.GetSucursalName(User.Identity.Name);
+        Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <style>
+        /* ── WIZARD BAR ─────────────────────────────────────── */
+        .vi-wizard-bar {
+            display: flex;
+            align-items: center;
+            background: var(--primary-blue-dark);
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            padding: 0 1.25rem;
+            height: 52px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 0;
+        }
+
+        .vi-wizard-steps-group {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            flex: 1;
+        }
+
+        .vi-wizard-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 1rem;
+            height: 52px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: border-color var(--transition-fast), color var(--transition-fast);
+            user-select: none;
+        }
+
+            .vi-wizard-step:hover .vi-step-label {
+                color: var(--accent-blue);
+            }
+
+            .vi-wizard-step.active {
+                border-bottom-color: var(--accent-blue);
+            }
+
+                .vi-wizard-step.active .vi-step-num {
+                    background: var(--accent-blue);
+                    color: #fff;
+                }
+
+                .vi-wizard-step.active .vi-step-label {
+                    color: var(--accent-blue);
+                    font-weight: 600;
+                }
+
+            .vi-wizard-step.done .vi-step-num {
+                background: var(--success-color);
+                color: #fff;
+            }
+
+            .vi-wizard-step.done .vi-step-label {
+                color: rgba(255,255,255,.55);
+            }
+
+        .vi-step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.12);
+            color: rgba(255,255,255,.6);
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background var(--transition-fast), color var(--transition-fast);
+        }
+
+        .vi-step-label {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: rgba(255,255,255,.45);
+            transition: color var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .vi-wizard-divider {
+            width: 24px;
+            height: 1px;
+            background: rgba(255,255,255,.15);
+            flex-shrink: 0;
+            margin: 0 0.25rem;
+        }
+
+        /* ── RESUMEN DROPDOWN EN WIZARD BAR ─────────────────── */
+        .vi-wb-resumen {
+            position: relative;
+            margin-left: auto;
+        }
+
+        .vi-wb-resumen-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.35rem 0.85rem;
+            border-radius: 7px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12);
+            color: rgba(255,255,255,.75);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background var(--transition-fast), border-color var(--transition-fast);
+            white-space: nowrap;
+        }
+
+            .vi-wb-resumen-btn:hover {
+                background: rgba(255,255,255,.13);
+                border-color: rgba(255,255,255,.2);
+            }
+
+            .vi-wb-resumen-btn i.chevron {
+                font-size: 0.65rem;
+                transition: transform var(--transition-med);
+                color: rgba(255,255,255,.4);
+            }
+
+            .vi-wb-resumen-btn.open i.chevron {
+                transform: rotate(180deg);
+            }
+
+        .vi-wb-resumen-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success-color);
+            flex-shrink: 0;
+        }
+
+        .vi-wb-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 240px;
+            background: var(--primary-blue);
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: var(--table-radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 200;
+            overflow: hidden;
+        }
+
+            .vi-wb-dropdown.open {
+                display: block;
+            }
+
+        .vi-wb-dd-header {
+            background: var(--primary-blue-dark);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+
+        .vi-wb-dd-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: rgba(255,255,255,.9);
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .vi-wb-dd-title i {
+                color: var(--warning-color);
+                font-size: 0.7rem;
+            }
+
+        .vi-wb-dd-badge {
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: var(--badge-radius);
+            background: rgba(255,255,255,.1);
+            color: rgba(255,255,255,.6);
+            letter-spacing: .05em;
+        }
+
+        .vi-wb-dd-body {
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .vi-wb-dd-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+        }
+
+        .vi-wb-dd-lbl {
+            color: rgba(255,255,255,.4);
+        }
+
+        .vi-wb-dd-val {
+            color: rgba(255,255,255,.85);
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .vi-wb-dd-sep {
+            height: 1px;
+            background: rgba(255,255,255,.07);
+        }
+
+        .vi-wb-dd-step-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.5rem 0.75rem;
+            border-radius: 7px;
+            background: rgba(255,255,255,.05);
+        }
+
+        .vi-wb-dd-step-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .vi-wb-dd-step-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: rgba(255,255,255,.85);
+        }
+
+        .vi-wb-dd-step-sub {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,.4);
+        }
+
+        .vi-wb-dd-footer {
+            padding: 0.6rem 1rem;
+            border-top: 1px solid rgba(255,255,255,.08);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .vi-wb-dd-btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 0.48rem;
+            border-radius: 7px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: opacity var(--transition-fast);
+        }
+
+            .vi-wb-dd-btn-primary:hover {
+                opacity: .88;
+            }
+
+        .vi-wb-dd-btn-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 0.44rem;
+            border-radius: 7px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            background: transparent;
+            color: rgba(255,255,255,.5);
+            border: 1px solid rgba(255,255,255,.1);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+            .vi-wb-dd-btn-secondary:hover {
+                background: rgba(255,255,255,.07);
+                color: rgba(255,255,255,.75);
+            }
+
+        /* ── LAYOUT ─────────────────────────────────────────── */
+        .vi-layout {
+            padding: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+            transition: max-width var(--transition-med);
+        }
+
+            /* Cuando estamos en paso 2 en adelante, ancho libre */
+            .vi-layout.vi-layout--wide {
+                max-width: unset;
+            }
+
+        /* ── PANEL ──────────────────────────────────────────── */
+        .vi-panel {
+            display: none;
+        }
+
+            .vi-panel.active {
+                display: block;
+            }
+
+        /* ── SECTION CARD ───────────────────────────────────── */
+        .vi-section-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--table-radius);
+            margin-bottom: 1.25rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .vi-section-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .vi-section-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: var(--very-light-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+
+        .vi-section-title {
+            font-size: 0.93rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+        .vi-section-sub {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        .vi-section-body {
+            padding: 1.25rem;
+            background: var(--bg-gray);
+        }
+
+        /* ── PRODUCT CARDS ──────────────────────────────────── */
+        .vi-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.875rem;
+        }
+
+        .vi-type-card {
+            background: var(--primary-blue-dark);
+            border: 1.5px solid var(--primary-blue);
+            border-radius: var(--table-radius);
+            padding: 1.1rem 1.15rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+            .vi-type-card:hover {
+                border-color: var(--accent-blue);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(59,130,246,.18);
+            }
+
+            .vi-type-card.selected {
+                border-color: var(--accent-blue);
+                background: var(--dark-blue);
+                box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            }
+
+            .vi-type-card input[type="radio"] {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+            }
+
+        .vi-card-icon-sm {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.7rem;
+            transition: background var(--transition-fast);
+        }
+
+        .vi-type-card.selected .vi-card-icon-sm {
+            background: var(--accent-blue);
+        }
+
+        .vi-card-icon-sm svg {
+            fill: var(--accent-blue);
+            transition: fill var(--transition-fast);
+        }
+
+        .vi-type-card.selected .vi-card-icon-sm svg {
+            fill: #fff;
+        }
+
+        .vi-card-title {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #f9fafb;
+            margin-bottom: 0.3rem;
+        }
+
+        .vi-card-desc {
+            font-size: 0.76rem;
+            color: var(--very-light-blue);
+            line-height: 1.45;
+            margin-bottom: 0.75rem;
+        }
+
+        .vi-card-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: var(--badge-radius);
+            letter-spacing: .02em;
+        }
+
+        .vi-chip-oferta {
+            background: rgba(249,115,22,.15);
+            color: #fb923c;
+        }
+
+        .vi-chip-produccion {
+            background: rgba(139,92,246,.15);
+            color: var(--accent-purple);
+        }
+
+        .vi-chip-entrega {
+            background: rgba(236,72,153,.15);
+            color: #f472b6;
+        }
+
+        .vi-chip-cobro {
+            background: rgba(16,185,129,.15);
+            color: var(--success-color);
+        }
+
+        .vi-card-check {
+            position: absolute;
+            top: 0.7rem;
+            right: 0.8rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vi-type-card.selected .vi-card-check {
+            display: flex;
+        }
+
+        .vi-card-check i {
+            color: #fff;
+            font-size: 0.6rem;
+        }
+
+        /* ── STEP NAV ───────────────────────────────────────── */
+        .vi-step-nav {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 1rem 0 0;
+            margin-top: 0.5rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .vi-btn-step {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0.5rem 1.35rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border-light);
+            background: var(--bg-light);
+            color: var(--text-dark);
+            transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+        }
+
+            .vi-btn-step:hover {
+                background: var(--very-light-blue);
+                border-color: var(--accent-blue);
+                color: var(--accent-blue);
+            }
+
+            .vi-btn-step.next {
+                background: var(--primary-blue-dark);
+                border-color: var(--primary-blue-dark);
+                color: #fff;
+            }
+
+                .vi-btn-step.next:hover {
+                    background: var(--accent-blue);
+                    border-color: var(--accent-blue);
+                }
+
+            .vi-btn-step.finish {
+                background: var(--success-color);
+                border-color: var(--success-color);
+                color: #fff;
+            }
+
+                .vi-btn-step.finish:hover {
+                    opacity: .88;
+                }
+
+        /* ── TOP BAR ────────────────────────────────────────── */
+        .vi-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 1.25rem;
+            background: var(--primary-blue-dark);
+            border-bottom: 1px solid rgba(255,255,255,.07);
+        }
+
+        .vi-top-brand {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #f9fafb;
+        }
+
+        .vi-pill {
+            background: var(--accent-blue);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 5px;
+            letter-spacing: .04em;
+        }
+
+        .vi-top-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,.45);
+        }
+
+        .vi-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success-color);
+        }
+
+        .vi-chip-anticipo {
+            background: rgba(234, 179, 8, .15);
+            color: #facc15;
+        }
+        /* Contenedor parciales */
+        #vi-step2-contenido .vi-partial-wrap {
+            display: none;
+        }
+
+            #vi-step2-contenido .vi-partial-wrap.active {
+                display: block;
+            }
+
+        /* ── RESPONSIVE ─────────────────────────────────────── */
+        @@media (max-width: 700px) {
+            .vi-type-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .vi-wizard-step .vi-step-label {
+                display: none;
+            }
+
+            .vi-layout {
+                padding: 1rem;
+            }
+        }
+    </style>
+}
+
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<!-- TOP BAR -->
+<div class="vi-top-bar">
+    <div class="vi-top-brand">
+        <span class="vi-pill">VS</span>
+        Ventas Sucursales
+    </div>
+    <div class="vi-top-meta">
+        <span class="vi-status-dot"></span>
+        <span>NUEVO PROCESO</span>
+        <span id="vi-tb-proceso">—</span>
+    </div>
+</div>
+
+<!-- WIZARD BAR -->
+<div class="vi-wizard-bar">
+    <div class="vi-wizard-steps-group">
+        <div class="vi-wizard-step active" data-step="1" onclick="viGotoStep(1)">
+            <div class="vi-step-num">1</div>
+            <span class="vi-step-label">Tipo de proceso</span>
+        </div>
+        <div class="vi-wizard-divider"></div>
+        <div class="vi-wizard-step" data-step="2" onclick="viGotoStep(2)">
+            <div class="vi-step-num">2</div>
+            <span class="vi-step-label">Configuración</span>
+        </div>
+    </div>
+
+    <!-- Resumen colapsado -->
+    <div class="vi-wb-resumen">
+        <button type="button" class="vi-wb-resumen-btn" id="vi-resumen-toggle" onclick="viToggleResumen()">
+            <span class="vi-wb-resumen-dot"></span>
+            <span>Resumen</span>
+            <span id="vi-wb-tipo-mini">Sin seleccionar</span>
+            <i class="fas fa-chevron-down chevron"></i>
+        </button>
+        <div class="vi-wb-dropdown" id="vi-wb-dropdown">
+            <div class="vi-wb-dd-header">
+                <div class="vi-wb-dd-title">
+                    <i class="fas fa-store"></i> Resumen VS
+                </div>
+                <span class="vi-wb-dd-badge">NUEVO</span>
+            </div>
+            <div class="vi-wb-dd-body">
+                <div class="vi-wb-dd-row">
+                    <span class="vi-wb-dd-lbl">Tipo de proceso</span>
+                    <span class="vi-wb-dd-val" id="dd-tipo-name">Sin seleccionar</span>
+                </div>
+                <div class="vi-wb-dd-sep"></div>
+                <div class="vi-wb-dd-row">
+                    <span class="vi-wb-dd-lbl">Usuario</span>
+                    <span class="vi-wb-dd-val" id="dd-vendedor">—</span>
+                </div>
+                <div class="vi-wb-dd-row">
+                    <span class="vi-wb-dd-lbl">Sucursal</span>
+                    <span class="vi-wb-dd-val" id="dd-sucursal">—</span>
+                </div>
+                <div class="vi-wb-dd-sep"></div>
+                <div class="vi-wb-dd-step-row">
+                    <div class="vi-wb-dd-step-num" id="dd-paso-num">1</div>
+                    <div>
+                        <div class="vi-wb-dd-step-name" id="dd-paso-name">Tipo de proceso</div>
+                        <div class="vi-wb-dd-step-sub" id="dd-paso-sub">Selecciona la operación de sucursal</div>
+                    </div>
+                </div>
+            </div>
+            <div class="vi-wb-dd-footer">
+                <button type="button" class="vi-wb-dd-btn-primary" onclick="viGotoStep(2); viToggleResumen(true)">
+                    <i class="fas fa-arrow-right" style="font-size:11px"></i> Ir a la captura
+                </button>
+                <button type="button" class="vi-wb-dd-btn-secondary" onclick="viGotoStep(1); viToggleResumen(true)">
+                    <i class="fas fa-redo" style="font-size:10px"></i> Reiniciar selección
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="vi-layout" id="vi-layout">
+    <form id="vi-form-1" novalidate>
+        @Html.AntiForgeryToken()
+
+        <!-- PASO 1 -->
+        <div class="vi-panel active" id="vi-panel-1">
+            <div class="vi-section-card">
+                <div class="vi-section-head">
+                    <div class="vi-section-icon"><i class="fas fa-store"></i></div>
+                    <div>
+                        <div class="vi-section-title">Selecciona el tipo de operación de sucursal</div>
+                        <div class="vi-section-sub">Elige la opción que mejor describa el documento que vas a capturar</div>
+                    </div>
+                </div>
+                <div class="vi-section-body">
+                    <fieldset aria-required="true">
+                        <legend class="visually-hidden">Tipo de operación de sucursal</legend>
+                        <div class="vi-type-grid">
+
+                            <!-- Cotización de Sucursal -->
+                            <div class="vi-type-card" data-option="cotizacion-sucursal" onclick="viSelectCard(this)">
+                                <input type="radio" value="cotizacionSucursalV" class="proceso" name="proceso" id="cotizacion-sucursal" autocomplete="off" required>
+                                <div class="vi-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vi-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M9 11H7v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9h-2v8a1 1 0 0 1-1 1H9v-7z" />
+                                        <path d="M13 2.05v3.03c3.39.49 6 3.39 6 6.92 0 .9-.18 1.75-.5 2.54l3.58 3.58A11.9 11.9 0 0 0 24 12c0-6.08-4.36-11.12-10.13-11.95z" />
+                                        <path d="M12 19c-3.87 0-7-3.13-7-7 0-3.53 2.61-6.43 6-6.92V2.05C5.87.95 1 5.92 1 12c0 6.08 4.92 11 11 11 1.66 0 3.24-.37 4.65-1.02l-2.54-2.54A6.9 6.9 0 0 1 12 19z" />
+                                    </svg>
+                                </div>
+                                <div class="vi-card-title">Cotización de sucursal</div>
+                                <div class="vi-card-desc">Propuesta de venta en mostrador: define si es de contado o a crédito y valida la existencia local.</div>
+                                <span class="vi-card-chip vi-chip-oferta">Etapa: oferta</span>
+                            </div>
+
+                            <!-- Pedido de Sucursal -->
+                            <div class="vi-type-card" data-option="pedido-sucursal" onclick="viSelectCard(this)">
+                                <input type="radio" value="pedidoSucursalV" class="proceso" name="proceso" id="pedido-sucursal" autocomplete="off" required>
+                                <div class="vi-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vi-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                                        <path d="M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
+                                    </svg>
+                                </div>
+                                <div class="vi-card-title">Pedido de sucursal</div>
+                                <div class="vi-card-desc">Confirma la cotización con forma de pago y uso de CFDI, y valida el crédito del cliente.</div>
+                                <span class="vi-card-chip vi-chip-produccion">Etapa: producción</span>
+                            </div>
+
+                            <!-- Remisión de Sucursal -->
+                            <div class="vi-type-card" data-option="remision-sucursal" onclick="viSelectCard(this)">
+                                <input type="radio" value="remisionSucursalV" class="proceso" name="proceso" id="remision-sucursal" autocomplete="off" required>
+                                <div class="vi-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vi-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+                                    </svg>
+                                </div>
+                                <div class="vi-card-title">Remisión de sucursal</div>
+                                <div class="vi-card-desc">Entrega de la mercancía: descarga almacén e imprime etiquetas, sin mostrar precios.</div>
+                                <span class="vi-card-chip vi-chip-entrega">Etapa: entrega</span>
+                            </div>
+
+                            <!-- Facturación de Sucursal -->
+                            <div class="vi-type-card" data-option="facturacion-sucursal" onclick="viSelectCard(this)">
+                                <input type="radio" value="facturacionSucursalV" class="proceso" name="proceso" id="facturacion-sucursal" autocomplete="off" required>
+                                <div class="vi-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vi-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                                        <path d="M14 2v6h6M16 11a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1z" />
+                                        <circle cx="11" cy="11" r="1" />
+                                        <path d="M9 16h6v1H9zM9 18h4v1H9z" />
+                                    </svg>
+                                </div>
+                                <div class="vi-card-title">Facturación de sucursal</div>
+                                <div class="vi-card-desc">Timbra desde remisiones —completa, parcial o de varias a la vez— y aplica anticipos.</div>
+                                <span class="vi-card-chip vi-chip-cobro">Etapa: cobro</span>
+                            </div>
+
+                            <!-- Anticipo de Sucursal -->
+                            <div class="vi-type-card" data-option="anticipo-sucursal" onclick="viSelectCard(this)">
+                                <input type="radio" value="facturacionSucursalVAnticipo" class="proceso" name="proceso" id="facturacion-sucursal-anticipo" autocomplete="off" required>
+                                <div class="vi-card-check"><i class="fas fa-check"></i></div>
+                                <div class="vi-card-icon-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                                        <path d="M14 2v6h6M16 11a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1z" />
+                                        <circle cx="11" cy="11" r="1" />
+                                        <path d="M9 16h6v1H9zM9 18h4v1H9z" />
+                                    </svg>
+                                </div>
+                                <div class="vi-card-title">Anticipo de sucursal</div>
+                                <div class="vi-card-desc">Factura de anticipo con saldo a favor del cliente, aplicable después en su factura.</div>
+                                <span class="vi-card-chip vi-chip-anticipo">Etapa: anticipo</span>
+                            </div>
+
+                        </div><!-- /.vi-type-grid -->
+                    </fieldset>
+                </div>
+            </div>
+
+            <div class="vi-step-nav">
+                <button type="button" class="vi-btn-step next" onclick="viGotoStep(2)">
+                    Siguiente <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div><!-- /#vi-panel-1 -->
+        <!-- PASO 2 — contenedores parciales -->
+        <div class="vi-panel" id="vi-panel-2">
+            <div id="vi-step2-contenido">
+
+                <div class="vi-partial-wrap" id="cotizacion-sucursal-contenedor">
+                    @Html.Partial("VentasSucursales/_CotizacionSucursal")
+                </div>
+
+                <div class="vi-partial-wrap" id="pedido-sucursal-contenedor">
+                    @Html.Partial("VentasSucursales/_PedidoSucursal", Model.ParcialA)
+                </div>
+
+                <div class="vi-partial-wrap" id="remision-sucursal-contenedor">
+                    @Html.Partial("VentasSucursales/_RemisionSucursal", Model.ParcialB)
+                </div>
+
+                <div class="vi-partial-wrap" id="facturacion-sucursal-contenedor">
+                    @Html.Partial("VentasSucursales/_FacturaSucursal", Model.ParcialC)
+                    @Html.Partial("VentasSucursales/_ModalRemisionesParcialesSucursal")
+                </div>
+                <div class="vi-partial-wrap" id="anticipo-sucursal-contenedor">
+                    @Html.Partial("VentasSucursales/_FacturaSucursalAnticipo", Model.ParcialC)
+                </div>
+
+            </div>
+
+            <div class="vi-step-nav" style="justify-content: space-between;">
+                <button type="button" class="vi-btn-step" onclick="viGotoStep(1)">
+                    <i class="fas fa-arrow-left"></i> Anterior
+                </button>            
+            </div>
+        </div><!-- /#vi-panel-2 -->
+
+    </form>
+</div><!-- /.vi-layout -->
+
+@section scripts {
+    <script>
+    const rol           = "@Utilities.GetUserRole(User.Identity.Name, "ERP_SRS")";
+    const vendedor      = "@User.Identity.Name";
+        const sucursal      = @Convert.ToInt32(Context.Session.GetInt32("Sucursal"));
+    const sucursalText  = "@Utilities.GetSucursalName(User.Identity.Name)";
+        const sucursalUsuario = @Convert.ToInt32(Context.Session.GetInt32("Sucursal"));
+    let suc; let alm;
+    </script>
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/Ventas/credito-ventas.js"></script>
+    <script src="~/Scripts/Ventas/reglas-precio-ventas.js"></script>
+    <script src="~/Scripts/Ventas/Sucursales/partial-vs-cotizacion.js"></script>
+    <script src="~/Scripts/Ventas/Sucursales/partial-vs-pedido.js"></script>
+    <script src="~/Scripts/Ventas/Sucursales/partial-vs-remision.js"></script>
+    <script src="~/Scripts/Ventas/Sucursales/partial-vs-factura.js"></script>
+    <script src="~/Scripts/Ventas/Sucursales/partial-vs-factura-anticipo.js"></script>
+    @* El modal de facturación especial es el mismo módulo para todos los canales;
+       la configuración de abajo es lo único propio de Sucursales. *@
+    <script>
+        window.FacturacionRemisionesConfig = {
+            prefix: 'vs-fac',
+            endpointRemisiones: '/DatosGenerales/BuscarDVSremFacturables'
+        };
+    </script>
+    <script src="~/Scripts/Ventas/facturacion-remisiones-parciales.js"></script>
+    <script>
+        /* ── CONFIG DE PASOS ──────────────────────────────── */
+        const VI_STEPS = {
+            1: { name: 'Tipo de proceso', sub: 'Selecciona la operación de sucursal' },
+            2: { name: 'Configuración', sub: 'Completa los datos del proceso' }
+        };
+
+        const VI_TIPOS = {
+            cotizacionSucursalV: { label: 'Cotización de Sucursal', sub: 'Contado o crédito y existencias', contenedor: 'cotizacion-sucursal-contenedor' },
+            pedidoSucursalV: { label: 'Pedido de Sucursal', sub: 'Forma de pago y validación de crédito', contenedor: 'pedido-sucursal-contenedor' },
+            remisionSucursalV: { label: 'Remisión de Sucursal', sub: 'Entrega y descarga de almacén', contenedor: 'remision-sucursal-contenedor' },
+            facturacionSucursalV: { label: 'Facturación de Sucursal', sub: 'Timbrado, parciales y anticipos', contenedor: 'facturacion-sucursal-contenedor' },
+            facturacionSucursalVAnticipo: { label: 'Anticipo de Sucursal', sub: 'Factura de anticipo', contenedor: 'anticipo-sucursal-contenedor' },
+        };
+
+        let viCurrentStep = 1;
+
+        /* ── ANCHO DEL LAYOUT POR PASO ────────────────────── */
+        function viUpdateLayout(step) {
+            const layout = document.getElementById('vi-layout');
+            if (step >= 2) {
+                layout.classList.add('vi-layout--wide');
+            } else {
+                layout.classList.remove('vi-layout--wide');
+            }
+        }
+
+        /* ── DROPDOWN RESUMEN ─────────────────────────────── */
+        function viToggleResumen(forceClose) {
+            const btn = document.getElementById('vi-resumen-toggle');
+            const dd = document.getElementById('vi-wb-dropdown');
+            const isOpen = dd.classList.contains('open');
+            if (forceClose || isOpen) {
+                dd.classList.remove('open');
+                btn.classList.remove('open');
+            } else {
+                dd.classList.add('open');
+                btn.classList.add('open');
+            }
+        }
+
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', function (e) {
+            const wrap = document.querySelector('.vi-wb-resumen');
+            if (wrap && !wrap.contains(e.target)) {
+                document.getElementById('vi-wb-dropdown').classList.remove('open');
+                document.getElementById('vi-resumen-toggle').classList.remove('open');
+            }
+        });
+
+        /* ── NAVEGACIÓN ───────────────────────────────────── */
+        function viGotoStep(targetStep) {
+            if (targetStep > viCurrentStep) {
+                if (!viValidateStep(viCurrentStep)) return;
+            }
+
+            document.querySelectorAll('.vi-panel').forEach((p, i) => {
+                p.classList.toggle('active', i + 1 === targetStep);
+            });
+
+            document.querySelectorAll('.vi-wizard-step').forEach(s => {
+                const n = parseInt(s.dataset.step);
+                s.classList.remove('active', 'done');
+                if (n === targetStep) s.classList.add('active');
+                if (n < targetStep) s.classList.add('done');
+            });
+
+            viCurrentStep = targetStep;
+            viUpdateLayout(targetStep);
+            viUpdateSidebar();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ── VALIDACIÓN ───────────────────────────────────── */
+        function viValidateStep(step) {
+            if (step === 1) {
+                const sel = document.querySelector('input[name="proceso"]:checked');
+                if (!sel) {
+                    if (typeof toastMixin !== 'undefined') {
+                        toastMixin.fire({ icon: 'error', title: 'Debes seleccionar el tipo de operación de sucursal.' });
+                    } else {
+                        alert('Debes seleccionar el tipo de operación de sucursal.');
+                    }
+                    return false;
+                }
+                return true;
+            }
+            if (step === 2) {
+                if (typeof validarDatos === 'function') {
+                    return validarDatos();
+                }
+            }
+            return true;
+        }
+
+        /* ── SELECCIÓN DE CARD ────────────────────────────── */
+        function viSelectCard(card) {
+            document.querySelectorAll('.vi-type-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+
+            const valor = radio?.value;
+            document.querySelectorAll('.vi-partial-wrap').forEach(w => w.classList.remove('active'));
+            if (valor && VI_TIPOS[valor]) {
+                document.getElementById(VI_TIPOS[valor].contenedor)?.classList.add('active');
+            }
+
+            document.getElementById('vi-tb-proceso').textContent = VI_TIPOS[valor]?.label ?? '—';
+            viUpdateSidebar();
+        }
+
+        /* ── ACTUALIZAR RESUMEN ───────────────────────────── */
+        function viUpdateSidebar() {
+            const paso = VI_STEPS[viCurrentStep];
+            const sel = document.querySelector('input[name="proceso"]:checked');
+            const tipoLabel = sel && VI_TIPOS[sel.value] ? VI_TIPOS[sel.value].label : 'Sin seleccionar';
+
+            document.getElementById('vi-wb-tipo-mini').textContent = tipoLabel;
+            document.getElementById('dd-paso-num').textContent = viCurrentStep;
+            document.getElementById('dd-paso-name').textContent = paso?.name ?? '—';
+            document.getElementById('dd-paso-sub').textContent = paso?.sub ?? '';
+            document.getElementById('dd-vendedor').textContent = vendedor ?? '—';
+            document.getElementById('dd-sucursal').textContent = sucursalText ?? '—';
+            document.getElementById('dd-tipo-name').textContent = tipoLabel;
+        }
+
+        ///* ── ENVÍO FINAL ──────────────────────────────────── */
+        //function viEnviarFormulario() {
+        //    if (viCurrentStep < 2) {
+        //        if (!viValidateStep(1)) return;
+        //        viGotoStep(2);
+        //        return;
+        //    }
+        //    if (!viValidateStep(2)) return;
+        //    console.log('Enviar formulario VI');
+        //}
+
+        /* ── INIT ─────────────────────────────────────────── */
+        viUpdateSidebar();
+        viUpdateLayout(viCurrentStep);
+    </script>
+}

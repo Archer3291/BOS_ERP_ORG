@@ -1,0 +1,103 @@
+@*
+    Listado de clientes: encabezado, barra de acciones y tabla.
+    Al pedir el detalle decide qué modal de edición abrir según
+    si el cliente es nacional o internacional.
+*@
+<div class="container-fluid py-4 clientes-page">
+    <div class="cli-card">
+        <div class="cli-card-body">
+
+            <div class="cli-header">
+                <div class="cli-icon">
+                    <i class="fa-solid fa-address-book"></i>
+                </div>
+                <div>
+                    <h4 class="cli-title">Clientes</h4>
+                    <p class="cli-subtitle">Alta, edición y sincronización del padrón de clientes nacionales e internacionales.</p>
+                </div>
+            </div>
+
+            <div class="cli-note">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Doble clic sobre un cliente (o <kbd>F4</kbd>) abre su detalle, donde se editan datos fiscales, contacto y addendas CFDI.</span>
+            </div>
+
+            <div class="cli-toolbar">
+                <button type="button" class="cli-action cli-action--nacional" onclick="abrirModalNacional(); return false;">
+                    <i class="fa-solid fa-flag"></i> Cliente Nacional
+                </button>
+                <button type="button" class="cli-action cli-action--internacional" onclick="abrirModalInternacional(); return false;">
+                    <i class="fa-solid fa-globe"></i> Cliente Internacional
+                </button>
+                <button type="button" class="cli-action cli-action--sincronizar" onclick="abrirModalSincronizar(); return false;">
+                    <i class="fa-solid fa-rotate"></i> Sincronizar Clientes
+                </button>
+            </div>
+
+            <div class="cli-table-shell">
+                <div id="tablaClientes"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        /* ── Abre el modal de edición que corresponda ──────────────── */
+        window.verDetalle = function (cliente) {
+            GetData({
+                path: '/Clientes/GetDetallesCliente',
+                data: { id_cliente: cliente.id_cliente }
+            }).then(async (_res) => {
+                if (!_res || !_res.cliente || _res.cliente.length === 0) return;
+
+                const clienteData = _res.cliente[0];
+                const esInternacional = clienteData.es_internacional === true || clienteData.es_internacional === 1;
+
+                // El modal se abre antes de terminar de llenarlo para que el
+                // usuario vea de inmediato que pasó algo; el await mantiene
+                // los fallos del llenado dentro de este catch.
+                if (esInternacional) {
+                    new bootstrap.Modal(document.getElementById('modalEditarClienteInternacional')).show();
+                    await cargarDatosEdicionInternacional(_res);
+                } else {
+                    new bootstrap.Modal(document.getElementById('modalEditarClienteNacional')).show();
+                    await cargarDatosEdicionNacional(_res);
+                }
+            }).catch(err => {
+                console.error('Error al cargar los detalles del cliente:', err);
+                _Swal.fire({
+                    icon: 'error',
+                    title: 'Error al cargar los detalles del cliente',
+                    text: err?.message ?? '',
+                    showCancelButton: false
+                });
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.tablaClientes = createTable({
+                selector: '#tablaClientes',
+                path: '/Clientes/GetClientes',
+                searchPlaceholder: 'Buscar cliente...',
+                columns: [
+                    { title: 'Codigo', data: 'cve_cli' },
+                    { title: 'Nombre', data: 'n_cli', formatter: (v) => `<p class="limit-text" title="${v}">${v}</p>` },
+                    { title: 'RFC', data: 'rfc' },
+                ],
+                actions: [
+                    { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalle', onClick: row => verDetalle(row) },
+                ],
+                RowsEvents: {
+                    onRowDblClick: row => verDetalle(row),
+                    onKeyPress: (event, row) => {
+                        if (event.key === 'F4') verDetalle(row);
+                    }
+                },
+            });
+        });
+    })();
+</script>

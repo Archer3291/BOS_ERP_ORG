@@ -1,0 +1,730 @@
+﻿@using BOS_ERP.Controllers
+@using BOS_ERP.Models
+@{
+    // Arbol de navegacion compartido por todos los layouts (sidebar / topbar / compact / hybrid).
+    // Los permisos viven aqui UNA sola vez; cada "chrome" (armazon) lo envuelve distinto.
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+<div class="nav-item">
+    <a href="@Url.Action("Index", "Home")" class="nav-link @(currentController == "Home" ? "active" : "")" data-label="Inicio">
+        <i class="fa-duotone fa-house fa-fw"></i>
+        Inicio
+    </a>
+</div>
+@{
+
+    var isConta = currentController == "Contabilidad" || currentController == "Carteras";
+    <div>
+
+        @if (Utilities.DoesUserHasRight(User.Identity.Name, "contabilidad"))
+        {
+            <div class="nav-item nav-dropdown">
+                <a href="#" class="nav-link dropdown-toggle collapsed @(isConta ? "active" : "")"
+                   data-target="#contabilidadDropdown" data-label="Contabilidad">
+                    <i class="fa-duotone fa-calculator fa-fw"></i>
+                    Contabilidad
+                </a>
+                <div class="nav-dropdown-menu @(isConta ? "show" : "collapsed")" id="contabilidadDropdown" data-titulo="Contabilidad">
+                    @*@if (Utilities.DoesUserHasRight(User.Identity.Name, "conceptos"))
+                                    {
+
+                                        <a href="@Url.Action("Conceptos", "Contabilidad")" class="dropdown-item @(currentAction == "Conceptos" ? "nav-link active" : "")">Conceptos</a>
+                                    }*@
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "departamentos"))
+                    {
+                        <a href="@Url.Action("Departamentos", "Contabilidad")" class="dropdown-item @(currentAction == "Departamentos" ? "nav-link active" : "")">Departamentos</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "configuracion_polizas"))
+                    {
+                        <a href="@Url.Action("ConfiguracionPolizas", "Contabilidad")" class="dropdown-item @(currentAction == "ConfiguracionPolizas" ? "nav-link active" : "")">Configuracion Polizas</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "cuentas_finanzas"))
+                    {
+                        <a href="@Url.Action("CuentasFinanzas", "Contabilidad")" class="dropdown-item @(currentAction == "CuentasFinanzas" ? "nav-link active" : "")">Cuentas Contables</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "bancos"))
+                    {
+                        <a href="@Url.Action("Bancos", "Contabilidad")" class="dropdown-item @(currentAction == "Bancos" ? "nav-link active" : "")">Bancos</a>
+                    }
+
+                    <a href="@Url.Action("MigrarKepler", "Contabilidad")" class="dropdown-item @(currentAction == "MigrarKepler" ? "nav-link active" : "")">Migracion Kepler</a>
+
+                    <!-- polizas submenu -->
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "polizas"))
+                    {
+                        <div class="nav-submenu">
+                            <a href="#" class="submenu-toggle @(currentAction == "PolizasEspeciales" || currentAction == "ConsultarPolizas" ? "" : "collapsed")">Polizas</a>
+                            <div class="nav-submenu-menu @(currentAction == "PolizasEspeciales" || currentAction == "ConsultarPolizas" ? "show" : "")">
+                                <a href="@Url.Action("PolizasEspeciales", "Contabilidad")" class="dropdown-item @(currentAction == "PolizasEspeciales" ? "nav-link active" : "")">Polizas Especiales</a>
+                                <a href="@Url.Action("ConsultarPolizas", "Contabilidad")" class="dropdown-item @(currentAction == "ConsultarPolizas" ? "nav-link active" : "")">Consultar Polizas</a>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="nav-submenu">
+                        <a href="#" class="submenu-toggle @(currentAction == "BalanzaComprobacion" || currentAction == "BalanzaGeneral" || currentAction == "MayorAuxiliar" || currentAction == "EstadoResultados" || currentAction == "EstadoResultadosPersonalizado" || currentAction == "CostoInventarioReporte" ? "" : "collapsed")">Reportes</a>
+                        <div class="nav-submenu-menu @(currentAction == "BalanzaComprobacion" || currentAction == "BalanzaGeneral" || currentAction == "MayorAuxiliar" || currentAction == "EstadoResultados" || currentAction == "EstadoResultadosPersonalizado" || currentAction == "CostoInventarioReporte" ? "show" : "")">
+                            <a href="@Url.Action("BalanzaGeneral", "Contabilidad")" class="dropdown-item @(currentAction == "BalanzaGeneral" ? "nav-link active" : "")">Balance General</a>
+                            <a href="@Url.Action("BalanzaComprobacion", "Contabilidad")" class="dropdown-item @(currentAction == "BalanzaComprobacion" ? "nav-link active" : "")">Balanza de Comprobacion</a>
+                            <a href="@Url.Action("MayorAuxiliar", "Contabilidad")" class="dropdown-item @(currentAction == "MayorAuxiliar" ? "nav-link active" : "")">Mayor Auxiliar</a>
+                            <a href="@Url.Action("EstadoResultados", "Contabilidad")" class="dropdown-item @(currentAction == "EstadoResultados" ? "nav-link active" : "")">Estado de Resultados</a>
+                            <a href="@Url.Action("EstadoResultadosPersonalizado", "Contabilidad")" class="dropdown-item @(currentAction == "EstadoResultadosPersonalizado" ? "nav-link active" : "")" title="Estado de Resultados Personalizado">Estado de Resultados Personalizado</a>
+                            <a href="@Url.Action("CostoInventarioReporte", "Contabilidad")" class="dropdown-item @(currentAction == "CostoInventarioReporte" ? "nav-link active" : "")">Costos de Inventario</a>
+                        </div>
+                    </div>
+
+                    <!-- carteras submenu -->
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "carteras"))
+                    {
+                        <div class="nav-submenu">
+                            <a href="#" class="submenu-toggle @(currentAction == "CarteraProveedores" || currentAction == "CarteraClientes" || currentAction == "CargaInicial" ? "" : "collapsed")">Carteras</a>
+                            <div class="nav-submenu-menu @(currentAction == "CarteraProveedores" || currentAction == "CarteraClientes" ? "show" : "")">
+
+                                <a href="@Url.Action("ReporteCarteraCliente", "Carteras")" class="dropdown-item @(currentAction == "ReporteCarteraCliente" ? "nav-link active" : "")">Reporte de carteras</a>
+                                @if (!Utilities.DoesUserHasRight(User.Identity.Name, "carga_inicial"))
+                                {
+                                    <a href="@Url.Action("CarteraClientes", "Carteras")" class="dropdown-item @(currentAction == "CarteraClientes" ? "nav-link active" : "")">Clientes</a>
+                                    <a href="@Url.Action("CarteraProveedores", "Carteras")" class="dropdown-item @(currentAction == "CarteraProveedores" ? "nav-link active" : "")">Proveedores</a>
+                                }
+
+                                @if (Utilities.DoesUserHasRight(User.Identity.Name, "carga_inicial_proveedores"))
+                                {
+                                    <div class="nav-sub-submenu">
+                                        <a href="#" class="sub-submenu-toggle @(currentAction == "CargaInicial" || currentAction == "CarteraProveedores" ? "" : "collapsed")">Proveedores</a>
+                                        <div class="nav-sub-submenu-menu @(currentAction == "CargaInicial" || currentAction == "CarteraProveedores" ? "show" : "")">
+                                            <a href="@Url.Action("CarteraProveedores", "Carteras")" class="sub-submenu-item @(currentAction == "CarteraProveedores" ? "nav-link active" : "")">Cartera Proveedores</a>
+                                            <a href="@Url.Action("CargaInicial", "Carteras")" class="sub-submenu-item @(currentAction == "CargaInicial" ? "nav-link active" : "")">Carga Inicial de Cartera Proveedores</a>
+                                        </div>
+                                    </div>
+                                }
+                                @if (Utilities.DoesUserHasRight(User.Identity.Name, "carga_inicial_clientes"))
+                                {
+                                    <div class="nav-sub-submenu">
+                                        <a href="#" class="sub-submenu-toggle @(currentAction == "CarteraClientes" || currentAction == "CargaInicialClientes" ? "" : "collapsed")">Clientes</a>
+                                        <div class="nav-sub-submenu-menu @(currentAction == "CarteraClientes" || currentAction == "CargaInicialClientes" ? "show" : "")">
+                                            <a href="@Url.Action("CarteraClientes", "Carteras")" class="sub-submenu-item @(currentAction == "CarteraClientes" ? "nav-link active" : "")">Cartera Clientes</a>
+                                            <a href="@Url.Action("CargaInicialKepler", "Carteras")" class="sub-submenu-item @(currentAction == "CargaInicial" ? "nav-link active" : "")">Carga Inicial de Cartera Clientes</a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        @{
+            var isTeso = currentController == "Tesoreria" || currentController == "Bank";
+        }
+
+        @if (Utilities.DoesUserHasRight(User.Identity.Name, "tesoreria"))
+        {
+            <div class="nav-item nav-dropdown">
+                <a href="#" class="nav-link dropdown-toggle collapsed @(isTeso ? "active" : "")" data-target="#tesoreriaDropdown" data-label="Tesorería">
+                    <i class="fa-duotone fa-clipboard fa-fw"></i>
+                    Tesoreria
+                </a>
+                <div class="nav-dropdown-menu @(isTeso ? "show" : "collapsed")" id="tesoreriaDropdown" data-titulo="Tesorería">
+                    <a href="@Url.Action("Bancos", "Tesoreria")" class="dropdown-item @(currentAction == "Bancos" ? "nav-link active" : "")">Catálogo de bancos</a>
+                    <a href="@Url.Action("BancosSAT", "Tesoreria")" class="dropdown-item @(currentAction == "BancosSAT" ? "nav-link active" : "")">Catálogo de bancos SAT</a>
+                </div>
+            </div>
+        }
+
+        @{
+            var isDoc = currentController == "Documentos";
+        }
+
+        @if (Utilities.DoesUserHasRight(User.Identity.Name, "facturacion_normal"))
+        {
+            <div class="nav-item nav-dropdown">
+                <a href="#" class="nav-link dropdown-toggle collapsed @(isDoc ? "active" : "")" data-target="#documentosDropdown" data-label="Documentos">
+                    <i class="fa-duotone fa-clipboard fa-fw"></i>
+                    Documentos
+                </a>
+                <div class="nav-dropdown-menu @(isDoc ? "show" : "collapsed")" id="documentosDropdown" data-titulo="Documentos">
+                    <a href="@Url.Action("ConsultaDocumentos", "Documentos")" class="dropdown-item @(currentAction == "ConsultaDocumentos" ? "nav-link active" : "")">Consulta Documentos</a>
+                    <a href="@Url.Action("CancelacionDocumentos", "Documentos")" class="dropdown-item @(currentAction == "CancelacionDocumentos" ? "nav-link active" : "")">Cancelar Documentos</a>
+                    <a href="@Url.Action("DocumentosPendientes", "Documentos")" class="dropdown-item @(currentAction == "DocumentosPendientes" ? "nav-link active" : "")">Documentos Pendientes</a>
+                </div>
+            </div>
+        }
+
+        @{
+            var isCC = currentController == "CreditoCobranza" || currentController == "Clientes";
+        }
+
+        @if (Utilities.DoesUserHasRight(User.Identity.Name, "credito_cobranza"))
+        {
+            <div class="nav-item nav-dropdown">
+                <a href="#" class="nav-link dropdown-toggle collapsed @(isCC ? "active" : "")" data-target="#creditoDropdown" data-label="Crédito y Cobranza">
+                    <i class="fa-duotone fa-credit-card fa-fw"></i>
+                    Credito y cobranza
+                </a>
+                <div class="nav-dropdown-menu @(isCC ? "show" : "collapsed")" id="creditoDropdown" data-titulo="Crédito y Cobranza">
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "gestion_clientes"))
+                    {
+                        <a href="@Url.Action("Clientes", "CreditoCobranza")" class="dropdown-item @(currentAction == "Clientes" ? "nav-link active" : "")">Clientes</a>
+                    }
+                    @if (Utilities.DoesUserHasArea(User.Identity.Name, new List<string> { "Sistemas" }))
+                    {
+                        <a href="@Url.Action("Vendedores", "CreditoCobranza")" class="dropdown-item @(currentAction == "Vendedores" ? "nav-link active" : "")">Vendedores</a>
+                        <a href="@Url.Action("AgentesCobranza", "CreditoCobranza")" class="dropdown-item @(currentAction == "AgentesCobranza" ? "nav-link active" : "")">Agentes de cobranza</a>
+                        <a href="@Url.Action("Zonas", "CreditoCobranza")" class="dropdown-item @(currentAction == "Zonas" ? "nav-link active" : "")">Zonas</a>
+                        <a href="@Url.Action("TipoClientes", "CreditoCobranza")" class="dropdown-item @(currentAction == "TipoClientes" ? "nav-link active" : "")">Tipo de cliente </a>
+                        <a href="@Url.Action("Incoterms", "CreditoCobranza")" class="dropdown-item @(currentAction == "Incoterms" ? "nav-link active" : "")">Incoterms</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "pagos_cobros"))
+                    {
+                        <div class="nav-submenu">
+                            <a href="#" class="submenu-toggle @(currentAction == "PagoProveedor" || currentAction == "PagoCliente" || currentAction == "ComplementoPago" ? "" : "collapsed")">Cuentas pendientes</a>
+                            <div class="nav-submenu-menu @(currentAction == "PagoProveedor" || currentAction == "PagoCliente" || currentAction == "ComplementoPago" ? "show" : "")">
+                                @if (Utilities.DoesUserHasRight(User.Identity.Name, "pago_proveedor"))
+                                {
+                                    <a href="@Url.Action("PagoProveedor", "CreditoCobranza")" class="dropdown-item @(currentAction == "PagoProveedor" ? "nav-link active" : "")">Pagos Proveedor</a>
+                                }
+
+                                @if (Utilities.DoesUserHasRight(User.Identity.Name, "cobro_clientes"))
+                                {
+                                    <a href="@Url.Action("PagoCliente", "CreditoCobranza")" class="dropdown-item @(currentAction == "PagoCliente" ? "nav-link active" : "")">Asignacion Cobros Contado</a>
+                                }
+                                @if (Utilities.DoesUserHasRight(User.Identity.Name, "complemento_pago"))
+                                {
+                                    <a href="@Url.Action("ComplementoPago", "CreditoCobranza")" class="dropdown-item @(currentAction == "ComplementoPago" ? "nav-link active" : "")">Asignacion Cobros Credito</a> @*complemento de pago*@
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, new[] { "facturacion_especial", "facturacion_normal", "complemento_pago" }))
+                    {
+                        <a href="@Url.Action("ConsultarFacturas", "CreditoCobranza")" class="dropdown-item @(currentAction == "ConsultarFacturas" ? "nav-link active" : "")">Consultar Facturas</a>
+                        <a href="@Url.Action("Index", "FacturaPdf")" class="dropdown-item @(currentAction == "Index" ? "nav-link active" : "")">Generar Facturas</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "facturacion_especial"))
+                    {
+                        <a href="@Url.Action("FacturacionEspecial", "CreditoCobranza")" class="dropdown-item @(currentAction == "FacturacionEspecial" ? "nav-link active" : "")">Facturacion Especial</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "facturacion_global"))
+                    {
+                        <a href="@Url.Action("ConsultarFactuasGlobales", "CreditoCobranza")" class="dropdown-item @(currentAction == "ConsultarFactuasGlobales" ? "nav-link active" : "")">Consultar Factuas Globales</a>
+                    }
+
+                    <a href="@Url.Action("ReporteVendedor", "CreditoCobranza")" class="dropdown-item @(currentAction == "ReporteVendedor" ? "nav-link active" : "")">Reporte Vendedor</a>
+
+                </div>
+            </div>
+        }
+
+
+        @{
+            var isG = currentController == "Gastos";
+        }
+
+        @if (Utilities.DoesUserHasRight(User.Identity.Name, "gastos"))
+        {
+            <div class="nav-item nav-dropdown">
+                <a href="#" class="nav-link dropdown-toggle collapsed @(isG ? "active" : "")" data-target="#gastosDropdown" data-label="Gastos">
+                    <i class="fa-duotone fa-money-bill-wave fa-fw"></i>
+                    Gastos
+                </a>
+                <div class="nav-dropdown-menu @(isG ? "show" : "collapsed")" id="gastosDropdown" data-titulo="Gastos">
+                    @if (Utilities.DoesUserHasArea(User.Identity.Name, new List<string> { "Sistemas" }))
+                    {
+                        <a href="@Url.Action("SolicitudGasto", "Gastos")" class="dropdown-item @(currentAction == "SolicitudGasto" ? "nav-link active" : "")">Solicitud Gasto</a>
+                        <a href="@Url.Action("ConsultaSolicitudes", "Gastos")" class="dropdown-item @(currentAction == "ConsultaSolicitudes" ? "nav-link active" : "")">Consulta Solicitudes</a>
+                        <a href="@Url.Action("AprobacionGasto", "Gastos")" class="dropdown-item @(currentAction == "AprobacionGasto" ? "nav-link active" : "")">Aprobacion Gasto </a>
+                    }
+                </div>
+            </div>
+        }
+
+
+        <!-- Almacenes Dropdown -->
+        @{
+            var isAlmacen = currentController == "Almacen";
+        }
+
+        @if (Utilities.DoesUserHasRight(User.Identity.Name, "almacen"))
+        {
+            <div class="nav-item nav-dropdown">
+                <a href="#" class="nav-link dropdown-toggle collapsed @(isAlmacen ? "active" : "")" data-target="#almacenesDropdown" data-label="Almacenes">
+                    <i class="fa-duotone fa-truck-ramp-box fa-fw"></i>
+                    Almacenes
+                </a>
+                <div class="nav-dropdown-menu @(isAlmacen ? "show" : "collapsed")" id="almacenesDropdown" data-titulo="Almacenes">
+                    <a href="@Url.Action("ConsultarAlmacen", "Almacen")" class="dropdown-item @(currentAction == "ConsultarAlmacen" ? "nav-link active" : "")">Consultar Almacen</a>
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "productos"))
+                    {
+                        <a href="@Url.Action("Productos", "Almacen")" class="dropdown-item @(currentAction == "Productos" ? "nav-link active" : "")">Productos</a>
+                    }
+                    <a href="@Url.Action("ReglasPrecio", "Almacen")" class="dropdown-item @(currentAction == "Productos" ? "nav-link active" : "")">Reglas Precio</a>
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "manejo_kits"))
+                    {
+                        <a href="@Url.Action("KitsManagement", "Kits")" class="dropdown-item @(currentAction == "Kits" ? "nav-link active" : "")">Manejo de kits</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "lineas_produccion"))
+                    {
+                        <a href="@Url.Action("Lineas", "Almacen")" class="dropdown-item @(currentAction == "Lineas" ? "nav-link active" : "")">Líneas de productos</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "agencias_aduanales"))
+                    {
+                        <a href="@Url.Action("Agencies", "Almacen")" class="dropdown-item @(currentAction == "Agencies" ? "nav-link active" : "")">Agencias aduanales</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "sistemas"))
+                    {
+                        <a href="@Url.Action("Almacenes", "Almacen")" class="dropdown-item @(currentAction == "Almacenes" ? "nav-link active" : "")">Almacenes</a>
+                        <a href="@Url.Action("Grupos", "Almacen")" class="dropdown-item @(currentAction == "Grupos" ? "nav-link active" : "")">Grupos de productos</a>
+                        <a href="@Url.Action("Tipos", "Almacen")" class="dropdown-item @(currentAction == "Tipos" ? "nav-link active" : "")">Tipos de productos</a>
+                        <a href="@Url.Action("Unidades", "Almacen")" class="dropdown-item @(currentAction == "Unidades" ? "nav-link active" : "")">Unidades</a>
+                        <a href="@Url.Action("SolicitudesRecibidasAlmacen", "Almacen")" class="dropdown-item @(currentAction == "SolicitudesRecibidasAlmacen" ? "nav-link active" : "")">Solicitudes Recibidas</a>
+                    }
+                    <a href="@Url.Action("CorteOperacion", "Tubos")" class="dropdown-item @(currentAction == "CorteOperacion" ? "nav-link active" : "")">Operacion de Cortes</a>
+                </div>
+            </div>
+        }
+
+        @{
+            <!-- Operacion Dropdown -->
+            var currentTipo = Context.Request.Query["tipo"].ToString().ToLower();
+            // Definiciones
+            //var tiposVenta = new[] { "sucursal", "industrial", "nacional", "internacionales" };
+            var accionesCompra = new[] { "AltaCotizacion", "Index", "AltaPedido", "AltaPedidoInternacional", "AltaPedidoNacional", "HistorialPedidos", "SolicitudCotizacion" };
+
+            var isOperacion = currentController == "Operaciones";
+
+            // Definir qué submenu está abierto según acción y tipo exacto
+            var isSubmenuNacional = (currentAction == "SolicitudCotizacion" || currentAction == "Index") && currentTipo == "nacional";
+            var isSubmenuInternacional = (currentAction == "SolicitudCotizacion" || currentAction == "Index") && currentTipo == "internacional";
+            var isSubmenuVentasAdministracion = (currentAction == "SolicitudCotizacion" || currentAction == "Index") && currentTipo == "internacional";
+            var isSubmenuGastos = currentAction == "SolicitudCotizacion" && currentTipo == "gasto";
+
+            var isCompraMainAbierto = currentController == "Compras" ? true : false;
+
+            var permiso = Utilities.DoesUserHasRight(User.Identity.Name, "Gestion de Solicitudes");
+            bool rol = Utilities.DoesUserHasRole(User.Identity.Name, "Gerente");
+            bool esDirector = Utilities.DoesUserHasRole(User.Identity.Name, "Director");
+            bool area = Utilities.DoesUserHasArea(User.Identity.Name, new List<string> { "Compras Nacionales", "Administración y Finanzas", "Direccion" });
+            bool areaCompras = Utilities.DoesUserHasArea(User.Identity.Name, new List<string> { "Compras Nacionales", "Direccion" });
+
+            var accionesVenta = new[] {
+                                "Sucursales","Industrial","Nacional","Internacionales",
+                                "PackingList","PuntoDeVenta",
+                                "AltaCotizacion","AltaPedidos","AltaRemision","AltaFactura"
+                                };
+
+            var tiposVenta = new[] { "sucursal", "industrial", "nacional", "internacionales" };
+            var isAnyVentaAbierta = currentController == "Ventas" || accionesVenta.Contains(currentAction) || tiposVenta.Contains(currentTipo);
+
+            bool isSucursales = currentAction == "Sucursales" && currentController == "Ventas";
+            bool isIndustrial = currentAction == "Industrial" && currentController == "Ventas";
+            bool isNacional = currentAction == "Nacional" && currentController == "Ventas";
+            bool isInternacionales = currentAction == "Internacionales" && currentController == "Ventas";
+            bool isTubos = currentAction == "Index" && currentController == "Tubos";
+            bool isPackingList = currentAction == "PackingList" && currentController == "Ventas";
+            bool isPuntoDeVenta = currentAction == "PuntoDeVenta" && currentController == "Ventas";
+            bool isRefacturacion = currentAction == "Refacturacion" && currentController == "Ventas";
+            // La factura libre tiene controlador propio, no cuelga de Ventas.
+            bool isFacturaLibre = currentController == "FacturaLibre";
+            bool isNotasCredito = currentAction == "NotasCredito" && currentController == "Ventas";
+            bool isConsultaNotasCredito = currentAction == "ConsultaNotasCredito" && currentController == "Ventas";
+            bool isSolicitudNC = currentAction == "SolicitudNC" && currentController == "Ventas";
+            bool isSolicitudRegresoMaterial = currentAction == "SolicitudRegresoMaterial" && currentController == "Ventas";
+            bool isPedidosPendientes = currentAction == "PedidosPendientes" && currentController == "Ventas";
+            bool isAprobacionAperturas = currentAction == "AprobacionAperturas" && currentController == "Ventas";
+            // El portal vive en AutoFacturacionPublica; "Ventas/AutoFacturacion"
+            // se conserva sólo como redirección para enlaces antiguos.
+            bool isAutoFacturacion = currentController == "AutoFacturacionPublica"
+                || (currentAction == "AutoFacturacion" && currentController == "Ventas");
+
+            bool isVentaMainAbierto = currentController == "Ventas";
+            bool isCompraDentroDeVentasAbierto = isVentaMainAbierto || currentAction == "PuntoDeVenta";
+
+            bool isPVAdmin = currentAction == "BitacoraTickets" && currentController == "Ventas";
+            bool isBitacora = currentAction == "BitacoraTickets" && currentController == "Ventas";
+            bool isRetiro = currentAction == "RetiroEfectivo" && currentController == "Ventas";
+            bool isPendientesEntrega = currentAction == "PendientesEntrega" && currentController == "Ventas";
+            bool isFormasPagoBancos = currentAction == "FormasPagoBancos" && currentController == "Ventas";
+
+            if (Utilities.DoesUserHasRight(User.Identity.Name, "operaciones"))
+            {
+                <div class="nav-item nav-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle @(currentController == "Compras" || currentController == "Ventas" ? "" : "collapsed")" data-label="Operaciones" data-bs-toggle="manual">
+                        <i class="fa-duotone fa-arrows-rotate fa-fw"></i>
+                        Operaciones
+                    </a>
+                    <div class="nav-dropdown-menu @(currentController == "Compras" || currentController == "Ventas" ? "show" : "")" data-titulo="Operaciones">
+                        <div class="nav-submenu">
+                            @if (Utilities.DoesUserHasRole(User.Identity.Name, "Gerente") || Utilities.DoesUserHasRight(User.Identity.Name, "compras"))
+                            {
+                                <div class="nav-submenu">
+                                    <a href="#" class="submenu-toggle @(isCompraMainAbierto ? "" : "collapsed")">Compra</a>
+                                    <div class="nav-submenu-menu @(isCompraMainAbierto ? "show" : "")">
+                                        <a href="@Url.Action("OrdenesCompra", "Compras")" class="dropdown-item @(isSucursales ? "nav-link active" : "")">Ordenes Compra</a>
+                                        <a href="@Url.Action("VISeguimientoPedidos", "Compras")" class="dropdown-item @(isSucursales ? "nav-link active" : "")">Seguimiento de Pedidos</a>
+
+                                        <div class="nav-sub-submenu">
+                                            <a href="#" class="sub-submenu-toggle @(isSubmenuNacional ? "" : "collapsed")">Nacional</a>
+                                            <div class="nav-sub-submenu-menu @(isSubmenuNacional ? "show" : "")">
+                                                @{
+                                                    if (rol)
+                                                    {
+                                                        <a href="@Url.Action("GestionSolicitudesGerente", "Compras")" class="sub-submenu-item @(currentAction == "GestionSolicitudesGerente" && isCompraMainAbierto ? "nav-link active" : "")">Acciones Gerente</a>
+                                                    }
+                                                    if (areaCompras)
+                                                    {
+                                                        <a href="@Url.Action("GestionSolicitudes", "Compras")" class="sub-submenu-item @(currentAction == "GestionSolicitudes" && isCompraMainAbierto ? "nav-link active" : "")">Gestionar solicitudes</a>
+                                                    }
+
+                                                }
+                                            </div>
+                                        </div>
+
+                                        @if ((rol || esDirector) && area)
+                                        {
+                                            <!-- Compra internacional -->
+                                            <div class="nav-sub-submenu">
+                                                <a href="#" class="sub-submenu-toggle @(isSubmenuInternacional ? "" : "collapsed")">Internacional</a>
+                                                <div class="nav-sub-submenu-menu @(isSubmenuInternacional ? "show" : "")">
+                                                    <a href="@Url.Action("RequisicionMaterialInternacional", "ComprasInternacionales", new { tipo = "internacional" })" class="sub-submenu-item @(currentAction == "SolicitudCotizacion" && currentTipo == "internacional" && isCompraMainAbierto ? "nav-link active" : "")">Solicitud de cotizacion</a>
+                                                    <a href="@Url.Action("GestionSolicitudesInternacional", "ComprasInternacionales")" class="sub-submenu-item @(currentAction == "GestionSolicitudes" && isCompraMainAbierto ? "nav-link active" : "")">Gestionar solicitudes</a>
+                                                    <a href="@Url.Action("Reclasificacion", "ComprasInternacionales")" class="sub-submenu-item @(currentAction == "GestionSolicitudes" && isCompraMainAbierto ? "nav-link active" : "")">Gastos de importacion</a>
+
+                                                    @if (rol && (area))
+                                                    {
+                                                        <a href="@Url.Action("Index", "ComprasInternacionales", new { tipo = "internacional" })" class="sub-submenu-item @(currentAction == "SolicitudCotizacion" && currentTipo == "internacional" && isCompraMainAbierto ? "nav-link active" : "")">Cargar Planeador</a>
+                                                        <a href="@Url.Action("PlaneadorCI", "ComprasInternacionales", new { tipo = "internacional" })" class="sub-submenu-item @(currentAction == "SolicitudCotizacion" && currentTipo == "internacional" && isCompraMainAbierto ? "nav-link active" : "")">Planeador de compras</a>
+                                                        <a href="@Url.Action("Pedimentos", "ComprasInternacionales", new { tipo = "internacional" })" class="sub-submenu-item @(currentAction == "SolicitudCotizacion" && currentTipo == "internacional" && isCompraMainAbierto ? "nav-link active" : "")">Pedimentos</a>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+
+                                    </div>
+
+                                </div>
+                            }
+                            @if (Utilities.DoesUserHasRight(User.Identity.Name, "ventas"))
+                            {
+                                <div class="nav-submenu">
+                                    <a href="#" class="submenu-toggle @(isAnyVentaAbierta ? "" : "collapsed")">Ventas</a>
+                                    <div class="nav-submenu-menu @(isAnyVentaAbierta ? "show" : "")">
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "ventas_sucursales"))
+                                        {
+                                            <a href="@Url.Action("Sucursales", "Ventas")" class="dropdown-item @(isSucursales ? "nav-link active" : "")">Sucursales</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "ventas_industriales"))
+                                        {
+                                            <a href="@Url.Action("Industrial", "Ventas")" class="dropdown-item @(isIndustrial ? "nav-link active" : "")">Industrial</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "ventas_nacionales"))
+                                        {
+                                            <a href="@Url.Action("Nacional", "Ventas")" class="dropdown-item @(isNacional ? "nav-link active" : "")">Nacional</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "ventas_internacionales"))
+                                        {
+                                            <a href="@Url.Action("Internacionales", "Ventas")" class="dropdown-item @(isInternacionales ? "nav-link active" : "")">Internacionales</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "tubos_barras"))
+                                        {
+                                            <a href="@Url.Action("Index", "Tubos")" class="dropdown-item @(isTubos ? "nav-link active" : "")">Tubos y Barras</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "packing_list"))
+                                        {
+                                            <a href="@Url.Action("PackingList", "Ventas")" class="dropdown-item @(isPackingList ? "nav-link active" : "")">Packing List</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "refacturacion"))
+                                        {
+                                            <a href="@Url.Action("Refacturacion", "Ventas")" class="dropdown-item @(isRefacturacion ? "nav-link active" : "")">Refacturacion</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "facturacion_normal")
+                                          || Utilities.DoesUserHasRight(User.Identity.Name, "facturacion_especial"))
+                                        {
+                                            <a href="@Url.Action("Index", "FacturaLibre")" class="dropdown-item @(isFacturaLibre ? "nav-link active" : "")">Facturación Libre</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "puntos_socio_tiburon"))
+                                        {
+                                            <a href="@Url.Action("Index", "Puntos")" class="dropdown-item @(currentController == "Puntos" ? "nav-link active" : "")">Puntos Socio Tiburón</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "punto_venta_admin"))
+                                        {
+                                            <div class="nav-sub-submenu">
+                                                <a href="#" class="sub-submenu-toggle @(isCompraDentroDeVentasAbierto ? "" : "collapsed")">Punto de Venta Administrativo</a>
+                                                <div class="nav-sub-submenu-menu @(isCompraDentroDeVentasAbierto ? "show" : "")">
+                                                    <a href="@Url.Action("RetiroEfectivo", "Ventas")" class="sub-submenu-item @(isRetiro ? "nav-link active" : "")">Retiro de Efectivo</a>
+                                                    <a href="@Url.Action("AperturaCaja", "Ventas")" class="sub-submenu-item @(isPVAdmin ? "nav-link active" : "")">Apertura de Caja</a>
+                                                    <a href="@Url.Action("CierreCaja", "Ventas")" class="sub-submenu-item @(isPVAdmin ? "nav-link active" : "")">Cierre de caja</a>
+                                                    <a href="@Url.Action("PendientesEntrega", "Ventas")" class="sub-submenu-item @(isPendientesEntrega ? "nav-link active" : "")">Pendientes de Entrega</a>
+                                                    <a href="@Url.Action("FormasPagoBancos", "Ventas")" class="sub-submenu-item @(isFormasPagoBancos ? "nav-link active" : "")">Formas de Pago y Bancos</a>
+                                                </div>
+                                            </div>
+                                        }
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "ventas_sucursales"))
+                                        {
+                                            <a href="@Url.Action("PuntoDeVenta", "Ventas")" class="dropdown-item @(isPuntoDeVenta ? "nav-link active" : "")">PuntoDeVenta</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "nota_credito"))
+                                        {
+                                            <a href="@Url.Action("NotasCredito", "Ventas")" class="dropdown-item @(isNotasCredito ? "nav-link active" : "")">Notas de Credito</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "nota_credito"))
+                                        {
+                                            <a href="@Url.Action("ConsultaNotasCredito", "Ventas")" class="dropdown-item @(isConsultaNotasCredito ? "nav-link active" : "")">Consulta Notas Credito</a>
+                                        }
+
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "nota_credito"))
+                                        {
+                                            <a href="@Url.Action("SolicitudNC", "Ventas")" class="dropdown-item @(isSolicitudNC ? "nav-link active" : "")">Solicitud Nota de Credito</a>
+                                        }
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "nota_credito"))
+                                        {
+                                            <a href="@Url.Action("PedidosPendientes", "Ventas")" class="dropdown-item @(isPedidosPendientes ? "nav-link active" : "")">Pedidos Pendientes</a>
+                                        }
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "nota_credito"))
+                                        {
+                                            <a href="@Url.Action("AprobacionAperturas", "Ventas")" class="dropdown-item @(isAprobacionAperturas ? "nav-link active" : "")">Aprobacion Aperturas</a>
+                                        }
+                                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "nota_credito"))
+                                        {
+                                            <a href="@Url.Action("Index", "AutoFacturacionPublica")" class="dropdown-item @(isAutoFacturacion ? "nav-link active" : "")">AutoFacturacion</a>
+                                        }
+                                    </div>
+                                </div>
+
+                            }
+
+                            @if (Utilities.DoesUserHasRight(User.Identity.Name, "finanzas"))
+                            {
+                                <!-- Finanzas submenu -->
+                                <div class="nav-submenu">
+                                    <a href="#" class="submenu-toggle @(isAnyVentaAbierta ? "" : "collapsed")">Finanzas</a>
+                                    <div class="nav-submenu-menu @(isAnyVentaAbierta ? "show" : "")">
+                                        <!-- Venta sucursal -->
+                                        <a href="@Url.Action("GestionSolicitudesFinanzas", "Compras")" class="sub-submenu-item @(currentAction == "GestionSolicitudesFinanzas" ? "nav-link active" : "")">Gestionar solicitudes</a>
+                                        <a href="@Url.Action("DevolucionEfectivo", "Finanzas")" class="dropdown-item @(currentAction == "DevolucionEfectivo" && isCompraMainAbierto ? "nav-link active" : "")">Devolucion de Efectivo</a>
+
+                                    </div>
+                                </div>
+                            }
+
+                            @if (Utilities.DoesUserHasRight(User.Identity.Name, "polizas_discrepancia"))
+                            {
+                                <div class="nav-submenu">
+                                    <a href="#" class="submenu-toggle @(currentAction == "PolizasDiscrepancia" ? "" : "collapsed")">Polizas discrepancia</a>
+                                    <div class="nav-submenu-menu @(currentAction == "PolizasDiscrepancia" ? "show" : "")">
+                                        <!-- Venta sucursal -->
+                                        <a href="@Url.Action("PolizasDiscrepancia", "Operaciones")" class="dropdown-item @(currentAction == "PolizasDiscrepancia" ? "nav-link active" : "")">Polizas con discrepancia</a>
+                                        <a href="@Url.Action("ConsultaPolizasDiscrepancia", "Operaciones")" class="dropdown-item @(currentAction == "ConsultaPolizasDiscrepancia" ? "nav-link active" : "")">Consultar polizas con discrepancia</a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "servicios_consulta"))
+                        {
+                            <a href="@Url.Action("Servicios", "Operaciones")" class="dropdown-item @(currentAction == "Servicios" ? "nav-link active" : "")">Servicios Contratados</a>
+                        }
+
+                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "consulta_packing_list"))
+                        {
+                            <a href="@Url.Action("ConsultarPackingList", "Operaciones")" class="dropdown-item @(currentAction == "ConsultarPackingList" ? "nav-link active" : "")">Consultar Packing List</a>
+                        }
+
+                        @if (Utilities.DoesUserHasRight(User.Identity.Name, "gestion_proveedores"))
+                        {
+                            <a href="@Url.Action("Proveedor", "Operaciones")" class="dropdown-item @(currentController == "Proveedor" ? "nav-link active" : "")">Proveedores</a>
+                        }
+
+                        <a href="@Url.Action("MisRequisiciones", "Compras")" class="dropdown-item @(currentAction == "MisRequisiciones" && isCompraMainAbierto ? "nav-link active" : "")">Mis requisiciones</a>
+                        <a href="@Url.Action("RequisicionMaterial", "Compras")" class="dropdown-item @(currentAction == "RequisicionMaterial" ? "nav-link active" : "")">Solicitud de cotizacion</a>
+                        <a href="@Url.Action("ImportarDocumentosKepler", "Operaciones")" class="dropdown-item @(currentAction == "ImportarDocumentosKepler" ? "nav-link active" : "")">Importa documentos kepler</a>
+                    </div>
+                </div>
+            }
+        }
+        <!-- Sistemas Dropdown -->
+        @{
+            var userArea = Utilities.GetAreaName(User.Identity.Name);
+            var isSistemas = currentController == "Sistemas" || currentController == "Licencias" || currentController == "UserSessions" || currentController == "Documento" || currentController == "PortalClientesAdmin";
+        }
+        @if (new List<string> { "Sistemas", "Super Administrador" }.Contains(userArea))
+        {
+            <div class="nav-item nav-dropdown">
+                <a href="#" class="nav-link dropdown-toggle collapsed @(isSistemas ? "active" : "")" data-target="#sistemasDropdown" data-label="Sistemas">
+                    <i class="fa-duotone fa-power-off fa-fw"></i>
+                    Sistemas
+                </a>
+                <div class="nav-dropdown-menu @(isSistemas ? "show" : "collapsed")" id="sistemasDropdown" data-titulo="Sistemas">
+                    <a href="@Url.Action("Paridades", "Sistemas")" class="dropdown-item @(currentAction == "Paridades" ? "nav-link active" : "")">Paridades</a>
+                    <a href="@Url.Action("Licencias", "Licencias")" class="dropdown-item @(currentController == "Licencias" ? "nav-link active" : "")">Licencias</a>
+                    <a href="@Url.Action("UserSessions", "Sistemas")" class="dropdown-item @(currentController == "UserSessions" ? "nav-link active" : "")">Sesiones</a>
+                    <a href="@Url.Action("Documentos", "Sistemas")" class="dropdown-item @(currentController == "Documento" ? "nav-link active" : "")">Documentos</a>
+                    <a href="@Url.Action("Usuarios", "Sistemas")" class="dropdown-item @(currentController == "Usuarios" ? "nav-link active" : "")">Usuario</a>
+                    <a href="@Url.Action("UsuarioClaveModulo", "Sistemas")" class="dropdown-item @(currentController == "UsuarioClaveModulo" ? "nav-link active" : "")">Contraseñas Modulos</a>
+                    <a href="@Url.Action("Index", "PortalClientesAdmin")" class="dropdown-item @(currentController == "PortalClientesAdmin" ? "nav-link active" : "")">Portal de Clientes</a>
+                </div>
+            </div>
+        }
+
+        <!-- Inventarios Dropdown -->
+        @{
+            var isInventario = currentController == "Inventario" || currentAction == "SolicitudInventario" || currentAction == "SolicitudesRecibidas" || currentAction == "SolicitudesPendientes" || currentAction == "RecepcionInventario" || currentAction == "DiscrepanciaTraslado" || currentAction == "Traslados";
+        }
+        @if (Utilities.DoesUserHasArea(User.Identity.Name, "Inventarios") || Utilities.DoesUserHasRight(User.Identity.Name, new[] { "recepcion_nacional", "recepcion_internacional", "recepcion_devolucion", "inventario_extraordinario" }))
+        {
+            <div class="nav-item nav-dropdown">
+                <a href="#" class="nav-link dropdown-toggle collapsed @(isInventario ? "active" : "")" data-target="#inventariosDropdown" data-label="Inventarios">
+                    <i class="fa-duotone fa-box fa-fw"></i>
+                    Inventarios
+                </a>
+                <div class="nav-dropdown-menu @(isInventario ? "show" : "collapsed")" id="inventariosDropdown" data-titulo="Inventarios">
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, new[] { "recepcion_nacional", "recepcion_internacional", "recepcion_devolucion", "inventario_extraordinario" }))
+                    {
+                        <a href="@Url.Action("Recepcion", "Inventario")" class="dropdown-item @(currentAction == "Recepcion" ? "nav-link active" : "")">Recepcion de material</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, new[] { "recepcion_nacional", "recepcion_internacional", "recepcion_devolucion", "inventario_extraordinario" }))
+                    {
+                        <a href="@Url.Action("ValidacionDiscrepancias", "Inventario")" class="dropdown-item @(currentAction == "ValidacionDiscrepancias" ? "nav-link active" : "")">Validacion de Discrepancias</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "sistemas"))
+                    {
+                        <a href="@Url.Action("GestionYAdministracion", "Inventario")" class="dropdown-item @(currentAction == "GestionYAdministracion" ? "nav-link active" : "")">Gestion Y Administracion</a>
+                        <a href="@Url.Action("AlmacenVirtual", "Inventario")" class="dropdown-item @(currentAction == "Consulta" ? "nav-link active" : "")">Almacen Virtual</a>
+                        <a href="@Url.Action("Inspeccion", "Inventario")" class="dropdown-item @(currentAction == "Inspeccion" ? "nav-link active" : "")">Inspeccion</a>
+                        <a href="@Url.Action("cuarentenas", "Inventario")" class="dropdown-item @(currentAction == "cuarentenas" ? "nav-link active" : "")">Cuarentenas</a>
+                    }
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "calculadora_inventario"))
+                    {
+                        <a href="@Url.Action("CalculadoraPesos", "Inventario")" class="dropdown-item @(currentAction == "CalculadoraPesos" ? "nav-link active" : "")">Calculadora Pesos</a>
+                    }
+
+                    <a href="@Url.Action("SolicitudRegresoMaterial", "Ventas")" class="dropdown-item @(currentAction == "SolicitudRegresoMaterial" ? "nav-link active" : "")">Solicitud Regreso Material</a>
+
+                    @if (Utilities.DoesUserHasRight(User.Identity.Name, "traspasos"))
+                    {
+                        <div class="nav-submenu">
+                            <a href="#" class="submenu-toggle @(currentAction == "SolicitudInventario" || currentAction == "SolicitudesRecibidas" || currentAction == "SolicitudesPendientes" || currentAction == "RecepcionInventario" || currentAction == "DiscrepanciaTraslado" || currentAction == "Traslados" || currentAction == "ReporteMovimientos" || currentAction == "ConsultarDocumentos" ? "" : "collapsed")">Traspasos</a>
+                            <div class="nav-submenu-menu @(currentAction == "SolicitudInventario" || currentAction == "SolicitudesRecibidas" || currentAction == "SolicitudesPendientes" || currentAction == "RecepcionInventario" || currentAction == "DiscrepanciaTraslado" || currentAction == "Traslados" || currentAction == "ReporteMovimientos" || currentAction == "ConsultarDocumentos" ? "show" : "")">
+                                <a href="@Url.Action("ReporteMovimientos", "Traslados")" class="dropdown-item @(currentAction == "ReporteMovimientos" ? "nav-link active" : "")">Consultar Movimientos de Almacen</a>
+                                <a href="@Url.Action("ConsultarDocumentos", "Inventario")" class="dropdown-item @(currentAction == "ConsultarDocumentos" ? "nav-link active" : "")">Consultar Documentos de Inventario</a>
+                                <a href="@Url.Action("Traslados", "Traslados")" class="dropdown-item @(currentAction == "Traslados" ? "nav-link active" : "")">Traspaso Interno de Inventario</a>
+
+                                @if (Utilities.DoesUserHasRight(User.Identity.Name, "traspasos_sucursales"))
+                                {
+                                    <div class="nav-sub-submenu">
+                                        <a href="#" class="sub-submenu-toggle @(currentAction == "SolicitudInventario" || currentAction == "SolicitudesRecibidas" || currentAction == "SolicitudesPendientes" || currentAction == "RecepcionInventario" || currentAction == "DiscrepanciaTraslado" ? "" : "collapsed")">Traspaso entre sucursales</a>
+                                        <div class="nav-sub-submenu-menu @(currentAction == "SolicitudInventario" || currentAction == "SolicitudesRecibidas" || currentAction == "SolicitudesPendientes" || currentAction == "RecepcionInventario" || currentAction == "DiscrepanciaTraslado" ? "show" : "")">
+                                            <a href="@Url.Action("SolicitudInventario", "Traslados")" class="sub-submenu-item @(currentAction == "SolicitudInventario" ? "nav-link active" : "")">Solicitud inventario</a>
+                                            <a href="@Url.Action("SolicitudesRecibidas", "Traslados")" class="sub-submenu-item @(currentAction == "SolicitudesRecibidas" ? "nav-link active" : "")">Solicitudes Recibidas</a>
+                                            <a href="@Url.Action("SolicitudesPendientes", "Traslados")" class="sub-submenu-item @(currentAction == "SolicitudesPendientes" ? "nav-link active" : "")">Solicitudes Pendientes</a>
+                                            <a href="@Url.Action("RecepcionInventario", "Traslados")" class="sub-submenu-item @(currentAction == "RecepcionInventario" ? "nav-link active" : "")">Recepcion de inventario</a>
+                                            <a href="@Url.Action("DiscrepanciaTraslado", "Traslados")" class="sub-submenu-item @(currentAction == "DiscrepanciaTraslado" ? "nav-link active" : "")">Discrepancias en traslado</a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    <a href="@Url.Action("AdminCortes", "Tubos")" class="dropdown-item @(currentAction == "AdminCortes" ? "nav-link active" : "")">Administracion de cortes</a>
+                </div>
+            </div>
+        }
+        <!-- Soporte Dropdown -->
+        @{
+            var soporteUser = Utilities.GetUserRole(User.Identity.Name, "ERP_SRS");
+            var isSoporte = currentController == "Soporte";
+        }
+    </div>
+
+    <div class="nav-item nav-dropdown">
+        <a href="#" class="nav-link dropdown-toggle collapsed @(isSoporte ? "active" : "")" data-target="#soporteDropdown" data-label="Soporte">
+            <i class="fa-duotone fa-gear-code fa-fw"></i>
+            Soporte
+        </a>
+        <div class="nav-dropdown-menu @(isSoporte ? "show" : "collapsed")" id="soporteDropdown" data-titulo="Soporte">
+            <a href="@Url.Action("EnviarTicket", "Soporte")" class="dropdown-item @(currentAction == "EnviarTicket" ? "nav-link active active" : "")">Enviar Ticket</a>
+            <a href="@Url.Action("VerTicket", "Soporte")" class="dropdown-item @(currentAction == "VerTicket" ? "nav-link active active" : "")">Ver Ticket</a>
+            @{
+                var idUsuarioMenu = BOS_ERP.Helpers.SoporteAuthz.UsuarioActualId(Context.Session) ?? 0;
+                if (BOS_ERP.Helpers.SoporteAuthz.EsStaff(Context.Session, idUsuarioMenu))
+                {
+                    <a href="@Url.Action("AdministracionTicket", "Soporte")" class="dropdown-item @(currentAction == "AdministracionTicket" ? "nav-link active active" : "")">Administración</a>
+                }
+            }
+        </div>
+    </div>
+
+    @if (Utilities.DoesUserHasRole(User.Identity.Name, "Gerente") || Utilities.DoesUserHasArea(User.Identity.Name, "Recursos Humanos"))
+    {
+        var isRecursosHumanos = currentController == "RecursosHumanos";
+        <div class="nav-item nav-dropdown">
+            <a href="#" class="nav-link dropdown-toggle collapsed @(isRecursosHumanos ? "active" : "")" data-target="#gestionRecursosHumanosDropdown" data-label="Solicitud de Salas">
+                <i class="fa-solid fa-people-group"></i>
+                Recursos Humanos
+            </a>
+            <div class="nav-dropdown-menu @(isRecursosHumanos ? "show" : "collapsed")" id="gestionRecursosHumanosDropdown" data-titulo="Solicitud de Salas">
+                <a href="@Url.Action("SolicitudSalas", "RecursosHumanos")" class="dropdown-item @(currentAction == "SolicitudSalas" ? "nav-link active active" : "")">Solicitud de Salas</a>
+            </div>
+        </div>
+    }
+
+    @if (Utilities.DoesUserHasRole(User.Identity.Name, "Gerente"))
+    {
+        var isGestionGerente = currentController == "Gerentes";
+        <div class="nav-item nav-dropdown">
+            <a href="#" class="nav-link dropdown-toggle collapsed @(isGestionGerente ? "active" : "")" data-target="#gestionGerenteDropdown" data-label="Gestión de Usuarios">
+                <i class="fa-solid fa-people-group"></i>
+                Gestion de usuarios
+            </a>
+            <div class="nav-dropdown-menu @(isGestionGerente ? "show" : "collapsed")" id="gestionGerenteDropdown" data-titulo="Gestión de Usuarios">
+                <a href="@Url.Action("GestionUsuarios", "Gerentes")" class="dropdown-item @(currentAction == "GestionUsuarios" ? "nav-link active active" : "")">Usuarios</a>
+            </div>
+        </div>
+    }
+
+    @if (Utilities.DoesUserHasRight(User.Identity.Name, "sistemas"))
+    {
+        var isSettings = currentController == "Settings";
+        <div class="nav-item">
+            <a href="@Url.Action("Settings", "Settings")" class="nav-link @(currentController == "Settings" ? "active" : "")" data-label="Configuración">
+                <i class="fa-duotone fa-gear fa-fw"></i>
+                Configuración
+            </a>
+        </div>
+    }
+    @if (User.Identity.IsAuthenticated)
+    {
+        var isSettings = currentController == "Chat";
+        <div class="nav-item">
+            <a href="@Url.Action("Chat", "Chat")" class="nav-link @(currentController == "Chat" ? "active" : "")" data-label="Chat">
+                <i class="fa-solid fa-message-bot"></i>
+                Asistente IA
+            </a>
+        </div>
+    }
+}

@@ -1,0 +1,620 @@
+@{
+    ViewBag.Title = "Mis facturas";
+    Layout = "~/Views/Portal/_LayoutPortal.cshtml";
+}
+
+@section styles {
+    <style>
+        .filtros {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: end;
+            margin-bottom: 18px;
+        }
+
+            .filtros .campo { min-width: 150px; }
+
+        .resumen {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .dato {
+            background: #fff;
+            border: 1px solid var(--borde);
+            border-radius: 10px;
+            padding: 12px 18px;
+            min-width: 130px;
+        }
+
+            .dato .valor { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+
+            .dato .etiqueta { font-size: .78rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .4px; }
+
+        table.facturas { width: 100%; background: #fff; border-collapse: collapse; }
+
+            table.facturas th {
+                background: var(--azul);
+                color: #fff;
+                font-size: .78rem;
+                text-transform: uppercase;
+                letter-spacing: .4px;
+                padding: 10px;
+                text-align: left;
+            }
+
+            table.facturas td {
+                padding: 10px;
+                border-bottom: 1px solid var(--borde);
+                font-size: .88rem;
+                vertical-align: middle;
+            }
+
+            table.facturas tbody tr:hover { background: #f8fafc; }
+
+        .uuid {
+            font-family: 'Consolas', monospace;
+            font-size: .72rem;
+            color: var(--texto-suave);
+            word-break: break-all;
+        }
+
+        .etiqueta-estatus {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .vigente { background: #dcfce7; color: #166534; }
+        .cancelada { background: #fee2e2; color: #991b1b; }
+
+        /* ── Contado / crédito y estado de pago ───────────────────── */
+        .tipo-contado { background: #e0f2fe; color: #075985; }
+        .tipo-credito { background: #ede9fe; color: #5b21b6; }
+
+        .pago-pagada { background: #dcfce7; color: #166534; }
+        .pago-pendiente { background: #fef3c7; color: #92400e; }
+        .pago-vencida { background: #fee2e2; color: #991b1b; }
+
+        .celda-saldo .saldo-monto { font-weight: 700; }
+
+        .celda-saldo .saldo-nota {
+            display: block;
+            font-size: .72rem;
+            color: var(--texto-suave);
+            margin-top: 2px;
+        }
+
+            .celda-saldo .saldo-nota.atrasada { color: #991b1b; font-weight: 600; }
+
+        .sin-dato { color: var(--texto-suave); }
+
+        /* ── Tarjeta de adeudo ────────────────────────────────────── */
+        .card-adeudo {
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 18px;
+            background: #fff;
+            border: 1px solid var(--borde);
+            border-left: 5px solid #f59e0b;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            display: none; /* sólo aparece si hay algo que deber */
+        }
+
+            .card-adeudo.con-vencido { border-left-color: #dc2626; }
+
+            .card-adeudo .titulo {
+                font-size: .74rem;
+                text-transform: uppercase;
+                letter-spacing: .8px;
+                font-weight: 700;
+                color: var(--texto-suave);
+            }
+
+            .card-adeudo .importe {
+                font-size: 1.9rem;
+                font-weight: 800;
+                line-height: 1.15;
+                margin: 2px 0;
+                color: #92400e;
+            }
+
+            .card-adeudo.con-vencido .importe { color: #991b1b; }
+
+            .card-adeudo .detalle { font-size: .82rem; color: var(--texto-suave); }
+
+            .card-adeudo .vencido {
+                color: #991b1b;
+                font-weight: 700;
+            }
+
+            .card-adeudo .moneda-extra {
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px dashed var(--borde);
+                font-size: .84rem;
+            }
+
+        .acciones { white-space: nowrap; }
+
+            .acciones .btn { padding: 3px 9px; font-size: .78rem; }
+
+        .vacio { text-align: center; color: var(--texto-suave); padding: 40px 20px; }
+
+        .monto { text-align: right; white-space: nowrap; }
+
+        /* ── Socio Tiburón ────────────────────────────────────────── */
+        .fila-superior {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+            .fila-superior .resumen { flex: 1 1 320px; margin-bottom: 0; }
+
+        .card-tiburon {
+            flex: 0 0 320px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            padding: 18px 20px;
+            color: #fff;
+            background: linear-gradient(135deg, #0f3b57 0%, #12628c 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,.12);
+            display: none; /* se muestra sólo si el cliente está inscrito */
+        }
+
+            /* El logo va de fondo, atenuado, para que el texto encima siga legible. */
+            .card-tiburon::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background-image: url('/content/img/logotiburon.png');
+                background-repeat: no-repeat;
+                background-position: right -18px center;
+                background-size: auto 130%;
+                opacity: .16;
+                pointer-events: none;
+            }
+
+            .card-tiburon > * { position: relative; }
+
+            .card-tiburon .titulo {
+                font-size: .74rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                opacity: .85;
+                font-weight: 700;
+            }
+
+            .card-tiburon .puntos {
+                font-size: 2.3rem;
+                font-weight: 800;
+                line-height: 1.05;
+                margin: 4px 0 2px;
+            }
+
+            .card-tiburon .puntos small { font-size: .9rem; font-weight: 600; opacity: .85; }
+
+        .nivel {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 800;
+            letter-spacing: .6px;
+            background: rgba(255,255,255,.18);
+            border: 1px solid rgba(255,255,255,.35);
+        }
+
+        .card-tiburon .canjes { font-size: .76rem; opacity: .8; margin-top: 8px; }
+
+        .btn-tiburon {
+            display: inline-block;
+            margin-top: 12px;
+            background: #fff;
+            color: #0f3b57;
+            font-weight: 700;
+            font-size: .82rem;
+            padding: 7px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+            .btn-tiburon:hover { background: #e8f2f8; color: #0f3b57; }
+
+        @@media (max-width: 720px) {
+            .ocultar-movil { display: none; }
+            .card-tiburon { flex: 1 1 100%; }
+        }
+    </style>
+}
+
+@Html.AntiForgeryToken()
+
+<div class="filtros">
+    <div class="campo">
+        <label class="form-label mb-1">Desde</label>
+        <input type="date" id="desde" class="form-control form-control-sm" />
+    </div>
+    <div class="campo">
+        <label class="form-label mb-1">Hasta</label>
+        <input type="date" id="hasta" class="form-control form-control-sm" />
+    </div>
+    <div class="campo">
+        <label class="form-label mb-1">Tipo de factura</label>
+        <select id="tipo" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            <option value="contado">Contado</option>
+            <option value="credito">Crédito</option>
+        </select>
+    </div>
+    @* El estado de pago sólo tiene sentido sobre facturas a crédito, así que el
+       servidor lo aplica siempre junto con ese filtro. Se deja como campo aparte
+       para que se pueda pedir "lo que debo" sin tener que acordarse de poner
+       primero el tipo. *@
+    <div class="campo">
+        <label class="form-label mb-1">Pago (crédito)</label>
+        <select id="pago" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            <option value="pendientes">Por pagar</option>
+            <option value="vencidas">Vencidas</option>
+            <option value="pagadas">Pagadas</option>
+        </select>
+    </div>
+    <div class="campo">
+        <label class="form-label mb-1">Estatus</label>
+        <select id="estatus" class="form-select form-select-sm">
+            <option value="">Todas</option>
+            <option value="vigentes">Vigentes</option>
+            <option value="canceladas">Canceladas</option>
+        </select>
+    </div>
+    <div>
+        <button type="button" class="btn btn-sm btn-portal" id="btnBuscar">
+            <i class="fas fa-magnifying-glass me-1"></i>Buscar
+        </button>
+    </div>
+</div>
+
+<div class="card-adeudo" id="cardAdeudo"></div>
+
+<div class="fila-superior">
+    <div class="resumen" id="resumen"></div>
+
+    <div class="card-tiburon" id="cardTiburon">
+        <div class="titulo">Socio Tiburón</div>
+        <div class="puntos"><span id="tibPuntos">0</span> <small>puntos</small></div>
+        <span class="nivel" id="tibNivel">—</span>
+        <div class="canjes" id="tibCanjes"></div>
+        <a href="https://sociotiburon.com/" target="_blank" rel="noopener noreferrer"
+           class="btn-tiburon" id="tibEnlace">
+            Canjear mis puntos <i class="fas fa-arrow-up-right-from-square ms-1"></i>
+        </a>
+    </div>
+</div>
+
+<div class="tarjeta p-0" style="overflow-x:auto;">
+    <table class="facturas">
+        <thead>
+            <tr>
+                <th>Folio</th>
+                <th class="ocultar-movil">Fecha</th>
+                <th>Tipo</th>
+                <th>Estatus</th>
+                <th class="monto ocultar-movil">Subtotal</th>
+                <th class="monto ocultar-movil">IVA</th>
+                <th class="monto">Total</th>
+                <th class="monto">Por pagar</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="cuerpo">
+            <tr><td colspan="9" class="vacio"><i class="fas fa-spinner fa-spin me-2"></i>Cargando…</td></tr>
+        </tbody>
+    </table>
+</div>
+
+@section scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const money = v => '$' + (Number(v) || 0).toLocaleString('es-MX',
+                { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            // Cada moneda se formatea con su propio símbolo: mostrar "$" a secas en una
+            // factura en dólares haría que el cliente lea una deuda cinco veces menor.
+            const dinero = (v, moneda) => {
+                const m = (moneda || 'MXN').trim().toUpperCase();
+                const n = (Number(v) || 0).toLocaleString('es-MX',
+                    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return m === 'MXN' || m === 'PESOS' ? '$' + n : '$' + n + ' ' + m;
+            };
+
+            const cuerpo = document.getElementById('cuerpo');
+            const resumen = document.getElementById('resumen');
+            const cardAdeudo = document.getElementById('cardAdeudo');
+
+            function escapar(s) {
+                const d = document.createElement('div');
+                d.textContent = s ?? '';
+                return d.innerHTML;
+            }
+
+            async function cargar() {
+                cuerpo.innerHTML = '<tr><td colspan="9" class="vacio"><i class="fas fa-spinner fa-spin me-2"></i>Cargando…</td></tr>';
+                resumen.innerHTML = '';
+
+                const params = new URLSearchParams({
+                    desde: document.getElementById('desde').value,
+                    hasta: document.getElementById('hasta').value,
+                    estatus: document.getElementById('estatus').value,
+                    tipo: document.getElementById('tipo').value,
+                    pago: document.getElementById('pago').value
+                });
+
+                try {
+                    const r = await fetch('@Url.Action("ObtenerFacturas", "PortalClientes")?' + params, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    // El filtro del portal responde 401 con sessionExpired cuando la
+                    // cookie caducó; sin esto el usuario vería un error de formato.
+                    if (r.status === 401) {
+                        const d = await r.json().catch(() => ({}));
+                        await Swal.fire({ icon: 'warning', title: 'Sesión expirada', text: d.message || 'Vuelve a entrar.' });
+                        window.location.href = '@Url.Action("Acceso", "PortalClientes")';
+                        return;
+                    }
+
+                    if (!r.ok) {
+                        cuerpo.innerHTML = `<tr><td colspan="9" class="vacio">El servidor respondió ${r.status}.</td></tr>`;
+                        return;
+                    }
+
+                    const data = await r.json();
+
+                    if (!data.success) {
+                        cuerpo.innerHTML = `<tr><td colspan="9" class="vacio">${escapar(data.message)}</td></tr>`;
+                        return;
+                    }
+
+                    pintarAdeudo(data.adeudo);
+                    pintarResumen(data.resumen);
+                    pintar(data.facturas);
+                } catch {
+                    cuerpo.innerHTML = '<tr><td colspan="9" class="vacio">No pudimos comunicarnos con el servidor.</td></tr>';
+                }
+            }
+
+            function pintarResumen(r) {
+                if (!r) return;
+
+                let html = `
+                    <div class="dato"><div class="valor">${r.total}</div><div class="etiqueta">Facturas</div></div>
+                    <div class="dato"><div class="valor" style="color:#166534;">${r.vigentes}</div><div class="etiqueta">Vigentes</div></div>
+                    <div class="dato"><div class="valor" style="color:#991b1b;">${r.canceladas}</div><div class="etiqueta">Canceladas</div></div>
+                    <div class="dato"><div class="valor" style="color:#075985;">${r.contado}</div><div class="etiqueta">Contado</div></div>
+                    <div class="dato"><div class="valor" style="color:#5b21b6;">${r.credito}</div><div class="etiqueta">Crédito</div></div>`;
+
+                // Estas dos sólo estorban cuando valen cero: quien paga de contado no
+                // necesita ver un contador de facturas vencidas en blanco cada vez.
+                if (r.porPagar > 0)
+                    html += `<div class="dato"><div class="valor" style="color:#92400e;">${r.porPagar}</div><div class="etiqueta">Por pagar</div></div>`;
+                if (r.vencidas > 0)
+                    html += `<div class="dato"><div class="valor" style="color:#991b1b;">${r.vencidas}</div><div class="etiqueta">Vencidas</div></div>`;
+
+                resumen.innerHTML = html;
+            }
+
+            // El adeudo llega agrupado por moneda y no depende de los filtros: es lo que el
+            // cliente debe hoy, no lo que debe dentro del rango que esté consultando.
+            function pintarAdeudo(adeudo) {
+                if (!Array.isArray(adeudo) || !adeudo.length) {
+                    cardAdeudo.style.display = 'none';
+                    cardAdeudo.innerHTML = '';
+                    return;
+                }
+
+                const principal = adeudo[0];
+                const hayVencido = adeudo.some(a => Number(a.vencido) > 0);
+
+                const linea = a => {
+                    const partes = [`${a.facturas} factura${a.facturas === 1 ? '' : 's'} a crédito sin liquidar`];
+
+                    if (Number(a.vencido) > 0)
+                        partes.push(`<span class="vencido">${dinero(a.vencido, a.moneda)} vencido` +
+                            ` en ${a.facturasVencidas} factura${a.facturasVencidas === 1 ? '' : 's'}</span>`);
+                    else if (a.proximoVencimiento)
+                        partes.push(`vence el ${escapar(a.proximoVencimiento)}`);
+
+                    return partes.join(' · ');
+                };
+
+                let html = `
+                    <div class="titulo"><i class="fas fa-hand-holding-dollar me-1"></i>Saldo pendiente de pago</div>
+                    <div class="importe">${dinero(principal.saldo, principal.moneda)}</div>
+                    <div class="detalle">${linea(principal)}</div>`;
+
+                // El resto de monedas va abajo y sin sumarse a la cifra grande: pesos y
+                // dólares no se pueden juntar en un solo número.
+                for (const a of adeudo.slice(1)) {
+                    html += `
+                        <div class="moneda-extra">
+                            <strong>${dinero(a.saldo, a.moneda)}</strong>
+                            <div class="detalle">${linea(a)}</div>
+                        </div>`;
+                }
+
+                cardAdeudo.innerHTML = html;
+                cardAdeudo.classList.toggle('con-vencido', hayVencido);
+                cardAdeudo.style.display = 'block';
+            }
+
+            // Celda "Por pagar". Sólo las facturas a crédito traen estado de pago; en las
+            // de contado el servidor lo deja vacío a propósito, porque un saldo abierto ahí
+            // es rezago de captura nuestro y no una deuda que el cliente tenga.
+            function celdaSaldo(f) {
+                if (!f.estadoPago)
+                    return '<td class="monto sin-dato">—</td>';
+
+                const clases = {
+                    'Pagada': 'pago-pagada',
+                    'Pendiente': 'pago-pendiente',
+                    'Vencida': 'pago-vencida'
+                };
+
+                if (f.estadoPago === 'Pagada')
+                    return `<td class="monto celda-saldo">
+                                <span class="etiqueta-estatus pago-pagada">Pagada</span>
+                            </td>`;
+
+                const nota = f.diasVencido > 0
+                    ? `<span class="saldo-nota atrasada">Venció el ${escapar(f.vencimiento)} · ${f.diasVencido} día${f.diasVencido === 1 ? '' : 's'}</span>`
+                    : f.vencimiento
+                        ? `<span class="saldo-nota">Vence el ${escapar(f.vencimiento)}</span>`
+                        : '';
+
+                return `<td class="monto celda-saldo">
+                            <span class="saldo-monto">${dinero(f.saldo, f.moneda)}</span>
+                            <span class="etiqueta-estatus ${clases[f.estadoPago]} ms-1">${escapar(f.estadoPago)}</span>
+                            ${nota}
+                        </td>`;
+            }
+
+            function pintar(facturas) {
+                if (!facturas.length) {
+                    cuerpo.innerHTML = '<tr><td colspan="9" class="vacio">No encontramos facturas con esos filtros.</td></tr>';
+                    return;
+                }
+
+                cuerpo.innerHTML = facturas.map(f => {
+                    const clase = f.estatus === 'Cancelada' ? 'cancelada' : 'vigente';
+                    const claseTipo = f.esCredito ? 'tipo-credito' : 'tipo-contado';
+                    const uuid = encodeURIComponent(f.uuid);
+
+                    return `
+                        <tr>
+                            <td>
+                                <strong>${escapar(f.serie)} ${escapar(f.folio)}</strong>
+                                <div class="uuid">${escapar(f.uuid)}</div>
+                            </td>
+                            <td class="ocultar-movil">${escapar(f.fecha)}</td>
+                            <td><span class="etiqueta-estatus ${claseTipo}">${escapar(f.tipo)}</span></td>
+                            <td><span class="etiqueta-estatus ${clase}">${escapar(f.estatus)}</span></td>
+                            <td class="monto ocultar-movil">${money(f.subtotal)}</td>
+                            <td class="monto ocultar-movil">${money(f.iva)}</td>
+                            <td class="monto"><strong>${money(f.total)}</strong> <small>${escapar(f.moneda)}</small></td>
+                            ${celdaSaldo(f)}
+                            <td class="acciones">
+                                <a class="btn btn-outline-danger" title="Descargar PDF"
+                                   href="@Url.Action("DescargarPdf", "PortalClientes")?uuid=${uuid}">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                                <a class="btn btn-outline-secondary" title="Descargar XML"
+                                   href="@Url.Action("DescargarXml", "PortalClientes")?uuid=${uuid}">
+                                    <i class="fas fa-file-code"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-primary enviar"
+                                        data-uuid="${escapar(f.uuid)}" title="Enviar a mi correo">
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                }).join('');
+            }
+
+            cuerpo.addEventListener('click', async e => {
+                const boton = e.target.closest('.enviar');
+                if (!boton) return;
+
+                const htmlOriginal = boton.innerHTML;
+                boton.disabled = true;
+                boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                try {
+                    const fd = new FormData();
+                    fd.append('uuid', boton.dataset.uuid);
+                    const t = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    if (t) fd.append('__RequestVerificationToken', t);
+
+                    const r = await fetch('@Url.Action("EnviarPorCorreo", "PortalClientes")', {
+                        method: 'POST',
+                        body: fd,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    if (r.status === 401) {
+                        await Swal.fire({ icon: 'warning', title: 'Sesión expirada', text: 'Vuelve a entrar.' });
+                        window.location.href = '@Url.Action("Acceso", "PortalClientes")';
+                        return;
+                    }
+
+                    const data = await r.json();
+                    Swal.fire({
+                        icon: data.success ? 'success' : 'error',
+                        title: data.success ? 'Enviado' : 'No se pudo enviar',
+                        text: data.message
+                    });
+                } catch {
+                    Swal.fire({ icon: 'error', title: 'Sin conexión', text: 'No pudimos comunicarnos con el servidor.' });
+                } finally {
+                    boton.disabled = false;
+                    boton.innerHTML = htmlOriginal;
+                }
+            });
+
+            // ── Socio Tiburón ────────────────────────────────────────
+            // Se pide aparte y sin await sobre la carga de facturas: es un servicio
+            // externo y no debe retrasar lo que el cliente vino a ver. Si falla o el
+            // cliente no está inscrito, la tarjeta simplemente no aparece.
+            async function cargarTiburon() {
+                try {
+                    const r = await fetch('@Url.Action("SocioTiburon", "PortalClientes")', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    if (!r.ok) return;
+
+                    const d = await r.json();
+                    if (!d.success || !d.inscrito) return;
+
+                    document.getElementById('tibPuntos').textContent =
+                        (Number(d.puntos) || 0).toLocaleString('es-MX');
+
+                    const nivel = (d.membresia || '').trim();
+                    document.getElementById('tibNivel').textContent = nivel || 'Sin nivel';
+
+                    const canjes = Number(d.canjes) || 0;
+                    document.getElementById('tibCanjes').textContent =
+                        canjes > 0 ? `${canjes} canje${canjes === 1 ? '' : 's'} realizado${canjes === 1 ? '' : 's'}` : '';
+
+                    if (d.url) document.getElementById('tibEnlace').href = d.url;
+
+                    document.getElementById('cardTiburon').style.display = 'block';
+                } catch {
+                    // Silencio deliberado: la tarjeta es un extra, no puede estorbar.
+                }
+            }
+
+            document.getElementById('btnBuscar').addEventListener('click', cargar);
+
+            // Los desplegables recargan solos. Las fechas no: se capturan en dos pasos y
+            // recargar al elegir "Desde" traería el resultado a medias.
+            for (const id of ['tipo', 'pago', 'estatus'])
+                document.getElementById(id).addEventListener('change', cargar);
+            cargar();
+            cargarTiburon();
+        })();
+    </script>
+}

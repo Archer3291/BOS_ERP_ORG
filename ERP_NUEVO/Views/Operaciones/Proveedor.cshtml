@@ -1,0 +1,1308 @@
+﻿@{
+    ViewBag.Title = "Gestión de Usuarios";
+    ViewBag.PageTitle = "Proveedores";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section styles {
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+    <style>
+        /* Tom Select */
+        .ts-wrapper {
+            width: 100%;
+        }
+
+        .ts-control {
+            padding: 8px 10px !important;
+            border: 0.5px solid var(--border-light) !important;
+            border-radius: 7px !important;
+            background: var(--bg-light) !important;
+            min-height: 38px !important;
+            font-size: 13px !important;
+            color: var(--text-dark) !important;
+            box-shadow: none !important;
+        }
+
+            .ts-control:focus-within {
+                border-color: var(--accent-blue) !important;
+                box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important;
+            }
+
+            .ts-control .item {
+                padding-top: 0 !important;
+                color: var(--text-dark) !important;
+                font-size: 13px !important;
+            }
+
+            .ts-control .placeholder,
+            .ts-control input::placeholder {
+                color: var(--text-light) !important;
+            }
+
+        .ts-dropdown {
+            background: var(--bg-light) !important;
+            border: 0.5px solid var(--border-light) !important;
+            border-radius: 7px !important;
+            font-size: 13px !important;
+            color: var(--text-dark) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        }
+
+            .ts-dropdown .option {
+                color: var(--text-dark) !important;
+                padding: 8px 10px !important;
+            }
+
+                .ts-dropdown .option:hover,
+                .ts-dropdown .option.active {
+                    background: var(--bg-gray) !important;
+                    color: var(--text-dark) !important;
+                }
+
+                .ts-dropdown .option.selected {
+                    background: var(--light-blue) !important;
+                    color: var(--primary-blue) !important;
+                }
+
+        .ts-control > input {
+            color: var(--text-dark) !important;
+            font-size: 13px !important;
+        }
+
+        /* Página */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        /* Acciones en tabla */
+        .tbl-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .btn-tbl {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border: 0.5px solid var(--border-light);
+            border-radius: 7px;
+            background: transparent;
+            cursor: pointer;
+            transition: background 0.13s, border-color 0.13s;
+            font-size: 14px;
+        }
+
+            .btn-tbl:hover {
+                background: var(--bg-gray);
+                border-color: #cbd5e1;
+            }
+
+            .btn-tbl.edit {
+                color: var(--warning-color);
+            }
+
+            .btn-tbl.add {
+                color: var(--accent-blue);
+            }
+
+            .btn-tbl.view {
+                color: var(--success-color);
+            }
+
+        .badge-rfc {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            border-radius: var(--badge-radius);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: .02em;
+        }
+
+        /* Modal */
+        .modal-content {
+            border: 0.5px solid var(--border-light);
+            border-radius: 14px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header-custom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 0.5px solid var(--border-light);
+            background: var(--bg-light);
+        }
+
+        .modal-title-custom {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .modal-subtitle {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 1px;
+        }
+
+        /* Tabs dentro del modal */
+        .modal-tabs {
+            display: flex;
+            gap: 0;
+            padding: 0 20px;
+            border-bottom: 0.5px solid var(--border-light);
+            background: var(--bg-light);
+        }
+
+        .modal-tab {
+            padding: 10px 16px;
+            font-size: 13px;
+            color: var(--text-light);
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: color 0.13s;
+            margin-bottom: -1px;
+            user-select: none;
+        }
+
+            .modal-tab.active {
+                color: var(--accent-blue);
+                border-bottom-color: var(--accent-blue);
+                font-weight: 500;
+            }
+
+        .tab-panel {
+            display: none;
+        }
+
+            .tab-panel.active {
+                display: block;
+            }
+
+        /* Secciones dentro del modal */
+        .section-block {
+            margin-bottom: 20px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            padding-bottom: 8px;
+            border-bottom: 0.5px solid var(--border-light);
+            margin-bottom: 12px;
+        }
+
+        .fields-grid {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+            .fields-grid.col-2 {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .fields-grid.col-3 {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+
+            .fields-grid.col-4 {
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+            }
+
+            .fields-grid.col-57 {
+                grid-template-columns: 5fr 7fr;
+            }
+
+        .field-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+            .field-wrap label {
+                font-size: 12px;
+                color: var(--text-light);
+                font-weight: 500;
+            }
+
+            .field-wrap input,
+            .field-wrap select,
+            .field-wrap textarea {
+                padding: 9px 12px;
+                border: 0.5px solid var(--border-light);
+                border-radius: 7px;
+                font-size: 14px;
+                color: var(--text-dark);
+                background: var(--bg-light);
+                outline: none;
+                transition: border-color 0.13s;
+                font-family: inherit;
+                width: 100%;
+                min-height: 38px;
+            }
+
+                .field-wrap input:focus,
+                .field-wrap select:focus,
+                .field-wrap textarea:focus {
+                    border-color: var(--accent-blue);
+                    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+                }
+
+                .field-wrap input[readonly] {
+                    background: var(--bg-gray);
+                    color: var(--text-light);
+                    cursor: default;
+                }
+
+            .field-wrap textarea {
+                resize: none;
+                height: 88px;
+                min-height: unset;
+            }
+
+        /* Footer del modal */
+        .modal-footer-custom {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 14px 20px;
+            border-top: 0.5px solid var(--border-light);
+            background: var(--bg-light);
+        }
+
+        .btn-cancel {
+            padding: 8px 16px;
+            border: 0.5px solid var(--border-light);
+            border-radius: 8px;
+            background: transparent;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+            .btn-cancel:hover {
+                background: var(--bg-gray);
+            }
+
+        .btn-save {
+            padding: 8px 18px;
+            background: var(--primary-blue);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+            .btn-save:hover {
+                background: var(--primary-blue-dark);
+            }
+
+        /* Teléfonos/correos dinámicos */
+        .dynamic-group {
+            position: relative;
+        }
+
+            .dynamic-group .btn-remove {
+                position: absolute;
+                top: 50%;
+                right: 6px;
+                transform: translateY(-50%);
+                width: 20px;
+                height: 20px;
+                border: none;
+                background: transparent;
+                color: var(--danger-color);
+                cursor: pointer;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 4px;
+            }
+
+            .dynamic-group input {
+                padding-right: 30px;
+            }
+
+        .btn-add-dynamic {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border: 0.5px solid var(--border-light);
+            border-radius: 7px;
+            background: transparent;
+            font-size: 12px;
+            color: var(--text-light);
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+            .btn-add-dynamic:hover {
+                background: var(--bg-gray);
+                color: var(--text-dark);
+            }
+
+        /* Tarjetas de contacto */
+        .contact-card {
+            background: var(--bg-light);
+            border: 0.5px solid var(--border-light);
+            border-radius: var(--table-radius, 12px);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .contact-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .contact-role {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .contact-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn-contact-action {
+            padding: 5px 12px;
+            border-radius: 7px;
+            border: 0.5px solid var(--border-light);
+            background: transparent;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--text-light);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .btn-contact-action:hover {
+                background: var(--bg-gray);
+            }
+
+            .btn-contact-action.warn {
+                color: var(--warning-color);
+            }
+    </style>
+    <link href="~/content/compras-nacionales.css" rel="stylesheet" />
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+}
+
+@using (Html.BeginForm(null, null, FormMethod.Post, new { id = "__AjaxAntiForgeryForm" }))
+{
+    @Html.AntiForgeryToken()
+}
+
+<div class="contenedor-tabla">
+    <div class="card-body">
+
+        <div class="row g-2">
+            <div class="col-12 col-sm-4">
+                <div class="page-title">Proveedores</div>
+                <div class="page-subtitle">Gestión de catálogo de proveedores</div>
+            </div>
+            <div class="col-8 row g-2 align-items-center justify-content-center">
+                <button type="button" class="btn btn-sm sky-500 col-12 col-sm-6" id="syncBtn">
+                    <i class="fa-solid fa-rotate"></i> Sincronizar proveedores
+                </button>
+
+                <button type="button" class="btn btn-sm gray-500 col-12 col-sm-6" id="btnNuevoProveedor">
+                    <i class="fa-solid fa-plus"></i> Nuevo proveedor
+                </button>
+            </div>
+        </div>
+
+        <div id="tablaProveedores"></div>
+    </div>
+</div>
+
+
+<!-- ===================== MODAL PROVEEDOR ===================== -->
+<div class="modal fade" id="modalProveedor" tabindex="-1" aria-labelledby="modalProveedorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header-custom">
+                <div>
+                    <div class="modal-title-custom" id="modalProveedorLabel">Nuevo proveedor</div>
+                    <div class="modal-subtitle" id="modalProveedorSub">Completa los datos del proveedor</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="modal-tabs">
+                <div class="modal-tab active" data-tab="tab-general">Datos generales</div>
+                <div class="modal-tab" data-tab="tab-adicional">Información adicional</div>
+                <div class="modal-tab" data-tab="tab-fiscal">Datos fiscales</div>
+            </div>
+
+            <div class="modal-body">
+                <form id="formProveedor" class="container-fluid p-0">
+                    @Html.AntiForgeryToken()
+
+                    <!-- TAB: Datos Generales -->
+                    <div class="tab-panel active" id="tab-general">
+
+                        <div class="section-block">
+                            <div class="section-label">Identificación</div>
+                            <div class="fields-grid col-57">
+                                <div class="field-wrap">
+                                    <label for="cve_prov">Clave</label>
+                                    <input type="text" id="cve_prov" name="Cve_Prov" placeholder="Automática">
+                                </div>
+                                <div class="field-wrap">
+                                    <label for="n_prov">Nombre / Razón social</label>
+                                    <input type="text" id="n_prov" name="N_Prov" placeholder="Nombre comercial o razón social">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <div class="section-label">Ubicación</div>
+                            <div class="row">
+                                <div class="col col-4 field-wrap">
+                                    <label for="dir">Dirección</label>
+                                    <input type="text" id="dir" name="Dir" placeholder="Calle y número">
+                                </div>
+                                <div class="col col-4 field-wrap">
+                                    <label for="col">Colonia</label>
+                                    <input type="text" id="col" name="Col" placeholder="Colonia">
+                                </div>
+                                <div class="col col-4 field-wrap">
+                                    <label for="pob">Población</label>
+                                    <input type="text" id="pob" name="Pob" placeholder="Ciudad">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-3 field-wrap">
+                                    <label for="cp">C.P.</label>
+                                    <input type="text" id="cp" name="Cp" placeholder="00000">
+                                </div>
+                                <div class="col col-3 field-wrap">
+                                    <label for="cve_pais">País</label>
+                                    <select id="cve_pais" name="Cve_Pais">
+                                        <option value="">Selecciona</option>
+                                    </select>
+                                </div>
+                                <div class="col col-3 field-wrap">
+                                    <label for="cve_edo">Estado</label>
+                                    <select id="cve_edo" name="Cve_Edo">
+                                        <option value="">Selecciona</option>
+                                    </select>
+                                </div>
+                                <div class="col col-3 field-wrap">
+                                    <label for="cve_mpio">Municipio</label>
+                                    <select id="cve_mpio" name="Cve_Mpio">
+                                        <option value="">Selecciona</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <div class="section-label">Datos fiscales básicos</div>
+                            <div class="row">
+                                <div class="col col-6 field-wrap">
+                                    <label for="rfc">R.F.C.</label>
+                                    <input type="text" id="rfc" name="Rfc" placeholder="XAXX010101000">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- TAB: Información adicional -->
+                    <div class="tab-panel" id="tab-adicional">
+
+                        <div class="section-block">
+                            <div class="section-label">Asignación</div>
+                            <div class="row">
+                                <div class="col col-6 field-wrap">
+                                    <label for="cve_agcy_cpr">Agente de compras</label>
+                                    <select id="cve_agcy_cpr" name="Cve_Agcy_Cpr"></select>
+                                </div>
+                                <div class="col col-6 field-wrap">
+                                    <label for="cve_gpo">Grupo del proveedor</label>
+                                    <select id="cve_gpo" name="Cve_Gpo"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <div class="section-label">Crédito y descuentos</div>
+                            <div class="row">
+                                <div class="col col-6 field-wrap">
+                                    <label for="lim_crd">Límite de crédito</label>
+                                    <input type="number" id="lim_crd" name="Lim_Crd" placeholder="0.00" step="0.01">
+                                </div>
+                                <div class="col col-6 field-wrap">
+                                    <label for="pl_crd">Plazo (días)</label>
+                                    <input type="number" id="pl_crd" name="Pl_Crd" placeholder="0">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col col-6 field-wrap">
+                                    <label for="dto">Descuento 1</label>
+                                    <input type="text" id="dto" name="Dto" placeholder="0%">
+                                </div>
+                                <div class="col col-6 field-wrap">
+                                    <label for="dto2">Descuento 2</label>
+                                    <input type="text" id="dto2" name="Dto2" placeholder="0%">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <div class="section-label">Notas</div>
+                            <div class="field-wrap">
+                                <label for="coment1">Comentario</label>
+                                <textarea id="coment1" name="Coment1" placeholder="Escribe un comentario..."></textarea>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- TAB: Datos Fiscales -->
+                    <div class="tab-panel" id="tab-fiscal">
+
+                        <div class="section-block">
+                            <div class="section-label">DIOT</div>
+                            <div class="row">
+                                <div class="col col-6 field-wrap">
+                                    <label for="cve_tp_prov">Tipo de proveedor</label>
+                                    <select id="cve_tp_prov" name="Cve_Tp_Prov">
+                                        <option value="1">Nacional</option>
+                                        <option value="2">Internacional</option>
+                                    </select>
+                                </div>
+                                <div class="col col-6 field-wrap">
+                                    <label for="cve_pais_prov">País del proveedor</label>
+                                    <select id="cve_pais_prov" name="Cve_Pais_Prov"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-block">
+                            <div class="section-label">Pagos (CFDI)</div>
+                            <div class="row">
+                                <div class="col col-6 field-wrap">
+                                    <label for="uso_cfdi">Uso del comprobante</label>
+                                    <select id="uso_cfdi" name="Uso_Cfdi"></select>
+                                </div>
+                                <div class="col col-6 field-wrap">
+                                    <label for="fp">Forma de pago</label>
+                                    <select id="fp" name="Fp"></select>
+                                </div>
+                                <div class="col col-6 field-wrap">
+                                    <label for="mdp">Método de pago</label>
+                                    <select id="mdp" name="Mdp"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                <button id="btnGuardarProveedor" type="button" class="btn-save">Guardar proveedor</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===================== MODAL AGREGAR / EDITAR CONTACTO ===================== -->
+<div class="modal fade" id="modalAgregarContacto" tabindex="-1" aria-labelledby="modalAgregarContactoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="formContacto" data-mode="create">
+                <div class="modal-header-custom">
+                    <div>
+                        <div class="modal-title-custom" id="modalAgregarContactoLabel">Agregar contacto</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="section-block">
+                        <div class="section-label">Datos del contacto</div>
+                        <input type="hidden" id="provid" name="provid">
+                        <div class="row">
+                            <div class="col col-4 field-wrap">
+                                <label for="idcontactosprov">Clave proveedor</label>
+                                <input type="text" id="idcontactosprov" name="IdContactosProv" readonly>
+                            </div>
+                            <div class="col col-4 field-wrap">
+                                <label for="nombre">Nombre</label>
+                                <input type="text" id="nombre" name="Nombre" placeholder="Nombre completo" required>
+                            </div>
+                            <div class="col col-4 field-wrap">
+                                <label for="puesto">Puesto</label>
+                                <input type="text" id="puesto" name="Puesto" placeholder="Cargo o puesto">
+                            </div>
+                        </div>
+                        <div class="field-wrap" style="margin-top:10px">
+                            <label for="comentarios">Comentarios</label>
+                            <textarea id="comentarios" name="Comentarios" placeholder="Observaciones..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-label">Teléfonos</div>
+                        <div id="telefonos-container" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                        <button type="button" class="btn-add-dynamic" onclick="agregarTelefono()">
+                            <i class="fa-solid fa-plus fa-xs"></i> Teléfono
+                        </button>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-label">Correos electrónicos</div>
+                        <div id="correos-container" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                        <button type="button" class="btn-add-dynamic" onclick="agregarCorreo()">
+                            <i class="fa-solid fa-plus fa-xs"></i> Correo
+                        </button>
+                    </div>
+
+                </div>
+                <div class="modal-footer-custom">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-save" id="btnGuardarContacto">Guardar contacto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- ===================== MODAL VER CONTACTOS ===================== -->
+<div class="modal fade" id="modalVerContactos" tabindex="-1" aria-labelledby="modalVerContactosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header-custom">
+                <div>
+                    <div class="modal-title-custom" id="modalVerContactosLabel">Contactos del proveedor</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="contactosBody"></div>
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== MODAL Sincronizar proveedores con kepler ===================== -->
+<div class="modal fade" id="modalSync" tabindex="-1" aria-labelledby="modalSyncLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header-custom">
+                <div>
+                    <div class="modal-title-custom" id="modalSyncLabel">Sincronizar proveedores con kepler</div>
+                    <div class="modal-subtitle" id="modalSyncSub">Selecciona que proveedores quieres sincronizar</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <select id="empresaSync" class="form-select">
+                    <option value="SRS">Sellos y retenes</option>
+                    <option value="ITF">Interfijo</option>
+                    <option value="AHN">Articulos Hidraulicos</option>
+                    <option value="SRV">Sellos y retenes Veracruz</option>
+                </select>
+                <div id="tableSync"></div>
+            </div>
+
+            <div class="modal-footer-custom">
+                <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                <button id="btnSaveSync" type="button" class="btn-save">Sincronizar seleccionados</button>
+                <button id="btnSaveAllSync" type="button" class="btn-save">Sincronizar todos</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/General/general.js"></script>
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+
+        // ── Estado global ────────────────────────────────────────────────────
+        let contactosGlobal = [];
+        let claveProveedorActual = { nacional: '', internacional: '' };
+        let datosFormulario = { paises: [] };
+        let tomPaisSelect, tomEstadoSelect, tomMunicipioSelect;
+        let tablaSyncInstance;
+
+        const modalProveedorEl = document.getElementById('modalProveedor');
+        const modalProveedorInstance = new bootstrap.Modal(modalProveedorEl);
+
+        const modalSyncEl = document.getElementById('modalSync');
+        const modalSyncInstance = new bootstrap.Modal(modalSyncEl);
+
+        // ── Tabs del modal ────────────────────────────────────────────────────
+        document.querySelectorAll('.modal-tab').forEach(tab => {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ── Tabla de proveedores ──────────────────────────────────────────────
+        const tablaProveedores = createTable({
+            selector: '#tablaProveedores',
+            path: '/Proveedor/GetProveedores',
+            rowKey: 'id_prov',
+            columns: [
+                { data: 'cve_prov', title: 'Clave', className: 'td-mono' },
+                { data: 'n_prov', title: 'Nombre', formatter: (v) => `<span style="font-weight:500">${v}</span>` },
+                { data: 'dir', title: 'Dirección' },
+                { data: 'col', title: 'Colonia' },
+                { data: 'pob', title: 'Población' },
+                { data: 'tel', title: 'Teléfono' },
+                { data: 'rfc', title: 'RFC', formatter: (v) => v ? `<span class="badge-rfc">${v}</span>` : '—' },
+            ],
+            actions: [
+                {
+                    title: 'Editar',
+                    icon: 'fa-pen-to-square',
+                    color: 'btn-tbl edit',
+                    onClick: (row) => editarProveedor(row.cve_prov)
+                },
+                {
+                    title: 'Agregar contacto',
+                    icon: 'fa-user-plus',
+                    color: 'btn-tbl add',
+                    onClick: (row) => agregarContacto(row.id_prov, row.cve_prov)
+                },
+                {
+                    title: 'Ver contactos',
+                    icon: 'fa-address-book',
+                    color: 'btn-tbl view',
+                    onClick: (row) => verContactos(row.id_prov)
+                }
+            ]
+        });
+
+        // ── Tom Select: inicializar ───────────────────────────────────────────
+        function inicializarSelects() {
+            tomPaisSelect = new TomSelect('#cve_pais', {
+                valueField: 'id_pais', labelField: 'nombre', searchField: 'nombre',
+                placeholder: 'Selecciona un país',
+                onChange: (value) => cargarEstados(value)
+            });
+            tomEstadoSelect = new TomSelect('#cve_edo', {
+                valueField: 'id_estado', labelField: 'nombre', searchField: 'nombre',
+                placeholder: 'Selecciona un estado',
+                onChange: (value) => cargarMunicipios(value)
+            });
+            tomMunicipioSelect = new TomSelect('#cve_mpio', {
+                valueField: 'id_municipio', labelField: 'nombre', searchField: 'nombre',
+                placeholder: 'Selecciona un municipio'
+            });
+            tomEstadoSelect.disable();
+            tomMunicipioSelect.disable();
+        }
+
+        function cargarPaises() {
+            tomPaisSelect.clear(); tomPaisSelect.clearOptions();
+            datosFormulario.paises.forEach(p => tomPaisSelect.addOption({ id_pais: p.id_pais, nombre: p.nombre }));
+            const mexico = datosFormulario.paises.find(p => /m[ée]xico/i.test(p.nombre));
+            if (mexico) tomPaisSelect.setValue(mexico.id_pais);
+        }
+
+        // Reemplazado con GetData
+        function cargarEstados(paisId) {
+            tomEstadoSelect.clear(); tomEstadoSelect.clearOptions();
+            tomMunicipioSelect.clear(); tomMunicipioSelect.clearOptions();
+            tomMunicipioSelect.disable();
+            if (!paisId) { tomEstadoSelect.disable(); return; }
+            tomEstadoSelect.disable();
+
+            GetData({ path: `/Proveedor/GetEstadosByPais?paisId=${paisId}`, method: 'GET' })
+                .then(data => {
+                    if (data?.success) {
+                        data.estados.forEach(e => tomEstadoSelect.addOption({ id_estado: e.id_estado, nombre: e.nombre }));
+                        tomEstadoSelect.enable();
+                    } else {
+                        toastMixin.fire({ icon: 'error', title: 'Error al cargar estados' });
+                    }
+                });
+        }
+
+        // Reemplazado con GetData
+        function cargarMunicipios(estadoId) {
+            tomMunicipioSelect.clear(); tomMunicipioSelect.clearOptions();
+            if (!estadoId) { tomMunicipioSelect.disable(); return; }
+            tomMunicipioSelect.disable();
+
+            GetData({ path: `/Proveedor/GetMunicipiosByEstado?estadoId=${estadoId}`, method: 'GET' })
+                .then(data => {
+                    if (data?.success) {
+                        data.municipios.forEach(m => tomMunicipioSelect.addOption({ id_municipio: m.id_municipio, nombre: m.nombre }));
+                        tomMunicipioSelect.enable();
+                    } else {
+                        toastMixin.fire({ icon: 'error', title: 'Error al cargar municipios' });
+                    }
+                });
+        }
+
+        // Reemplazado con GetData
+        function cargarSiguienteClave(tipoProveedor) {
+            const inputClave = document.getElementById('cve_prov');
+            if (tipoProveedor == 1 && claveProveedorActual.nacional) { inputClave.value = claveProveedorActual.nacional; return; }
+            if (tipoProveedor == 2 && claveProveedorActual.internacional) { inputClave.value = claveProveedorActual.internacional; return; }
+
+            GetData({ path: `/Proveedor/SiguienteFolio?cve_tp_prov=${tipoProveedor}`, method: 'GET' })
+                .then(data => {
+                    if (data?.success) {
+                        inputClave.value = data.cve_proveedor;
+                        if (tipoProveedor == 1) claveProveedorActual.nacional = data.cve_proveedor;
+                        else claveProveedorActual.internacional = data.cve_proveedor;
+                    } else {
+                        toastMixin.fire({ icon: 'error', title: 'Error al obtener la clave del proveedor' });
+                    }
+                });
+        }
+
+        document.getElementById('cve_tp_prov').addEventListener('change', function () {
+            const modo = document.getElementById('btnGuardarProveedor').getAttribute('data-modo') || 'crear';
+            if (modo === 'crear') cargarSiguienteClave(this.value);
+        });
+
+
+
+        // Reemplazado con GetData
+        function editarProveedor(clave) {
+            GetData({ path: `/Proveedor/GetByClave?cve_prov=${clave}`, method: 'GET' })
+                .then(data => {
+                    if (!data?.success) { toastMixin.fire({ icon: 'error', title: data?.message }); return; }
+                    const prov = data.proveedor;
+                    const form = document.getElementById('formProveedor');
+
+                    for (const key in prov) {
+                        const input = form.querySelector(`[id="${key}"]`);
+                        if (input && !['cve_pais', 'cve_edo', 'cve_mpio'].includes(key)) input.value = prov[key];
+                    }
+
+                    if (prov.cve_pais) {
+                        tomPaisSelect.setValue(prov.cve_pais);
+                        setTimeout(() => {
+                            if (prov.cve_edo) {
+                                tomEstadoSelect.setValue(prov.cve_edo);
+                                setTimeout(() => { if (prov.cve_mpio) tomMunicipioSelect.setValue(prov.cve_mpio); }, 300);
+                            }
+                        }, 300);
+                    }
+
+                    document.getElementById('modalProveedorLabel').textContent = 'Editar proveedor';
+                    document.getElementById('modalProveedorSub').textContent = `Modificando: ${prov.n_prov}`;
+                    const btn = document.getElementById('btnGuardarProveedor');
+                    btn.textContent = 'Actualizar proveedor';
+                    btn.setAttribute('data-modo', 'editar');
+
+                    // Ir al primer tab
+                    document.querySelectorAll('.modal-tab')[0].click();
+                    modalProveedorInstance.show();
+                });
+        }
+
+        // Guardar / actualizar
+        document.getElementById('btnGuardarProveedor').addEventListener('click', function () {
+            const modo = this.getAttribute('data-modo') || 'crear';
+            const url = modo === 'editar' ? '/Proveedor/Update' : '/Proveedor/Create';
+
+            postFormData('formProveedor', url).then(_res => {
+                if (_res.success) {
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: modo === 'editar' ? 'Proveedor actualizado.' : 'Proveedor creado.'
+                    });
+                    tablaProveedores.reload();
+                    document.getElementById('formProveedor').reset();
+                    modalProveedorInstance.hide();
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style = '';
+                } else {
+                    toastMixin.fire({ icon: 'error', title: _res.message || 'Error al guardar el proveedor.' });
+                }
+            });
+        });
+
+        function limpiarFormularioProveedor() {
+            const form = document.getElementById('formProveedor');
+            form.reset();
+            tomPaisSelect.clear();
+            tomEstadoSelect.clear(); tomEstadoSelect.disable();
+            tomMunicipioSelect.clear(); tomMunicipioSelect.disable();
+            const mexico = datosFormulario.paises.find(p => /m[ée]xico/i.test(p.nombre));
+            if (mexico) tomPaisSelect.setValue(mexico.id_pais);
+            document.getElementById('cve_prov').disabled = false;
+            const tipoDefault = document.getElementById('cve_tp_prov').value || '1';
+            cargarSiguienteClave(tipoDefault);
+            document.getElementById('modalProveedorLabel').textContent = 'Nuevo proveedor';
+            document.getElementById('modalProveedorSub').textContent = 'Completa los datos del proveedor';
+            const btn = document.getElementById('btnGuardarProveedor');
+            btn.textContent = 'Guardar proveedor';
+            btn.setAttribute('data-modo', 'crear');
+            document.querySelectorAll('.modal-tab')[0].click();
+        }
+
+        // ── DOMContentLoaded ─────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            inicializarSelects();
+
+            GetData({ path: '/Proveedor/DatosFormulario' }).then((data) => {
+                datosFormulario = { paises: data.data.paises || [] };
+                cargarPaises();
+                llenarSelect('cve_gpo', data.data.categorias, 'id', 'nombre');
+                llenarSelect('fp', data.data.formaspago, 'id_f_pago', 'descripcion');
+                llenarSelect('mdp', data.data.mdp, 'id_mdp', 'cve_mdp');
+                llenarSelect('uso_cfdi', data.data.catusocfdi, 'clave', 'descripcion');
+                llenarSelect('cve_agcy_cpr', data.data.vendedores, 'id', 'nombre');
+                llenarSelect('cve_pais_prov', data.data.paises, 'id_pais', 'nombre');
+                cargarSiguienteClave(1);
+                cargarSiguienteClave(2);
+            }).catch(err => console.error('Error al cargar datos del formulario:', err));
+
+            document.getElementById('btnNuevoProveedor').addEventListener('click', function () {
+                limpiarFormularioProveedor();
+                modalProveedorInstance.show();
+            });
+
+            document.getElementById('syncBtn').addEventListener('click', function () {
+                limpiarFormularioProveedor();
+                tablaSyncInstance = createTable({
+                    selector: '#tableSync',
+                    path: '/Proveedor/GetProveedoresKepler',
+                    rowKey: 'clave',
+                    columns: [
+                        { data: 'clave', title: 'Clave', className: 'td-mono' },
+                        { data: 'nombre', title: 'Nombre', formatter: (v) => `<span style="font-weight:500">${v}</span>` },
+                        { data: 'direccion', title: 'Dirección' },
+                        { data: 'colonia', title: 'Colonia' },
+                        { data: 'poblacion', title: 'Población' },
+                        { data: 'rfc', title: 'RFC', formatter: (v) => v ? `<span class="badge-rfc">${v}</span>` : '—' },
+                    ],
+                    selectable: {
+                        enabled: true,
+                        onChange: (e) => {
+                            console.log(e)
+                        }
+                    },
+                    data: {
+                        empresa: document.getElementById('empresaSync').value
+                    }
+                });
+                modalSyncInstance.show();
+            });
+        });
+
+        // ── Contactos ────────────────────────────────────────────────────────
+        function agregarContacto(provid, idcontactosprov) {
+            const form = document.getElementById('formContacto');
+            form.reset();
+            form.setAttribute('data-mode', 'create');
+            document.getElementById('telefonos-container').innerHTML = '';
+            document.getElementById('correos-container').innerHTML = '';
+            document.getElementById('provid').value = provid;
+            document.getElementById('idcontactosprov').value = idcontactosprov;
+            document.getElementById('modalAgregarContactoLabel').textContent = 'Agregar contacto';
+            document.getElementById('btnGuardarContacto').textContent = 'Guardar contacto';
+            setTimeout(() => new bootstrap.Modal(document.getElementById('modalAgregarContacto')).show(), 100);
+        }
+
+        function agregarTelefono() {
+            const container = document.getElementById('telefonos-container');
+            const index = container.querySelectorAll('.dynamic-group').length;
+            const div = document.createElement('div');
+            div.className = 'dynamic-group';
+            div.style.cssText = 'position:relative; min-width:160px;';
+            div.innerHTML = `
+                                                                <input type="text" name="telefonos[${index}].Tel" placeholder="Teléfono" style="padding-right:30px; border:0.5px solid var(--border-light); border-radius:7px; font-size:13px; padding:7px 30px 7px 10px; width:100%; outline:none;">
+                                                                <button type="button" class="btn-remove" onclick="this.closest('.dynamic-group').remove()">×</button>`;
+            container.appendChild(div);
+        }
+
+        function agregarCorreo() {
+            const container = document.getElementById('correos-container');
+            const index = container.querySelectorAll('.dynamic-group').length;
+            const div = document.createElement('div');
+            div.className = 'dynamic-group';
+            div.style.cssText = 'position:relative; min-width:200px;';
+            div.innerHTML = `
+                                                                <input type="email" name="correos[${index}].Correo" placeholder="Correo electrónico" style="border:0.5px solid var(--border-light); border-radius:7px; font-size:13px; padding:7px 30px 7px 10px; width:100%; outline:none;">
+                                                                <button type="button" class="btn-remove" onclick="this.closest('.dynamic-group').remove()">×</button>`;
+            container.appendChild(div);
+        }
+
+        document.getElementById('formContacto').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = e.target;
+            const modo = form.getAttribute('data-mode');
+            const url = modo === 'edit' ? '/Proveedor/ContactosEdit' : '/Proveedor/ContactosCreate';
+            const proveedorId = document.getElementById('provid').value;
+
+            postFormData('formContacto', url).then(_res => {
+                if (_res.success) {
+                    toastMixin.fire({ icon: 'success', title: `Contacto ${modo === 'edit' ? 'editado' : 'creado'} correctamente.` });
+                    bootstrap.Modal.getInstance(document.getElementById('modalAgregarContacto'))?.hide();
+                    if (proveedorId) verContactos(proveedorId);
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style = '';
+                } else {
+                    toastMixin.fire({ icon: 'error', title: _res.message || 'Error al guardar el contacto.' });
+                }
+            });
+        });
+
+        // Reemplazado con GetData
+        function verContactos(id_prov) {
+            const contenedor = document.getElementById('contactosBody');
+
+            GetData({ path: `/Proveedor/GetContactosByProveedor?id_prov=${encodeURIComponent(id_prov)}`, method: 'GET' })
+                .then(data => {
+                    if (!data?.success) {
+                        contenedor.innerHTML = `<div class="alert alert-danger">⚠️ ${data?.message}</div>`;
+                        return;
+                    }
+                    contactosGlobal = data.contactos;
+                    if (!data.contactos.length) {
+                        contenedor.innerHTML = `<p style="color:var(--text-light); text-align:center; padding:2rem;">No hay contactos registrados para este proveedor.</p>`;
+                    } else {
+                        contenedor.innerHTML = `
+                                                                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:14px;">
+                                                                                ${data.contactos.map((c, i) => `
+                                                                                    <div class="contact-card">
+                                                                                        <div>
+                                                                                            <div class="contact-name">${c.nombre}</div>
+                                                                                            <div class="contact-role">${c.puesto || '—'}</div>
+                                                                                        </div>
+                                                                                        <p style="font-size:13px; color:var(--text-light); margin:0;">${c.comentarios || ''}</p>
+                                                                                        <div class="contact-actions">
+                                                                                            <button class="btn-contact-action" onclick="verDetalleContacto('Correos', ${i})">
+                                                                                                <i class="fa-solid fa-envelope fa-xs"></i> Correos
+                                                                                            </button>
+                                                                                            <button class="btn-contact-action" onclick="verDetalleContacto('Teléfonos', ${i})">
+                                                                                                <i class="fa-solid fa-phone fa-xs"></i> Teléfonos
+                                                                                            </button>
+                                                                                            <button class="btn-contact-action warn" onclick="editarContacto(${i})">
+                                                                                                <i class="fa-solid fa-pen-to-square fa-xs"></i> Editar
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </div>`).join('')}
+                                                                            </div>`;
+                    }
+                    new bootstrap.Modal(document.getElementById('modalVerContactos')).show();
+                });
+        }
+
+        function verDetalleContacto(titulo, index) {
+            const contacto = contactosGlobal[index];
+            const items = titulo === 'Correos' ? contacto.correos : contacto.telefonos;
+            if (!items?.length) {
+                Swal.fire({ icon: 'info', title: titulo, text: `No hay ${titulo.toLowerCase()} registrados.`, confirmButtonText: 'Cerrar' });
+                return;
+            }
+            const listItems = items.map(i => titulo === 'Correos'
+                ? `<li class="list-group-item"><a href="mailto:${i}"><i class="fa fa-envelope me-2"></i>${i}</a></li>`
+                : `<li class="list-group-item"><a href="tel:${i}"><i class="fa fa-phone me-2"></i>${i}</a></li>`
+            ).join('');
+            Swal.fire({ title: `${titulo} de ${contacto.nombre}`, html: `<ul class="list-group text-start">${listItems}</ul>`, width: 500, confirmButtonText: 'Cerrar' });
+        }
+
+        function editarContacto(index) {
+            const contacto = contactosGlobal[index];
+            const form = document.getElementById('formContacto');
+            form.reset();
+            form.setAttribute('data-mode', 'edit');
+            document.getElementById('telefonos-container').innerHTML = '';
+            document.getElementById('correos-container').innerHTML = '';
+            document.getElementById('modalAgregarContactoLabel').textContent = 'Editar contacto';
+            document.getElementById('btnGuardarContacto').textContent = 'Guardar cambios';
+            document.getElementById('provid').value = contacto.idproveedor || '';
+            document.getElementById('idcontactosprov').value = contacto.id_contactos_prov || '';
+            document.getElementById('nombre').value = contacto.nombre || '';
+            document.getElementById('puesto').value = contacto.puesto || '';
+            document.getElementById('comentarios').value = contacto.comentarios || '';
+
+            if (Array.isArray(contacto.telefonos)) {
+                contacto.telefonos.forEach((t, i) => {
+                    const container = document.getElementById('telefonos-container');
+                    const div = document.createElement('div');
+                    div.className = 'dynamic-group';
+                    div.style.cssText = 'position:relative; min-width:160px;';
+                    div.innerHTML = `<input type="text" name="telefonos[${i}].Tel" value="${t}" placeholder="Teléfono" style="border:0.5px solid var(--border-light); border-radius:7px; font-size:13px; padding:7px 30px 7px 10px; width:100%; outline:none;"><button type="button" class="btn-remove" onclick="this.closest('.dynamic-group').remove()">×</button>`;
+                    container.appendChild(div);
+                });
+            }
+            if (Array.isArray(contacto.correos)) {
+                contacto.correos.forEach((c, i) => {
+                    const container = document.getElementById('correos-container');
+                    const div = document.createElement('div');
+                    div.className = 'dynamic-group';
+                    div.style.cssText = 'position:relative; min-width:200px;';
+                    div.innerHTML = `<input type="email" name="correos[${i}].Correo" value="${c}" placeholder="Correo" style="border:0.5px solid var(--border-light); border-radius:7px; font-size:13px; padding:7px 30px 7px 10px; width:100%; outline:none;"><button type="button" class="btn-remove" onclick="this.closest('.correo-group').remove()">×</button>`;
+                    container.appendChild(div);
+                });
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalVerContactos'))?.hide();
+            setTimeout(() => new bootstrap.Modal(document.getElementById('modalAgregarContacto')).show(), 300);
+        }
+
+        const warningIcon = `
+                                                <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+                                                    <style>
+                                                        .flip {
+                                                            animation: spinY 2s linear infinite;
+                                                            transform-origin: center;
+                                                        }
+                                                        @@keyframes spinY {
+                                                            0%   { transform: rotateY(0deg); }
+                                                            100% { transform: rotateY(360deg); }
+                                                        }
+                                                    </style>
+                                                    <g class="flip">
+                                                        <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                                                        <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                                                        <circle cx="32" cy="48" r="3" fill="#000"/>
+                                                    </g>
+                                                </svg>`;
+
+        document.getElementById('btnSaveSync').addEventListener('click', async () => {
+            _Swal.fire({
+                iconHtml: warningIcon,
+                title: "Confirmar recepción",
+                html: `
+                                                        <div>
+                                                            <p>¿Está seguro que desea proceder con la sincronizacion de los proveedores?</p>
+                                                        </div>
+                                                    `,
+                footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+                customClass: {
+                    icon: "p-0 bg-transparent border-0 shadow-none"
+                },
+                preConfirm: () => {
+                    const proveedores = Array.from(tablaSyncInstance.getSelectedRows()).map(x => x.clave);
+
+                    if (proveedores.length <= 0) {
+                        _Swal.fire({
+                            icon: 'error',
+                            title: 'Campos invalidos',
+                            html: 'Por favor seleccione al menos un proveedor para sincronizar.',
+                        });
+
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: 'Sincronizando proveedores, esto puede tardar unos minutos...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    GetData({
+                        path: '/Proveedor/SyncProveedores',
+                        swalResponse: true,
+                        swalType: 'modal',
+                        data: {
+                            empresa: document.getElementById('empresaSync').value,
+                            claves: JSON.stringify(proveedores)
+                        }
+                    })
+                }
+            })
+        })
+
+        document.getElementById('btnSaveAllSync').addEventListener('click', async () => {
+            _Swal.fire({
+                iconHtml: warningIcon,
+                title: "Confirmar recepción",
+                html: `
+                                                        <div>
+                                                            <p>¿Está seguro que desea proceder con la sincronizacion de los proveedores?</p>
+                                                        </div>
+                                                    `,
+                footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+                customClass: {
+                    icon: "p-0 bg-transparent border-0 shadow-none"
+                },
+                preConfirm: () => {
+                    Swal.fire({
+                        title: 'Sincronizando proveedores, esto puede tardar unos minutos...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    const proveedores = Array.from(tablaSyncInstance.getSelectedRows()).map(x => x.clave);
+
+                    GetData({
+                        path: '/Proveedor/SyncProveedoresAll',
+                        swalResponse: true,
+                        swalType: 'modal',
+                        data: {
+                            empresa: document.getElementById('empresaSync').value,
+                        }
+                    })
+                }
+            })
+        })
+    </script>
+}

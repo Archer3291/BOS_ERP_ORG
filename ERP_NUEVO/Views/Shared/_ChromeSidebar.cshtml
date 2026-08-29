@@ -1,0 +1,36 @@
+@using BOS_ERP.Controllers
+@using BOS_ERP.Models
+@{
+    // Chrome de barra lateral vertical. Sirve para los layouts: "sidebar" (default), "compact" e "hybrid".
+    // Las diferencias visuales entre esos tres se resuelven por CSS vía body[data-layout] en layouts.css.
+    var tema = ViewData["Tema"] as UsuarioTema;
+    var sbPos = tema?.SidebarPosicion ?? "left";
+    var sbHover = tema?.SidebarHoverEfecto ?? "slide";
+    // El layout "compact" reutiliza el icon-mode existente (probado: flyouts + tooltips).
+    var sbModo = (tema?.LayoutTipo == "compact") ? "iconos" : (tema?.SidebarModo ?? "normal");
+}
+<!-- Sidebar -->
+@{
+    // Compact => icon-mode renderizado desde el servidor (no depende de que el JS
+    // agregue la clase; el JS de flyouts/tooltips igual la lee vía data-sb-modo).
+    var iconModeClass = (sbModo == "iconos") ? "icon-mode" : "";
+}
+<div class="sidebar @(sbPos == "right" ? "sb-right" : "") sb-hover-@sbHover @iconModeClass" id="sidebar" data-sb-modo="@sbModo">
+    <div class="sidebar-header d-flex align-items-center justify-content-center">
+        <a class="navbar-brand" href="@Url.Action("Index", "Home")">
+            <img src="~/content/img/@Utilities.GetEmpresaName(User.Identity.Name)/logo-light.png" id="header_logo" height="50" alt="SRS Logo" loading="lazy" />
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        @await Html.PartialAsync("_Menu")
+    </nav>
+
+    <div class="theme-toggle">
+        <span>Modo Oscuro</span>
+        <label class="theme-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="theme-slider"></span>
+        </label>
+    </div>
+</div>

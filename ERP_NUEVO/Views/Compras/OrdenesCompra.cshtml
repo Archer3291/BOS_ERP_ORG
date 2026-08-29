@@ -1,0 +1,432 @@
+﻿@{
+    ViewBag.Title = "OrdenesCompra";
+    ViewBag.PageTitle = "Órdenes de compra";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="mb-4 w-50">
+    <label for="selectorTabla" class="form-label">
+        <i class="fa-solid fa-table"></i> Mostrar tabla
+    </label>
+    <select id="selectorTabla" class="form-select">
+        <option value="tablaPorFacturar">Pendientes de factura</option>
+        <option value="tablaFacturadas">Facturadas</option>
+    </select>
+</div>
+
+<div>
+    <div class="contenedor-tabla" id="contenedor-tablaPorFacturar"><div id="tablaPorFacturar"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaFacturadas"><div id="tablaFacturadas"></div></div>
+</div>
+
+<!-- Registro de factura del proveedor -->
+<div class="modal fade" id="modalFacturarOC" tabindex="-1" aria-labelledby="modalFacturarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalFacturarLabel">
+                    <i class="bi bi-receipt me-2"></i> Registrar factura
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="cuerpoFacturar"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Cancelar
+                </button>
+                <button type="button" id="btn-registrar-factura" class="btn btn-success">
+                    <i class="bi bi-check-lg me-1"></i> Registrar factura y generar cartera
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/scripts/TableBuilder.js"></script>
+<script src="~/scripts/compras-nacionales.js?v=@DateTime.Now.Ticks"></script>
+<script>
+    // ============================================
+    // PASO 8 — FACTURACIÓN DE LA ORDEN DE COMPRA
+    // Al subir el CFDI se compara contra la orden, se marca la modalidad
+    // de pago y se genera la póliza y la cartera del proveedor.
+    // ============================================
+    const TABLAS_OC = {
+        tablaPorFacturar: {
+            url: '/Requisicion/GetOrdenesPorFacturar',
+            acciones: [
+                { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                { icon: 'fa-receipt', color: 'btn-success', title: 'Registrar factura', onClick: row => abrirFacturacion(row) },
+                { icon: 'fa-download', color: 'green-500', title: 'Descargar orden de compra', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+            ]
+        },
+        tablaFacturadas: {
+            url: '/Requisicion/GetOrdenesFacturadas',
+            acciones: [
+                { icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles', onClick: row => GetInfoGeneral(row.id_encabezado) },
+                { icon: 'fa-file-lines', color: 'sky-500', title: 'Ver factura y archivos', onClick: row => abrirFacturacion(row, true) },
+                { icon: 'fa-download', color: 'green-500', title: 'Descargar orden de compra', onClick: row => GenerarPDFGeneral(row.id_encabezado) },
+            ]
+        }
+    };
+
+    const tablasOC = {};
+    let ordenActual = null;
+    let registrandoFactura = false;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const selector = document.getElementById('selectorTabla');
+
+        mostrarSoloTabla(selector.value);
+        selector.addEventListener('change', () => mostrarSoloTabla(selector.value));
+
+        const folio = folioDeLaUrl();
+
+        Object.entries(TABLAS_OC).forEach(([id, config]) => {
+            tablasOC[id] = createTable({
+                selector: `#${id}`,
+                path: config.url,
+                rowKey: 'id_encabezado',
+                searchPlaceholder: 'Buscar por folio, proveedor u observaciones...',
+                sortDir: 'desc',
+                data: () => ({ folio }),
+                columns: columnasOrdenCompra(id === 'tablaFacturadas'),
+                actions: config.acciones,
+                exports: ['excel'],
+            });
+        });
+
+        document.getElementById('btn-registrar-factura').addEventListener('click', () => registrarFactura(false));
+    });
+
+    function mostrarSoloTabla(tablaId) {
+        document.querySelectorAll('.contenedor-tabla').forEach(contenedor => {
+            contenedor.style.display = contenedor.id === `contenedor-${tablaId}` ? 'block' : 'none';
+        });
+    }
+
+    function actualizarTablasOC() {
+        Object.values(tablasOC).forEach(t => t.refreshPage());
+    }
+
+    // Las columnas base sirven, pero aquí importa el proveedor y la modalidad
+    function columnasOrdenCompra(esFacturada) {
+        const columnas = columnasDocumento();
+
+        columnas.splice(2, 1, {
+            title: 'Proveedor',
+            data: 'proveedor',
+            formatter: v => (v || '—').replace(/\s+/g, ' ').trim()
+        });
+
+        columnas.push({
+            title: 'Modalidad',
+            data: 'modalidad',
+            formatter: v => {
+                if (v === 'OC_contado') return '<span class="badge bg-success">Contado</span>';
+                if (v === 'OC_credito') return '<span class="badge bg-info">Crédito</span>';
+                return '<span class="badge bg-secondary">Sin definir</span>';
+            }
+        });
+
+        if (esFacturada) {
+            columnas.push({
+                title: 'Factura',
+                data: 'folio_factura',
+                sortable: false,
+                formatter: (v, row) => v
+                    ? `<span title="${row.uuid_factura || ''}">${v}</span>`
+                    : '<span class="text-muted">—</span>'
+            });
+        }
+
+        return columnas;
+    }
+
+    // ============================================
+    // DETALLE Y CAPTURA
+    // ============================================
+    async function abrirFacturacion(row, soloConsulta = false) {
+        const _res = await GetData({
+            path: '/Requisicion/GetDetalleOrdenPorFacturar',
+            data: { id: row.id_encabezado }
+        });
+
+        if (!_res?.success) {
+            toastMixin.fire({ icon: 'error', title: _res?.error || 'No se pudo cargar la orden.' });
+            return;
+        }
+
+        ordenActual = _res.orden;
+
+        const totales = {
+            subtotal: parseFloat(_res.orden.subtotal) || 0,
+            descuento: parseFloat(_res.orden.descuento) || 0,
+            traslados: parseFloat(_res.orden.traslados) || 0,
+            retenciones: parseFloat(_res.orden.retenciones) || 0,
+            total: parseFloat(_res.orden.total) || 0,
+        };
+
+        document.getElementById('cuerpoFacturar').innerHTML = `
+            ${bloqueDatosOrden(_res.orden, totales, _res.impuestos)}
+            ${bloqueArchivos(_res.archivos)}
+            ${soloConsulta ? '' : bloqueCaptura()}
+            <div id="reporteDiferencias"></div>`;
+
+        document.getElementById('btn-registrar-factura').style.display = soloConsulta ? 'none' : '';
+        document.getElementById('modalFacturarLabel').innerHTML =
+            `<i class="bi bi-receipt me-2"></i> ${soloConsulta ? 'Factura de' : 'Registrar factura —'} ${_res.orden.folio}`;
+
+        new bootstrap.Modal(document.getElementById('modalFacturarOC')).show();
+    }
+
+    function bloqueDatosOrden(orden, totales, impuestos) {
+        return `
+            <div class="row g-3 mb-4">
+                ${[
+                    ['Folio', orden.folio],
+                    ['Proveedor', (orden.proveedor || '—').replace(/\s+/g, ' ').trim()],
+                    ['RFC registrado', orden.rfc_proveedor || 'Sin RFC'],
+                    ['Moneda', orden.moneda || 'PESOS'],
+                ].map(([k, v]) => `
+                <div class="col-md-3">
+                    <div class="card-resumen">
+                        <h6 class="text-muted mb-1" style="font-size:.8rem">${k}</h6>
+                        <p class="mb-0 fw-semibold">${v}</p>
+                    </div>
+                </div>`).join('')}
+            </div>
+
+            <h6 class="fw-semibold mb-2">Totales de la orden</h6>
+            <div class="d-flex justify-content-end mb-4">
+                <div style="min-width:340px">
+                    ${[
+                        ['Subtotal', Currency.format(totales.subtotal)],
+                        ['Descuento', `- ${Currency.format(totales.descuento)}`],
+                        ['Impuestos trasladados', Currency.format(totales.traslados)],
+                        ['Retenciones', `- ${Currency.format(totales.retenciones)}`],
+                    ].map(([k, v]) => `
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">${k}</span>
+                        <span>${v}</span>
+                    </div>`).join('')}
+                    <hr class="my-2" />
+                    <div class="d-flex justify-content-between">
+                        <strong>Total de la orden</strong>
+                        <strong class="fs-5">${Currency.format(totales.total)}</strong>
+                    </div>
+                    ${(impuestos || []).length ? `
+                    <small class="text-muted d-block mt-2">
+                        ${impuestos.map(i => `${i.cve_impuesto} ${parseFloat(i.imp_variable) || 0}%`).join(' · ')}
+                    </small>` : ''}
+                </div>
+            </div>`;
+    }
+
+    function bloqueArchivos(archivos) {
+        if (!archivos?.length) return '';
+
+        return `
+            <h6 class="fw-semibold mb-2">Archivos de la orden</h6>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                ${archivos.map(a => `
+                <span class="badge bg-light text-dark border p-2">
+                    ${enlaceAdjunto(a.path, a.nombre_original, a.extencion)}
+                    <span class="ms-1">${a.nombre_original}</span>
+                    <span class="badge bg-secondary ms-1">${a.tipo || 'archivo'}</span>
+                </span>`).join('')}
+            </div>`;
+    }
+
+    function bloqueCaptura() {
+        return `
+            <hr class="my-4" />
+            <h6 class="fw-semibold mb-3">Datos de la factura del proveedor</h6>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Modalidad de pago <span class="text-danger">*</span></label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="modalidadPago" id="modalidadContado" value="contado">
+                        <label class="form-check-label" for="modalidadContado">Contado</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="modalidadPago" id="modalidadCredito" value="credito">
+                        <label class="form-check-label" for="modalidadCredito">Crédito</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="archivoXml" class="form-label fw-semibold">
+                        XML del CFDI <span class="text-danger">*</span>
+                    </label>
+                    <input type="file" class="form-control" id="archivoXml" accept=".xml">
+                    <div class="form-text">Se compara contra los totales de la orden antes de guardar.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="archivoPdf" class="form-label fw-semibold">Factura en PDF</label>
+                    <input type="file" class="form-control" id="archivoPdf" accept="application/pdf">
+                </div>
+            </div>`;
+    }
+
+    // ============================================
+    // REGISTRO
+    // ============================================
+    async function registrarFactura(confirmarDiferencias = false) {
+        if (registrandoFactura) return;
+
+        const modalidad = document.querySelector('input[name="modalidadPago"]:checked')?.value;
+        const xml = document.getElementById('archivoXml')?.files[0];
+        const pdf = document.getElementById('archivoPdf')?.files[0];
+
+        if (!modalidad) {
+            toastMixin.fire({ icon: 'warning', title: 'Selecciona si la orden es de contado o de crédito.' });
+            return;
+        }
+
+        if (!xml) {
+            toastMixin.fire({ icon: 'warning', title: 'Falta el XML del CFDI.' });
+            return;
+        }
+
+        registrandoFactura = true;
+        document.getElementById('btn-registrar-factura').disabled = true;
+
+        Swal.fire({
+            title: 'Validando la factura...',
+            html: 'Se está comparando el CFDI contra la orden de compra.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            const _res = await GetData({
+                path: '/Requisicion/RegistrarFacturaOC',
+                data: {
+                    id_encabezado: ordenActual.id_encabezado,
+                    modalidad,
+                    xml,
+                    ...(pdf && { factura: pdf }),
+                    confirmarDiferencias: confirmarDiferencias ? 'true' : 'false'
+                }
+            });
+
+            Swal.close();
+
+            // El CFDI no cuadra con la orden: se muestra el comparativo y se decide
+            if (_res?.requiereConfirmacion) {
+                mostrarDiferencias(_res.comprobante, _res.diferencias);
+                return;
+            }
+
+            if (!_res?.success) {
+                _Swal.fire({
+                    icon: 'error',
+                    title: 'No se registró la factura',
+                    html: _res?.message || 'Ocurrió un error inesperado.',
+                    showCancelButton: false
+                });
+
+                if (_res?.yaProcesado) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalFacturarOC'))?.hide();
+                    actualizarTablasOC();
+                }
+                return;
+            }
+
+            _Swal.fire({
+                icon: _res.icon,
+                title: _res.title,
+                html: _res.html,
+                showCancelButton: false
+            });
+
+            bootstrap.Modal.getInstance(document.getElementById('modalFacturarOC'))?.hide();
+            actualizarTablasOC();
+        } finally {
+            registrandoFactura = false;
+            document.getElementById('btn-registrar-factura').disabled = false;
+        }
+    }
+
+    function mostrarDiferencias(cfdi, diferencias) {
+        const criticas = diferencias.filter(d => d.severidad === 'critica').length;
+
+        document.getElementById('reporteDiferencias').innerHTML = `
+            <hr class="my-4" />
+            <div class="alert ${criticas ? 'alert-danger' : 'alert-warning'}">
+                <h6 class="fw-bold mb-2">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    El CFDI no coincide con la orden de compra
+                </h6>
+                <p class="mb-0">
+                    ${criticas
+                        ? `${criticas} diferencia(s) crítica(s) de ${diferencias.length} en total.`
+                        : `${diferencias.length} diferencia(s), ninguna crítica.`}
+                    Revisa el comparativo antes de continuar.
+                </p>
+            </div>
+
+            <div class="row g-3 mb-3">
+                ${[
+                    ['CFDI', cfdi.folioCompleto || cfdi.folio || '—'],
+                    ['Emisor', cfdi.nombreEmisor || '—'],
+                    ['RFC', cfdi.rfcEmisor || '—'],
+                    ['UUID', cfdi.uuid || 'Sin timbre'],
+                ].map(([k, v]) => `
+                <div class="col-md-3">
+                    <div class="card-resumen">
+                        <h6 class="text-muted mb-1" style="font-size:.8rem">${k}</h6>
+                        <p class="mb-0 fw-semibold" style="font-size:.85rem;word-break:break-all">${v}</p>
+                    </div>
+                </div>`).join('')}
+            </div>
+
+            <div class="table-responsive">
+                <table class="table modern-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th class="text-end">En la orden</th>
+                            <th class="text-end">En la factura</th>
+                            <th>Observación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${diferencias.map(d => `
+                        <tr class="${d.severidad === 'critica' ? 'table-danger' : 'table-warning'}">
+                            <td class="fw-semibold">${d.concepto}</td>
+                            <td class="text-end">${d.enLaOrden}</td>
+                            <td class="text-end">${d.enLaFactura}</td>
+                            <td><small>${d.nota || ''}</small></td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+        document.getElementById('reporteDiferencias').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        _Swal.fire({
+            icon: 'warning',
+            title: 'La factura no cuadra con la orden',
+            html: `Se encontraron <strong>${diferencias.length}</strong> diferencia(s)` +
+                  (criticas ? `, <strong>${criticas}</strong> de ellas críticas.` : '.') +
+                  '<br><br>¿Registrar la factura de todos modos? Las diferencias quedan guardadas para seguimiento.',
+            confirmButtonText: 'Sí, registrar con diferencias',
+            cancelButtonText: 'Revisar',
+        }).then(result => {
+            if (result.isConfirmed) registrarFactura(true);
+        });
+    }
+</script>

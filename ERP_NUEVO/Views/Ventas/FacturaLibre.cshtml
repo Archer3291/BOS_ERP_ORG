@@ -1,0 +1,651 @@
+@{
+    ViewBag.Title = "Facturación Libre";
+    ViewBag.PageTitle = "Facturación Libre";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link href="~/content/compras-nacionales.css" rel="stylesheet" />
+    <style>
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            color: #fff;
+            padding: 22px 25px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+        }
+
+        .panel {
+            background: var(--bg-light);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .panel h5 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        /* Resultados de búsqueda: se superponen al campo, así que necesitan fondo
+           opaco propio o se transparentan sobre la tabla de conceptos. */
+        .buscador { position: relative; }
+
+        .resultados {
+            position: absolute;
+            z-index: 30;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 260px;
+            overflow-y: auto;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+        }
+
+        .resultados.abierto { display: block; }
+
+        .resultado-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .resultado-item:last-child { border-bottom: none; }
+        .resultado-item:hover { background: var(--very-light-blue); }
+        .resultado-item .clave { font-weight: 700; font-size: .85rem; }
+        .resultado-item .detalle { font-size: .78rem; color: var(--text-light); }
+
+        #tablaConceptos td { vertical-align: middle; }
+        #tablaConceptos input, #tablaConceptos select { min-width: 0; }
+        #tablaConceptos .col-num { width: 90px; }
+        #tablaConceptos .col-obj { width: 110px; }
+        #tablaConceptos .col-quitar { width: 44px; text-align: center; }
+
+        .totales {
+            font-size: .95rem;
+        }
+
+        .totales .renglon {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+
+        .totales .gran-total {
+            border-top: 2px solid var(--border-light);
+            margin-top: 6px;
+            padding-top: 10px;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .aviso-inventario {
+            background: var(--very-light-blue);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: .82rem;
+            color: var(--text-light);
+        }
+    </style>
+}
+
+<div class="header-section">
+    <h3 class="mb-1"><i class="fas fa-file-invoice-dollar me-2"></i>Facturación Libre</h3>
+    <p class="mb-0" style="opacity:.9; font-size:.9rem;">
+        Emite un CFDI sin partir de una cotización, pedido o remisión.
+    </p>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="row">
+    <div class="col-lg-8">
+
+        @* ── Receptor ─────────────────────────────────────────────── *@
+        <div class="panel">
+            <h5><i class="fas fa-user me-2"></i>Receptor</h5>
+
+            <div class="row g-3">
+                <div class="col-md-12 buscador">
+                    <label class="form-label">Cliente</label>
+                    <input type="text" id="buscaCliente" class="form-control"
+                           placeholder="Busca por clave, nombre o RFC…" autocomplete="off" />
+                    <div class="resultados" id="resultadosCliente"></div>
+                    <input type="hidden" id="idCliente" value="0" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">RFC</label>
+                    <input type="text" id="rfcCliente" class="form-control" readonly />
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Razón social</label>
+                    <input type="text" id="rsoCliente" class="form-control" readonly />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">CP fiscal</label>
+                    <input type="text" id="cpCliente" class="form-control" maxlength="5" />
+                </div>
+                <div class="col-md-9">
+                    <label class="form-label">Régimen fiscal</label>
+                    <select id="regimenReceptor" class="form-select"></select>
+                </div>
+            </div>
+        </div>
+
+        @* ── Conceptos ────────────────────────────────────────────── *@
+        <div class="panel">
+            <h5><i class="fas fa-list me-2"></i>Conceptos</h5>
+
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-9 buscador">
+                    <label class="form-label">Traer del catálogo <span class="text-muted">(opcional)</span></label>
+                    <input type="text" id="buscaProducto" class="form-control"
+                           placeholder="Busca un producto para llenar claves y descripción…" autocomplete="off" />
+                    <div class="resultados" id="resultadosProducto"></div>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-primary w-100" id="btnConceptoVacio">
+                        <i class="fas fa-plus me-1"></i>Renglón vacío
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle" id="tablaConceptos">
+                    <thead>
+                        <tr>
+                            <th style="min-width:220px;">Descripción</th>
+                            <th class="col-num">Cantidad</th>
+                            <th style="width:110px;">Unidad</th>
+                            <th class="col-num">P. unitario</th>
+                            <th class="col-num">Dto %</th>
+                            <th style="width:110px;">Clave SAT</th>
+                            <th style="width:100px;">Cve unidad</th>
+                            <th class="col-obj">Obj. imp.</th>
+                            <th class="text-end" style="width:110px;">Importe</th>
+                            <th class="col-quitar"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoConceptos"></tbody>
+                </table>
+            </div>
+
+            <div class="aviso-inventario mt-2">
+                <i class="fas fa-info-circle me-1"></i>
+                Este módulo <strong>no descuenta existencias</strong>. El catálogo sólo sirve para
+                copiar descripción y claves del SAT; para mover almacén hay que hacer una remisión.
+            </div>
+        </div>
+    </div>
+
+    @* ── Condiciones y totales ────────────────────────────────────── *@
+    <div class="col-lg-4">
+        <div class="panel">
+            <h5><i class="fas fa-file-contract me-2"></i>Comprobante</h5>
+
+            <div class="mb-3">
+                <label class="form-label">Serie</label>
+                <input type="text" id="serie" class="form-control" value="FL" maxlength="10" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Uso de CFDI</label>
+                <select id="usoCfdi" class="form-select"></select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Método de pago</label>
+                <select id="metodoPago" class="form-select"></select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Forma de pago</label>
+                <select id="formaPago" class="form-select"></select>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="form-label">Moneda</label>
+                    <select id="moneda" class="form-select">
+                        <option value="MXN">MXN</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Tipo de cambio</label>
+                    <input type="number" id="tipoCambio" class="form-control" value="1" step="0.0001" min="0.0001" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Condición</label>
+                <select id="condicion" class="form-select">
+                    <option value="contado">Contado</option>
+                    <option value="credito">Crédito</option>
+                </select>
+            </div>
+
+            @* Sólo el contado genera cobro, y el cobro necesita cuenta de destino. *@
+            <div class="mb-3" id="grupoBanco">
+                <label class="form-label">Cuenta bancaria del cobro</label>
+                <select id="banco" class="form-select"></select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Observaciones</label>
+                <textarea id="observaciones" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h5><i class="fas fa-calculator me-2"></i>Totales</h5>
+            <div class="totales">
+                <div class="renglon"><span>Subtotal</span><span id="tSubtotal">$0.00</span></div>
+                <div class="renglon"><span>Descuento</span><span id="tDescuento">$0.00</span></div>
+                <div class="renglon"><span>IVA</span><span id="tIva">$0.00</span></div>
+                <div class="renglon gran-total"><span>Total</span><span id="tTotal">$0.00</span></div>
+            </div>
+
+            <button type="button" class="btn btn-success w-100 mt-3" id="btnTimbrar">
+                <i class="fas fa-stamp me-1"></i>Generar y timbrar
+            </button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    @* Modales compartidos de facturación: progreso, resumen con descarga y envío por
+       correo, y errores por paso. Los mismos que usan predial y los canales de venta. *@
+    <script src="~/scripts/Facturas/manejo-respuestas.js"></script>
+
+    <script>
+        (function () {
+            'use strict';
+
+            const money = v => '$' + (Number(v) || 0).toLocaleString('es-MX',
+                { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const TASA_IVA = 0.16;
+
+            // ── Catálogos ────────────────────────────────────────────
+            let catalogos = null;
+
+            function llenarSelect(id, filas, campoClave, campoDescr, seleccion) {
+                const sel = document.getElementById(id);
+                sel.innerHTML = '<option value="">-- Selecciona --</option>';
+                (filas || []).forEach(f => {
+                    const clave = f[campoClave];
+                    const opt = document.createElement('option');
+                    opt.value = clave;
+                    opt.textContent = `${clave} - ${f[campoDescr]}`;
+                    sel.appendChild(opt);
+                });
+                if (seleccion) sel.value = seleccion;
+            }
+
+            async function cargarCatalogos() {
+                try {
+                    const r = await fetch('/FacturaLibre/Catalogos');
+
+                    // Mismo criterio que al timbrar: se distingue el error HTTP del cuerpo
+                    // ilegible y del fallo de red, porque cada uno se corrige distinto.
+                    if (!r.ok) {
+                        mostrarErrorServidor(r.status, await r.text());
+                        return;
+                    }
+
+                    try {
+                        catalogos = await r.json();
+                    } catch {
+                        mostrarErrorFormato();
+                        return;
+                    }
+
+                    if (!catalogos.success) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'No se pudieron cargar los catálogos',
+                            text: catalogos.message || 'El servidor no devolvió los catálogos.'
+                        });
+                        return;
+                    }
+
+                    llenarSelect('usoCfdi', catalogos.usosCfdi, 'clave', 'descripcion');
+                    llenarSelect('formaPago', catalogos.formasPago, 'clave', 'descripcion');
+                    llenarSelect('metodoPago', catalogos.metodosPago, 'clave', 'descripcion');
+                    llenarSelect('regimenReceptor', catalogos.regimenes, 'clave', 'descripcion');
+
+                    const selBanco = document.getElementById('banco');
+                    selBanco.innerHTML = '<option value="">-- Selecciona --</option>';
+                    (catalogos.bancos || []).forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b.codigo;
+                        opt.textContent = `${b.codigo} - ${b.nombre}`;
+                        selBanco.appendChild(opt);
+                    });
+                } catch (err) {
+                    console.error('Error al cargar catálogos:', err);
+                    mostrarErrorConexion(err);
+                }
+            }
+
+            // ── Buscadores con retardo ───────────────────────────────
+            function armarBuscador(inputId, panelId, url, pintar) {
+                const input = document.getElementById(inputId);
+                const panel = document.getElementById(panelId);
+                let timer = null;
+
+                input.addEventListener('input', () => {
+                    clearTimeout(timer);
+                    const term = input.value.trim();
+                    if (term.length < 2) { panel.classList.remove('abierto'); return; }
+
+                    // Se espera a que el usuario deje de teclear: sin esto se dispara una
+                    // consulta por cada letra y la lista parpadea con resultados viejos.
+                    timer = setTimeout(async () => {
+                        try {
+                            const r = await fetch(`${url}?term=${encodeURIComponent(term)}`);
+                            const data = await r.json();
+                            if (!data.success) throw new Error(data.message);
+                            pintar(panel, data);
+                            panel.classList.add('abierto');
+                        } catch (err) {
+                            panel.innerHTML = `<div class="resultado-item text-danger">${err.message}</div>`;
+                            panel.classList.add('abierto');
+                        }
+                    }, 300);
+                });
+
+                document.addEventListener('click', e => {
+                    if (!panel.contains(e.target) && e.target !== input) panel.classList.remove('abierto');
+                });
+            }
+
+            armarBuscador('buscaCliente', 'resultadosCliente', '/FacturaLibre/BuscarClientes', (panel, data) => {
+                panel.innerHTML = '';
+                if (!data.clientes.length) {
+                    panel.innerHTML = '<div class="resultado-item text-muted">Sin coincidencias</div>';
+                    return;
+                }
+                data.clientes.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'resultado-item';
+                    div.innerHTML = `<div class="clave">${c.clave} — ${c.nombre}</div>
+                                     <div class="detalle">RFC ${c.rfc || 's/RFC'} · CP ${c.cp || 's/CP'}</div>`;
+                    div.addEventListener('click', () => seleccionarCliente(c, panel));
+                    panel.appendChild(div);
+                });
+            });
+
+            function seleccionarCliente(c, panel) {
+                document.getElementById('idCliente').value = c.idCliente;
+                document.getElementById('rfcCliente').value = c.rfc || '';
+                document.getElementById('rsoCliente').value = c.nombre || '';
+                document.getElementById('cpCliente').value = c.cp || '';
+                document.getElementById('buscaCliente').value = `${c.clave} — ${c.nombre}`;
+                if (c.regimenFiscal) document.getElementById('regimenReceptor').value = c.regimenFiscal;
+                if (c.usoCfdi) document.getElementById('usoCfdi').value = c.usoCfdi;
+                if (c.formaPago) document.getElementById('formaPago').value = c.formaPago;
+
+                // El plazo de crédito del cliente decide la condición sugerida; el usuario
+                // puede cambiarla, pero así no hay que recordarla de memoria.
+                document.getElementById('condicion').value = (c.plazoCredito > 0) ? 'credito' : 'contado';
+                alternarBanco();
+
+                panel.classList.remove('abierto');
+            }
+
+            armarBuscador('buscaProducto', 'resultadosProducto', '/FacturaLibre/BuscarProductos', (panel, data) => {
+                panel.innerHTML = '';
+                if (!data.productos.length) {
+                    panel.innerHTML = '<div class="resultado-item text-muted">Sin coincidencias</div>';
+                    return;
+                }
+                data.productos.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'resultado-item';
+                    div.innerHTML = `<div class="clave">${p.cveProd} — ${p.descripcion}</div>
+                                     <div class="detalle">SAT ${p.claveProdServ} · ${p.claveUnidad}</div>`;
+                    div.addEventListener('click', () => {
+                        agregarConcepto(p);
+                        document.getElementById('buscaProducto').value = '';
+                        panel.classList.remove('abierto');
+                    });
+                    panel.appendChild(div);
+                });
+            });
+
+            // ── Conceptos ────────────────────────────────────────────
+            const cuerpo = document.getElementById('cuerpoConceptos');
+
+            function opcionesObjeto(sel) {
+                return (catalogos?.objetosImp || [{ clave: '02', descripcion: 'Sí objeto' }])
+                    .map(o => `<option value="${o.clave}" ${o.clave === sel ? 'selected' : ''}>${o.clave}</option>`)
+                    .join('');
+            }
+
+            function agregarConcepto(p) {
+                p = p || {};
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" class="form-control form-control-sm c-desc" value="${p.descripcion || ''}" /></td>
+                    <td><input type="number" class="form-control form-control-sm c-cant text-end" value="1" min="0.0001" step="0.0001" /></td>
+                    <td><input type="text" class="form-control form-control-sm c-unidad" value="${p.unidad || 'SERVICIO'}" /></td>
+                    <td><input type="number" class="form-control form-control-sm c-precio text-end" value="0" min="0" step="0.0001" /></td>
+                    <td><input type="number" class="form-control form-control-sm c-dto text-end" value="0" min="0" max="99.99" step="0.01" /></td>
+                    <td><input type="text" class="form-control form-control-sm c-clave" value="${p.claveProdServ || ''}" /></td>
+                    <td><input type="text" class="form-control form-control-sm c-cveud" value="${p.claveUnidad || ''}" /></td>
+                    <td><select class="form-select form-select-sm c-obj">${opcionesObjeto(p.objetoImp || '02')}</select></td>
+                    <td class="text-end c-importe">$0.00</td>
+                    <td class="col-quitar">
+                        <button type="button" class="btn btn-sm btn-outline-danger c-quitar" title="Quitar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>`;
+                tr.dataset.cveProd = p.cveProd || '';
+                cuerpo.appendChild(tr);
+                recalcular();
+            }
+
+            cuerpo.addEventListener('input', recalcular);
+            cuerpo.addEventListener('change', recalcular);
+            cuerpo.addEventListener('click', e => {
+                if (e.target.closest('.c-quitar')) {
+                    e.target.closest('tr').remove();
+                    recalcular();
+                }
+            });
+
+            document.getElementById('btnConceptoVacio').addEventListener('click', () => agregarConcepto());
+
+            function leerConceptos() {
+                return Array.from(cuerpo.querySelectorAll('tr')).map(tr => ({
+                    CveProd: tr.dataset.cveProd || '',
+                    Descripcion: tr.querySelector('.c-desc').value.trim(),
+                    Cantidad: parseFloat(tr.querySelector('.c-cant').value) || 0,
+                    Unidad: tr.querySelector('.c-unidad').value.trim(),
+                    PrecioUnit: parseFloat(tr.querySelector('.c-precio').value) || 0,
+                    Descuento: parseFloat(tr.querySelector('.c-dto').value) || 0,
+                    ClaveProdServ: tr.querySelector('.c-clave').value.trim(),
+                    ClaveUnidad: tr.querySelector('.c-cveud').value.trim(),
+                    ObjetoImp: tr.querySelector('.c-obj').value
+                }));
+            }
+
+            // El servidor recalcula estos mismos totales y rechaza la factura si no
+            // coinciden; esto es sólo la vista previa.
+            function recalcular() {
+                let subtotal = 0, descuento = 0, iva = 0;
+
+                Array.from(cuerpo.querySelectorAll('tr')).forEach(tr => {
+                    const cant = parseFloat(tr.querySelector('.c-cant').value) || 0;
+                    const precio = parseFloat(tr.querySelector('.c-precio').value) || 0;
+                    const dtoPct = parseFloat(tr.querySelector('.c-dto').value) || 0;
+                    const obj = tr.querySelector('.c-obj').value;
+
+                    const bruto = Math.round(cant * precio * 100) / 100;
+                    const dto = Math.round(bruto * dtoPct) / 100;
+                    const neto = bruto - dto;
+
+                    subtotal += bruto;
+                    descuento += dto;
+                    if (obj === '02') iva += Math.round(neto * TASA_IVA * 100) / 100;
+
+                    tr.querySelector('.c-importe').textContent = money(neto);
+                });
+
+                document.getElementById('tSubtotal').textContent = money(subtotal);
+                document.getElementById('tDescuento').textContent = money(descuento);
+                document.getElementById('tIva').textContent = money(iva);
+                document.getElementById('tTotal').textContent = money(subtotal - descuento + iva);
+
+                return { subtotal, descuento, iva, total: subtotal - descuento + iva };
+            }
+
+            // ── Condición de pago ────────────────────────────────────
+            function alternarBanco() {
+                const esContado = document.getElementById('condicion').value === 'contado';
+                document.getElementById('grupoBanco').style.display = esContado ? '' : 'none';
+            }
+            document.getElementById('condicion').addEventListener('change', alternarBanco);
+
+            // ── Timbrado ─────────────────────────────────────────────
+            document.getElementById('btnTimbrar').addEventListener('click', async () => {
+                const totales = recalcular();
+                const conceptos = leerConceptos();
+                const esContado = document.getElementById('condicion').value === 'contado';
+
+                const faltantes = [];
+                if (!parseInt(document.getElementById('idCliente').value, 10)) faltantes.push('Selecciona un cliente.');
+                if (!document.getElementById('cpCliente').value.trim()) faltantes.push('Captura el CP fiscal.');
+                if (!document.getElementById('regimenReceptor').value) faltantes.push('Selecciona el régimen fiscal.');
+                if (!document.getElementById('usoCfdi').value) faltantes.push('Selecciona el uso de CFDI.');
+                if (!document.getElementById('formaPago').value) faltantes.push('Selecciona la forma de pago.');
+                if (!document.getElementById('metodoPago').value) faltantes.push('Selecciona el método de pago.');
+                if (esContado && !document.getElementById('banco').value) faltantes.push('Selecciona la cuenta bancaria del cobro.');
+                if (!conceptos.length) faltantes.push('Agrega al menos un concepto.');
+                if (totales.total <= 0) faltantes.push('El total debe ser mayor a cero.');
+
+                if (faltantes.length) {
+                    Swal.fire({ icon: 'warning', title: 'Faltan datos', html: faltantes.join('<br>') });
+                    return;
+                }
+
+                const confirmacion = await Swal.fire({
+                    title: '¿Timbrar la factura?',
+                    html: `<div style="text-align:left">
+                             <p><strong>Cliente:</strong> ${document.getElementById('rsoCliente').value}</p>
+                             <p><strong>Total:</strong> ${money(totales.total)}</p>
+                             <p><strong>Condición:</strong> ${esContado ? 'Contado' : 'Crédito'}</p>
+                           </div>`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, timbrar',
+                    cancelButtonText: 'Cancelar'
+                });
+                if (!confirmacion.isConfirmed) return;
+
+                // ── Modales compartidos (scripts/Facturas/manejo-respuestas.js) ──
+                // Es el mismo manejo que usan predial, notas de crédito y los cuatro canales
+                // de venta: progreso por pasos, resumen con descarga de PDF/XML y envío por
+                // correo, y errores diferenciados según dónde falló.
+                const modalProgreso = mostrarModalProgresoMejorado(1);
+                const btn = document.getElementById('btnTimbrar');
+                const btnHtml = btn.innerHTML;
+                btn.disabled = true;
+
+                try {
+                    actualizarProgresoDetallado(modalProgreso, 1, 'Enviando datos al servidor…');
+
+                    const fd = new FormData();
+                    fd.append('idCliente', document.getElementById('idCliente').value);
+                    fd.append('rfcCliente', document.getElementById('rfcCliente').value);
+                    fd.append('rsoCliente', document.getElementById('rsoCliente').value);
+                    fd.append('cpCliente', document.getElementById('cpCliente').value);
+                    fd.append('regimenReceptor', document.getElementById('regimenReceptor').value);
+                    fd.append('usoCfdi', document.getElementById('usoCfdi').value);
+                    fd.append('formaPago', document.getElementById('formaPago').value);
+                    fd.append('metodoPago', document.getElementById('metodoPago').value);
+                    fd.append('moneda', document.getElementById('moneda').value);
+                    fd.append('tipoCambio', document.getElementById('tipoCambio').value);
+                    fd.append('condicion', document.getElementById('condicion').value);
+                    fd.append('banco', document.getElementById('banco').value);
+                    fd.append('serie', document.getElementById('serie').value);
+                    fd.append('observaciones', document.getElementById('observaciones').value);
+                    fd.append('total', totales.total.toFixed(2));
+                    fd.append('conceptos', JSON.stringify(conceptos));
+
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    if (token) fd.append('__RequestVerificationToken', token);
+
+                    const response = await fetch('/FacturaLibre/GenerarFacturaLibre', {
+                        method: 'POST',
+                        body: fd
+                    });
+
+                    // Error HTTP (500, 404, timeout del proxy…)
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        cerrarModalProgreso(modalProgreso);
+                        mostrarErrorServidor(response.status, errorText);
+                        return;
+                    }
+
+                    // Si la respuesta no es JSON, algo se rompió a medio camino
+                    let result;
+                    try {
+                        result = await response.json();
+                    } catch {
+                        cerrarModalProgreso(modalProgreso);
+                        mostrarErrorFormato();
+                        return;
+                    }
+
+                    if (result.success) {
+                        await simularProgresoExitoso(modalProgreso);
+                    }
+
+                    cerrarModalProgreso(modalProgreso);
+
+                    if (result.success) {
+                        mostrarResumenExitoso(result, 1);
+                    } else if (result.step) {
+                        // Falló un paso concreto. Para todos salvo "Commit" hubo rollback y no
+                        // quedó nada; en "Commit" el CFDI ya existe en el SAT y el modal lo
+                        // advierte, que es justo la distinción que hace PASOS_CFDI_TIMBRADO.
+                        mostrarErrorPorPaso(result, 1);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error en el proceso',
+                            text: result.message || result.error || 'Ocurrió un error desconocido'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error al generar la factura libre:', error);
+                    cerrarModalProgreso(modalProgreso);
+                    mostrarErrorConexion(error);
+                } finally {
+                    btn.innerHTML = btnHtml;
+                    btn.disabled = false;
+                }
+            });
+
+            // ── Arranque ─────────────────────────────────────────────
+            cargarCatalogos().then(() => agregarConcepto());
+            alternarBanco();
+        })();
+    </script>
+}

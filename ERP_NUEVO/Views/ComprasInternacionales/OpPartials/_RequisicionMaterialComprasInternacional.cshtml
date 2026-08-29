@@ -1,0 +1,3675 @@
+﻿@using BOS_ERP.Controllers;
+
+@{
+    ViewBag.Title = "Requisision de Material";
+}
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<style>
+    /* Bendto grid */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        /*margin-top: 1rem;*/
+    }
+
+    .bento-item {
+        background: var(--bg-gray);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+
+        .bento-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .bento-item.large {
+            grid-column: span 2;
+        }
+
+    .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        transition: background-color 0.2s;
+    }
+
+        .checkbox-item:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+    .section-title {
+        font-weight: 600;
+        color: var(--secondary-color);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .department-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .department-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+        .department-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+    .comprobante-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        opacity: 0;
+        transform: translateY(20px);
+        overflow: hidden;
+    }
+
+    .comprobante-card-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .comprobante-card-removing {
+        opacity: 0;
+        transform: translateX(-100%);
+        transition: all 0.3s ease;
+    }
+
+    .comprobante-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .comprobante-header {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+        color: white;
+        position: relative;
+    }
+
+    .comprobante-icon {
+        margin-right: 0.75rem;
+        opacity: 0.9;
+    }
+
+    .comprobante-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .btn-eliminar {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .btn-eliminar:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+    .comprobante-content {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+        gap: 0.5rem;
+    }
+
+        .form-label svg {
+            color: var(--primary-blue);
+        }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border-light);
+        border-radius: 8px;
+        background: var(--bg-light);
+        color: var(--text-dark);
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+    .input-with-prefix {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-prefix {
+        position: absolute;
+        left: 1rem;
+        color: var(--text-light);
+        font-weight: 600;
+        z-index: 1;
+    }
+
+    .input-with-prefix .form-input {
+        padding-left: 2.5rem;
+    }
+
+    .file-input-wrapper {
+        position: relative;
+    }
+
+    .file-input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .file-input-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: 2px dashed var(--border-light);
+        border-radius: 8px;
+        background: var(--very-light-blue);
+        color: var(--primary-blue);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+        .file-input-label:hover {
+            border-color: var(--primary-blue);
+            background: var(--light-blue);
+        }
+
+        .file-input-label.file-selected {
+            border-style: solid;
+            background: var(--light-blue);
+            color: var(--primary-blue-dark);
+        }
+
+    /* Animaciones adicionales */
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .comprobante-card {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .comprobante-card {
+            margin-bottom: 1rem;
+        }
+
+        .comprobante-header {
+            padding: 0.875rem 1rem;
+        }
+
+        .comprobante-content {
+            padding: 1.25rem 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+@*Ordenes de compra internacional*@
+<div class="accordion modern-accordion fade-in-up" id="acordeonTablas">
+    <!-- Creadas -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingOCDI">
+            <button class="accordion-button modern-accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCreadas" aria-expanded="true" aria-controls="collapseCreadas">
+                <i class="fas fa-hourglass-half me-3 text-warning"></i>
+                🟡 Ordenes de compra
+            </button>
+        </h2>
+        <div id="collapseCreadas" class="accordion-collapse collapse show" aria-labelledby="headingOCDI" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaOCDI" class="table modern-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-file-invoice"></i> Folio</th>
+                                <th><i class="fas fa-calendar-alt"></i> Fecha</th>
+                                <th><i class="fa-solid fa-user-alien"></i> Responsable</th>
+                                <th><i class="fas fa-dollar-sign"></i> Importe</th>
+                                <th><i class="fas fa-comment-alt"></i> Observaciones</th>
+                                <th><i class="fas fa-tools"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Requisiciones -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingREQ">
+            <button class="accordion-button modern-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseREQ" aria-expanded="false" aria-controls="collapseREQ">
+                <i class="fas fa-clipboard-list me-3 text-primary"></i>
+                🔵 Requisiciones de material
+            </button>
+        </h2>
+        <div id="collapseREQ" class="accordion-collapse collapse" aria-labelledby="headingREQ" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaREQ" class="table modern-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-file-alt"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-user"></i> Solicitante</th>
+                                <th><i class="fas fa-boxes"></i> Total Partidas</th>
+                                <th><i class="fas fa-comment-dots"></i> Comentarios</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Solicitud de Cotización Internacional -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingSCI">
+            <button class="accordion-button modern-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSCI" aria-expanded="false" aria-controls="collapseSCI">
+                <i class="fas fa-globe-americas me-3 text-success"></i>
+                🌎 Solicitud de Cotización Internacional
+            </button>
+        </h2>
+        <div id="collapseSCI" class="accordion-collapse collapse" aria-labelledby="headingSCI" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaSCI" class="table modern-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-file-alt"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-user-tie"></i> Solicitante</th>
+                                <th><i class="fas fa-box"></i> Total Ítems</th>
+                                <th><i class="fas fa-comment-dots"></i> Comentarios</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal fade" id="modalAceptarCotizacion" tabindex="-1" aria-labelledby="modalOpcionesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabel"><i class="bi bi-pencil-square"></i> Editar Requisición</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+
+
+                <div id="modalDireccion"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                @*<button type="button" id="btn-actualizar" class="btn btn-success"><i class="bi bi-save-fill"></i> Guardar cambios</button>*@
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAceptarCotizacion2" tabindex="-1" aria-labelledby="modalOpcionesLabel2" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabel2"><i class="bi bi-pencil-square"></i> Editar Requisición</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody2">
+
+
+                <div id="modalDetalles"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                @*<button type="button" id="btn-actualizar" class="btn btn-success"><i class="bi bi-save-fill"></i> Guardar cambios</button>*@
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Modal para subir CSV y visualizar materiales -->
+<div class="modal fade" id="modalSubirMateriales" tabindex="-1" aria-labelledby="modalSubirMaterialesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalSubirMaterialesLabel">
+                    <i class="fas fa-cloud-upload-alt me-2"></i> Cargar productos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Contenido principal -->
+                <div class="text-center mb-4">
+                    <p class="text-muted">Sube, edita y gestiona tus datos fácilmente</p>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Columna izquierda: acordeones de carga -->
+                    <div class="col-md-6">
+                        <div class="accordion" id="accordionCsvUpload">
+                            <!-- Acordeón CSV existente -->
+                            <div class="accordion-item border rounded-4 mb-3">
+                                <h2 class="accordion-header" id="headingCsv">
+                                    <button class="accordion-button collapsed fw-semibold text-primary" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#collapseCsv"
+                                            aria-expanded="false" aria-controls="collapseCsv" style="border-radius: 15px;">
+                                        <i class="fas fa-file-csv me-2"></i> Subir archivo CSV
+                                    </button>
+                                </h2>
+                                <div id="collapseCsv" class="accordion-collapse collapse" aria-labelledby="headingCsv"
+                                     data-bs-parent="#accordionCsvUpload">
+                                    <div class="accordion-body p-3">
+                                        <!-- Formulario -->
+                                        <form id="form-subir-csv" enctype="multipart/form-data">
+                                            <div class="upload-zone text-center p-3 position-relative border rounded bg-light-subtle">
+                                                <input type="file"
+                                                       name="archivoCsv"
+                                                       id="archivoCsv"
+                                                       class="file-input"
+                                                       accept=".csv"
+                                                       required />
+                                                <div class="upload-content">
+                                                    <i class="fas fa-cloud-upload-alt upload-icon pulse-animation text-primary"></i>
+                                                    <h6 class="fw-bold mb-1">Arrastra tu archivo aquí</h6>
+                                                    <p class="text-muted small mb-0">o haz clic para seleccionar</p>
+                                                    <small class="text-muted">Formatos: .csv | máx. 10MB</small>
+                                                </div>
+                                            </div>
+
+                                            <!-- Progreso -->
+                                            <div class="progress-bar-modern d-none mt-3">
+                                                <div class="progress-fill" style="width: 0%"></div>
+                                            </div>
+
+                                            <div class="text-center mt-3">
+                                                <button type="submit" class="btn btn-modern btn-sm shadow-sm">
+                                                    <i class="fas fa-rocket me-1"></i> Procesar
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Nuevo acordeón para cargar desde documento -->
+                            <div class="accordion-item border rounded-4">
+                                <h2 class="accordion-header" id="headingDocument">
+                                    <button class="accordion-button collapsed fw-semibold text-primary" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#collapseDocument"
+                                            aria-expanded="false" aria-controls="collapseDocument" style="border-radius: 15px;">
+                                        <i class="fas fa-file-alt me-2"></i> Cargar desde documento
+                                    </button>
+                                </h2>
+                                <div id="collapseDocument" class="accordion-collapse collapse" aria-labelledby="headingDocument"
+                                     data-bs-parent="#accordionCsvUpload">
+                                    <div class="accordion-body p-3">
+                                        <div class="select-container">
+                                            <label for="documentSelect" class="form-label fw-semibold text-dark mb-2">
+                                                <i class="fas fa-folder-open me-2"></i> Seleccionar documento:
+                                            </label>
+                                            <select id="documentSelect" class="form-select">
+                                                <option value="" selected>-- Selecciona un documento --</option>
+                                                <option value="plantilla-productos">Plantilla de productos</option>
+                                                <option value="inventario-actual">Inventario actual</option>
+                                                <option value="catalogo-proveedores">Catálogo de proveedores</option>
+                                                <option value="precios-actualizados">Lista de precios actualizados</option>
+                                                <option value="productos-temporada">Productos de temporada</option>
+                                            </select>
+
+                                            <div class="text-center mt-3">
+                                                <button type="button" id="btnCargarDocumento" class="btn btn-modern btn-sm shadow-sm">
+                                                    <i class="fas fa-download me-1"></i> Cargar documento
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha: acciones -->
+                    <div class="col-md-6 d-flex flex-column justify-content-start gap-3">
+                        <button id="btnAgregarFila" type="button"
+                                class="btn btn-outline-modern w-100 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                            <i class="fas fa-plus-circle"></i> <span>Agregar Nueva Fila</span>
+                        </button>
+                        <button id="btnEliminarSeleccionados" type="button"
+                                class="btn btn-danger-modern w-100 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                            <i class="fas fa-trash-alt"></i> <span>Eliminar Seleccionadas</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Información importante -->
+                <div class="info-panel mt-4">
+                    <div class="info-title">
+                        <i class="fas fa-info-circle"></i>
+                        Información Importante
+                    </div>
+                    <p class="info-text">
+                        <i class="fas fa-asterisk me-1"></i>
+                        Los campos marcados con * son obligatorios
+                    </p>
+                </div>
+
+                <!-- Tabla de materiales -->
+                <div class="table-responsive mb-4">
+                    <table class="table align-middle table-hover" id="tabla-materiales">
+                        <thead class="text-center">
+                            <tr>
+                                <th class="text-start"><i class="bi bi-check-square"></i></th>
+                                <th class="text-start">#</th>
+                                <th class="text-start">Cantidad *</th>
+                                <th class="text-start">Código *</th>
+                                <th class="text-start">Descripcion *</th>
+                                <th class="text-start">Unidad *</th>
+                                <th class="text-start">Costo Unitario *</th>
+                                <th class="text-start">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="form-floating mb-4">
+                    <textarea class="form-control" id="observaciones" rows="3"></textarea>
+                    <label for="observaciones"><i class="bi bi-journal-text"></i> Observaciones</label>
+                </div>
+
+                <!-- Total -->
+                <div class="row">
+                    <div class="col-4">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="total" class="form-control fw-bold" readonly />
+                            <label for="total"><i class="bi bi-calculator me-1"></i>Total</label>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <p id="totalpesos"
+                           class="form-control fw-bold text-end border rounded py-2 px-3 m-0">
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Cerrar
+                </button>
+                <button type="button" id="btn-guardar-materiales" class="btn btn-primary">
+                    <i class="bi bi-save me-1"></i> Guardar Materiales
+                </button>
+            </div>
+        </div>
+    </div>
+</div><!-- Modal -->
+<div class="modal fade" id="modalOpciones" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Seleccionar opción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <select id="selectOpcion" class="form-select">
+                    <option value="">-- Selecciona una opción --</option>
+                </select>
+                <div class="mb-3">
+                    <label for="fechaEstimada" class="form-label">Fecha estimada de entrega</label>
+                    <input type="date" id="fechaEstimada" class="form-control">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnEnviarOpcion" onclick="enviarOpcionSeleccionada()">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script src="~/lib/signature_pad/dist/signature_pad.umd.min.js"></script>
+<script>
+    let idEncabezadoSeleccionado = null;
+    let proveedorGuardado = null;
+    function setIdEncabezadoModal(btn) {
+        idEncabezadoSeleccionado = btn.getAttribute("data-idencabezado");
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+        actualizarTabla()
+    });
+
+    function actualizarTabla() {
+        cargarTabla("#tablaOCDI", "/ProcesoComprasInternacional/GetOrdenesDeCompra");
+        cargarTabla("#tablaREQ", "/ProcesoComprasInternacional/GetRequisiciones");
+        cargarTabla("#tablaSCI", "/ProcesoComprasInternacional/GetSolicitudesDeCotizacion");
+    }
+
+    function cargarTabla(selector, url) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        const tabla = $(selector).DataTable({
+            destroy: true,
+            responsive: true,
+            autoWidth: false,
+            ajax: {
+                url: url,
+                data: { id: id }, // Si necesitas pasarlo al backend
+                dataSrc: "data"
+            },
+            columns: [
+                { data: "nuevo_codigo" },
+                {
+                    data: "fch",
+                    render: function (data, type, row) {
+                        if (data && data.startsWith("/Date(")) {
+                            const timestamp = parseInt(data.match(/\d+/)[0]);
+                            const date = new Date(timestamp);
+                            return date.toLocaleDateString('es-MX');
+                        }
+                        return "";
+                    }
+                },
+                { data: "responsable" },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function (data, type, row, meta) {
+                        if (meta.settings.nTable.id === "tablaOCDI") {
+                            return `$${parseFloat(data.imp).toFixed(2)}`;
+                        }
+                        if (meta.settings.nTable.id === "tablaREQ") {
+                            return `${(data.total_partidas)}`;
+                        }
+                        return "";
+                    },
+                },
+                { data: "coment_aut" },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function (data, type, row, meta) {
+                        let botones = `` +
+                            `<div class="d-flex gap-1" role="group">`;
+                        if (meta.settings.nTable.id === "tablaOCDI") {
+                            botones += '' +
+                                `   <button class="btn btn-sm green-500" style="color: var(--icon-color)" title="Agregar Acción" data-encabezado="${data.id_encabezado}" data-nvocodigo="${data.nuevo_codigo}" onclick="agregarOpciones(this)">` +
+                                `       <i class="fa-solid fa-plus-large"></i>` +
+                                `   </button>` +
+                                `   <button class="btn btn-sm cyan-700" style="color: var(--icon-color)" title="Aprobar" onclick="AprobarODCI(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-check"></i>` +
+                                `   </button>`;
+                            if (!data.reclasificacion) {
+                                botones +=
+                                    `<button class="btn btn-sm indigo-500" title="Reclasificar" onclick="GenerarReclasificador(${data.id_encabezado})">
+                                        <i class="fa-solid fa-list"></i>
+                                    </button>`;
+                            }
+                            botones += '' +
+                                `   <button class="btn btn-sm sky-500" style="color: var(--icon-color)" title="Descargar PDF" onclick="GenerarPDFGeneral(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-download"></i>` +
+                                `   </button>` +
+                                `   <button class="btn btn-sm sky-500" style="color: var(--icon-color)" title="Ver detalles" onclick="GetInfoGeneral(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-circle-info"></i>` +
+                                `   </button>`;
+                        }
+                        if (meta.settings.nTable.id === "tablaREQ") {
+                            botones += '' +
+                                `<button class="btn btn-sm green-500" style="color: var(--icon-color)" title="Archivar requisición" data-idencabezado="${data.id_encabezado}" data-bs-toggle="modal" data-bs-target="#modalSubirMateriales" onclick="setIdEncabezadoModal(this)">` +
+                                `       <i class="fa-solid fa-plus-large"></i>` +
+                                `   </button>` +
+                                `   <button class="btn btn-sm lime-500" style="color: var(--icon-color)" title="Crear orden de compra" onclick="CrearODCI(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-file-check"></i>` +
+                                `   </button>` +
+                                `   <button class="btn btn-sm sky-500" style="color: var(--icon-color)" title="Ver detalles" onclick="VerDetalleRequisicion(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-circle-info"></i>` +
+                                `   </button>`;
+                        }
+                        if (meta.settings.nTable.id === "tablaSCI") {
+                            botones += '' +
+                                `   <button class="btn btn-sm sky-500" style="color: var(--icon-color)" title="Descargar PDF" onclick="GenerarPDFGeneral(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-download"></i>` +
+                                `   </button>` +
+                                `   <button class="btn btn-sm sky-500" style="color: var(--icon-color)" title="Ver detalles" onclick="VerDetalleSolocitud(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-circle-info"></i>` +
+                                `   </button>`;
+                        }
+                        botones += `</div>`;
+                        return botones
+                    },
+
+                },
+                { data: "id_encabezado", visible: false, searchable: true }
+            ],
+        });
+
+        // 👇 Espera a que la tabla esté completamente cargada y luego aplica la búsqueda
+        if (id) {
+            $(selector).on('xhr.dt', function () {
+                tabla.search(id).draw();
+            });
+        }
+    }
+
+    const limpiarNumero = (str) => str.replace(/[^\d.]/g, '');
+    function VerDetalleRequisicion(id) {
+        GetData({
+            path: '/ProcesoComprasInternacional/GetRequisicionesData',
+            data: { id: id }
+        }).then((_res) => {
+            if (_res.success) {
+                const body = document.getElementById('modalDireccion');
+                body.innerHTML = ''; // Limpiar contenido
+                let totalGlobal = 0;
+
+                // Header principal con información del documento
+                const headerPrincipal = document.createElement('div');
+                headerPrincipal.className = 'requisicion-header mb-4';
+                headerPrincipal.innerHTML = `
+                <div class="header-card">
+                    <div class="header-gradient"></div>
+                    <div class="header-content">
+                        <div class="row align-items-center">
+                            <div class="col-md-12">
+                                <div class="document-info">
+                                    <h4 class="document-title">
+                                        <i class="fas fa-file-invoice me-3"></i>
+                                        Requisición ${_res.returnResult.requisicion.nuevo_codigo}
+                                    </h4>
+                                    <div class="document-meta">
+                                        <span class="meta-item">
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            ${new Date().toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información del Proveedor Global -->
+                <div class="provider-card mt-3">
+                    <div class="provider-header">
+                        <i class="fas fa-building me-2"></i>
+                        <span class="provider-label">Proveedor Global</span>
+                    </div>
+                    <div class="provider-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="provider-info">
+                                    <span class="provider-name">${_res.returnResult.requisicion?.n_prov || 'Sin asignar'}</span>
+                                    <span class="provider-code">Código: ${_res.returnResult.requisicion?.cve_prov || 'N/A'}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="provider-contact">
+                                    <span class="contact-item">
+                                        <i class="fas fa-phone me-1"></i>
+                                        ${_res.returnResult.requisicion?.tel || 'Sin teléfono'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+                body.appendChild(headerPrincipal);
+
+                // Procesar partidas con diseño optimizado (sin información redundante)
+                Object.entries(_res.returnResult.partidas).forEach(([k, v]) => {
+                    const div = document.createElement('div');
+                    const tablaId = `tabla-materiales_${v.id_partidas}`;
+
+                    let html = `
+                <div class="partida-card">
+                    <div class="partida-header-simple">
+                        <div class="partida-badge">
+                            <i class="fas fa-box me-2"></i>
+                            Partida ${parseInt(k) + 1}
+                        </div>
+                    </div>
+
+                    <div class="tabla-moderna-container">
+                        <table class="tabla-moderna" id="${tablaId}">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <div class="th-content">
+                                            <i class="fas fa-barcode me-2"></i>
+                                            Clave
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <div class="th-content">
+                                            <i class="fas fa-cube me-2"></i>
+                                            Descripción
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <div class="th-content">
+                                            <i class="fas fa-ruler me-2"></i>
+                                            Unidad
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <div class="th-content">
+                                            <i class="fas fa-dollar-sign me-2"></i>
+                                            Costo Unit.
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <div class="th-content">
+                                            <i class="fas fa-calculator me-2"></i>
+                                            Cantidad
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <div class="th-content">
+                                            <i class="fas fa-receipt me-2"></i>
+                                            Total
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                `;
+
+                    div.innerHTML = html;
+                    body.appendChild(div);
+
+                    // Agregar filas a la tabla
+                    const partidas = _res.returnResult.partidas.filter(p => p.id_partidas == v.id_partidas);
+                    const tbody = document.querySelector(`#${tablaId} tbody`);
+
+                    partidas.forEach((p, index) => {
+                        const precio = parseFloat(p.pv_prod);
+                        const cantidad = parseFloat(p.cant_ud) || 0;
+                        const total = precio * cantidad;
+                        totalGlobal += total;
+
+                        const fila = document.createElement('tr');
+                        fila.className = `tabla-row ${index % 2 === 0 ? 'row-even' : 'row-odd'}`;
+                        fila.innerHTML = `
+                        <td>
+                            <div class="cell-content">
+                                <span class="codigo-badge">${p.cve_prod}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-content">
+                                <span class="descripcion-text">${p.descr_prod || '-'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-content text-center">
+                                <span class="unidad-badge">${p.ud || '-'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-content text-end">
+                                <span class="precio-text">$${precio.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-content text-center">
+                                <span class="cantidad-badge">${cantidad.toLocaleString('es-MX')}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-content text-end">
+                                <span class="total-text">$${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                        </td>
+                    `;
+                        tbody.appendChild(fila);
+                    });
+                });
+
+                // Archivos adjuntos con diseño mejorado
+                const archivos = _res.returnResult.archivos;
+                if (archivos.length > 0) {
+                    const archivosContainer = document.createElement('div');
+                    archivosContainer.className = 'archivos-container';
+
+                    archivosContainer.innerHTML = `
+                    <div class="archivos-card">
+                        <div class="archivos-header">
+                            <i class="fas fa-paperclip me-2"></i>
+                            <span class="archivos-title">Documentos Adjuntos</span>
+                            <span class="archivos-count">${archivos.length} archivo${archivos.length > 1 ? 's' : ''}</span>
+                        </div>
+                        <div class="archivos-grid">
+                            ${archivos.map(archivo => {
+                        const icono = getIconFile(archivo.extencion);
+                        return `
+                                    <div class="archivo-item">
+                                        <div class="archivo-icon">
+                                            <i class="fas ${icono}"></i>
+                                        </div>
+                                        <div class="archivo-info">
+                                            <a href="/${archivo.path}" target="_blank" class="archivo-nombre">
+                                                ${archivo.nombre_original}
+                                            </a>
+                                            <span class="archivo-extension">${archivo.extencion.toUpperCase()}</span>
+                                        </div>
+                                        <div class="archivo-action">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </div>
+                                    </div>
+                                `;
+                    }).join('')}
+                        </div>
+                    </div>
+                `;
+
+                    body.appendChild(archivosContainer);
+                }
+
+                // Resumen de totales modernizado
+                const totalResumen = document.createElement('div');
+                totalResumen.className = "total-resumen-container";
+                totalResumen.innerHTML = `
+                <div class="total-resumen-card">
+                    <div class="total-header">
+                        <div class="total-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="total-info">
+                            <h6 class="total-titulo">Resumen General</h6>
+                            <p class="total-descripcion">Total de la requisición</p>
+                        </div>
+                    </div>
+                    <div class="total-divider"></div>
+                    <div class="total-amount-section">
+                        <div class="total-label">Total General:</div>
+                        <div class="total-amount">$${totalGlobal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                    <div class="total-footer">
+                        <small class="total-note">* Montos en pesos mexicanos</small>
+                    </div>
+                </div>
+            `;
+                body.appendChild(totalResumen);
+
+                // Agregar estilos CSS modernos optimizados
+                agregarEstilosModernosOptimizados();
+
+                $('#modalAceptarCotizacion').data('encabezado', id);
+                $('#modalOpcionesLabel').html(`<i class="bi bi-check-circle-fill me-2"></i> Detalles de la requisicion No. ${_res.returnResult.requisicion.nuevo_codigo}`);
+                $('#modalAceptarCotizacion').modal('show');
+            } else {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: _res.error
+                });
+            }
+        });
+    }
+
+    function agregarEstilosModernosOptimizados() {
+        if (document.getElementById('estilos-requisicion-moderna-optimizada')) return;
+
+        const styles = document.createElement('style');
+        styles.id = 'estilos-requisicion-moderna-optimizada';
+        styles.textContent = `
+        /* Header Principal */
+        .requisicion-header {
+            margin-bottom: 2rem;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+            border-radius: 1rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-gradient {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1));
+            pointer-events: none;
+        }
+
+        .header-content {
+            padding: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .document-title {
+            color: white;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .document-meta {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .meta-item {
+            color: var(--light-blue);
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 0.7rem 1.2rem;
+            border-radius: 2rem;
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* Proveedor Card */
+        .provider-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .provider-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .provider-header {
+            background: linear-gradient(90deg, var(--accent-blue), var(--primary-blue));
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .provider-content {
+            padding: 1.5rem;
+        }
+
+        .provider-name {
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .provider-code {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            display: block;
+        }
+
+        .provider-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .contact-item {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* Partidas Optimizadas */
+        .partida-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .partida-card:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Header simplificado para partidas */
+        .partida-header-simple {
+            background: linear-gradient(90deg, var(--bg-gray), var(--very-light-blue));
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+        }
+
+        .partida-badge {
+            display: inline-flex;
+            align-items: center;
+            background: var(--accent-blue);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Tabla Moderna */
+        .tabla-moderna-container {
+            overflow: hidden;
+        }
+
+        .tabla-moderna {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .tabla-moderna thead tr {
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-blue-dark));
+        }
+
+        .tabla-moderna thead th {
+            padding: 1.2rem 1rem;
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tabla-moderna thead th:first-child {
+            border-top-left-radius: 0;
+        }
+
+        .tabla-moderna thead th:last-child {
+            border-top-right-radius: 0;
+        }
+
+        .th-content {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .tabla-row {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .tabla-row:hover {
+            background: linear-gradient(90deg, var(--very-light-blue), transparent);
+            transform: scale(1.01);
+        }
+
+        .tabla-row.row-even {
+            background: rgba(248, 250, 252, 0.5);
+        }
+
+        .tabla-moderna td {
+            padding: 1rem;
+            border: none;
+            vertical-align: middle;
+        }
+
+        .cell-content {
+            display: flex;
+            align-items: center;
+            min-height: 2rem;
+        }
+
+        .codigo-badge {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .descripcion-text {
+            color: var(--text-dark);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .unidad-badge {
+            background: var(--secondary-blue);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .precio-text, .total-text {
+            font-weight: 700;
+            color: var(--accent-blue);
+            font-family: 'Courier New', monospace;
+        }
+
+        .cantidad-badge {
+            background: var(--success-color);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            min-width: 3rem;
+            text-align: center;
+            display: inline-block;
+        }
+
+        /* Archivos */
+        .archivos-container {
+            margin: 2rem 0;
+        }
+
+        .archivos-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .archivos-header {
+            background: var(--bg-gray);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .archivos-title {
+            font-weight: 700;
+            color: var(--text-dark);
+            flex: 1;
+        }
+
+        .archivos-count {
+            background: var(--accent-blue);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .archivos-grid {
+            padding: 1.5rem;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .archivo-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .archivo-item:hover {
+            border-color: var(--accent-blue);
+            background: var(--very-light-blue);
+            transform: translateX(5px);
+        }
+
+        .archivo-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            border-radius: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .archivo-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .archivo-nombre {
+            color: var(--text-dark);
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .archivo-nombre:hover {
+            color: var(--accent-blue);
+        }
+
+        .archivo-extension {
+            color: var(--text-light);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .archivo-action {
+            color: var(--text-light);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .archivo-item:hover .archivo-action {
+            opacity: 1;
+        }
+
+        /* Total Resumen */
+        .total-resumen-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .total-resumen-card {
+            background: linear-gradient(135deg, var(--bg-light) 0%, var(--very-light-blue) 100%);
+            border: 2px solid var(--accent-blue);
+            border-radius: 1rem;
+            padding: 2rem;
+            min-width: 350px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .total-resumen-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--primary-blue), var(--accent-blue));
+        }
+
+        .total-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .total-icon {
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-blue);
+            color: white;
+            border-radius: 50%;
+            font-size: 1.3rem;
+        }
+
+        .total-titulo {
+            color: var(--text-dark);
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .total-descripcion {
+            color: var(--text-light);
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .total-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+            margin: 1rem 0;
+        }
+
+        .total-amount-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .total-label {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+        }
+
+        .total-amount {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .total-footer {
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--border-light);
+        }
+
+        .total-note {
+            color: var(--text-light);
+            font-style: italic;
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .document-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .total-resumen-card {
+                min-width: auto;
+                width: 100%;
+            }
+
+            .total-amount {
+                font-size: 1.5rem;
+            }
+
+            .partida-header-simple {
+                padding: 0.8rem 1rem;
+            }
+        }
+    `;
+
+        document.head.appendChild(styles);
+    }
+
+    function VerDetalleSolocitud(id) {
+        GetData({
+            path: '/ProcesoComprasInternacional/GetRequisicionesData',
+            data: { id: id }
+        }).then(async (_res) => {
+            if (_res.success) {
+                const body = document.getElementById('modalDireccion');
+                body.innerHTML = ''; // Limpiar contenido
+
+                let totalGlobal = 0;
+                const allPartidas = _res.returnResult.partidas;
+
+                // Obtener la divisa guardada directamente de la respuesta
+                const divisaGuardada = _res.returnResult.requisicion.ccy || 'MXN'; // Valor por defecto MXN si no existe
+
+                // Obtener el proveedor guardado directamente de la respuesta
+                proveedorGuardado = _res.returnResult.requisicion.refe || null;
+
+                console.log('Divisa guardada:', divisaGuardada);
+
+                // Agrupar partidas por id_partidas para evitar repetición
+                const partidasAgrupadas = {};
+                allPartidas.forEach(partida => {
+                    if (!partidasAgrupadas[partida.id_partidas]) {
+                        partidasAgrupadas[partida.id_partidas] = {
+                            info: {
+                                cve_prod: partida.cve_prod,
+                                descr_prod: partida.descr_prod,
+                                id_partidas: partida.id_partidas
+                            },
+                            items: []
+                        };
+                    }
+                    partidasAgrupadas[partida.id_partidas].items.push(partida);
+                });
+
+                // Crear contenedor principal con mejor estructura
+                const mainContainer = document.createElement('div');
+                mainContainer.className = 'requisicion-container';
+
+                // Header con información general, selector de divisa y selector de proveedor
+                const headerInfo = document.createElement('div');
+                headerInfo.className = 'requisicion-header mb-4';
+                headerInfo.innerHTML = `
+                <div class="card shadow-sm border-0" style="background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue)); border-radius: 1rem;">
+                    <div class="card-body text-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Solicitud No. ${_res.returnResult.requisicion.nuevo_codigo}</h5>
+                                <small class="opacity-75">Detalle de partidas y cotizaciones</small>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="divisa-selector">
+                                    <label for="divisa" class="form-label mb-1 opacity-90" style="font-size: 0.85rem; font-weight: 500;">
+                                        <i class="fas fa-coins me-1"></i>Divisa
+                                    </label>
+                                    <div class="d-flex gap-2 align-items-end">
+                                        <select class="form-select form-select-sm flex-grow-1" id="divisa" style="background-color: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; backdrop-filter: blur(10px);">
+                                            <option value="PESOS" data-symbol="$" ${divisaGuardada === 'PESOS' ? 'selected' : ''}>MXN - Peso Mexicano</option>
+                                            <option value="DLLS" data-symbol="$" ${divisaGuardada === 'DLLS' ? 'selected' : ''}>USD - Dólar Americano</option>
+                                            <option value="EURO" data-symbol="€" ${divisaGuardada === 'EURO' ? 'selected' : ''}>EUR - Euro</option>
+                                        </select>
+                                        <button class="btn btn-sm btn-light btn-guardar-divisa" id="btnGuardarDivisa" title="Guardar divisa" style="padding: 0.375rem 0.75rem; min-width: 40px;">
+                                            <i class="fas fa-save" style="color: var(--primary-blue);"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="proveedor-selector">
+                                    <label for="proveedor" class="form-label mb-1 opacity-90" style="font-size: 0.85rem; font-weight: 500;">
+                                        <i class="fas fa-building me-1"></i>Proveedor
+                                    </label>
+                                    <div class="d-flex gap-2 align-items-end">
+                                        <select class="form-select form-select-sm flex-grow-1" id="proveedor" style="background-color: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; backdrop-filter: blur(10px);">
+                                            <option value="">Seleccionar proveedor...</option>
+                                        </select>
+                                        <button class="btn btn-sm btn-light btn-guardar-proveedor" id="btnGuardarProveedor" title="Guardar proveedor" style="padding: 0.375rem 0.75rem; min-width: 40px;">
+                                            <i class="fas fa-save" style="color: var(--primary-blue);"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+                mainContainer.appendChild(headerInfo);
+
+                // Crear tabla unificada para todas las partidas
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'table-container-modern mb-4';
+
+                const tableId = 'tabla-requisicion-unificada';
+                tableContainer.innerHTML = `
+                  <div class="card shadow-sm border-0" style="border-radius: 1rem;">
+                      <div class="card-header bg-light border-0" style="border-radius: 1rem 1rem 0 0;">
+                          <div class="d-flex justify-content-between align-items-center">
+                              <h6 class="mb-0 fw-bold text-dark">
+                                  <i class="fas fa-table me-2"></i>Detalle de Partidas
+                              </h6>
+                              <span class="badge bg-info">${allPartidas.length} registros</span>
+                          </div>
+                      </div>
+                      <div class="table-responsive" style="max-height: 600px;">
+                          <table class="table modern-table-enhanced mb-0" id="${tableId}">
+                              <thead class="sticky-top">
+                                  <tr>
+                                      <th style="min-width: 120px;"><i class="fas fa-tag me-2"></i>Partida</th>
+                                      <th style="min-width: 80px;"><i class="fa-solid fa-cubes me-2"></i>Unidad</th>
+                                      <th style="min-width: 120px;"><i class="fas fa-dollar-sign me-2"></i>Costo Unit.</th>
+                                      <th style="min-width: 100px;"><i class="fas fa-calculator me-2"></i>Cantidad</th>
+                                      <th style="min-width: 120px;"><i class="fas fa-receipt me-2"></i>Total</th>
+                                      <th style="min-width: 80px;"><i class="fas fa-cog me-2"></i>Acciones</th>
+                                  </tr>
+                              </thead>
+                              <tbody></tbody>
+                          </table>
+                      </div>
+                  </div>
+                `;
+
+                mainContainer.appendChild(tableContainer);
+
+                const tbody = tableContainer.querySelector(`#${tableId} tbody`);
+                const divisaSelect = mainContainer.querySelector('#divisa');
+                const btnGuardarDivisa = mainContainer.querySelector('#btnGuardarDivisa');
+                const proveedorSelect = mainContainer.querySelector('#proveedor');
+                const btnGuardarProveedor = mainContainer.querySelector('#btnGuardarProveedor');
+
+                // Obtener tipo de cambio inicial
+                let tipoCambio = await convertirADecimal(divisaSelect.value);
+                console.log('Tipo de cambio inicial:', tipoCambio);
+
+                // Inicializar TomSelect para proveedores
+                let tomSelectProveedor = null;
+
+                // Función para inicializar el selector de proveedores
+                const inicializarSelectorProveedor = async () => {
+                    try {
+                        // Asegurar que proveedoresList esté cargado
+                        if (!proveedoresList || proveedoresList.length === 0) {
+                            await cargarProveedores();
+                        }
+
+                        tomSelectProveedor = inicializarTomSelectProveedor(proveedorSelect, proveedorGuardado);
+
+                        // Aplicar estilos específicos para el modal
+                        const tomSelectWrapper = proveedorSelect.closest('.proveedor-selector').querySelector('.ts-wrapper');
+                        if (tomSelectWrapper) {
+                            tomSelectWrapper.style.backgroundColor = 'rgba(255,255,255,0.15)';
+                            tomSelectWrapper.style.border = '1px solid rgba(255,255,255,0.3)';
+                            tomSelectWrapper.style.borderRadius = '0.375rem';
+                            tomSelectWrapper.style.backdropFilter = 'blur(10px)';
+
+                            const control = tomSelectWrapper.querySelector('.ts-control');
+                            if (control) {
+                                control.style.backgroundColor = 'transparent';
+                                control.style.border = 'none';
+                                control.style.color = 'white';
+                                control.style.minHeight = '32px';
+                            }
+
+                            // Estilizar el placeholder
+                            const input = tomSelectWrapper.querySelector('input');
+                            if (input) {
+                                input.style.color = 'white';
+                                input.setAttribute('placeholder', 'Buscar proveedor...');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error al inicializar selector de proveedor:', error);
+                        toastMixin.fire({
+                            icon: 'warning',
+                            title: 'Error al cargar proveedores'
+                        });
+                    }
+                };
+
+                // Función para guardar la divisa
+                const guardarDivisa = async () => {
+                    const estadoOriginal = {
+                        innerHTML: btnGuardarDivisa.innerHTML,
+                        disabled: btnGuardarDivisa.disabled,
+                        className: btnGuardarDivisa.className
+                    };
+
+                    try {
+                        // Deshabilitar botón y mostrar loading
+                        btnGuardarDivisa.disabled = true;
+                        btnGuardarDivisa.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                        const formData = new FormData();
+                        formData.append('_token', getCSRFToken());
+                        formData.append('requisicion_id', id);
+                        formData.append('ccy', divisaSelect.value);
+
+                        const response = await fetch('/ProcesoComprasInternacional/GuardarDivisa', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
+                        }
+
+                        const resultado = await response.json();
+
+                        if (resultado.success) {
+                            toastMixin.fire({
+                                icon: 'success',
+                                title: 'Divisa guardada correctamente',
+                                timer: 1500
+                            });
+
+                            // Mostrar éxito temporalmente
+                            btnGuardarDivisa.innerHTML = '<i class="fas fa-check"></i>';
+                            btnGuardarDivisa.classList.add('btn-success');
+                            btnGuardarDivisa.classList.remove('btn-light');
+
+                            // Restaurar después de mostrar el éxito
+                            setTimeout(() => {
+                                btnGuardarDivisa.innerHTML = estadoOriginal.innerHTML;
+                                btnGuardarDivisa.className = estadoOriginal.className;
+                            }, 2000);
+
+                        } else {
+                            throw new Error(resultado.message || 'Error desconocido del servidor');
+                        }
+
+                    } catch (error) {
+                        console.error('Error al guardar divisa:', error);
+
+                        let mensajeError = 'Error de conexión';
+                        if (error.message) {
+                            mensajeError = error.message;
+                        }
+
+                        toastMixin.fire({
+                            icon: 'error',
+                            title: mensajeError
+                        });
+
+                        // Mostrar error en el botón temporalmente
+                        btnGuardarDivisa.innerHTML = '<i class="fas fa-times"></i>';
+                        btnGuardarDivisa.classList.add('btn-danger');
+                        btnGuardarDivisa.classList.remove('btn-light');
+
+                    } finally {
+                        // Siempre restaurar el estado del botón después de un delay
+                        setTimeout(() => {
+                            if (btnGuardarDivisa) {
+                                btnGuardarDivisa.disabled = estadoOriginal.disabled;
+                                btnGuardarDivisa.innerHTML = estadoOriginal.innerHTML;
+                                btnGuardarDivisa.className = estadoOriginal.className;
+                            }
+                        }, 2000);
+                    }
+                };
+
+                // Función para guardar el proveedor
+                const guardarProveedor = async () => {
+                    const estadoOriginal = {
+                        innerHTML: btnGuardarProveedor.innerHTML,
+                        disabled: btnGuardarProveedor.disabled,
+                        className: btnGuardarProveedor.className
+                    };
+
+                    try {
+                        // Deshabilitar botón y mostrar loading
+                        btnGuardarProveedor.disabled = true;
+                        btnGuardarProveedor.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                        // MEJORA: Múltiples formas de obtener el valor del proveedor
+                        let proveedorSeleccionado = '';
+
+                        // Método 1: Desde la instancia de TomSelect
+                        if (tomSelectProveedor && typeof tomSelectProveedor.getValue === 'function') {
+                            proveedorSeleccionado = tomSelectProveedor.getValue();
+                        }
+
+                        // Método 2: Fallback - obtener directamente del select
+                        if (!proveedorSeleccionado && proveedorSelect) {
+                            proveedorSeleccionado = proveedorSelect.value;
+                        }
+
+                        // Método 3: Fallback - buscar el input hidden de TomSelect
+                        if (!proveedorSeleccionado) {
+                            const hiddenInput = document.querySelector('input[name="proveedor_select"]');
+                            if (hiddenInput) {
+                                proveedorSeleccionado = hiddenInput.value;
+                            }
+                        }
+
+                        // DEBUGGING: Agregar logs para diagnóstico
+                        console.log('DEBUG - Valores obtenidos:');
+                        console.log('tomSelectProveedor existe:', !!tomSelectProveedor);
+                        console.log('proveedorSelect existe:', !!proveedorSelect);
+                        console.log('Valor de TomSelect:', tomSelectProveedor ? tomSelectProveedor.getValue() : 'N/A');
+                        console.log('Valor del select:', proveedorSelect ? proveedorSelect.value : 'N/A');
+                        console.log('Proveedor seleccionado final:', proveedorSeleccionado);
+
+                        if (!proveedorSeleccionado || proveedorSeleccionado === '') {
+                            throw new Error('Por favor seleccione un proveedor');
+                        }
+
+                        const formData = new FormData();
+                        formData.append('_token', getCSRFToken());
+                        formData.append('requisicion_id', id);
+                        formData.append('proveedor_id', proveedorSeleccionado);
+
+                        const response = await fetch('/ProcesoComprasInternacional/GuardarProveedor', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
+                        }
+
+                        const resultado = await response.json();
+
+                        if (resultado.success) {
+                            toastMixin.fire({
+                                icon: 'success',
+                                title: 'Proveedor guardado correctamente',
+                                timer: 1500
+                            });
+
+                            // Mostrar éxito temporalmente
+                            btnGuardarProveedor.innerHTML = '<i class="fas fa-check"></i>';
+                            btnGuardarProveedor.classList.add('btn-success');
+                            btnGuardarProveedor.classList.remove('btn-light');
+
+                            // Restaurar después de mostrar el éxito
+                            setTimeout(() => {
+                                btnGuardarProveedor.innerHTML = estadoOriginal.innerHTML;
+                                btnGuardarProveedor.className = estadoOriginal.className;
+                            }, 2000);
+                        } else {
+                            throw new Error(resultado.message || 'Error desconocido del servidor');
+                        }
+
+                    } catch (error) {
+                        console.error('Error al guardar proveedor:', error);
+                        let mensajeError = 'Error de conexión';
+                        if (error.message) {
+                            mensajeError = error.message;
+                        }
+
+                        toastMixin.fire({
+                            icon: 'error',
+                            title: mensajeError
+                        });
+
+                        // Mostrar error en el botón temporalmente
+                        btnGuardarProveedor.innerHTML = '<i class="fas fa-times"></i>';
+                        btnGuardarProveedor.classList.add('btn-danger');
+                        btnGuardarProveedor.classList.remove('btn-light');
+                    } finally {
+                        // Siempre restaurar el estado del botón después de un delay
+                        setTimeout(() => {
+                            if (btnGuardarProveedor) {
+                                btnGuardarProveedor.disabled = estadoOriginal.disabled;
+                                btnGuardarProveedor.innerHTML = estadoOriginal.innerHTML;
+                                btnGuardarProveedor.className = estadoOriginal.className;
+                            }
+                        }, 2000);
+                    }
+                };
+
+                // Event listeners para los botones
+                btnGuardarDivisa.addEventListener('click', guardarDivisa);
+                btnGuardarProveedor.addEventListener('click', guardarProveedor);
+
+                // Función para obtener información de divisa
+                const getDivisaInfo = () => {
+                    const selectedOption = divisaSelect.options[divisaSelect.selectedIndex];
+                    return {
+                        codigo: selectedOption.value,
+                        simbolo: selectedOption.getAttribute('data-symbol')
+                    };
+                };
+
+                // Función para obtener el token CSRF
+                const getCSRFToken = () => {
+                    const metaToken = document.querySelector('meta[name="csrf-token"]');
+                    if (metaToken) {
+                        return metaToken.getAttribute('content');
+                    }
+                    // Alternativa: buscar en inputs hidden
+                    const inputToken = document.querySelector('input[name="_token"]');
+                    if (inputToken) {
+                        return inputToken.value;
+                    }
+                    return null;
+                };
+
+                // Función para guardar cambios via fetch
+                const guardarCambiosPartida = async (datosPartida, botonGuardar) => {
+                    // Validar que el botón existe
+                    if (!botonGuardar) {
+                        console.error('Botón no encontrado');
+                        return;
+                    }
+
+                    // Guardar estado original del botón
+                    const estadoOriginal = {
+                        innerHTML: botonGuardar.innerHTML,
+                        disabled: botonGuardar.disabled,
+                        className: botonGuardar.className
+                    };
+
+                    try {
+                        // Deshabilitar botón y mostrar loading
+                        botonGuardar.disabled = true;
+                        botonGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+
+                        // Validar datos requeridos
+                        if (!datosPartida || !datosPartida.partidaId) {
+                            throw new Error('Datos de partida incompletos');
+                        }
+
+                        const formData = new FormData();
+                        formData.append('_token', getCSRFToken());
+                        formData.append('item_id', datosPartida.itemId);
+                        formData.append('partida_id', datosPartida.partidaId);
+                        formData.append('precio', datosPartida.precio || 0);
+                        formData.append('cantidad', datosPartida.cantidad || 0);
+                        formData.append('requisicion_id', id);
+
+                        const response = await fetch('/ProcesoComprasInternacional/ActualizarPartida', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        // Verificar que la respuesta sea OK
+                        if (!response.ok) {
+                            throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
+                        }
+
+                        const resultado = await response.json();
+
+                        if (resultado.success) {
+                            toastMixin.fire({
+                                icon: 'success',
+                                title: 'Cambios guardados correctamente',
+                                timer: 1500
+                            });
+
+                            // Mostrar éxito temporalmente
+                            botonGuardar.innerHTML = '<i class="fas fa-check me-2"></i>Guardado';
+                            botonGuardar.classList.add('btn-success');
+
+                            // Restaurar después de mostrar el éxito
+                            setTimeout(() => {
+                                botonGuardar.innerHTML = estadoOriginal.innerHTML;
+                                botonGuardar.className = estadoOriginal.className;
+                            }, 2000);
+
+                        } else {
+                            throw new Error(resultado.message || 'Error desconocido del servidor');
+                        }
+
+                    } catch (error) {
+                        console.error('Error en guardarCambiosPartida:', error);
+
+                        // Mostrar error específico
+                        let mensajeError = 'Error de conexión';
+                        if (error.message) {
+                            mensajeError = error.message;
+                        }
+
+                        toastMixin.fire({
+                            icon: 'error',
+                            title: mensajeError
+                        });
+
+                        // Mostrar error en el botón temporalmente
+                        botonGuardar.innerHTML = '<i class="fas fa-times me-2"></i>Error';
+                        botonGuardar.classList.add('btn-danger');
+
+                    } finally {
+                        // Siempre restaurar el estado del botón después de un delay
+                        setTimeout(() => {
+                            if (botonGuardar) {
+                                botonGuardar.disabled = estadoOriginal.disabled;
+                                botonGuardar.innerHTML = estadoOriginal.innerHTML;
+                                botonGuardar.className = estadoOriginal.className;
+                            }
+                        }, 2000);
+                    }
+                };
+
+                // Función para actualizar el total de una fila
+                const actualizarTotal = (fila, precio, cantidad) => {
+                    const total = precio * cantidad;
+                    const divisaInfo = getDivisaInfo();
+                    const totalCell = fila.querySelector('.total-cell');
+
+                    if (totalCell) {
+                        totalCell.innerHTML = `${divisaInfo.simbolo}${total.toFixed(2)} <small class="divisa-code">${divisaInfo.codigo}</small>`;
+                        totalCell.setAttribute('data-total', total);
+                    }
+
+                    actualizarTotalGlobal();
+                    return total;
+                };
+
+                // Función para actualizar el total global
+                const actualizarTotalGlobal = () => {
+                    const totales = Array.from(document.querySelectorAll('.total-cell'))
+                        .map(cell => parseFloat(cell.getAttribute('data-total')) || 0);
+                    const nuevoTotalEnDivisaSeleccionada = totales.reduce((sum, val) => sum + val, 0);
+                    const divisaInfo = getDivisaInfo();
+
+                    // Mostrar total en la divisa seleccionada
+                    const totalElement = document.querySelector('.total-global-amount');
+                    if (totalElement) {
+                        totalElement.innerHTML = `${divisaInfo.simbolo}${nuevoTotalEnDivisaSeleccionada.toFixed(2)} <small class="divisa-code-global">${divisaInfo.codigo}</small>`;
+                    }
+
+                    // Mostrar conversión a pesos mexicanos si no es la divisa seleccionada
+                    const conversionElement = document.getElementById('conversion');
+                    if (conversionElement) {
+                        if (divisaInfo.codigo !== 'PESOS') {
+                            const totalEnPesos = nuevoTotalEnDivisaSeleccionada * tipoCambio;
+                            conversionElement.innerHTML = `Total: ${totalEnPesos.toFixed(2)} MXN`;
+                        } else {
+                            conversionElement.innerHTML = "";
+                        }
+                    }
+                };
+
+                // Función para actualizar todas las divisas mostradas
+                const actualizarTodasLasDivisas = () => {
+                    const divisaInfo = getDivisaInfo();
+
+                    // Actualizar símbolos en inputs de precio
+                    const simbolosPrecios = document.querySelectorAll('.input-group-text');
+                    simbolosPrecios.forEach(simbolo => {
+                        if (simbolo.textContent === '$' || simbolo.textContent === '€') {
+                            simbolo.textContent = divisaInfo.simbolo;
+                        }
+                    });
+
+                    // Recalcular todos los totales
+                    const filas = document.querySelectorAll('.table-row-enhanced');
+                    filas.forEach(fila => {
+                        const precioInput = fila.querySelector('.precio-input');
+                        const cantidadInput = fila.querySelector('.cantidad-input');
+                        if (precioInput && cantidadInput) {
+                            const precio = Math.max(0, parseFloat(precioInput.value) || 0);
+                            const cantidad = Math.max(0, parseFloat(cantidadInput.value) || 0);
+                            actualizarTotal(fila, precio, cantidad);
+                        }
+                    });
+                };
+
+                // Event listener para cambio de divisa
+                divisaSelect.addEventListener('change', async (e) => {
+                    console.log('Cambiando divisa a:', e.target.value);
+                    tipoCambio = await convertirADecimal(e.target.value);
+                    console.log('Nuevo tipo de cambio:', tipoCambio);
+                    actualizarTodasLasDivisas();
+                });
+
+                // Función para validar y corregir cantidad
+                const validarCantidad = (input) => {
+                    let valor = parseFloat(input.value) || 0;
+                    if (valor < 0) {
+                        valor = 0;
+                        input.value = valor;
+                    }
+                    return valor;
+                };
+
+                // Crear filas agrupadas por partida
+                Object.entries(partidasAgrupadas).forEach(([partidaId, grupo]) => {
+                    grupo.items.forEach((item, index) => {
+                        const precio = parseFloat(item.pv_prod) || 0;
+                        const cantidad = Math.max(0, parseFloat(item.cant_ud) || 0); // Asegurar que no sea negativo
+                        const total = precio * cantidad;
+                        totalGlobal += total;
+
+                        const fila = document.createElement('tr');
+                        fila.className = 'table-row-enhanced';
+                        fila.setAttribute('data-partida-id', partidaId);
+                        fila.setAttribute('data-item-id', item.id || index);
+
+                        // Solo mostrar información de partida en la primera fila del grupo
+                        const mostrarInfoPartida = index === 0;
+                        const divisaInfo = getDivisaInfo();
+
+                        fila.innerHTML = `
+                        <td class="partida-info">
+                            ${mostrarInfoPartida ? `
+                                <div class="partida-badge">
+                                    <div class="fw-bold text-primary">${grupo.info.cve_prod}</div>
+                                    <small class="text-muted">${grupo.info.descr_prod}</small>
+                                </div>
+                            ` : '<span class="text-muted">↳</span>'}
+                        </td>
+
+                        <td>
+                            <span class="badge bg-info text-dark">${item.ud || '-'}</span>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">${divisaInfo.simbolo}</span>
+                                <input type="number"
+                                       class="form-control precio-input"
+                                       value="${precio.toFixed(2)}"
+                                       min="0"
+                                       step="0.01"
+                                       style="max-width: 100px;">
+                            </div>
+                        </td>
+                        <td>
+                            <input type="number"
+                                   class="form-control form-control-sm cantidad-input"
+                                   value="${cantidad}"
+                                   min="0"
+                                   step="1"
+                                   style="max-width: 80px;">
+                        </td>
+                        <td>
+                            <span class="badge bg-success fs-6 total-cell" data-total="${total}">${divisaInfo.simbolo}${total.toFixed(2)} <small class="divisa-code">${divisaInfo.codigo}</small></span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary btn-sm guardar-btn" title="Guardar cambios">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm reset-btn" title="Resetear valores">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+
+                        tbody.appendChild(fila);
+
+                        // Event listeners para los inputs
+                        const precioInput = fila.querySelector('.precio-input');
+                        const cantidadInput = fila.querySelector('.cantidad-input');
+                        const guardarBtn = fila.querySelector('.guardar-btn');
+                        const resetBtn = fila.querySelector('.reset-btn');
+
+                        // Valores originales para reset
+                        const valoresOriginales = {
+                            precio: precio,
+                            cantidad: cantidad
+                        };
+
+                        // Event listener para cambios en precio
+                        precioInput.addEventListener('input', () => {
+                            const nuevoPrecio = Math.max(0, parseFloat(precioInput.value) || 0);
+                            const cantidadActual = validarCantidad(cantidadInput);
+                            actualizarTotal(fila, nuevoPrecio, cantidadActual);
+                        });
+
+                        // Event listener para cambios en cantidad
+                        cantidadInput.addEventListener('input', () => {
+                            const cantidadValidada = validarCantidad(cantidadInput);
+                            const precioActual = Math.max(0, parseFloat(precioInput.value) || 0);
+                            actualizarTotal(fila, precioActual, cantidadValidada);
+                        });
+
+                        // Event listener para el botón guardar (ACTUALIZADO CON FETCH)
+                        guardarBtn.addEventListener('click', async () => {
+                            const nuevoPrecio = parseFloat(precioInput.value) || 0;
+                            const nuevaCantidad = validarCantidad(cantidadInput);
+
+                            const datosPartida = {
+                                itemId: item.id || index,
+                                partidaId: partidaId,
+                                precio: nuevoPrecio,
+                                cantidad: nuevaCantidad
+                            };
+
+                            await guardarCambiosPartida(datosPartida, guardarBtn);
+                        });
+
+                        // Event listener para el botón reset
+                        resetBtn.addEventListener('click', () => {
+                            precioInput.value = valoresOriginales.precio.toFixed(2);
+                            cantidadInput.value = valoresOriginales.cantidad;
+                            actualizarTotal(fila, valoresOriginales.precio, valoresOriginales.cantidad);
+                        });
+                    });
+                });
+
+                // Agregar archivos si existen
+                const archivos = _res.returnResult.archivos;
+                if (archivos.length > 0) {
+                    const archivosContainer = document.createElement('div');
+                    archivosContainer.className = 'archivos-section mb-4';
+
+                    archivosContainer.innerHTML = `
+            <div class="card shadow-sm border-0" style="border-radius: 1rem;">
+                <div class="card-header bg-light border-0">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-paperclip me-2"></i>Archivos Adjuntos (${archivos.length})</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        ${archivos.map(archivo => {
+                        const icono = getIconFile(archivo.extencion);
+                        return `
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <div class="archivo-item p-2 rounded bg-light">
+                                        <i class="fa-solid ${icono} fa-lg me-2" style="color:var(--dark-blue)"></i>
+                                        <a href="/${archivo.path}" target="_blank" class="text-decoration-none" style="color:var(--dark-blue)">
+                                            ${archivo.nombre_original}
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                    }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+                    mainContainer.appendChild(archivosContainer);
+                }
+
+                // Resumen de totales mejorado
+                const divisaInfo = getDivisaInfo();
+                const totalResumen = document.createElement('div');
+                totalResumen.className = "total-summary-container";
+                totalResumen.innerHTML = `
+                <div class="row">
+                    <div class="col-md-8">
+
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100" style="border-radius: 1rem; background: linear-gradient(135deg, var(--very-light-blue), var(--very-light-blue));">
+                            <div class="card-body text-center">
+                                <div class="total-display">
+                                    <i class="fas fa-calculator fa-2x mb-3" style="color: var(--primary-blue);"></i>
+                                    <h6 class="fw-bold text-uppercase" style="color: var(--text-dark);">Total General</h6>
+                                    <h3 class="fw-bold total-global-amount" style="color: var(--primary-blue);">${divisaInfo.simbolo}${totalGlobal.toFixed(2)} <small class="divisa-code-global">${divisaInfo.codigo}</small></h3>
+                                    <small class="text-muted">${allPartidas.length} elementos</small>
+                                    <br>
+                                   <small id="conversion" style="color: var(--primary-blue);">
+                                       ${divisaInfo.codigo !== "PESOS" ? `Total: ${(tipoCambio * totalGlobal).toFixed(2)} MXN` : ""}
+                                   </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+                mainContainer.appendChild(totalResumen);
+
+                // Agregar estilos mejorados con los colores del sitio
+                const styles = document.createElement('style');
+                styles.innerHTML = `
+                .requisicion-container {
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                }
+
+                /* Estilos para el selector de divisa */
+                .divisa-selector {
+                    text-align: right;
+                }
+
+                .divisa-selector .d-flex {
+                    justify-content: flex-end;
+                }
+
+                .divisa-selector .form-select {
+                    transition: all 0.3s ease;
+                    border-radius: 0.5rem;
+                    font-weight: 500;
+                    font-size: 0.875rem;
+                }
+
+                .divisa-selector .form-select:focus {
+                    background-color: rgba(255,255,255,0.25) !important;
+                    border-color: rgba(255,255,255,0.5) !important;
+                    box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.25) !important;
+                }
+
+                .divisa-selector .form-select option {
+                    background-color: var(--primary-blue);
+                    color: white;
+                }
+
+                /* Estilos para el selector de proveedor */
+                .proveedor-selector {
+                    text-align: right;
+                }
+                .proveedor-selector .form-select {
+                    transition: all 0.3s ease;
+                    border-radius: 0.5rem;
+                    font-weight: 500;
+                    font-size: 0.875rem;
+                }
+
+                .proveedor-selector .form-select:focus {
+                    background-color: rgba(255,255,255,0.25) !important;
+                    border-color: rgba(255,255,255,0.5) !important;
+                    box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.25) !important;
+                }
+
+                /* Estilos para TomSelect en modal */
+                .proveedor-selector .ts-wrapper {
+                    transition: all 0.3s ease;
+                }
+
+                .proveedor-selector .ts-wrapper.focus {
+                    background-color: rgba(255,255,255,0.25) !important;
+                    border-color: rgba(255,255,255,0.5) !important;
+                    box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.25) !important;
+                    z-index: 1025;
+                }
+
+                .proveedor-selector .ts-control input {
+                    color: white !important;
+                }
+
+                .proveedor-selector .ts-control input::placeholder {
+                    color: rgba(255,255,255,0.7) !important;
+                }
+
+                .proveedor-selector .ts-dropdown {
+                    border: 1px solid var(--border-light);
+                    border-radius: 0.5rem;
+                    box-shadow: var(--shadow);
+                }
+
+                .proveedor-selector .ts-dropdown-content {
+                    max-height: 200px;
+                }
+
+                .proveedor-selector .ts-dropdown .option {
+                    padding: 0.5rem 0.75rem;
+                    color: var(--text-dark);
+                    border-bottom: 1px solid var(--border-light);
+                }
+
+                .proveedor-selector .ts-dropdown .option:hover,
+                .proveedor-selector .ts-dropdown .option.active {
+                    background-color: var(--very-light-blue);
+                    color: var(--primary-blue);
+                }
+
+                .btn-guardar-divisa, .btn-guardar-proveedor {
+                    transition: all 0.3s ease;
+                    border-radius: 0.5rem;
+                    font-weight: 500;
+                    background-color: rgba(255,255,255,0.9) !important;
+                    border: 1px solid rgba(255,255,255,0.3) !important;
+                    backdrop-filter: blur(10px);
+                }
+
+                .btn-guardar-divisa:hover:not(:disabled),
+                .btn-guardar-proveedor:hover:not(:disabled) {
+                    background-color: white !important;
+                    border-color: rgba(255,255,255,0.5) !important;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                }
+
+                .btn-guardar-divisa:disabled,
+                .btn-guardar-proveedor:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                }
+
+                .btn-guardar-divisa.btn-success,
+                .btn-guardar-proveedor.btn-success {
+                    background-color: #10b981 !important;
+                    border-color: #10b981 !important;
+                    color: white !important;
+                }
+
+                .btn-guardar-divisa.btn-danger,
+                .btn-guardar-proveedor.btn-danger {
+                    background-color: #ef4444 !important;
+                    border-color: #ef4444 !important;
+                    color: white !important;
+                }
+
+                /* Estilos para códigos de divisa */
+                .divisa-code {
+                    font-size: 0.7rem;
+                    opacity: 0.8;
+                    font-weight: 500;
+                }
+
+                .divisa-code-global {
+                    font-size: 0.85rem;
+                    opacity: 0.9;
+                    font-weight: 600;
+                }
+
+                .modern-table-enhanced {
+                    font-size: 0.9rem;
+                }
+
+                .modern-table-enhanced thead th {
+                    background: var(--primary-blue);
+                    color: white;
+                    font-weight: 600;
+                    border: none;
+                    padding: 1rem 0.75rem;
+                    font-size: 0.85rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+
+                .table-row-enhanced {
+                    transition: all 0.2s ease;
+                    border-bottom: 1px solid var(--border-light);
+                    background-color: var(--bg-light);
+                }
+
+                .table-row-enhanced:hover {
+                    background-color: var(--very-light-blue);
+                    transform: translateY(-1px);
+                    box-shadow: var(--shadow);
+                }
+
+                .partida-badge {
+                    padding: 0.5rem;
+                    border-left: 4px solid var(--primary-blue);
+                    background: var(--very-light-blue);
+                    border-radius: 0.25rem;
+                }
+
+                .partida-badge .text-primary {
+                    color: var(--primary-blue) !important;
+                }
+
+                .producto-info {
+                    max-width: 200px;
+                }
+
+                .producto-info .text-primary {
+                    color: var(--primary-blue) !important;
+                }
+
+                .precio-input, .cantidad-input {
+                    transition: all 0.2s ease;
+                    border: 2px solid var(--border-light);
+                    background-color: var(--bg-light);
+                    color: var(--text-dark);
+                }
+
+                .precio-input:focus, .cantidad-input:focus {
+                    border-color: var(--primary-blue);
+                    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+                    background-color: var(--bg-light);
+                }
+
+                .btn-outline-primary {
+                    border-color: var(--primary-blue);
+                    color: var(--primary-blue);
+                }
+
+                .btn-outline-primary:hover,
+                .guardar-btn:hover {
+                    background-color: var(--primary-blue);
+                    border-color: var(--primary-blue);
+                    color: white;
+                }
+
+                .btn-outline-secondary {
+                    border-color: var(--text-light);
+                    color: var(--text-light);
+                }
+
+                .btn-outline-secondary:hover {
+                    background-color: var(--text-light);
+                    border-color: var(--text-light);
+                    color: white;
+                }
+
+                .btn-success {
+                    background-color: #10b981;
+                    border-color: #10b981;
+                }
+
+                .total-display {
+                    position: relative;
+                }
+
+                .total-display::before {
+                    content: '';
+                    position: absolute;
+                    top: -10px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 50px;
+                    height: 3px;
+                    background: var(--primary-blue);
+                    border-radius: 2px;
+                }
+
+                .archivo-item {
+                    transition: all 0.2s ease;
+                    border: 1px solid var(--border-light);
+                    background-color: var(--bg-light);
+                }
+
+                .archivo-item:hover {
+                    background-color: var(--light-blue) !important;
+                    transform: translateY(-1px);
+                }
+
+                .card {
+                    background-color: var(--bg-light);
+                    border: 1px solid var(--border-light);
+                    box-shadow: var(--shadow);
+                }
+
+                .card-header.bg-light {
+                    background-color: var(--bg-gray) !important;
+                    border-bottom: 1px solid var(--border-light);
+                }
+
+                .text-dark {
+                    color: var(--text-dark) !important;
+                }
+
+                .text-muted {
+                    color: var(--text-light) !important;
+                }
+
+                .badge.bg-primary {
+                    background-color: var(--primary-blue) !important;
+                }
+
+                .badge.bg-secondary {
+                    background-color: var(--text-light) !important;
+                }
+
+                .badge.bg-info {
+                    background-color: var(--accent-blue) !important;
+                }
+
+                .badge.bg-success {
+                    background-color: #10b981 !important;
+                }
+
+                .input-group-text {
+                    background-color: var(--bg-gray);
+                    border-color: var(--border-light);
+                    color: var(--text-dark);
+                }
+
+                @@media (max-width: 768px) {
+                    .divisa-selector, .proveedor-selector {
+                        text-align: left;
+                        margin-top: 1rem;
+                    }
+
+                    .divisa-selector .d-flex, .proveedor-selector .d-flex {
+                        justify-content: flex-start;
+                    }
+
+                    .modern-table-enhanced {
+                        font-size: 0.8rem;
+                    }
+
+                    .modern-table-enhanced th,
+                    .modern-table-enhanced td {
+                        padding: 0.5rem 0.25rem;
+                    }
+
+                    .partida-badge {
+                        padding: 0.25rem;
+                    }
+
+                    .divisa-code {
+                        display: block;
+                        margin-top: 0.25rem;
+                    }
+                }
+
+                /* Soporte para tema oscuro */
+                [data-theme="dark"] .table-row-enhanced {
+                    background-color: var(--bg-light);
+                    color: var(--text-dark);
+                }
+
+                [data-theme="dark"] .table-row-enhanced:hover {
+                    background-color: var(--very-light-blue);
+                }
+
+                [data-theme="dark"] .precio-input,
+                [data-theme="dark"] .cantidad-input {
+                    background-color: var(--bg-light);
+                    color: var(--text-dark);
+                    border-color: var(--border-light);
+                }
+
+                [data-theme="dark"] .input-group-text {
+                    background-color: var(--bg-gray);
+                    color: var(--text-dark);
+                }
+            `;
+
+                document.head.appendChild(styles);
+                body.appendChild(mainContainer);
+
+                // Inicializar todas las divisas y totales después de crear la tabla
+                actualizarTodasLasDivisas();
+
+                // Inicializar el selector de proveedores después de agregar al DOM
+                setTimeout(() => {
+                    inicializarSelectorProveedor();
+                }, 100);
+
+                // Configurar modal
+                $('#modalAceptarCotizacion').data('encabezado', id);
+                $('#modalOpcionesLabel').html(`<i class="bi bi-check-circle-fill me-2"></i> Aceptar Solicitud de Cotización No. ${_res.returnResult.requisicion.nuevo_codigo}`);
+                $('#modalAceptarCotizacion').modal('show');
+
+            } else {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: _res.error
+                });
+            }
+        });
+    }
+
+    async function convertirADecimal(moneda) {
+        const dataToSend = {};
+
+        try {
+            const _res = await GetData({
+                path: '/RequisicionInternacional/TasasDeCambio',
+                data: dataToSend
+            });
+
+            if (_res?.success) {
+                console.log(_res.result[0]["dolar"]);
+                const tasaDolar = _res.result[0]["dolar"]; // USD → MXN
+                const tasaEuro = _res.result[0]["euro"];   // EUR → MXN
+
+                if (moneda === "DLLS") {
+                    return parseFloat(tasaDolar.toFixed(2));
+                } else if (moneda === "EURO") {
+                    return parseFloat(tasaEuro.toFixed(2));
+                } else {
+                    return ""; // retorna cadena vacía si no coincide
+                }
+            }
+            return ""; // retorna cadena vacía si no hay éxito
+        } catch (error) {
+            console.error("Error al obtener tasas de cambio:", error);
+            return "";
+        }
+    }
+
+
+    let proveedoresList = [];
+    async function cargarProveedores() {
+        const prov = await fetch('/Requisicion/getListaProveedores');
+        proveedoresList = await prov.json();
+    }
+
+    // 3. MEJORAR LA FUNCIÓN DE INICIALIZACIÓN DE TOMSELECT
+    function inicializarTomSelectProveedor(select, valor = null) {
+        // Verificar que el elemento select exista
+        if (!select) {
+            return null;
+        }
+
+        // Verificar que proveedoresList tenga datos
+        if (!proveedoresList || proveedoresList.length === 0) {
+
+            return null;
+        }
+
+        // Configurar TomSelect
+        const ts = new TomSelect(select, {
+            persist: false,
+            createOnBlur: false,
+            create: false,
+            maxItems: 1,
+            options: proveedoresList,
+            valueField: "id",
+            labelField: "nombre",
+            searchField: ["clave", "nombre"],
+            placeholder: "Buscar proveedor...",
+            render: {
+                option: function (data, escape) {
+                    return `<div>
+                    <strong>${escape(data.clave || data.id)}</strong> - ${escape(data.nombre)}
+                </div>`;
+                },
+                item: function (data, escape) {
+                    return `<div>${escape(data.nombre)}</div>`;
+                },
+                no_results: function (data, escape) {
+                    return '<div class="no-results">No se encontraron proveedores</div>';
+                }
+            },
+            onInitialize: function () {
+                // Establecer valor después de la inicialización
+                if (valor) {
+                    this.setValue(valor);
+
+                    // Verificar si el valor se estableció correctamente
+                    setTimeout(() => {
+                        const valorActual = this.getValue();
+
+                        if (valorActual !== valor) {
+                            // Verificar si el proveedor existe en la lista
+                            const proveedorExiste = proveedoresList.find(p => p.id == valor);
+                            if (proveedorExiste) {
+                                this.setValue(valor);
+                            } else {
+                                console.error('Proveedor no encontrado en lista:', valor);
+                            }
+                        }
+                    }, 100);
+                }
+            },
+            onChange: function (value) {
+                console.log('Proveedor seleccionado:', value);
+            }
+        });
+
+        return ts;
+    }
+
+    // 4. CORRECCIÓN EN LA FUNCIÓN DE INICIALIZACIÓN DEL SELECTOR
+    const inicializarSelectorProveedor = async () => {
+        try {
+            // Asegurar que proveedoresList esté cargado
+            if (!proveedoresList || proveedoresList.length === 0) {
+                await cargarProveedores();
+            }
+
+            // Verificar que el select existe
+            if (!proveedorSelect) {
+                return;
+            }
+
+
+            // Verificar si el proveedor guardado existe en la lista
+            if (proveedorGuardado) {
+                const proveedorExiste = proveedoresList.find(p => p.id == proveedorGuardado);
+
+                if (!proveedorExiste) {
+                    console.error('El proveedor guardado no existe en la lista de proveedores disponibles');
+                    console.log('Proveedor buscado:', proveedorGuardado);
+                    console.log('IDs disponibles:', proveedoresList.map(p => p.id));
+                }
+            }
+
+            tomSelectProveedor = inicializarTomSelectProveedor(proveedorSelect, proveedorGuardado);
+
+            if (!tomSelectProveedor) {
+                throw new Error('No se pudo inicializar TomSelect');
+            }
+
+            // Aplicar estilos específicos para el modal (mantener código existente)
+            const tomSelectWrapper = proveedorSelect.closest('.proveedor-selector').querySelector('.ts-wrapper');
+            if (tomSelectWrapper) {
+                // ... estilos existentes
+            }
+
+
+        } catch (error) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'Error al cargar proveedores: ' + error.message
+            });
+        }
+    };
+
+
+    function VerDetalleReclasificacion(id) {
+        GetData({
+            path: '/ProcesoComprasInternacional/GetReclasificacionData',
+            data: { id: id }
+        }).then((_res) => {
+            if (_res.success) {
+                const body = document.getElementById('modalDetalles');
+                body.innerHTML = ''; // Limpiar
+
+                const partidas = _res.data.partidas;
+                const archivos = _res.data.archivos;
+
+                let totalGlobal = 0;
+
+                partidas.forEach(p => {
+                    const total = parseFloat(p.imp_part) || 0;
+                    totalGlobal += total;
+
+                    const archivoRelacionado = archivos.find(a => a.partida_id == p.id_partidas);
+                    const icono = archivoRelacionado ? getIconFile(archivoRelacionado.extencion) : null;
+                    const archivoHTML = archivoRelacionado
+                        ? `<div class="mt-2">
+                            <i class="fa-solid ${icono} me-2 text-primary"></i>
+                            <a href="/${archivoRelacionado.path}" target="_blank">${archivoRelacionado.nombre_original}</a>
+                       </div>`
+                        : `<div class="mt-2 text-muted"><i class="fa-solid fa-file-excel me-2"></i> Sin archivo adjunto</div>`;
+
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                    <div class="card shadow-sm border-0 mb-4 p-4 rounded-3" style="background-color: var(--bg-gray);">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <strong>Descripción:</strong> ${p.descr_prod}
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <strong>Importe:</strong> $${parseFloat(p.imp_part).toFixed(2)}
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <strong>Código:</strong> ${p.cve_prod}
+                            </div>
+                        </div>
+                        ${archivoHTML}
+                    </div>
+                `;
+                    body.appendChild(div);
+                });
+
+                // Agregar totalizador general al final
+                const totalResumen = document.createElement('div');
+                totalResumen.className = "mt-4 d-flex justify-content-end";
+                totalResumen.innerHTML = `
+            <div class="ticket-summary p-4 rounded-3 border-0" style="min-width: 300px;">
+                <div class="ticket-header text-center mb-3">
+                    <h6 class="mb-1 fw-bold ticket-title">🧾 RESUMEN DE TOTALES</h6>
+                    <div class="ticket-line"></div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-semibold ticket-text">TOTAL GENERAL:</span>
+                    <span class="fw-bold fs-5 ticket-amount">$${totalGlobal.toFixed(2)}</span>
+                </div>
+                <div class="ticket-footer text-center">
+                    <small class="ticket-separator">═══════════════════════</small>
+                </div>
+            </div>
+            `;
+                body.appendChild(totalResumen);
+
+                $('#modalAceptarCotizacion2').data('encabezado', id);
+                $('#modalOpcionesLabel2').html(`<i class="bi bi-check-circle-fill me-2"></i> Detalle Reclasificación No. ${_res.data.requisicion.nuevo_codigo}`);
+                $('#modalAceptarCotizacion2').modal('show');
+
+            } else {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: _res.message || 'Error al obtener la información.'
+                });
+            }
+        });
+    }
+
+
+    function calcularTotales() {
+        let subtotal = 0;
+        const filas = document.querySelectorAll("#tabla-materiales tbody tr");
+
+        filas.forEach((row, i) => {
+            row.cells[1].innerText = i + 1;
+            const cantidad = limpiarNumero(row.cells[2].innerText);
+            const costoUnitario = limpiarNumero(row.cells[6].innerText);
+            const total = cantidad * costoUnitario;
+            row.querySelector(".total-fila").innerText = total ? `$ ${total.toFixed(2)}` : "$ 0.00";
+            subtotal += total;
+        });
+
+        const totalFinal = subtotal;
+        document.getElementById("total").value = `$ ${totalFinal.toFixed(2)}`;
+    }
+</script>
+<script>
+    document.getElementById('form-subir-csv').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const inputFile = document.getElementById('archivoCsv');
+        const archivo = inputFile.files[0];
+        if (!archivo) {
+            alert("Selecciona un archivo CSV.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("archivoCsv", archivo);
+
+        const progressBar = document.querySelector('.progress-bar-modern');
+        const progressFill = document.querySelector('.progress-fill');
+
+        // Mostrar barra
+        progressBar.classList.remove('d-none');
+        progressFill.style.width = '0%';
+
+        // Simular progreso mientras esperamos respuesta
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress >= 95) {
+                progress = 95; // Detenemos el avance aquí hasta que el servidor responda
+            }
+            progressFill.style.width = progress + '%';
+        }, 200);
+
+        fetch('/Planeador/ProcesarCsv', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(res => {
+                clearInterval(interval);
+                progressFill.style.width = '100%';
+
+                setTimeout(() => {
+                    progressBar.classList.add('d-none');
+                    progressFill.style.width = '0%';
+                }, 800);
+
+                if (res.success) {
+                    const tbody = document.querySelector('#tabla-materiales tbody');
+                    //tbody.innerHTML = ""; // limpiar
+
+                    res.data.forEach((fila, index) => {
+                        const tr = document.createElement('tr');
+
+                        tr.innerHTML = `
+                     <td><input type="checkbox" checked /></td>
+                     <td>${index + 1}</td>
+                     <td class="input-cantidad">${fila["Cantidad"] || 0}</td>
+                     <td>${fila["Clave Producto"] || ''}</td>
+                     <td>${fila["Unidad Medida"] || ''}</td>
+                     <td contenteditable="true" class="precio-unitario">$ ${fila["Precio Unitario"] || '0.00'}</td>
+                     <td class="total-fila">${(parseFloat(fila["Cantidad"]) * parseFloat(fila["Precio Unitario"])) || 0}</td>
+                 `;
+
+                        tbody.appendChild(tr);
+                    });
+                    calcularTotales();
+                } else {
+                    alert(res.message || "Error al procesar el archivo.");
+                }
+            })
+            .catch(err => {
+                clearInterval(interval);
+                progressBar.classList.add('d-none');
+                progressFill.style.width = '0%';
+                console.error(err);
+                alert("Error en la solicitud.");
+            });
+    });
+
+
+    document.getElementById('btnAgregarFila').addEventListener('click', async function () {
+        await cargarProveedores(); // ← Llenar proveedoresList antes de insertar cualquier fila
+
+        const tbody = document.querySelector('#tabla-materiales tbody');
+        const rowCount = tbody.rows.length;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+        <td><input type="checkbox" checked /></td>
+        <td>${rowCount + 1}</td>
+        <td class="input-cantidad" contenteditable="true">0</td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true" class="precio-unitario">$ 0.00</td>
+        <td class="total-fila">0</td>
+    `;
+
+
+        tbody.appendChild(tr);
+
+        calcularTotales(); // si quieres que se actualicen los totales inmediatamente
+    });
+
+    async function cargarProveedores() {
+        const prov = await fetch('/Requisicion/getListaProveedores');
+        proveedoresList = await prov.json();
+    }
+    function inicializarTomSelectProveedor(select, valor = null) {
+        const ts = new TomSelect(select, {
+            persist: false,
+            createOnBlur: true,
+            create: true,
+            options: proveedoresList,
+            valueField: "id",
+            labelField: "nombre",
+            searchField: ["clave", "nombre"],
+            render: {
+                option: function (data, escape) {
+                    return `<div style="color: var(--text-dark)">${escape(data.nombre)}</div>`;
+                },
+                item: function (data, escape) {
+                    return `<div style="color: var(--text-dark)">${escape(data.nombre)}</div>`;
+                }
+            }
+        });
+
+        if (valor) ts.setValue(valor);
+    }
+
+    document.getElementById('btnEliminarSeleccionados').addEventListener('click', function () {
+        const tbody = document.querySelector('#tabla-materiales tbody');
+        const filas = tbody.querySelectorAll('tr');
+
+        filas.forEach(fila => {
+            const checkbox = fila.querySelector('input[type="checkbox"]');
+            if (checkbox && checkbox.checked) {
+                fila.remove();
+            }
+        });
+
+        reenumerarFilas();
+        calcularTotales();
+    });
+
+
+    function reenumerarFilas() {
+        const filas = document.querySelectorAll('#tabla-materiales tbody tr');
+        filas.forEach((tr, index) => {
+            tr.children[1].textContent = index + 1; // actualizar el número de fila
+        });
+    }
+
+
+
+    const tabla = document.querySelector(`#tabla-materiales`);
+
+    tabla.addEventListener("blur", (e) => {
+        if (e.target.matches("td.precio-unitario") || e.target.matches("td.precio-venta")) {
+            const tr = e.target.closest("tr");
+            const tdPrecio = tr.querySelector(".precio-unitario");
+
+            const tdTotal = tr.querySelector(".total-fila");
+
+            // Sanitizar ambos
+            let precioStr = tdPrecio.innerText.replace(/[^0-9.,]/g, '').replace(',', '.');
+            let precio = parseFloat(precioStr);
+            if (isNaN(precio)) precio = 0;
+            tdPrecio.innerText = `$ ${precio.toFixed(2)}`;
+
+            const cantidad = parseFloat(tr.querySelector(".input-cantidad")?.innerText) || 0;
+            const total = precio * cantidad;
+            tdTotal.innerText = `$ ${total.toFixed(2)}`;
+            calcularTotales()
+        }
+    }, true);
+
+    // Limpieza visual al enfocar ambos campos
+    tabla.addEventListener("focusin", (e) => {
+        if (e.target.matches("td.precio-unitario") || e.target.matches("td.precio-venta")) {
+            const raw = e.target.innerText.replace(/[^0-9.,]/g, '').replace(',', '.');
+            e.target.innerText = raw ? parseFloat(raw) : '';
+        }
+    });
+
+</script>
+<script>
+    //const limpiarNumero = (str) => str.replace(/[^\d.]/g, '');
+    document.getElementById("btn-guardar-materiales").addEventListener("click", async function () {
+        //const radioExhibicion = document.getElementById('exhibicion');
+        //const radioParcialidades = document.getElementById('parcialidades');
+        //const esExhibicion = radioExhibicion?.checked;
+        //const esParcialidades = radioParcialidades?.checked;
+        //const esVenta = document.getElementById("venta")?.checked === true;
+
+        const observaciones = document.getElementById("observaciones")?.value.trim();
+        const total = limpiarNumero(document.getElementById("total")?.value.trim());
+        const director = document.getElementById("director")?.value;
+        const tipoSeleccionado = document.querySelector('input[name="tpnom"]:checked')?.value;
+
+        const datosEnviar = {
+            observaciones,
+            total,
+            tpnom: tipoSeleccionado,
+            /*            tipo_producto: esVenta ? 'directo' : 'indirecto',*/
+            directorSeleccionado: director || null
+        };
+
+        // Capturar filas de la tabla de materiales (modal)
+        const filasMateriales = [];
+        let errorFila = false;
+
+        document.querySelectorAll("#tabla-materiales tbody tr").forEach((fila) => {
+            const cantidad = limpiarNumero(fila.cells[2]?.innerText.trim());
+            const codigo = fila.cells[3]?.innerText.trim();
+            const unidad = fila.cells[5]?.innerText.trim();
+            const costoUnitario = limpiarNumero(fila.cells[6]?.innerText.trim());
+
+            let totalFila, precioVenta;
+
+            //if (esVenta) {
+            //    precioVenta = limpiarNumero(fila.cells[7]?.innerText.trim());
+            //    totalFila = limpiarNumero(fila.cells[8]?.innerText.trim());
+            //} else {
+            totalFila = limpiarNumero(fila.cells[7]?.innerText.trim());
+            /*            }*/
+
+            if (codigo && unidad && cantidad && costoUnitario) {
+                filasMateriales.push({
+                    cantidad,
+                    codigo,
+                    unidad,
+                    costoUnitario,
+                    total: totalFila
+                });
+            } else {
+                errorFila = true;
+            }
+        });
+
+        if (filasMateriales.length === 0 || errorFila) {
+            Swal.fire('Error', 'Hay filas incompletas o vacías en la tabla de materiales.', 'error');
+            return;
+        }
+
+        if (!total || total === "0.00") {
+            Swal.fire('Error', 'El total es obligatorio y debe ser mayor a 0.', 'error');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Enviando solicitud',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            const path = '/ProcesoComprasInternacional/GuardarMaterial';
+
+            const res = await GetData({
+                path,
+                data: {
+                    ...datosEnviar,
+                    id_encabezado: idEncabezadoSeleccionado,
+                    materiales: JSON.stringify(filasMateriales)
+                }
+            });
+
+            Swal.close();
+
+            if (res.success) {
+                _SwalReload({
+                    icon: 'success',
+                    title: 'Agregados Correctamente',
+                    showCancelButton: false,
+                });
+            } else {
+                Swal.fire('Error', res.message || 'No se pudo completar el proceso.', 'error');
+            }
+        } catch (err) {
+            Swal.close();
+            Swal.fire('Error', 'Ocurrió un error al enviar la solicitud.', 'error');
+        }
+    });
+
+    function agregarOpciones(btn) {
+        idEncabezadoSeleccionado = btn.dataset.encabezado;
+        const select = document.getElementById("selectOpcion");
+        const fechaInput = document.getElementById("fechaEstimada"); // tu input de fecha
+
+        // resetear controles
+        select.innerHTML = `<option value="">-- Selecciona una opción --</option>`;
+        fechaInput.value = "";
+
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('modalOpciones'));
+        modal.show();
+
+        // Cargar opciones dinámicamente
+        GetData({
+            path: '/ProcesoComprasInternacional/Movimientos',
+            data: { id: idEncabezadoSeleccionado }
+        }).then(res => {
+            if (res.success) {
+                // llenar el select
+                res.result.movimientos.forEach(op => {
+                    const option = document.createElement("option");
+                    option.value = op.id_movimiento;
+                    option.textContent = op.tipo_movimiento;
+                    select.appendChild(option);
+                });
+
+                // asignar fecha si existe
+                if (res.result.fecha && res.result.fecha.length > 0) {
+                    let fecha = res.result.fecha[0].fch_pg_entrega;
+                    if (fecha) {
+                        // formato: "/Date(1758520800000)/"
+                        const ticks = parseInt(fecha.replace(/\/Date\((\d+)\)\//, "$1"), 10);
+                        const fechaObj = new Date(ticks);
+                        const fechaFormateada = fechaObj.toISOString().split("T")[0];
+                        fechaInput.value = fechaFormateada;
+                    }
+                }
+            } else {
+                toastr.error("No se pudieron cargar las opciones.");
+            }
+        });
+    }
+
+    //NEW
+    function enviarOpcionSeleccionada() {
+        const select = document.getElementById("selectOpcion");
+        const opcion = select.value;
+        const fecha = document.getElementById("fechaEstimada").value;
+        const btn = document.getElementById("btnEnviarOpcion");
+
+        if (!opcion && !fecha) {
+            toastr.error("Debes seleccionar al menos una opción o una fecha estimada de entrega");
+            return;
+        }
+
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append("id_encabezado", idEncabezadoSeleccionado);
+
+        if (opcion) formData.append("opcion", opcion);
+        if (fecha) formData.append("fecha_estimada", fecha);
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        fetch('/ProcesoComprasInternacional/AgregarMovimientos', {
+            method: 'POST',
+            body: formData
+        })
+            .then(async res => {
+                let data;
+                try {
+                    data = await res.json();
+                } catch {
+                    throw new Error("Respuesta inválida del servidor");
+                }
+
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || "No se pudo completar la operación");
+                }
+
+                toastr.success("Operación realizada exitosamente");
+                bootstrap.Modal.getInstance(document.getElementById('modalOpciones')).hide();
+            })
+            .catch(err => {
+                console.error("Error en fetch", err);
+                toastr.error("Error: " + err.message);
+            })
+            .finally(() => {
+                btn.disabled = false;
+            });
+    }
+
+    function CrearODCI(id) {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Vas a crear una orden de compra.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, continuar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Confirmación final',
+                    text: 'Esta acción no se puede deshacer. Puedes ingresar un comentario:',
+                    icon: 'warning',
+                    input: 'textarea',
+                    inputPlaceholder: 'Escribe un comentario (opcional)',
+                    inputAttributes: {
+                        'aria-label': 'Comentario'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, crear orden',
+                    cancelButtonText: 'Cancelar',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    preConfirm: (comentario) => {
+                        const formData = new FormData();
+                        formData.append("id_encabezado", id);
+                        formData.append("comentario", comentario || "");
+
+                        return fetch('/ProcesoComprasInternacional/CrearODCI', {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(async response => {
+                                let data;
+                                try {
+                                    data = await response.json();
+                                } catch {
+                                    throw new Error("Respuesta inválida del servidor.");
+                                }
+
+                                if (!response.ok || !data.success) {
+                                    throw new Error(data.message || "No se pudo crear la orden.");
+                                }
+
+                                return data;
+                            })
+                            .catch(error => {
+                                Swal.showValidationMessage("Error: " + error.message);
+                                throw error;
+                            });
+                    }
+                }).then((finalResult) => {
+                    if (finalResult.isConfirmed && finalResult.value) {
+                        toastr.success(finalResult.value.message || "Orden creada correctamente.");
+
+                        // Recargar tablas
+                        if ($.fn.DataTable.isDataTable("#tablaREQ")) {
+                            $('#tablaREQ').DataTable().ajax.reload(null, false);
+                            $('#tablaOCDI').DataTable().ajax.reload(null, false);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+
+async function AprobarODCI(idEncabezado) {
+    const formData = new FormData();
+    formData.append("id_encabezado", idEncabezado);
+
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+    if (token) {
+        formData.append('__RequestVerificationToken', token);
+    }
+
+    // 🔹 1. Obtener centros de costos
+    const centrosResponse = await GetData({ path: '/DatosGenerales/DatosCentroCostos' });
+
+    if (!centrosResponse.success) {
+        Swal.fire({
+            icon: 'error',
+            title: centrosResponse.message || 'Error al cargar centros de costos'
+        });
+        return;
+    }
+
+    const centros = centrosResponse.data || centrosResponse.result || []; // ajusta según tu API
+    if (centros.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No hay centros de costos disponibles'
+        });
+        return;
+    }
+
+    // 🔹 2. Crear el HTML del select para mostrar en el SweetAlert
+    // 🔹 Convertir el array de objetos a objeto { valor: texto }
+    const inputOptions = centros.reduce((acc, c) => {
+        acc[c.areaid] = c.nombre;
+        return acc;
+    }, {});
+
+    // 🔹 Mostrar SweetAlert con select
+    const { value: centroSeleccionado } = await Swal.fire({
+        title: 'Selecciona el Centro de Costos',
+        theme: 'auto',
+        input: 'select',
+        inputOptions, // ✅ Ahora sí correcto
+        inputPlaceholder: 'Selecciona un centro de costos',
+        showCancelButton: true,
+        confirmButtonText: 'Continuar',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (value) => {
+            if (!value) return 'Por favor selecciona un centro de costos';
+        },
+        confirmButtonText: 'Continuar',
+        focusConfirm: false,
+        preConfirm: (valuw) => {
+            if (!valuw)
+                Swal.showValidationMessage('Por favor selecciona un centro de costos');
+
+          
+            Swal.fire({
+                title: 'Firma para aprobar la orden',
+                html: `
+                <div class="border-1">
+                    <p>Firma del usuario</p>
+                    <canvas id="signature" width="400" height="200" style="border:1px solid #ccc;"></canvas>
+                    <button type="button" class="btn btn-sm btn-warning mt-2" id="limpiar_firma">Limpiar</button>
+                </div>`,
+                confirmButtonText: 'Aprobar',
+                didOpen: () => {
+                    const canvas = document.getElementById("signature");
+                    const signaturePad = new SignaturePad(canvas, {
+                        penColor: "rgb(0, 0, 0)",
+                        minWidth: 0.5,
+                        maxWidth: 1.0,
+                        throttle: 16,
+                        minDistance: 3
+                    });
+
+                    const firmaBase64 = '@Context.Session.GetString("Firma")';
+                    if (firmaBase64 && firmaBase64 !== 'null' && firmaBase64.trim() !== '') {
+                        signaturePad.fromDataURL(firmaBase64);
+                    }
+
+                    document.getElementById('limpiar_firma').addEventListener('click', () => {
+                        signaturePad.clear();
+                    });
+
+                    Swal.__signaturePad = signaturePad;
+                    Swal.__canvas = canvas;
+                },
+                preConfirm: async () => {
+                    const signaturePad = Swal.__signaturePad;
+                    const canvas = Swal.__canvas;
+
+                    if (!signaturePad || signaturePad.isEmpty()) {
+                        Swal.showValidationMessage('Debes firmar antes de continuar.');
+                        return false;
+                    }
+                    const trimmed = getTrimmedCanvas(canvas);
+                    const dataUrl = trimmed.toDataURL("image/png", 0.5);
+                    formData.append('firma', dataUrl);
+                    formData.append("centro", parseInt(valuw));
+
+                    return fetch('/ProcesoComprasInternacional/AprobarODCI', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!data.success) {
+                                throw new Error(data.message || 'No se pudo aprobar la orden.');
+                            }
+                            return data;
+                        })
+                        .catch(err => {
+                            Swal.showValidationMessage(`Error: ${err.message}`);
+                        });
+                }}).then(result => {
+                    if (result.isConfirmed && result.value) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Orden Aprobada',
+                            text: result.value.message || 'La orden fue aprobada exitosamente.'
+                        }).then(() => {
+                            // 🔄 Refrescar DataTable después de cerrar el Swal de éxito
+                            $('#tablaOCDI').DataTable().ajax.reload(null, false);
+                        });
+                    }
+            });
+            return valuw;
+        }
+    });
+}
+
+
+    async function GenerarReclasificador(id_encabezado) {
+        const { value: precio } = await Swal.fire({
+            title: 'Ingresa el precio de reclasificación',
+            input: 'number',
+            inputLabel: 'Precio (decimal)',
+            inputAttributes: {
+                min: 0,
+                step: '0.01'
+            },
+            inputPlaceholder: 'Ej. 1234.56',
+            showCancelButton: true,
+            confirmButtonText: 'Enviar',
+            cancelButtonText: 'Cancelar',
+            preConfirm: (value) => {
+                if (!value || isNaN(parseFloat(value))) {
+                    Swal.showValidationMessage('Debes ingresar un número válido');
+                    return false;
+                }
+                return parseFloat(value);
+            }
+        });
+
+        if (precio !== undefined) {
+            const formData = new FormData();
+            formData.append("id_encabezado", id_encabezado);
+            formData.append("precio", precio);
+
+            try {
+                const response = await fetch('/ProcesoComprasInternacional/Reclasificar', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: 'Reclasificación completada correctamente'
+                    });
+
+                    if ($.fn.DataTable.isDataTable("#tablaOCDI")) {
+                        $('#tablaOCDI').DataTable().ajax.reload(null, false);
+                    }
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: result.message || 'Error al reclasificar'
+                    });
+                }
+            } catch (error) {
+                console.error("Error en reclasificación:", error);
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error inesperado al conectar con el servidor'
+                });
+            }
+        }
+    }
+</script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const select = document.getElementById('documentSelect');
+        const btnCargar = document.getElementById('btnCargarDocumento');
+
+        if (!select || !btnCargar) {
+            console.error('Elementos no encontrados:', { select: !!select, btnCargar: !!btnCargar });
+            return;
+        }
+
+        // Cargar documentos
+        GetData({
+            path: '/RequisicionInternacional/GetDocumentos',
+            data: {}
+        }).then((_res) => {
+            if (_res.success) {
+                select.innerHTML = `<option value="" selected>-- Selecciona un documento --</option>`;
+                _res.result.forEach(doc => {
+                    const option = document.createElement('option');
+                    const value = doc.id_encabezado || doc.codigo;
+                    const text = doc.nombre || doc.descripcion;
+                    if (value) { // Solo agregar si tiene valor válido
+                        option.value = value;
+                        option.textContent = text;
+                        select.appendChild(option);
+                    }
+                });
+            } else {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: _res.message || 'Error al obtener documentos.'
+                });
+            }
+        }).catch(err => {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Ocurrió un error al cargar documentos.'
+            });
+        });
+
+        // Event listener para cargar documento
+        btnCargar.addEventListener('click', function () {
+            const selectedValue = select.value;
+            if (!selectedValue || selectedValue === '') {
+                alert('Por favor selecciona un documento');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('encabezado_id', selectedValue);
+
+            fetch('/RequisicionInternacional/GetDocumentosAndPartidasData', {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Llenar la tabla con los datos obtenidos
+                        llenarTablaMateriales(data.result || data.data || data);
+                        toastMixin.fire({
+                            icon: 'success',
+                            title: 'Documento cargado correctamente.'
+                        });
+                    } else {
+                        toastMixin.fire({
+                            icon: 'error',
+                            title: data.message || 'Error al cargar documento.'
+                        });
+                    }
+                })
+                .catch(err => {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Error en la comunicación con el servidor.'
+                    });
+                });
+        });
+
+        // Función para llenar la tabla de materiales
+        function llenarTablaMateriales(data) {
+            const tbody = document.querySelector('#tabla-materiales tbody');
+
+            // Limpiar tabla existente
+            tbody.innerHTML = "";
+
+            // Llenar tabla con los datos
+            data.forEach((fila, index) => {
+                const tr = document.createElement('tr');
+
+                // Calcular total de la fila
+                const cantidad = parseFloat(fila["cant_ud"] || 0);
+                const precioUnitario = parseFloat(fila["pv_prod"] || 0);
+                const total = (cantidad * precioUnitario).toFixed(2);
+
+                tr.innerHTML = `
+                <td><input type="checkbox" checked /></td>
+                <td>${index + 1}</td>
+                <td class="input-cantidad">${cantidad}</td>
+                <td>${fila["cve_prod"] || ''}</td>
+                <td>${fila["descr_prod"] || ''}</td>
+                <td>${fila["ud"] || ''}</td>
+                <td contenteditable="true" class="precio-unitario">$ ${precioUnitario.toFixed(2)}</td>
+                <td class="total-fila">$ ${total}</td>
+            `;
+
+                tbody.appendChild(tr);
+            });
+
+            // Calcular totales después de llenar la tabla
+            if (typeof calcularTotales === 'function') {
+                calcularTotales();
+            }
+        }
+
+        // Event listeners adicionales para actualizar totales cuando se editen precios
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('precio-unitario')) {
+                actualizarTotalFila(e.target);
+                if (typeof calcularTotales === 'function') {
+                    calcularTotales();
+                }
+            }
+        });
+
+        // Función para actualizar el total de una fila específica
+        function actualizarTotalFila(precioElement) {
+            const fila = precioElement.closest('tr');
+            const cantidadElement = fila.querySelector('.input-cantidad');
+            const totalElement = fila.querySelector('.total-fila');
+
+            if (cantidadElement && totalElement) {
+                const cantidad = parseFloat(cantidadElement.textContent || 0);
+                const precio = parseFloat(precioElement.textContent.replace('$', '').trim() || 0);
+                const total = (cantidad * precio).toFixed(2);
+
+                totalElement.textContent = `$ ${total}`;
+            }
+        }
+    });
+</script>

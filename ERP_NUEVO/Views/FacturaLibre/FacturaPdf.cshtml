@@ -1,0 +1,404 @@
+@model BOS_ERP.Models.Factura
+@using System.Data
+@using System.Linq
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+
+@*
+    Representación impresa del CFDI de facturación libre.
+
+    Tomada de Views/VIFactura/FacturaPdf.cshtml, quitando lo que aquí no aplica:
+    pedimentos y comercio exterior (no hay importación), anticipos (la factura libre
+    no los recibe) y flete (si hubiera, va como un concepto más). El pagaré se
+    conserva pero sólo se imprime cuando la factura es a crédito, que es cuando de
+    verdad hay una promesa de pago que firmar.
+
+    Los montos se toman del modelo tal cual, sin recalcular: son los que se timbraron.
+    El único cálculo es el importe del descuento por renglón, que el CFDI lleva como
+    porcentaje y aquí conviene mostrar también en pesos.
+*@
+
+@{
+    Layout = null;
+
+    bool esCredito = string.Equals(Model.TipoFacturacion, "credito",
+                                   StringComparison.OrdinalIgnoreCase);
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Factura @Model.UUID</title>
+    <style>
+        @@page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        thead {
+            display: table-header-group;
+            background-color: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            line-height: 1.3;
+            letter-spacing: 0.3px;
+            margin: 0;
+            padding: 0;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th {
+            background-color: #1976d2;
+            color: white;
+            padding: 6px 8px;
+            text-align: left;
+            font-size: 10px;
+            letter-spacing: 0.4px;
+        }
+
+        td {
+            padding: 4px 8px;
+            vertical-align: top;
+        }
+
+        .section-title {
+            font-size: 13px;
+            color: #d32f2f;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .productos th, .productos td {
+            border: 1px solid #bbb;
+            font-size: 10px;
+            padding: 5px 6px;
+            line-height: 1.3;
+        }
+
+        .productos tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+
+        .productos td.descripcion {
+            font-weight: 500;
+        }
+
+        .productos td.numero {
+            text-align: center;
+            width: 8%;
+        }
+
+        .productos td.cantidad,
+        .productos td.precio,
+        .productos td.importe {
+            text-align: right;
+        }
+
+        /* La tabla puede partirse entre páginas, pero un renglón no. */
+        .productos {
+            page-break-inside: auto;
+        }
+
+            .productos thead {
+                display: table-header-group;
+            }
+
+            .productos tfoot {
+                display: table-footer-group;
+            }
+
+            .productos tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+        .sello {
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            background-color: #f9f9f9;
+            border: 1px dashed #aaa;
+            padding: 6px;
+            margin-bottom: 8px;
+        }
+
+        .info-box {
+            border: 1px solid #ccc;
+            padding: 6px;
+            margin-top: 3px;
+            background-color: #fafafa;
+            line-height: 1.3;
+        }
+
+            .info-box strong {
+                color: #333;
+            }
+
+        .observaciones-box {
+            background-color: #fff8e1;
+            border-left: 3px solid #ffc107;
+            padding: 6px;
+            margin: 12px 0;
+            font-size: 10px;
+        }
+
+        .totales-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+            .totales-table td {
+                vertical-align: top;
+            }
+    </style>
+</head>
+<body>
+
+    <!-- DATOS DEL COMPROBANTE -->
+    <div class="section-title">Datos del Comprobante</div>
+    <table>
+        <tr>
+            <td style="width: 18%;"><strong>Fecha de Emisión:</strong></td>
+            <td style="width: 32%;">@DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")</td>
+            <td style="width: 18%;"><strong>Tipo de Comprobante:</strong></td>
+            <td style="width: 32%;">@Model.TipoDeComprobante</td>
+        </tr>
+        <tr>
+            <td><strong>Forma de Pago:</strong></td>
+            <td>@Model.IdTipoPago -- @Model.formaPagoTexto</td>
+            <td><strong>Método de Pago:</strong></td>
+            <td>@Model.metodoPagoTexto -- @Model.MdpFactura</td>
+        </tr>
+        <tr>
+            <td><strong>Moneda:</strong></td>
+            <td>@Model.Moneda</td>
+            <td><strong>Tipo de Cambio:</strong></td>
+            <td>@Model.TipoCambio</td>
+        </tr>
+        <tr>
+            <td><strong>Condición:</strong></td>
+            <td>@(esCredito ? "Crédito" : "Contado")</td>
+            <td><strong>Serie y Folio:</strong></td>
+            <td>@Model.Serie @Model.Folio</td>
+        </tr>
+    </table>
+
+    <!-- RECEPTOR -->
+    <div class="section-title">Receptor</div>
+    <div class="info-box">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 18%;"><strong>RFC:</strong></td>
+                <td style="width: 32%;">@Model.RfcCliente</td>
+                <td style="width: 18%;"><strong>Régimen Fiscal:</strong></td>
+                <td style="width: 32%;">@Model.Regc</td>
+            </tr>
+            <tr>
+                <td><strong>Razón Social:</strong></td>
+                <td colspan="3">@Model.RsoCliente</td>
+            </tr>
+            <tr>
+                <td><strong>Domicilio Fiscal:</strong></td>
+                <td>@Model.CpR</td>
+                <td><strong>Uso CFDI:</strong></td>
+                <td>@Model.IdUsoCFDI -- @Model.CFDIText</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- CONCEPTOS -->
+    <div class="section-title">Conceptos</div>
+    <table class="productos">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 8%;">No. Identificación</th>
+                <th style="width: 34%;">Descripción</th>
+                <th style="width: 8%;">Cantidad</th>
+                <th style="width: 8%;">Unidad</th>
+                <th style="width: 12%;">Precio Unitario</th>
+                <th style="width: 8%;">Desc %</th>
+                <th style="width: 12%;">Descuento</th>
+                <th style="width: 10%;">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (DataRow row in Model.Tproductos.Rows)
+            {
+                @* En los conceptos capturados libremente la clave interna puede venir
+                   vacía; se muestra un guion para no dejar la celda en blanco. *@
+                var claveInterna = row["numero"]?.ToString();
+
+                double descPct = row.Table.Columns.Contains("descuento")
+                    ? Convert.ToDouble(row["descuento"])
+                    : 0;
+
+                double cantidadRow = Convert.ToDouble(row["cantidad"]);
+                double precioRow = Convert.ToDouble(row["precioUnit"]);
+                double montoDesc = Math.Round(cantidadRow * precioRow * (descPct / 100.0), 2);
+
+                <tr>
+                    <td class="numero">@(string.IsNullOrWhiteSpace(claveInterna) ? "-" : claveInterna)</td>
+                    <td class="descripcion">
+                        <strong>@row["descripcion"]</strong>
+                        <br><small style="color: #888;">Clave Prod/Serv: @row["claveProdServ"] | Clave Unidad: @row["claveUnidad"] | Objeto Imp: @row["objetoImp"]</small>
+
+                        @if (row.Table.Columns.Contains("comentario") && !string.IsNullOrWhiteSpace(row["comentario"]?.ToString()))
+                        {
+                            <br>
+
+                            <small style="color: #555; font-style: italic; background-color: #fffacd; padding: 2px 4px; border-left: 2px solid #ffc107;">
+                                @row["comentario"]
+                            </small>
+                        }
+                    </td>
+                    <td class="cantidad">@string.Format("{0:N2}", row["cantidad"])</td>
+                    <td class="numero">@row["unidad"]</td>
+                    <td class="precio">@string.Format("{0:C2}", row["precioUnit"])</td>
+                    <td class="numero">@(descPct > 0 ? descPct.ToString("0.##") + "%" : "-")</td>
+                    <td class="precio" style="color: #c62828;">
+                        @(descPct > 0 ? string.Format("{0:C2}", montoDesc) : "-")
+                    </td>
+                    @* `importe` es el bruto del renglón, antes de descuento: es lo que
+                       el CFDI lleva en el atributo Importe del concepto. *@
+                    <td class="importe">@string.Format("{0:C2}", row["importe"])</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- OBSERVACIONES -->
+    @if (!string.IsNullOrEmpty(Model.Observaciones))
+    {
+        <div class="observaciones-box">
+            <strong>Observaciones:</strong> @Model.Observaciones
+        </div>
+    }
+
+    <!-- TOTALES -->
+    @*
+        Se imprimen tal cual vienen del modelo, que son los que se timbraron:
+        Subtotal es bruto (antes de descuento), igual que el atributo SubTotal del
+        CFDI, y por eso el renglón de descuento se resta aparte. Recalcular aquí
+        sólo abriría la puerta a que el PDF y el XML difieran por redondeo.
+    *@
+    <table class="totales-table" style="width:100%; margin-top:20px; border-collapse:collapse;">
+        <tr>
+            <td style="width:60%; vertical-align:top; padding-right:20px;">
+                <strong>Total con Letra:</strong><br>
+                @Model.TotalTexto @Model.Moneda
+            </td>
+            <td style="width:40%; vertical-align:top;">
+                <table style="width:100%; border-collapse:collapse; border:1px solid #ccc; background-color:#fafafa;">
+                    <tr>
+                        <td style="text-align:right;"><strong>Subtotal:</strong></td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", Model.Subtotal)</td>
+                    </tr>
+
+                    @if (Model.Descuento > 0)
+                    {
+                        <tr>
+                            <td style="text-align:right; color:#c62828;"><strong>Descuento:</strong></td>
+                            <td style="text-align:right; color:#c62828;">
+                                -@string.Format("{0:C2}", Model.Descuento)
+                            </td>
+                        </tr>
+                    }
+
+                    <tr>
+                        <td style="text-align:right;"><strong>IVA (16%):</strong></td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", Model.IVA)</td>
+                    </tr>
+
+                    <tr style="border-top:2px solid #1976d2; background:#e3f2fd;">
+                        <td style="text-align:right; font-size:1.1em; padding:6px 10px;">
+                            <strong>TOTAL:</strong>
+                        </td>
+                        <td style="text-align:right; font-size:1.1em; color:#d32f2f; padding:6px 10px;">
+                            <strong>@string.Format("{0:C2}", Model.Total)</strong>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <p style="font-size: 9px; color: #666; font-style: italic; margin-top: 15px;">
+        Las diferencias de centavos que se puedan presentar son producto del redondeo en los importes.
+    </p>
+
+    <!-- PAGARÉ: sólo tiene sentido cuando queda saldo por cobrar -->
+    @if (esCredito)
+    {
+        string perfil = HttpContextAccessor.HttpContext.Session.GetString("EmpresaFactura");
+        string razonSocial = Configuration[$"Emisores:{perfil}:RazonSocial"] ?? Model.RsoEmisor;
+
+        <div style="border: 2px solid #333; padding: 15px; background-color: #fafafa; margin-top: 10px;">
+            <p style="font-size: 10px; line-height: 1.6; text-align: justify; margin: 0;">
+                Debo(emos) y pagaremos en forma incondicional a la orden de <strong>@razonSocial</strong>
+                en la ciudad de San Luis Potosí, San Luis Potosí, el importe que ampara el total de esta factura recibida a nuestra
+                satisfacción el día _______ de _________ de _______. En caso de demora en el pago, causara un interés del
+                _____%, este pagare es mercantil y esta regido por la Ley General de Títulos y operaciones en su articulo 170.
+            </p>
+
+            <div style="margin-top: 30px; text-align: center;">
+                <div style="border-top: 1px solid #333; width: 200px; margin: 0 auto;"></div>
+                <p style="margin: 5px 0 0 0; font-size: 10px;"><strong>ACEPTO</strong></p>
+            </div>
+        </div>
+    }
+
+    <!-- SELLOS Y QR -->
+    <div class="section-title" style="margin-top: 25px;">Sellos y Cadena Original</div>
+    <table>
+        <tr>
+            <td style="width: 75%; vertical-align: top;">
+                <p style="margin: 5px 0 3px 0;"><strong>No. de Serie del Certificado del SAT:</strong></p>
+                <div class="sello">@Model.NoCertificadoSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>No de Serie del CSD del Emisor:</strong></p>
+                <div class="sello">@Model.NoCertificado</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Sello CFDI:</strong></p>
+                <div class="sello">@Model.SelloCFDI</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Sello SAT:</strong></p>
+                <div class="sello">@Model.SelloSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Cadena Original:</strong></p>
+                <div class="sello">@Model.CadenaOriginal</div>
+            </td>
+
+            @if (!string.IsNullOrEmpty(Model.RutaQr))
+            {
+                <td style="width: 25%; text-align: center; vertical-align: top; padding-left: 10px;">
+                    <strong style="display: block; margin-bottom: 8px;">Código QR</strong>
+                    <img src="@Url.Content(Model.RutaQr)" alt="QR CFDI" style="width: 150px; height: 150px; border: 1px solid #ccc; padding: 5px; background: white;" />
+                    <br><small style="color: #666;">Verificación SAT</small>
+                </td>
+            }
+        </tr>
+    </table>
+
+    <!-- Pie -->
+    <div style="text-align: center; margin-top: 25px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 10px; color: #666;">
+        <strong>Este documento es una representación impresa de un CFDI</strong><br>
+        Generado el @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
+    </div>
+
+</body>
+</html>

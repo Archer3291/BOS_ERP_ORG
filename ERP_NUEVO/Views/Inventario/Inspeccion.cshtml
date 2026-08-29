@@ -1,0 +1,1214 @@
+﻿
+@{
+    ViewBag.Title = "Recepcion Inicial";
+    ViewBag.PageTitle = "Inspeccion de material";
+}
+
+<style>
+    .search-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .document-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        display: none;
+    }
+
+        .document-card.show {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .product-item {
+        background: var(--light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+
+        .product-item:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .product-item.checked {
+            background-color: rgba(5, 150, 105, 0.1);
+            border-color: var(--success-color);
+        }
+
+        .product-item.error {
+            background-color: rgba(220, 38, 38, 0.1);
+            border-color: var(--danger-color);
+        }
+
+    .form-check-input:checked {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    .tom-select .ts-control {
+        background-color: var(--bg-light);
+        border-color: var(--border-light);
+        color: var(--text-dark);
+    }
+
+    .tom-select .ts-dropdown {
+        background-color: var(--bg-light);
+        border-color: var(--border-light);
+        color: var(--text-dark);
+    }
+
+    .stats-summary {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: default;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-blue-dark);
+    }
+
+    .stat-label {
+        font-size: 0.95rem;
+        margin-top: 0.5rem;
+        color: var(--text-light);
+    }
+
+    /* Variantes de color */
+    .stat-success .stat-number {
+        color: var(--success-color);
+    }
+
+    .stat-warning .stat-number {
+        color: var(--warning-color);
+    }
+
+    .stat-danger .stat-number {
+        color: var(--danger-color);
+    }
+
+    .alert-info {
+        position: relative;
+        background: var(--light-blue);
+        padding: 10px 10px 10px 20px;
+        color: var(--text-dark);
+    }
+
+        .alert-info::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background-color: var(--accent-blue);
+        }
+
+    .discrepancia {
+        border: 1px solid var(--bs-body-bg);
+        background-color: var(--bg-gray);
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 7px;
+    }
+</style>
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<!-- Main Container -->
+<div class="table-container">
+    <!-- Search Section -->
+    <div class="search-card">
+        <h3 class="mb-4">
+            <i class="fas fa-search me-2 text-primary"></i>
+            Buscar Documento
+        </h3>
+
+        <div class="row align-items-end">
+            <div class="col-md-6 mb-2">
+                <label for="documentSearch" class="form-label">Seleccionar Documento</label>
+                <select id="documentSearch" placeholder="Buscar documento...">
+                    <option style="color: var(--text-dark)" value="0">Selecciona un folio</option>
+                    @{
+                        foreach (var folio in Model["folios"])
+                        {
+                            <option style="color: var(--text-dark)" value="@folio["uuid"]">@folio["folio"]</option>
+                        }
+                    }
+
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <button type="button" class="btn btn-primary w-100" id="searchBtn">
+                    <i class="fas fa-search me-1"></i>
+                    Buscar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Information -->
+    <div class="document-card" id="documentCard">
+        <!-- Statistics Summary -->
+        <div class="stats-summary container-fluid">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalProducts">0</div>
+                        <div class="stat-label">Total Productos</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card stat-success">
+                        <div class="stat-number" id="checkedProducts">0</div>
+                        <div class="stat-label">Verificados</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card stat-warning">
+                        <div class="stat-number" id="uncheckedProducts">0</div>
+                        <div class="stat-label">Pendientes</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card stat-danger">
+                        <div class="stat-number" id="errorProducts">0</div>
+                        <div class="stat-label">Con Error</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row d-flex justify-content-between align-items-center mb-4">
+            <h4 class="col-md-5 col-sm-12 mb-1 mb-1">
+                <i class="fas fa-file-invoice me-2 text-primary"></i>
+                <span id="documentTitle">Información del Documento</span>
+            </h4>
+            <button type="button" class="btn btn-success col-md-2 col-sm-12 mb-1" id="checkAllBtn">
+                <i class="fas fa-check-double me-1"></i>
+                Marcar
+            </button>
+            <button type="button" class="btn btn-warning col-md-2 col-sm-12 mb-1" id="uncheckAllBtn">
+                <i class="fas fa-times me-1"></i>
+                Desmarcar
+            </button>
+            <button type="button" class="btn blue-500 col-md-2 col-sm-12 mb-1" onclick="sugerenciasAlmacenVarios()">
+                <i class="fa-solid fa-pallet-boxes"></i>
+                Trasladar
+            </button>
+        </div>
+
+        <div class="alert-info mb-4">
+            <p class="mb-1">
+                <i class="fas fa-info-circle me-2"></i>
+                Marca los productos que han sido verificados correctamente.
+                Los productos sin marcar quedarán como pendientes.
+            </p>
+        </div>
+
+
+        <div id="productsList" class="products-list">
+            <!-- Products will be d1ynamically loaded here -->
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-success" id="saveChangesBtn">
+                <i class="fas fa-save me-1"></i>
+                Guardar Cambios
+            </button>
+            <button type="button" class="btn btn-secondary" id="resetBtn">
+                <i class="fas fa-undo me-1"></i>
+                Resetear
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+
+<script>
+    var currentDocument = null;
+    var productStates = {};
+    var documentsData;
+
+    // Initialize Tom Select
+    var tomS = new TomSelect("#documentSearch", {
+        create: false,
+        sortField: {
+            field: "text",
+            direction: "asc"
+        },
+        render: {
+            option: function (data, escape) {
+                return `<div style="color: var(--text-dark);">${escape(data.text)}</div>`;
+            }
+        }
+    });
+
+    let tomManager;
+    // Load document and its products
+    function loadDocument(documentId) {
+        if (documentId == 0) {
+            toastMixin.fire({
+                icon: "warning",
+                title: "Selecciona un folio para poder filtrar."
+            })
+
+            return;
+        }
+        GetData({
+            path: "/Inventario/GetOrdenesCompra",
+            data: {
+                uuid: documentId,
+            }
+        }).then((docData) => {
+            if (docData.ordenCompra.length === 0) {
+                console.error("Document not found");
+                toastMixin.fire({
+                    icon: "error",
+                    title: "Documento no encontrado",
+                })
+                return;
+            }
+
+            documentsData = docData;
+            document.getElementById("documentTitle").textContent = `${docData.ordenCompra.folio}`;
+
+            // Generate products list
+            const productsList = document.getElementById("productsList");
+            productsList.innerHTML = "";
+
+            tomManager = new TomSelectManager();
+            productStates = {};
+
+            docData.partidas.forEach((product, index) => {
+                const productElement = createProductElement(product, index);
+                productsList.appendChild(productElement);
+                productStates[product.id_partidas] = {
+                    checked: false,
+                    hasError: false,
+                    destino: null,
+                };
+
+                tomManager.create(`ubicacion_${product.id_partidas}`, {
+                    selector: `.ubicacion_${product.id_partidas}`,
+                    options: docData.ubicaciones,
+                    valueField: 'id_tarima',
+                    searchField: ['ulocation', 'tarima'],
+                    placeholder: 'Selecciona una ubicacion...',
+                    maxItems: 1,
+                    create: false,
+                    render: {
+                        option: (data, escape) =>
+                            `<div style="color: var(--text-dark);">${escape(data.tarima)} - ${escape(data.ulocation)}</div>`,
+                        item: (data, escape) =>
+                            `<div><span style="color:#6C757D;">${escape(data.tarima)} - ${escape(data.ulocation)}</span></div>`
+                    },
+                    onChange: (value) => {
+                        // Guardamos en el estado
+                        productStates[product.id_partidas].destino = parseInt(value);
+                        //productStates[product.id_partidas].checked = true;
+
+                        // También puedes guardar la ubicación completa si la necesitas
+                        const ubicacion = docData.ubicaciones.find(u => u.id_tarima == value);
+                        productStates[product.id_partidas].location = parseInt(ubicacion) ? ubicacion.ulocation : null;
+                    }
+                });
+            });
+
+            // Show document card
+            document.getElementById("documentCard").classList.add("show");
+
+            // Update statistics
+            updateStatistics();
+
+            // Scroll to document card
+            document.getElementById("documentCard").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        })
+    }
+
+    // Create product element
+    function createProductElement(product, index) {
+        const div = document.createElement("div");
+        div.className = "product-item";
+
+        div.innerHTML = `
+                <div class="row align-items-center">
+                    <div class="col-md-1">
+                        <input class="btn-check product-checkbox" type="checkbox" id="product_${product.id_partidas}" data-product-id="${product.id_partidas}">
+                        <label class="btn btn-outline-success" for="product_${product.id_partidas}" title="Marcar como correcto"><i class="fa-solid fa-badge-check"></i></label>
+                    </div>
+                    <div class="col-md-4 col-sm-12">
+                        <h6 class="mb-1">${product.descripcion}</h6>
+                        <small class="text-muted">Codigo: ${product.codigo}</small>
+                    </div>
+                    <div class="col-md-2 col-sm-12">
+                        <span class="badge bg-secondary">Cant: ${Number(product.cantidad)} ${product.ud}</span>
+                    </div>
+                    <div class="col-md-4 col-sm-12">
+                        <div class="row gap-sm-0 gap-1">
+                            <div class="col-md-9 col-sm-12">
+                                <select class="form-control ubicacion_${product.id_partidas}">
+                                    <option>Selecciona una ubicacion</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 col-sm-12">
+                                <button class="btn blue-500 w-100" id="sugerenciasAlmacen_${product.id_partidas}" onclick="sugerenciasAlmacen('${product.codigo}', ${product.id_partidas})">
+                                    <i class="fa-solid fa-pallet-box"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-1 text-end">
+                        <button type="button" class="btn btn-outline-danger mark-error-btn"
+                                data-product-id="${product.id_partidas}" title="Marcar como discrepancia">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+        // Add event listeners
+        const checkbox = div.querySelector(".product-checkbox");
+        const errorBtn = div.querySelector(".mark-error-btn");
+
+        checkbox.addEventListener("change", (e) => {
+            handleProductCheck(product.id_partidas, e.target.checked, div);
+        });
+
+        errorBtn.addEventListener("click", (e) => {
+            handleProductError(product.id_partidas, div);
+        });
+
+        return div;
+    }
+
+    function selectLocation(id, id_prod) {
+        const instance = tomManager.instances.get(`ubicacion_${id_prod}`);
+        if (instance) {
+            //productStates[id_prod].checked = true;
+            productStates[id_prod].location = id;
+            productStates[id_prod].destino = id;
+            instance.setValue(id);
+        }
+        Swal.close();
+    }
+
+    function selectLocationAll(id) {
+        tomManager.instances.forEach((instance, key) => {
+            const pid = key.replace("ubicacion_", "");
+            if (!productStates[pid].hasError) {
+                //productStates[pid].checked = true;
+                productStates[pid].location = id;
+                productStates[pid].destino = id;
+                instance.setValue(id);
+            }
+        });
+        Swal.close();
+    }
+
+    async function sugerenciasAlmacen(id, id_prod) {
+        let disponible = await GetData({
+            path: '/inventario/GetInventarioDisponible',
+            data: {
+                id: id,
+            }
+        })
+
+        let tableHTML = `` +
+            `<div style="max-height: 400px; overflow-y: auto; margin: 20px 0;">` +
+            `    <table class="table" style="width: 100%; border-collapse: collapse; font-size: 14px;">` +
+            `        <thead style="background-color: #f8f9fa; position: sticky; top: 0;">` +
+            `            <tr>` +
+            `                <th>Código</th>` +
+            `                <th>Cantidad</th>` +
+            `                <th>Tarima</th>` +
+            `                <th>Ubicación</th>` +
+            `                <th>Almacen</th>` +
+            `                <th>Sucursal</th>` +
+            `                <th>Empresa</th>` +
+            `                <th>Acción</th>` +
+            `            </tr>` +
+            `        </thead>` +
+            `        <tbody>`;
+
+        disponible.data.forEach((item, index) => {
+            const codigo = item.codigo || 'Vacío';
+            const cantidad = Number(item.cantidad) || 'Vacío';
+            const tarima = item.tarima || '';
+            const ulocation = item.ulocation || '';
+            const almacen = item.almacen || '';
+            const sucursal = item.sucursal || '';
+            const empresa = item.empresa || '';
+
+            tableHTML += `` +
+                `<tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f8f9fa'};">` +
+                `    <td>${codigo}</td>` +
+                `    <td>${cantidad}</td>` +
+                `    <td>${tarima}</td>` +
+                `    <td>${ulocation}</td>` +
+                `    <td>${almacen}</td>` +
+                `    <td>${sucursal}</td>` +
+                `    <td>${empresa}</td>` +
+                `    <td>` +
+                `        <button ` +
+                `            onclick="selectLocation(${item.id_tarima}, ${id_prod})" ` +
+                `            style="` +
+                `                background-color: #007bff; ` +
+                `                color: white; ` +
+                `                border: none; ` +
+                `                padding: 4px 12px; ` +
+                `                border-radius: 4px; ` +
+                `                cursor: pointer;` +
+                `                font-size: 12px;` +
+                `            "` +
+                `            onmouseover="this.style.backgroundColor='#0056b3'"` +
+                `            onmouseout="this.style.backgroundColor='#007bff'"` +
+                `        >` +
+                `            Agregar` +
+                `        </button>` +
+                `    </td>` +
+                `</tr>`;
+        });
+
+        tableHTML += `` +
+            `        </tbody>` +
+            `    </table>` +
+            `</div>`;
+
+        _Swal.fire({
+            html: `
+                <div>
+                    <h4 style="margin-top: 20px; margin-bottom: 10px;">Stock Disponible:</h4>
+                    <p style="text-align: left;margin-top: 20px;margin-bottom: 10px;">Selecciona la ubicación donde deseas mover el producto seleccionado.</p>
+                    ${tableHTML}
+                </div>
+            `,
+        })
+    }
+
+    async function sugerenciasAlmacenVarios() {
+        const codigos = documentsData.partidas.map(p => p.codigo);
+
+        let disponible = await GetData({
+            path: '/inventario/GetInventarioDisponible',
+            data: {
+                id: codigos.join(","),
+            }
+        })
+
+        let tableHTML = `` +
+            `<div style="max-height: 400px; overflow-y: auto; margin: 20px 0;">` +
+            `    <table class="table" style="width: 100%; border-collapse: collapse; font-size: 14px;">` +
+            `        <thead style="background-color: #f8f9fa; position: sticky; top: 0;">` +
+            `            <tr>` +
+            `                <th>Código</th>` +
+            `                <th>Cantidad</th>` +
+            `                <th>Tarima</th>` +
+            `                <th>Ubicación</th>` +
+            `                <th>Almacen</th>` +
+            `                <th>Sucursal</th>` +
+            `                <th>Empresa</th>` +
+            `                <th>Acción</th>` +
+            `            </tr>` +
+            `        </thead>` +
+            `        <tbody>`;
+
+        disponible.data.forEach((item, index) => {
+            const codigo = item.codigo || 'Vacío';
+            const cantidad = Number(item.cantidad) || 'Vacío';
+            const tarima = item.tarima || '';
+            const ulocation = item.ulocation || '';
+            const almacen = item.almacen || '';
+            const sucursal = item.sucursal || '';
+            const empresa = item.empresa || '';
+
+            tableHTML += `` +
+                `<tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f8f9fa'};">` +
+                `    <td>${codigo}</td>` +
+                `    <td>${cantidad}</td>` +
+                `    <td>${tarima}</td>` +
+                `    <td>${ulocation}</td>` +
+                `    <td>${almacen}</td>` +
+                `    <td>${sucursal}</td>` +
+                `    <td>${empresa}</td>` +
+                `    <td>` +
+                `        <button ` +
+                `            onclick="selectLocationAll(${item.id_tarima})" ` +
+                `            style="` +
+                `                background-color: #007bff; ` +
+                `                color: white; ` +
+                `                border: none; ` +
+                `                padding: 4px 12px; ` +
+                `                border-radius: 4px; ` +
+                `                cursor: pointer;` +
+                `                font-size: 12px;` +
+                `            "` +
+                `            onmouseover="this.style.backgroundColor='#0056b3'"` +
+                `            onmouseout="this.style.backgroundColor='#007bff'"` +
+                `        >` +
+                `            Agregar` +
+                `        </button>` +
+                `    </td>` +
+                `</tr>`;
+        });
+
+        tableHTML += `` +
+            `        </tbody>` +
+            `    </table>` +
+            `</div>`;
+
+        _Swal.fire({
+            html: `
+            <div>
+                <h4 style="margin-top: 20px; margin-bottom: 10px;">Stock Disponible:</h4>
+                <p style="text-align: left;margin-top: 20px;margin-bottom: 10px;">Todos los productos de este documento serán enviados a la ubicación que seleccione.</p>
+                ${tableHTML}
+            </div>
+        `,
+        })
+    }
+
+    // Handle product checkbox change
+    function handleProductCheck(productId, isChecked, element) {
+        productStates[productId].checked = isChecked;
+        productStates[productId].hasError = false;
+
+        const product = documentsData.partidas.find(p => p.id_partidas === productId);
+        productStates[productId].quantity = Number(product.cantidad);
+
+        updateProductElementState(element, isChecked, false, productId);
+        updateStatistics();
+    }
+
+    function validarLock(input) {
+        const min = Number.parseFloat(input.min) || 0;
+        const max = Number.parseFloat(input.max);
+        let value = Number.parseFloat(input.value);
+
+        if (!Number.isNaN(max) && value > max) value = max;
+        if (!Number.isNaN(min) && value < min) value = min;
+
+        input.value = Number.isFinite(value) ? value : "";
+    }
+
+    // Handle product error marking
+    function round(value, decimals = 2) {
+        return Number(Math.round(value + "e" + decimals) + "e-" + decimals);
+    }
+
+    function validarLock(input) {
+        const min = Number.parseFloat(input.min) || 0;
+        const max = Number.parseFloat(input.max);
+        let value = Number.parseFloat(input.value);
+
+        if (!Number.isNaN(max) && value > max) value = max;
+        if (!Number.isNaN(min) && value < min) value = min;
+
+        input.value = Number.isFinite(value) ? value : "";
+    }
+
+    // Handle product error marking
+    function handleProductError(productId, element) {
+        const hasError = !productStates[productId].hasError;
+        productStates[productId].hasError = hasError;
+        productStates[productId].checked = false;
+
+        // Uncheck checkbox
+        const checkbox = element.querySelector(".product-checkbox");
+        checkbox.checked = false;
+
+        const product = documentsData.partidas.find(p => p.id_partidas === productId);
+        if (!product) return;
+
+        if (hasError) {
+            element.style.display = "none"; // ocultamos el original
+            delete productStates[productId].unidad;
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "product-discrepancy-wrapper product-item";
+
+            const correctDiv = createEditableRow(product, "Cantidad correcta", Number(product.cantidad), false);
+
+            const select = correctDiv.querySelector(`.ubicacion_${product.id_partidas}`);
+            let instance = new TomSelect(select, {
+                options: documentsData.ubicaciones, // o las que quieras pasar
+                valueField: 'id_tarima',
+                searchField: ['ulocation', 'tarima'],
+                placeholder: 'Selecciona una ubicacion...',
+                maxItems: 1,
+                create: false,
+                render: {
+                    option: (data, escape) =>
+                        `<div style="color: var(--text-dark);">${escape(data.tarima)} - ${escape(data.ulocation)}</div>`,
+                    item: (data, escape) =>
+                        `<div><span style="color:#6C757D;">${escape(data.tarima)} - ${escape(data.ulocation)}</span></div>`
+                },
+                onChange: (value) => {
+                    // Guardamos en el estado
+                    productStates[product.id_partidas].destino = parseInt(value);
+
+                    // También puedes guardar la ubicación completa si la necesitas
+                    const ubicacion = documentsData.ubicaciones.find(u => u.id_tarima == value);
+                    productStates[product.id_partidas].location = parseInt(ubicacion) ? ubicacion.ulocation : null;
+                }
+            });
+            tomManager.instances.set(`ubicacion_${product.id_partidas}`, instance);
+
+            const errorDiv = createEditableRow(product, "Cantidad en discrepancia", Number(product.cantidad), true);
+
+            wrapper.appendChild(correctDiv);
+            wrapper.appendChild(errorDiv);
+
+            element.insertAdjacentElement("afterend", wrapper);
+
+            productStates[productId].discrepancyWrapper = wrapper;
+            productStates[productId].cantidadCorrecta = round(Number(product.cantidad));
+            productStates[productId].cantidadError = round(Number(product.cantidad));
+            productStates[productId].destino = null;
+
+            // Deshabilitar tom select
+            //instance = tomManager.instances.get(`ubicacion_${productId}`);
+            //instance.setValue(0);
+            //instance.disable();
+            //document.getElementById(`sugerenciasAlmacen_${productId}`).setAttribute('disabled', true);
+
+            let updating = false;
+
+            // Evento en campo de "correcta"
+            correctDiv.querySelector("input").addEventListener("change", e => {
+                if (updating) return;
+                updating = true;
+
+                const errorInput = errorDiv.querySelector("input");
+                let cantidadF = round(product.cantidad - e.target.value, 2);
+                errorInput.value = cantidadF;
+
+                productStates[productId].cantidadCorrecta = round(parseFloat(e.target.value) || 0, 2);
+                productStates[productId].cantidadError = round(cantidadF || 0, 2);
+
+                validarLock(errorInput);
+                updating = false;
+            });
+
+            // Evento en campo de "error"
+            errorDiv.querySelector("input").addEventListener("change", e => {
+                if (updating) return;
+                updating = true;
+
+                const correctInput = correctDiv.querySelector("input");
+                let cantidadF = round(product.cantidad - e.target.value, 2);
+                correctInput.value = cantidadF;
+
+                productStates[productId].cantidadError = round(parseFloat(e.target.value) || 0, 2);
+                productStates[productId].cantidadCorrecta = round(cantidadF || 0, 2);
+
+                validarLock(correctInput);
+                updating = false;
+            });
+
+            // Lanzar primera sincronización
+            correctDiv.querySelector("input").dispatchEvent(new Event("change"));
+
+            const selectError = errorDiv.querySelector(".discrepancy-reason");
+            selectError.addEventListener("change", e => {
+                productStates[productId].motivoError = e.target.value;
+            });
+
+            // Botón para quitar discrepancia
+            const removeBtn = document.createElement("button");
+            removeBtn.className = "btn btn-sm orange-500 mt-2 remove_discrepancy";
+            removeBtn.textContent = "Quitar discrepancia";
+            removeBtn.type = 'button';
+            removeBtn.addEventListener("click", () => {
+                wrapper.remove();
+                element.style.display = "";
+                element.classList.remove("error");
+                productStates[productId].hasError = false;
+                delete productStates[productId].cantidadCorrecta;
+                delete productStates[productId].cantidadError;
+                delete productStates[productId].discrepancyWrapper;
+                delete productStates[productId].motivoError;
+                productStates[productId].unidad = null;
+
+                let key = `ubicacion_${product.id_partidas}`;
+                let instance = tomManager.instances.get(key);
+                if (instance) {
+                    instance.destroy();
+                    tomManager.instances.delete(key);
+                }
+                const select = element.querySelector(`.ubicacion_${product.id_partidas}`);
+
+                if (select.tomselect) {
+                    select.tomselect.destroy();
+                }
+
+                instance = new TomSelect(select, {
+                    options: documentsData.ubicaciones,
+                    valueField: 'id_tarima',
+                    searchField: ['ulocation', 'tarima'],
+                    placeholder: 'Selecciona una ubicacion...',
+                    maxItems: 1,
+                    create: false,
+                    render: {
+                        option: (data, escape) =>
+                            `<div style="color: var(--text-dark);">${escape(data.tarima)} - ${escape(data.ulocation)}</div>`,
+                        item: (data, escape) =>
+                            `<div><span style="color:#6C757D;">${escape(data.tarima)} - ${escape(data.ulocation)}</span></div>`
+                    },
+                    onChange: (value) => {
+                        productStates[product.id_partidas].destino = parseInt(value);
+                        const ubicacion = documentsData.ubicaciones.find(u => u.id_tarima == value);
+                        productStates[product.id_partidas].location = parseInt(ubicacion) ? ubicacion.ulocation : null;
+                    }
+                });
+
+                // importante: re-registrar la instancia
+                tomManager.instances.set(key, instance);
+
+                instance.setValue(0);
+                instance.enable();
+                document.getElementById(`sugerenciasAlmacen_${productId}`).removeAttribute('disabled');
+
+                updateStatistics();
+            });
+
+            wrapper.appendChild(removeBtn);
+
+        } else {
+            if (productStates[productId].discrepancyWrapper) {
+                productStates[productId].discrepancyWrapper.remove();
+                productStates[productId].discrepancyWrapper = null;
+                delete productStates[productId].discrepancyWrapper;
+            }
+
+            productStates[productId].unidad = null;
+            element.style.display = "";
+        }
+
+        updateProductElementState(element, false, hasError, productId);
+        updateStatistics();
+    }
+
+    // 🔧 Función auxiliar para crear un renglón editable
+    function createEditableRow(product, label, cantidadInicial, es_discrepancia) {
+        const row = document.createElement("div");
+        let html;
+
+        row.className = "row align-items-center discrepancia";
+
+        if (es_discrepancia) {
+            html = `` +
+                `<div class="col-md-4 mb-1">` +
+                `    <h6 class="mb-1">${product.descripcion}</h6>` +
+                `    <small class="text-muted">Código: ${product.codigo}</small>` +
+                `    <span class="badge bg-danger ms-2">${label}</span>` +
+                `</div>` +
+                `<div class="col-md-2 mb-1">` +
+                `    <input type="number" class="form-control form-control-sm lock-min lock-max"` +
+                `           value="${Number(cantidadInicial)}" min="0" max="${Number(cantidadInicial)}" />` +
+                `</div>` +
+                `<div class="col-md-2 col-sm-12 unidad">` +
+                `    <span class="badge bg-secondary">Cant: ${Number(product.cantidad)} ${product.ud}</span>` +
+                `</div>` +
+                `<div class="col-md-2 mb-1">` +
+                `    <select class="form-select form-select-sm discrepancy-reason">` +
+                `        <option value="">Seleccione motivo</option>` +
+                `        <option value="daño">Material dañado</option>` +
+                `        <option value="diferente">Material diferente</option>` +
+                `        <option value="incompleto">Material incompleto / faltante</option>` +
+                `    </select>` +
+                `</div>`;
+        } else {
+            html = `` +
+                `<div class="col-md-4 mb-1">` +
+                `    <h6 class="mb-1">${product.descripcion}</h6>` +
+                `    <small class="text-muted">Código: ${product.codigo}</small>` +
+                `    <span class="badge bg-danger ms-2">${label}</span>` +
+                `</div>` +
+                `<div class="col-md-2 mb-1">` +
+                `    <input type="number" class="form-control form-control-sm lock-min lock-max"` +
+                `           value="${Number(cantidadInicial)}" min="0" max="${Number(cantidadInicial)}" />` +
+                `</div>` +
+                `<div class="col-md-2 col-sm-12 unidad">` +
+                `    <span class="badge bg-secondary">Cant: ${Number(product.cantidad)} ${product.ud}</span>` +
+                `</div>` +
+                `<div class="col-md-4 col-sm-12">` +
+                `    <div class="row gap-sm-0 gap-1">` +
+                `        <div class="col-md-9 col-sm-12">` +
+                `            <select class="form-control ubicacion_${product.id_partidas}">` +
+                `                <option>Selecciona una ubicacion</option>` +
+                `            </select>` +
+                `        </div>` +
+                `        <div class="col-md-3 col-sm-12">` +
+                `            <button class="btn blue-500 w-100" id="sugerenciasAlmacen_${product.id_partidas}" onclick="sugerenciasAlmacen('${product.codigo}', ${product.id_partidas})">` +
+                `                <i class="fa-solid fa-pallet-box"></i>` +
+                `            </button>` +
+                `        </div>` +
+                `    </div>` +
+                `</div>` +
+                `</div>`;
+        }
+        row.innerHTML = html;
+        return row;
+    }
+
+    // Update product element visual state
+    function updateProductElementState(element, isChecked, hasError, productId) {
+        element.classList.remove("checked", "error");
+
+        if (hasError) {
+            element.classList.add("error");
+        } else if (isChecked) {
+            element.classList.add("checked");
+            element.removeAttribute('disabled');
+        }
+    }
+
+    // Update statistics
+    function updateStatistics() {
+        const total = documentsData.partidas.length;
+        let checked = 0;
+        let errors = 0;
+
+        Object.values(productStates).forEach(state => {
+            if (state.hasError) errors++;
+            else if (state.checked) checked++;
+        });
+
+        const pending = total - checked - errors;
+
+        document.getElementById("totalProducts").textContent = total;
+        document.getElementById("checkedProducts").textContent = checked;
+        document.getElementById("uncheckedProducts").textContent = pending;
+        document.getElementById("errorProducts").textContent = errors;
+    }
+
+    // Event listeners
+    document.addEventListener("DOMContentLoaded", () => {
+        // Search button
+        document.getElementById("searchBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc !== "0") {
+                loadDocument(selectedDoc);
+            } else {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+            }
+        });
+
+        // Check all button
+        document.getElementById("checkAllBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            Object.keys(productStates).forEach(productId => {
+                if (!productStates[productId].hasError) {
+                    const checkbox = document.getElementById(`product_${productId}`);
+                    const productElement = checkbox.closest(".product-item");
+                    checkbox.checked = true;
+                    handleProductCheck(parseInt(productId), true, productElement)
+                    updateProductElementState(productElement, true, false, productId);
+                }
+            });
+
+            updateStatistics();
+            toastMixin.fire({ title: "Todos los productos han sido verificados (excepto con discrepancias)", icon: "info" });
+        });
+
+        // Uncheck all button
+        document.getElementById("uncheckAllBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            Object.keys(productStates).forEach(productId => {
+                productStates[productId].checked = false;
+                productStates[productId].hasError = false;
+
+                const checkbox = document.getElementById(`product_${productId}`);
+                const productElement = checkbox.closest(".product-item");
+                checkbox.checked = false;
+
+                $(".remove_discrepancy").click()
+
+                updateProductElementState(productElement, false, false, productId);
+            });
+
+            updateStatistics();
+            toastMixin.fire({ title: "Se han desmarcado todos los productos", icon: "info" });
+        });
+
+        // Save changes button
+        document.getElementById("saveChangesBtn").addEventListener("click", async () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            const checkedCount = Object.values(productStates).filter(s => s.checked).length;
+            const errorCount = Object.values(productStates).filter(s => s.hasError).length;
+
+            if (checkedCount == 0 && errorCount == 0) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Debes seleccionar al menos un elemento para guardar."
+                })
+                return;
+            }
+
+            if (documentsData.partidas.length > (checkedCount + errorCount)) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Hay campos sin seleccionar, revisa antes de continuar."
+                })
+                return;
+            }
+
+            let payload = [];
+            for (const [productId, state] of Object.entries(productStates)) {
+                const partidas = documentsData.partidas.find(p => p.id_partidas == productId)
+
+                // validaciones extra
+                if ((state.cantidadCorrecta ?? 0) + (state.cantidadError ?? 0) > partidas.cantidad) {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: `Las cantidades de ${partidas.descripcion} superan la cantidad solicitada (${partidas.cantidad}).`
+                    });
+                    throw new Error(`Las cantidades de ${partidas.descripcion} superan la cantidad solicitada (${partidas.cantidad}).`);
+                    return;
+                }
+
+                if (state.hasError && !state.motivoError) {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: `Debes capturar un motivo para la discrepancia en ${partidas.descripcion}.`
+                    });
+                    throw new Error(`Debes capturar un motivo para la discrepancia en ${partidas.descripcion}.`);
+                    return;
+                }
+
+                if (state.hasError && (!state.cantidadError || state.cantidadError <= 0)) {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: `Debes indicar la cantidad en discrepancia para ${partidas.descripcion}.`
+                    });
+                    throw new Error(`Debes indicar la cantidad en discrepancia para ${partidas.descripcion}.`);
+                    return;
+                }
+
+                if (state.checked && !state.destino) {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: `Debes seleccionar el destino de la partida ${partidas.descripcion}.`
+                    });
+                    throw new Error(`Debes seleccionar el destino de la partida ${partidas.descripcion}.`);
+                    return;
+                }
+
+                // normalizar proveedor
+                let proveedor = partidas.proveedorid;
+
+                if (proveedor === "" || proveedor === "null" || proveedor === undefined) {
+                    proveedor = null;
+                }
+
+                if (state.hasError) {
+                    payload.push({
+                        productId,
+                        status: true,
+                        cantidad: Number(state.cantidadCorrecta),
+                        motivo: null,
+                        unidad: parseInt(partidas.unidad),
+                        encabezado: documentsData.ordenCompra.id_encabezado,
+                        proveedor: proveedor, 
+                        proveedor_nombre: partidas.proveedor,
+                        id_producto: partidas.id_catproductos,
+                        codigo: partidas.codigo,
+                        descripcion: partidas.descripcion,
+                        cve_unidad: partidas.ud,
+                        idp: partidas.idp,
+                        dto: partidas.dto1,
+                        fp: partidas.fp,
+                        destino: state.destino,
+                    });
+
+                    payload.push({
+                        productId,
+                        status: false,
+                        cantidad: Number(state.cantidadError ?? 0), // cantidad en discrepancia
+                        motivo: state.motivoError || null,
+                        unidad: parseInt(partidas.unidad),
+                        encabezado: documentsData.ordenCompra.id_encabezado,
+                        proveedor: partidas.proveedorid,
+                        proveedor_nombre: partidas.proveedor,
+                        id_producto: partidas.id_catproductos,
+                        codigo: partidas.codigo,
+                        descripcion: partidas.descripcion,
+                        cve_unidad: partidas.ud,
+                        idp: partidas.idp,
+                        dto: partidas.dto1,
+                        fp: partidas.fp,
+                        destino: state.destino,
+                    });
+                } else if (state.checked) {
+                    payload.push({
+                        productId,
+                        status: true,
+                        cantidad: Number(state.quantity),
+                        motivo: null,
+                        unidad: parseInt(partidas.unidad),
+                        encabezado: documentsData.ordenCompra.id_encabezado,
+                        proveedor: partidas.proveedorid,
+                        proveedor_nombre: partidas.proveedor,
+                        id_producto: partidas.id_catproductos,
+                        codigo: partidas.codigo,
+                        descripcion: partidas.descripcion,
+                        cve_unidad: partidas.ud,
+                        idp: partidas.idp,
+                        dto: partidas.dto1,
+                        fp: partidas.fp,
+                        destino: state.destino,
+                    });
+                }
+            };
+
+            const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+                <style>
+                    .flip {
+                        animation: spinY 2s linear infinite;
+                        transform-origin: center;
+                    }
+                    @@keyframes spinY {
+                        0%   { transform: rotateY(0deg); }
+                        100% { transform: rotateY(360deg); }
+                    }
+                </style>
+                <g class="flip">
+                    <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                    <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="32" cy="48" r="3" fill="#000"/>
+                </g>
+            </svg>`;
+
+            let ulocation;
+            let id_tarima = null;
+
+            _Swal.fire({
+                iconHtml: warningIcon,
+                title: "Confirmar recepción",
+                html: `
+                    <div>
+                        <p>¿Está seguro que desea proceder con la recepción del material con el folio ${documentsData.ordenCompra.folio}?</p>
+                        <p>Correctos: ${checkedCount} -- Discrepancias: ${errorCount}</p>
+                    </div>
+                `,
+                footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+                customClass: {
+                    icon: "p-0 bg-transparent border-0 shadow-none"
+                },
+                input: "textarea",
+                inputLabel: "Comentarios extra",
+                inputPlaceholder: "Comentarios extra...",
+                inputAttributes: {
+                    "aria-label": "Comentarios extra"
+                },
+                preConfirm: (comentario) => {
+                    GetData({
+                        path: "/Inventario/RecibirMaterialInspeccion",
+                        data: {
+                            productos: JSON.stringify(payload),
+                            comentario: comentario,
+                            id_encabezado: documentsData.ordenCompra.id_encabezado,
+                        },
+                        swalType: 'modal',
+                        swalResponse: true,
+                        swalPath: "/Inventario/Inspeccion"
+                    })
+                }
+            })
+
+        });
+
+
+        // Reset button
+        document.getElementById("resetBtn").addEventListener("click", () => {
+            const selectedDoc = tomS.getValue();
+            if (selectedDoc === "0") {
+                toastMixin.fire({ title: "Por favor selecciona un documento", icon: "warning" });
+                return;
+            }
+
+            _Swal.fire({
+                title: "¿Estás seguro de que quieres resetear todos los cambios?",
+                preConfirm: () => {
+                    Object.keys(productStates).forEach(productId => {
+                        productStates[productId].checked = false;
+                        productStates[productId].hasError = false;
+
+                        const checkbox = document.getElementById(`product_${productId}`);
+                        const productElement = checkbox.closest(".product-item");
+                        checkbox.checked = false;
+                        updateProductElementState(productElement, false, false, productId);
+                    });
+                    $(".remove_discrepancy").click()
+                    updateStatistics();
+                    toastMixin.fire({ title: "Se han reseteado todos los cambios", icon: "info" });
+                }
+            })
+        });
+
+        // Tom Select change event
+        tomS.on("change", (value) => {
+            if (value) {
+                loadDocument(value);
+            }
+        });
+    });
+</script>

@@ -1,0 +1,721 @@
+﻿@using BOS_ERP.Controllers
+
+@{
+    ViewBag.Title = "Cobranza Contado";
+    ViewBag.PageTitle = "Facturas PUE Pendientes";
+}
+
+@section styles {
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+    <style>
+        /* ── Tokens ───────────────────────────────────────────── */
+        :root {
+            --amber: #f59e0b;
+            --amber-dk: #b45309;
+            --amber-lt: #fffbeb;
+            --amber-mid: #fde68a;
+            --green: #059669;
+            --red: #dc2626;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        /* ── Banner ───────────────────────────────────────────── */
+        .cc-banner {
+            background: linear-gradient(120deg, var(--very-light-blue) 0%, var(--light-blue) 60%, var(--dark-blue) 100%);
+            padding: 28px 40px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .cc-banner-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255,255,255,.15);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+
+        .cc-banner-title {
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: -.02em;
+        }
+
+        .cc-banner-sub {
+            font-size: .85rem;
+            margin-top: 3px;
+        }
+
+        /* ── KPI cards ────────────────────────────────────────── */
+        .kpi-strip {
+            background: var(--amber-lt);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 40px;
+        }
+
+        .kpi {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 16px 20px;
+            border-left: 4px solid var(--amber);
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            height: 100%;
+        }
+
+            .kpi.danger {
+                border-left-color: var(--red);
+            }
+
+            .kpi.success {
+                border-left-color: var(--green);
+            }
+
+        .kpi-label {
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .kpi-sub {
+            font-size: .75rem;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        /* ── Toolbar ──────────────────────────────────────────── */
+        .cc-toolbar {
+            padding: 14px 40px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .btn-export {
+            padding: 9px 18px;
+            background: var(--success-color);
+            color: #fff !important;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background .2s;
+        }
+
+            .btn-export:hover {
+                background: #92400e;
+            }
+
+        /* ── Saldo bar ────────────────────────────────────────── */
+        .saldo-bar-wrap {
+            min-width: 140px;
+        }
+
+        .saldo-mono {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--red);
+        }
+
+        .bar-track {
+            background: #e2e8f0;
+            height: 4px;
+            border-radius: 2px;
+            margin: 4px 0;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--amber) 0%, var(--red) 100%);
+        }
+
+        .bar-meta {
+            font-size: 10px;
+            color: var(--muted);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        /* ── Antigüedad badges ────────────────────────────────── */
+        .dias-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .dias-ok {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .dias-warn {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .dias-late {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ── Modal header ─────────────────────────────────────── */
+        .pay-modal-header {
+            background: linear-gradient(120deg, var(--primary-blue-dark), var(--bg-gray));
+            border-radius: calc(var(--bs-modal-inner-border-radius) - 1px) calc(var(--bs-modal-inner-border-radius) - 1px) 0 0;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .pay-modal-header h5 {
+                color: #fff;
+                font-size: 1.1rem;
+                font-weight: 800;
+                margin: 0;
+            }
+
+            .pay-modal-header .btn-close-white {
+                background: rgba(255,255,255,.18);
+                border: none;
+                color: #fff;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                font-size: 1.1rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+        /* ── Info box dentro del modal ────────────────────────── */
+        .pay-info-box {
+            background: var(--very-light-blue);
+            border: 1px solid var(--amber-mid);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+        }
+
+            .pay-info-box .cliente {
+                font-size: 1rem;
+                font-weight: 700;
+                color: var(--ink);
+            }
+
+            .pay-info-box .rfc {
+                font-size: .8rem;
+                color: var(--muted);
+                margin-top: 2px;
+            }
+
+        .pay-info-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--amber-mid);
+        }
+
+            .pay-info-row .label {
+                font-size: .72rem;
+                color: var(--muted);
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+
+            .pay-info-row .val {
+                font-size: .9rem;
+                font-weight: 700;
+                font-family: 'IBM Plex Mono', monospace;
+            }
+
+                .pay-info-row .val.saldo {
+                    color: var(--red);
+                }
+
+        /* ── Botón pagar ──────────────────────────────────────── */
+        .btn-pagar {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(120deg, var(--primary-blue-dark), var(--secondary-blue));
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+            transition: opacity .2s;
+        }
+
+            .btn-pagar:hover {
+                opacity: .9;
+            }
+
+            .btn-pagar:disabled {
+                opacity: .5;
+                cursor: not-allowed;
+            }
+
+        .btn-saldo-total {
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--amber-dk);
+            background: var(--amber-lt);
+            border: 1px solid var(--amber-mid);
+            border-radius: 6px;
+            padding: 2px 8px;
+            cursor: pointer;
+        }
+
+        .monto-helper {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+
+            .monto-helper span {
+                font-size: .75rem;
+                color: var(--muted);
+            }
+
+        /* ── Ajuste tabla ─────────────────────────────────────── */
+        .table-wrapper {
+            padding: 0;
+        }
+    </style>
+}
+
+<form>@Html.AntiForgeryToken()</form>
+
+<div class="cc-banner">
+    <div class="cc-banner-icon"><i class="fa fa-hand-holding-dollar"></i></div>
+    <div>
+        <div class="cc-banner-title">Cobranza de Contado</div>
+        <div class="cc-banner-sub">Facturas PUE con saldo pendiente · Solo tu sucursal</div>
+    </div>
+</div>
+
+<div class="kpi-strip">
+    <div class="row g-3">
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="kpi">
+                <div class="kpi-label">Facturas pendientes</div>
+                <div class="kpi-value" id="kpiCount">—</div>
+                <div class="kpi-sub">en esta sucursal</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="kpi danger">
+                <div class="kpi-label">Saldo total por cobrar</div>
+                <div class="kpi-value" id="kpiSaldo">—</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="kpi">
+                <div class="kpi-label">Valor facturado</div>
+                <div class="kpi-value" id="kpiTotal">—</div>
+                <div class="kpi-sub">suma de totales</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cc-toolbar d-none">
+    <button class="btn-export" onclick="exportarCSVCobranza()">
+        <i class="fa fa-file-csv"></i> Exportar CSV
+    </button>
+</div>
+
+<div class="table-wrapper">
+    <div class="table-responsive">
+        <div id="tablaCobranza"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="payModal" tabindex="-1" aria-labelledby="payModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 overflow-hidden">
+            <div class="pay-modal-header">
+                <h5 id="payModalLabel">
+                    <i class="fa fa-circle-dollar-to-slot me-1"></i> Registrar Pago
+                </h5>
+                <button type="button" class="btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar">×</button>
+            </div>
+            <div class="modal-body" id="payBody">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script>
+        Swal.mixin({ customClass: { container: 'swal-on-top' } });
+
+        // ── Estado del modal ────────────────────────────────────
+        let _facturaActual = null;
+        let _bsModal = null;
+
+        // Inicializar instancia Bootstrap del modal
+        document.addEventListener('DOMContentLoaded', () => {
+            _bsModal = new bootstrap.Modal(document.getElementById('payModal'));
+        });
+
+        // ── Helpers de formato ──────────────────────────────────
+        const fmt = n => '$' + parseFloat(n || 0).toLocaleString('es-MX', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        function parseFecha(fechaStr) {
+            if (!fechaStr) return null;
+            const [fecha, hora] = fechaStr.split(' ');
+            const [dia, mes, anio] = fecha.split('/');
+            const anioCompleto = parseInt(anio, 10) + 2000;
+            const [h, m] = hora ? hora.split(':') : [0, 0];
+            return new Date(anioCompleto, mes - 1, dia, h, m);
+        }
+
+        function diasAntiguedad(fecha) {
+            const f = parseFecha(fecha);
+            if (!f) return null;
+            return Math.floor((Date.now() - f.getTime()) / 86400000);
+        }
+
+        function badgeAntiguedad(fecha) {
+            const d = diasAntiguedad(dateFormatter(fecha));
+            if (d === null) return '—';
+            if (d <= 7) return `<span class="dias-badge dias-ok"><i class="fa fa-clock"></i> ${d}d</span>`;
+            if (d <= 30) return `<span class="dias-badge dias-warn"><i class="fa fa-triangle-exclamation"></i> ${d}d</span>`;
+            return `<span class="dias-badge dias-late"><i class="fa fa-circle-xmark"></i> ${d}d</span>`;
+        }
+
+        function colSaldo(saldo, total) {
+            const s = parseFloat(saldo || 0);
+            const t = parseFloat(total || 0);
+            const pct = t > 0 ? Math.min(Math.round((s / t) * 100), 100) : 0;
+            return `
+                    <div class="saldo-bar-wrap">
+                        <div class="saldo-mono">${fmt(s)}</div>
+                        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+                        <div class="bar-meta">${pct}% del total · ${fmt(t)}</div>
+                    </div>`;
+        }
+
+        // ── Inicializar tabla ───────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            createTable({
+                selector: '#tablaCobranza',
+                path: '/CobranzaContado/ObtenerFacturasPendientesPUE',
+                searchPlaceholder: 'Buscar por cliente, RFC o folio...',
+                GlobalEvents: {
+                    onDataLoaded: actualizarKPIs
+                },
+                columns: [
+                    { title: 'Folio', data: 'folio' },
+                    { title: 'Cliente', data: 'rsocliente' },
+                    { title: 'RFC', data: 'rfccliente' },
+                    { title: 'Emisión', data: 'fecha', formatter: v => dateFormatter(v) },
+                    { title: 'Antigüedad', data: 'fecha', formatter: v => badgeAntiguedad(v) },
+                    { title: 'Saldo pendiente', data: 'saldo', formatter: (v, row) => colSaldo(v, row.total) }
+                ],
+                actions: [
+                    {
+                        icon: 'fa-circle-dollar-to-slot',
+                        color: 'amber-600',
+                        title: 'Registrar pago',
+                        onClick: row => abrirModalPago(row)
+                    },
+                    {
+                        icon: 'fa-file-pdf',
+                        color: 'red-500',
+                        title: 'Ver PDF',
+                        onClick: row => window.open(`../Facturacion/facturas/${row.uuid}.pdf`, '_blank')
+                    },
+                    {
+                        icon: 'fa-file-code',
+                        color: 'blue-500',
+                        title: 'Descargar XML',
+                        onClick: row => descargarXML(row.uuid)
+                    }
+                ]
+            });
+        });
+
+        // ── KPIs ────────────────────────────────────────────────
+        function actualizarKPIs(response) {
+            if (!response || !response.resumen || !response.resumen[0]) return;
+            const r = response.resumen[0];
+            document.getElementById('kpiCount').textContent = parseInt(r.total_facturas || 0).toLocaleString('es-MX');
+            document.getElementById('kpiSaldo').textContent = fmt(r.suma_saldo);
+            document.getElementById('kpiTotal').textContent = fmt(r.suma_total);
+        }
+
+        // ── XML ─────────────────────────────────────────────────
+        function descargarXML(uuid) {
+            const url = `../Facturacion/xml_timbrados/${uuid}.xml`;
+            const a = document.createElement('a');
+            a.href = url; a.download = `${uuid}.xml`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        // ── Modal de pago ────────────────────────────────────────
+        function abrirModalPago(row) {
+            _facturaActual = row;
+            const saldo = parseFloat(row.saldo || 0);
+            const total = parseFloat(row.total || 0);
+            const pct = total > 0 ? Math.min(Math.round((saldo / total) * 100), 100) : 0;
+
+            document.getElementById('payBody').innerHTML = `
+                    <div class="pay-info-box">
+                        <div class="cliente">${row.rsocliente || '—'}</div>
+                        <div class="rfc">${row.rfccliente || ''}</div>
+                        <div class="pay-info-row">
+                            <div>
+                                <div class="label">Folio</div>
+                                <div class="val">${row.folio || row.fac_folio || '—'}</div>
+                            </div>
+                            <div>
+                                <div class="label">Emisión</div>
+                                <div class="val">${dateFormatter(row.fecha)}</div>
+                            </div>
+                            <div>
+                                <div class="label">Total factura</div>
+                                <div class="val">${fmt(total)}</div>
+                            </div>
+                            <div>
+                                <div class="label">Saldo pendiente</div>
+                                <div class="val saldo">${fmt(saldo)}</div>
+                            </div>
+                        </div>
+                        <div class="bar-track" style="margin-top:12px;">
+                            <div class="bar-fill" style="width:${pct}%"></div>
+                        </div>
+                        <div class="bar-meta" style="margin-top:3px;">${pct}% pendiente</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fa fa-credit-card"></i> Forma de pago *
+                        </label>
+                        <select id="payFormaPago" class="form-select">
+                            <option value="">— Seleccione —</option>
+                            <option value="01">01 – Efectivo</option>
+                            <option value="02">02 – Cheque nominativo</option>
+                            <option value="03">03 – Transferencia electrónica</option>
+                            <option value="04">04 – Tarjeta de crédito</option>
+                            <option value="28">28 – Tarjeta de débito</option>
+                            <option value="99">99 – Por definir</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fa fa-dollar-sign"></i> Monto a aplicar *
+                        </label>
+                        <input type="number" id="payMonto" class="form-control"
+                               min="0.01" step="0.01" max="${saldo.toFixed(2)}" placeholder="0.00" />
+                        <div class="monto-helper mt-1">
+                            <span id="payMontoError" style="color:var(--red);display:none;">
+                                El monto no puede superar el saldo pendiente
+                            </span>
+                            <span></span>
+                            <button type="button" class="btn-saldo-total"
+                                    onclick="document.getElementById('payMonto').value='${saldo.toFixed(2)}'; validarMonto();">
+                                Usar saldo total
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fa fa-hashtag"></i> Referencia / No. de operación
+                        </label>
+                        <input type="text" id="payReferencia" class="form-control"
+                               placeholder="Cheque, folio de transferencia, etc." />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fa fa-comment"></i> Observaciones
+                        </label>
+                        <textarea id="payObs" class="form-control" rows="2" placeholder="Opcional..."></textarea>
+                    </div>
+
+                    <button class="btn-pagar" id="btnPagar" onclick="enviarPago()">
+                        <i class="fa fa-circle-check"></i> Confirmar pago
+                    </button>`;
+
+            document.getElementById('payMonto').addEventListener('input', validarMonto);
+            _bsModal.show();
+        }
+
+        function validarMonto() {
+            const saldo = parseFloat(_facturaActual?.saldo || 0);
+            const monto = parseFloat(document.getElementById('payMonto').value || 0);
+            const err = document.getElementById('payMontoError');
+            const btn = document.getElementById('btnPagar');
+            const invalido = monto <= 0 || monto > saldo;
+            err.style.display = invalido ? 'inline' : 'none';
+            btn.disabled = invalido;
+        }
+
+        // Limpiar estado al cerrar el modal con Bootstrap
+        document.getElementById('payModal').addEventListener('hidden.bs.modal', () => {
+            _facturaActual = null;
+        });
+
+        // ── Enviar pago ──────────────────────────────────────────
+        async function enviarPago() {
+            if (!_facturaActual) return;
+
+            const uuid = _facturaActual.uuid;
+            const monto = parseFloat(document.getElementById('payMonto').value || 0);
+            const formaPago = document.getElementById('payFormaPago').value;
+            const ref = document.getElementById('payReferencia').value.trim();
+            const obs = document.getElementById('payObs').value.trim();
+            const saldo = parseFloat(_facturaActual.saldo || 0);
+
+            if (!formaPago) {
+                Swal.fire({
+                    icon: 'warning', title: 'Forma de pago requerida',
+                    text: 'Selecciona la forma de pago antes de continuar.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            if (!monto || monto <= 0 || monto > saldo) {
+                Swal.fire({
+                    icon: 'warning', title: 'Monto inválido',
+                    text: `Ingresa un monto entre $0.01 y $${saldo.toFixed(2)}.`,
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            const confirm = await Swal.fire({
+                title: '¿Confirmar pago?',
+                html: `
+                        <div style="text-align:left;padding:8px;">
+                            <p><strong>Cliente:</strong> ${_facturaActual.rsocliente}</p>
+                            <p><strong>Folio:</strong> ${_facturaActual.folio || _facturaActual.fac_folio}</p>
+                            <p><strong>Monto a aplicar:</strong>
+                                <span style="color:#b45309;font-weight:700;font-family:monospace;">
+                                    $${monto.toFixed(2)}
+                                </span></p>
+                            <p><strong>Saldo restante:</strong>
+                                <span style="font-family:monospace;">$${(saldo - monto).toFixed(2)}</span></p>
+                        </div>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-check"></i> Sí, registrar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#b45309'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Registrando pago...',
+                allowOutsideClick: false, showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const formData = new FormData();
+            formData.append('uuid', uuid);
+            formData.append('montoPagado', monto.toFixed(2));
+            formData.append('formaPago', formaPago);
+            formData.append('referencia', ref);
+            formData.append('observaciones', obs);
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            try {
+                const resp = await fetch('/CobranzaContado/RegistrarPagoPUE', { method: 'POST', body: formData });
+                const data = await resp.json();
+
+                if (data.success) {
+                    _bsModal.hide();
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Pago registrado!',
+                        html: `
+                                <div style="text-align:center;padding:8px;">
+                                    <p>Monto aplicado:
+                                        <strong style="color:#059669;font-family:monospace;">
+                                            $${parseFloat(data.montoPagado).toFixed(2)}
+                                        </strong></p>
+                                    <p>Saldo anterior:
+                                        <span style="font-family:monospace;">
+                                            $${parseFloat(data.saldoAnterior).toFixed(2)}
+                                        </span></p>
+                                    <p>Nuevo saldo:
+                                        <strong style="font-family:monospace;">
+                                            $${parseFloat(data.saldoNuevo).toFixed(2)}
+                                        </strong></p>
+                                </div>`,
+                        confirmButtonColor: '#059669',
+                        confirmButtonText: 'Aceptar'
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#dc2626' });
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Error inesperado', text: err.message, confirmButtonColor: '#dc2626' });
+            }
+        }
+
+        // ── Exportar CSV ─────────────────────────────────────────
+        function exportarCSVCobranza() {
+            const search = document.querySelector('#tablaCobranza input[type="search"], #tablaCobranza input[type="text"]');
+            const nombre = search ? encodeURIComponent(search.value.trim()) : '';
+
+            Swal.fire({
+                title: '<i class="fas fa-spinner fa-spin"></i> Generando CSV...',
+                allowOutsideClick: false, showConfirmButton: false, timer: 1500,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const a = document.createElement('a');
+            a.href = `/CobranzaContado/ExportarCSV?nombre=${nombre}`;
+            a.download = '';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+    </script>
+}

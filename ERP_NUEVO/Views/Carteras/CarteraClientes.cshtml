@@ -1,0 +1,1036 @@
+﻿@{
+    ViewBag.Title = "CarteraClientes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    /* ── Métricas ── */
+    .metrics-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .metric-pill {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: var(--shadow);
+        transition: transform 0.18s, box-shadow 0.18s;
+    }
+
+        .metric-pill:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+    .metric-pill-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+        .metric-pill-icon.blue {
+            background: rgba(59,130,246,0.1);
+            color: var(--accent-blue);
+        }
+
+        .metric-pill-icon.green {
+            background: rgba(5,150,105,0.1);
+            color: var(--success-color);
+        }
+
+        .metric-pill-icon.orange {
+            background: rgba(217,119,6,0.1);
+            color: var(--warning-color);
+        }
+
+        .metric-pill-icon.purple {
+            background: rgba(147,51,234,0.1);
+            color: #9333ea;
+        }
+
+    .metric-pill-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .metric-pill-label {
+        font-size: 0.75rem;
+        color: var(--text-light);
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .metric-pill-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1.2;
+    }
+
+    /* ── Charts header ── */
+    .charts-header-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .chart-mini-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: var(--shadow);
+    }
+
+    .chart-mini-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-light);
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .legend-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.7rem;
+        color: var(--text-light);
+    }
+
+    .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+
+    /* ── Content Card ── */
+    .content-card {
+        background: var(--bg-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-light);
+    }
+
+    .limit-text {
+        width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ── Progress bar in table ── */
+    .progress-bar-wrap {
+        width: 80px;
+        height: 5px;
+        background: var(--border-light);
+        border-radius: 3px;
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+    }
+
+    /* ── Modal ── */
+    .modal-subtitle {
+        margin: 0;
+        font-size: 0.875rem;
+        color: var(--text-light);
+        font-weight: 400;
+    }
+
+    .modal-content {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+    }
+
+    .modal-header {
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+    }
+
+    .modal-footer {
+        border-top: 1px solid var(--border-light);
+        background: var(--bg-gray);
+    }
+
+    .btn-close {
+        filter: var(--bs-btn-close-filter, invert(1));
+    }
+
+    [data-theme="dark"] .btn-close {
+        filter: invert(0);
+    }
+
+    /* ── Cartera summary ── */
+    .cartera-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-bottom: 1.25rem;
+    }
+
+    .summary-card {
+        background: var(--bg-gray);
+        border-radius: 8px;
+        padding: 0.9rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--border-light);
+    }
+
+    .summary-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+        .summary-icon.blue {
+            background: rgba(59,130,246,0.1);
+            color: var(--accent-blue);
+        }
+
+        .summary-icon.green {
+            background: rgba(5,150,105,0.1);
+            color: var(--success-color);
+        }
+
+        .summary-icon.orange {
+            background: rgba(217,119,6,0.1);
+            color: var(--warning-color);
+        }
+
+        .summary-icon.purple {
+            background: rgba(147,51,234,0.1);
+            color: #9333ea;
+        }
+
+    .summary-label {
+        font-size: 0.7rem;
+        color: var(--text-light);
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .summary-value {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    /* ── Fact progress chart card ── */
+    .fact-progress-card {
+        background: var(--bg-gray);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin-bottom: 1rem;
+    }
+
+    .fact-progress-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 8px;
+    }
+
+    /* ── Badges ── */
+    .badge-estado {
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-pagado {
+        background: rgba(5,150,105,0.1);
+        color: var(--success-color);
+    }
+
+    .badge-cobrado {
+        background: rgba(5,150,105,0.1);
+        color: var(--success-color);
+    }
+
+    .badge-pendiente {
+        background: rgba(217,119,6,0.1);
+        color: var(--warning-color);
+    }
+
+    .badge-parcial {
+        background: rgba(59,130,246,0.1);
+        color: var(--accent-blue);
+    }
+
+    .tipo-proceso-badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        display: inline-block;
+    }
+
+    .uuid-text {
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+        color: var(--text-light);
+        max-width: 220px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+    }
+
+    /* ── Saldo warning ── */
+    .cartera-table-wrapper {
+        background: var(--bg-light);
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+        padding: 1rem;
+    }
+
+    /* ── SweetAlert tabla ── */
+    .swal-wide {
+        max-width: 1200px !important;
+    }
+
+    .swal-no-padding .swal2-html-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: visible !important;
+    }
+
+    #tablaDetallesPagoSwal {
+        width: 100%;
+        min-height: 400px;
+    }
+
+    .swal2-popup #tablaDetallesPagoSwal .cartera-table-wrapper {
+        background: transparent;
+        border: none;
+        padding: 0;
+    }
+
+    .swal2-html-container {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    @@keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-10px);
+        }
+
+        20%, 40%, 60%, 80% {
+            transform: translateX(10px);
+        }
+    }
+
+    .shake-element {
+        animation-name: shake;
+        animation-duration: 0.5s;
+        animation-iteration-count: infinite;
+    }
+
+    /* ── Responsive ── */
+    @@media (max-width: 768px) {
+        .charts-header-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+
+<!-- Métricas -->
+<div class="metrics-strip">
+    <div class="metric-pill">
+        <div class="metric-pill-icon blue"><i class="fas fa-users"></i></div>
+        <div class="metric-pill-body">
+            <div class="metric-pill-label">Total clientes</div>
+            <div class="metric-pill-value" id="total-clientes">0</div>
+        </div>
+    </div>
+    <div class="metric-pill">
+        <div class="metric-pill-icon green"><i class="fas fa-dollar-sign"></i></div>
+        <div class="metric-pill-body">
+            <div class="metric-pill-label">Saldo por cobrar</div>
+            <div class="metric-pill-value" id="saldo_cobrar">$0.00</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts header -->
+@*<div class="charts-header-grid">
+    <div class="chart-mini-card">
+        <div class="chart-mini-title">Distribución por estado</div>
+        <div style="position:relative;width:100%;height:140px;">
+            <canvas id="donutChart" role="img" aria-label="Distribución de cartera por estado de pago">Cargando datos...</canvas>
+        </div>
+        <div class="legend-row" id="donutLegend"></div>
+    </div>
+    <div class="chart-mini-card">
+        <div class="chart-mini-title">Top clientes — saldo pendiente</div>
+        <div style="position:relative;width:100%;height:140px;">
+            <canvas id="barTopChart" role="img" aria-label="Top 5 clientes con mayor saldo pendiente">Cargando datos...</canvas>
+        </div>
+    </div>
+</div>*@
+
+<!-- Content Card -->
+<div class="content-card">
+    <div id="tablaClientes"></div>
+</div>
+
+<!-- Modal Detalle Cartera -->
+<div class="modal fade" id="modalDetalleCartera" tabindex="-1" aria-labelledby="modalDetalleCarteraLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="modalDetalleCarteraLabel">Detalle de Cartera</h5>
+                    <p class="modal-subtitle" id="clienteNombre"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Resumen -->
+                <div class="cartera-summary">
+                    <div class="summary-card" id="saldoFavorContent">
+                        <div class="summary-icon blue"><i class="fas fa-file-invoice"></i></div>
+                        <div>
+                            <div class="summary-label">Saldo a favor</div>
+                            <div class="summary-value" id="saldoFavor">-</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon green"><i class="fas fa-dollar-sign"></i></div>
+                        <div>
+                            <div class="summary-label">Monto vendido del mes</div>
+                            <div class="summary-value" id="montoTotal">-</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon orange"><i class="fas fa-clock"></i></div>
+                        <div>
+                            <div class="summary-label">Saldo pendiente</div>
+                            <div class="summary-value" id="saldoPendiente" style="color:var(--warning-color);">-</div>
+                        </div>
+                    </div>
+                    <div class="summary-card d-none">
+                        <div class="summary-icon purple"><i class="fas fa-check-circle"></i></div>
+                        <div>
+                            <div class="summary-label">Pagado del mes</div>
+                            <div class="summary-value" id="montoPagado">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de progreso por factura -->
+                @*<div class="fact-progress-card">
+                    <div class="fact-progress-label">Progreso de cobro por factura</div>
+                    <div style="position:relative;width:100%;height:90px;">
+                        <canvas id="factBarChart" role="img" aria-label="Progreso de cobro por factura">Cargando facturas...</canvas>
+                    </div>
+                </div>*@
+
+                <!-- Tabla de movimientos -->
+            <div class="cartera-table-wrapper">
+                @*<button class="btn btn-sm blue-500 mb-3" onclick="saldarCarteras()">
+            <i class="fas fa-check-double me-1"></i>Saldar facturas
+        </button>
+
+        <div class="alert-info mb-3 d-none" id="infoSaldo">
+            <p class="mb-1">
+                <i class="fas fa-info-circle me-2"></i>
+                El saldo a favor es de <b id="saldoFavorInfo"></b>.<br>
+                Solo se saldarán las facturas más antiguas hasta cubrir ese monto.
+            </p>
+        </div>*@
+                @*<div class="copy" data-copy="Xd" title="Xd">Xd</div>*@
+
+                <div id="tablaDetalleCartera"></div>
+            </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+<script>
+    let currentClienteId = null;
+    let currentFacturaId = null;
+    let donutChartInstance = null;
+    let barTopChartInstance = null;
+    let factBarChartInstance = null;
+
+    /* ── helpers de color ── */
+    function isDarkMode() {
+        return document.documentElement.getAttribute('data-theme') === 'dark'
+            || window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    function chartTextColor() { return isDarkMode() ? '#cbd5e1' : '#64748b'; }
+    function chartGridColor() { return isDarkMode() ? 'rgba(71,85,105,0.5)' : 'rgba(226,232,240,0.8)'; }
+
+    /* ── Gráfico de dona (distribución estados) ── */
+    function buildDonutChart(pendiente, pagado, aFavor) {
+        const ctx = document.getElementById('donutChart');
+        if (!ctx) return;
+
+        if (donutChartInstance) donutChartInstance.destroy();
+
+        donutChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pendiente', 'Pagado', 'A favor'],
+                datasets: [{
+                    data: [pendiente, pagado, aFavor],
+                    backgroundColor: ['#d97706', '#059669', '#3b82f6'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.label}: ${Currency.format(ctx.parsed)}`
+                        }
+                    }
+                }
+            }
+        });
+
+        const total = pendiente + pagado + aFavor || 1;
+        const items = [
+            { label: 'Pendiente', color: '#d97706', val: pendiente },
+            { label: 'Pagado', color: '#059669', val: pagado },
+            { label: 'A favor', color: '#3b82f6', val: aFavor },
+        ];
+        const legend = document.getElementById('donutLegend');
+        if (legend) {
+            legend.innerHTML = items.map(i =>
+                `<span class="legend-item">
+                    <span class="legend-dot" style="background:${i.color};"></span>
+                    ${i.label} (${Math.round(i.val / total * 100)}%)
+                </span>`
+            ).join('');
+        }
+    }
+
+    /* ── Gráfico de barras top clientes ── */
+    function buildBarTopChart(clientes) {
+        const ctx = document.getElementById('barTopChart');
+        if (!ctx) return;
+        if (barTopChartInstance) barTopChartInstance.destroy();
+
+        const top5 = [...clientes]
+            .filter(c => c.saldo > 0)
+            .sort((a, b) => b.saldo - a.saldo)
+            .slice(0, 5);
+
+        const labels = top5.map(c => {
+            const name = c.n_cli || '';
+            return name.length > 20 ? name.substring(0, 18) + '…' : name;
+        });
+
+        const maxVal = Math.max(...top5.map(c => c.saldo), 1);
+        const barColors = top5.map(c => {
+            const r = c.saldo / maxVal;
+            return r > 0.7 ? '#d97706' : r > 0.4 ? '#f59e0b' : '#fbbf24';
+        });
+
+        barTopChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data: top5.map(c => c.saldo),
+                    backgroundColor: barColors,
+                    borderRadius: 4,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ' ' + Currency.format(ctx.parsed.x) } }
+                },
+                scales: {
+                    x: {
+                        grid: { color: chartGridColor() },
+                        ticks: {
+                            color: chartTextColor(),
+                            font: { size: 9 },
+                            callback: v => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v)
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: chartTextColor(), font: { size: 9 } }
+                    }
+                }
+            }
+        });
+    }
+
+    /* ── Gráfico de progreso por factura (modal) ── */
+    function buildFactBarChart(rows) {
+        const ctx = document.getElementById('factBarChart');
+        if (!ctx) return;
+        if (factBarChartInstance) factBarChartInstance.destroy();
+
+        const pending = rows.filter(r => r.saldo_pendiente > 0).slice(0, 8);
+        if (!pending.length) return;
+
+        const labels = pending.map(r => {
+            const f = r.folio || '';
+            return f.length > 14 ? f.substring(0, 12) + '…' : f;
+        });
+
+        const cobrado = pending.map(r => r.monto_total - r.saldo_pendiente);
+        const pendientes = pending.map(r => r.saldo_pendiente);
+
+        const barColors = pending.map(r => {
+            const pct = r.monto_total > 0 ? (r.monto_total - r.saldo_pendiente) / r.monto_total : 0;
+            return pct > 0.6 ? '#3b82f6' : pct > 0 ? '#d97706' : '#dc2626';
+        });
+
+        factBarChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Cobrado',
+                        data: cobrado,
+                        backgroundColor: barColors,
+                        borderRadius: 3,
+                        borderSkipped: false,
+                    },
+                    {
+                        label: 'Pendiente',
+                        data: pendientes,
+                        backgroundColor: isDarkMode() ? 'rgba(100,116,139,0.25)' : 'rgba(226,232,240,0.7)',
+                        borderRadius: 3,
+                        borderSkipped: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ' ' + Currency.format(ctx.parsed.y) } }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: { color: chartTextColor(), font: { size: 9 } }
+                    },
+                    y: {
+                        stacked: true,
+                        grid: { color: chartGridColor() },
+                        ticks: {
+                            color: chartTextColor(),
+                            font: { size: 9 },
+                            callback: v => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v)
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /* ── Formatter progreso para tabla principal ── */
+    function progressFormatter(row) {
+        const total = (row.saldo || 0) + (row.total_pagado || 0);
+        const pct = total > 0 ? Math.round(((row.total_pagado || 0) / total) * 100) : 100;
+        const barColor = row.saldo === 0 ? '#059669' : pct > 60 ? '#3b82f6' : '#d97706';
+        const badgeClass = row.saldo === 0 ? 'badge-pagado' : row.saldo_favor > 0 ? 'badge-estado' : 'badge-pendiente';
+        const badgeStyle = row.saldo === 0 ? '' : row.saldo_favor > 0 ? 'background:rgba(59,130,246,0.1);color:var(--accent-blue);' : '';
+        const badgeText = row.saldo === 0 ? 'AL DÍA' : row.saldo_favor > 0 ? 'A FAVOR' : 'PENDIENTE';
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div>
+                    </div>
+                    <span style="font-size:10px;color:var(--text-light);">${pct}%</span>
+                </div>
+                <span class="badge-estado ${badgeClass}" style="${badgeStyle}">${badgeText}</span>`;
+    }
+
+    /* ── Detalle de pagos ── */
+    async function detallesPago(facturaId) {
+        currentFacturaId = facturaId;
+
+        Swal.fire({
+            title: 'Detalles de Pago',
+            html: `<p style="color:#6c757d;font-size:0.875rem;margin-bottom:1rem;">Factura #${facturaId}</p>
+                <div id="tablaDetallesPagoSwal" style="width:100%;"></div>`,
+            width: '90%',
+            showCloseButton: true,
+            showCancelButton: true,
+            cancelButtonText: 'Cerrar',
+            showConfirmButton: false,
+            customClass: { popup: 'swal-wide', htmlContainer: 'swal-no-padding' },
+            didOpen: () => {
+                createTable({
+                    selector: '#tablaDetallesPagoSwal',
+                    path: '/Carteras/GetDetallesCompra',
+                    searchPlaceholder: 'Buscar en detalles...',
+                    columns: [
+                        { title: 'Tipo Proceso', data: 'tipo_proceso', formatter: v => v ? `<span class="tipo-proceso-badge">${v.replace('_', ' ').toUpperCase()}</span>` : '-' },
+                        { title: 'Folio', data: 'folio' },
+                        { title: 'Monto Pagado', data: 'monto_pago', formatter: v => Currency.format(v), className: 'text-end' },
+                        { title: 'Fecha Cobro', data: 'fecha_cobro', formatter: v => dateFormatter(v), className: 'text-end' },
+                        {
+                            title: 'Estado', data: 'estado', className: 'text-center',
+                            formatter: v => `<span class="badge-estado badge-${v}">${v.toUpperCase()}</span>`
+                        }
+                    ],
+                    actions: [
+                        { icon: 'fa-up-right-from-square', color: 'green-500', title: 'Ver Detalle', onClick: row => window.open(`/Contabilidad/ConsultarPolizas?q=${row.folio}`, '_blank') },
+                    ],
+                    data: () => ({ id_factura_padre: currentFacturaId }),
+                });
+            },
+            willClose: () => { currentFacturaId = null; }
+        });
+    }
+
+    /* ── Ver detalle del cliente ── */
+    async function verDetalle(cliente) {
+        document.getElementById('clienteNombre').textContent = cliente.n_cli || 'Cliente';
+        currentClienteId = cliente.id_cliente;
+
+        ['saldoFavor', 'montoTotal', 'saldoPendiente', 'montoPagado'].forEach(id => {
+            document.getElementById(id).textContent = '-';
+        });
+
+        if (factBarChartInstance) { factBarChartInstance.destroy(); factBarChartInstance = null; }
+
+        const tablaCarteras = createTable({
+            selector: '#tablaDetalleCartera',
+            path: '/Carteras/GetCarteraCliente',
+            searchPlaceholder: 'Buscar en cartera...',
+            columns: [
+                { title: 'Tipo Proceso', data: 'tipo_proceso', formatter: v => v ? `<span class="tipo-proceso-badge">${v.replace('_', ' ').toUpperCase()}</span>` : '-' },
+                { title: 'Folio Referencia', data: 'folio' },
+                { title: 'Factura UUID', data: 'factura_folio', formatter: v => v ? `<div class="copy" data-copy="${v}" title="${v}">${v}</div>` : '-' },
+                { title: 'Monto Total', data: 'monto_total', formatter: v => Currency.format(v), className: 'text-end' },
+                {
+                    title: 'Saldo Pendiente', data: 'saldo_pendiente', className: 'text-end',
+                    formatter: v => `<span style="color:${v > 0 ? 'var(--warning-color)' : 'var(--success-color)'};font-weight:600;">${Currency.format(v)}</span>`
+                },
+                {
+                    title: 'Estado', data: 'saldo_pendiente', className: 'text-center',
+                    formatter: v => v === 0
+                        ? '<span class="badge-estado badge-pagado">PAGADO</span>'
+                        : '<span class="badge-estado badge-pendiente">PENDIENTE</span>'
+                },
+                { title: 'Fecha Emision', data: 'fecha_emision', formatter: v => dateFormatter(v) }
+            ],
+            actions: [
+                { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalle', onClick: row => detallesPago(row.factura_original) },
+                { icon: 'fa-up-right-from-square', color: 'green-500', title: 'Ver Poliza', onClick: row => window.open(`/Contabilidad/ConsultarPolizas?q=${row.folio}`, '_blank') },
+            ],
+            RowsEvents: {
+                onRowDblClick: row => detallesPago(row.factura_original),
+                onKeyPress: (event, row) => { if (event.key === 'F4') detallesPago(row.factura_original); }
+            },
+            data: () => ({ clienteId: currentClienteId }),
+            GlobalEvents: {
+                onDataLoaded: (response) => {
+                    document.getElementById('saldoFavor').textContent = Currency.format(response.totales.saldoFavor) || 0;
+                    document.getElementById('montoTotal').textContent = Currency.format(response.totales.totalVendido);
+                    document.getElementById('saldoPendiente').textContent = Currency.format(response.totales.totalPendiente);
+                    document.getElementById('montoPagado').textContent = Currency.format(response.totales.totalVendido - response.totales.totalPendiente);
+
+                    tablaCarteras.meta = { saldoFavor: response.totales.saldoFavor };
+
+                    // Construir gráfico de barras por factura
+                    if (response.data && response.data.length) {
+                        buildFactBarChart(response.data);
+                    }
+
+                    document.querySelectorAll('.copy').forEach(div => {
+                        const button = document.createElement('button');
+                        button.className = 'copy-btn';
+                        button.innerHTML = '<i class="fa-light fa-copy"></i>';
+
+                        button.addEventListener('click', async () => {
+                            const text = div.dataset.copy;
+
+                            try {
+                                await navigator.clipboard.writeText(text);
+                                button.innerHTML = '<i class="fa-solid fa-check-double"></i>';
+
+                                setTimeout(() => {
+                                    button.innerHTML = '<i class="fa-light fa-copy"></i>';
+                                }, 1500);
+
+                            } catch (err) {
+                                console.error('No se pudo copiar:', err);
+                            }
+                        });
+
+                        div.appendChild(button);
+                    });
+                },
+                onLoading: isLoading => {
+                    document.querySelector('#tablaDetalleCartera').classList.toggle('opacity-50', isLoading);
+                },
+            },
+            // rowKey: 'factura_original',
+            // selectable: {
+            //     enabled: true,
+            //     rowKey: 'factura_original',
+            //     condition: row => row.saldo_pendiente > 0,
+            //     map: row => ({ CarteraIds: row.factura_original, saldo: row.saldo_pendiente }),
+            //     onChange: rows => {
+            //         const saldoFavor = tablaCarteras.meta?.saldoFavor ?? 0;
+            //         let total = 0;
+            //         rows.map(x => total += x.saldo_pendiente);
+            //         document.getElementById('tablaDetalleCartera-selected').innerText = `Saldo total a saldar: ${Currency.format(total)}`;
+            //         document.getElementById('saldoFavorContent').classList.remove('fa-bounce');
+            //         document.getElementById('infoSaldo').classList.add('d-none');
+
+            //         if (total > saldoFavor) {
+            //             document.getElementById('saldoFavorContent').classList.add('fa-bounce');
+            //             document.getElementById('infoSaldo').classList.remove('d-none');
+            //             document.getElementById('saldoFavorInfo').innerText = Currency.format(saldoFavor);
+            //         }
+            //     }
+            // }
+        });
+
+        window.tablaCarteras = tablaCarteras;
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalleCartera'));
+        modal.show();
+    }
+
+    /* ── Saldar carteras ── */
+    function saldarCarteras() {
+        const factSeleccion = tablaCarteras.getSelectedRows();
+        const total = factSeleccion.reduce((acc, f) => acc + f.saldo, 0);
+        const saldoFavor = tablaCarteras.meta?.saldoFavor ?? 0;
+        const ids = factSeleccion.map(x => x.CarteraIds);
+
+        if (factSeleccion.length === 0) {
+            _Swal.fire({ icon: 'warning', title: 'No hay facturas seleccionadas', text: 'Selecciona al menos una factura para poder saldar.', showCancelButton: false });
+            return;
+        }
+
+        if (saldoFavor <= 0) {
+            _Swal.fire({ icon: 'warning', title: 'No hay saldo a favor', text: 'Para saldar facturas es necesario que el cliente tenga saldo a favor.', showCancelButton: false });
+            return;
+        }
+
+        const warningIcon = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:auto;">
+            <style>.flip{animation:spinY 2s linear infinite;transform-origin:center;}@@keyframes spinY{0%{transform:rotateY(0deg);}100%{transform:rotateY(360deg);}}</style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g></svg>`;
+
+        let html = `<p>¿Está seguro que desea <b>saldar las facturas seleccionadas</b> de este cliente?<br>Esta acción reducirá el saldo pendiente.</p>`;
+        html += total > saldoFavor
+            ? `<p>El saldo a favor es de <b>${Currency.format(saldoFavor)}</b>.<br>Solo se saldarán las facturas más antiguas hasta cubrir ese monto.</p>`
+            : `<p>Se van a saldar <b>${factSeleccion.length}</b> facturas por un total de <b>${Currency.format(total)}</b>.</p>`;
+
+        _Swal.fire({
+            iconHtml: warningIcon,
+            title: "Saldar Facturas",
+            html,
+            footer: "<b style='color:red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+            customClass: { icon: "p-0 bg-transparent border-0 shadow-none" },
+            preConfirm: () => {
+                Swal.fire({
+                    title: 'Actualizando cartera por favor espere...',
+                    allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                GetData({
+                    path: "/Carteras/SaldarFacturas",
+                    data: { CarteraIds: ids, ClienteId: currentClienteId },
+                    swalType: 'modal', swalResponse: true, swalPath: "/Carteras/CarteraClientes"
+                });
+            }
+        });
+    }
+
+    /* ── Limpiar modal al cerrar ── */
+    document.getElementById('modalDetalleCartera').addEventListener('hidden.bs.modal', function () {
+        currentClienteId = null;
+        document.getElementById('saldoFavorContent').classList.remove('fa-bounce');
+        document.getElementById('infoSaldo').classList.add('d-none');
+        if (factBarChartInstance) { factBarChartInstance.destroy(); factBarChartInstance = null; }
+    });
+
+    /* ── Agregar abono ── */
+    async function agregarAbono(e) {
+        const bancos = await GetData({ path: '/Carteras/GetCuentasBancos' });
+        const opcionesBancos = bancos.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('');
+
+        _Swal.fire({
+            title: 'Nuevo abono',
+            html: `<div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
+                <label>Banco</label>
+                <select id="banco" class="form-control"><option value="">Seleccione un banco...</option>${opcionesBancos}</select>
+                <label>Monto</label>
+                <input id="monto" type="number" step="0.01" class="form-control" placeholder="Monto">
+                <label>Referencia</label>
+                <input id="referencia" class="form-control" placeholder="Referencia">
+                <label>Comprobante de pago <span style="color:red;">*</span></label>
+                <input id="comprobante" type="file" class="form-control" accept="image/*,application/pdf">
+                <small style="color:#666;">Formatos aceptados: JPG, PNG, PDF (máx. 5MB)</small>
+                <label>Observaciones</label>
+                <textarea id="observaciones" class="form-control" placeholder="Observaciones"></textarea>
+            </div>`,
+            willOpen: () => { Swal.getPopup().removeAttribute('aria-hidden'); },
+            focusConfirm: false, showCancelButton: true, confirmButtonText: 'Guardar',
+            allowEscapeKey: false, allowOutsideClick: false,
+            preConfirm: () => {
+                const banco = document.getElementById('banco').value;
+                const monto = document.getElementById('monto').value;
+                const referencia = document.getElementById('referencia').value;
+                const observaciones = document.getElementById('observaciones').value;
+                const archivo = document.getElementById('comprobante').files[0];
+
+                if (!banco) { Swal.showValidationMessage('Selecciona un banco, no seas salvaje'); return false; }
+                if (!monto || monto <= 0) { Swal.showValidationMessage('Ese monto está bien sospechoso'); return false; }
+                if (!archivo) { Swal.showValidationMessage('¡Órale! El comprobante es obligatorio'); return false; }
+                if (archivo.size > 5 * 1024 * 1024) { Swal.showValidationMessage('El archivo pesa más que un elefante. Máximo 5MB'); return false; }
+
+                Swal.fire({
+                    title: 'Actualizando cartera por favor espere...',
+                    allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                GetData({
+                    path: '/Carteras/GenerarAbono',
+                    data: { banco, monto, referencia, observaciones, cliente: e.id_cliente, clave: e.cve_cli, comprobante: archivo },
+                    swalResponse: true, swalPath: '/Carteras/CarteraClientes', swalType: 'modal'
+                });
+            }
+        });
+    }
+
+    /* ── Init tabla principal ── */
+    document.addEventListener("DOMContentLoaded", async () => {
+        let allClientesData = [];
+
+        const tablaClientes = createTable({
+            selector: '#tablaClientes',
+            path: '/Carteras/GetClientes',
+            searchPlaceholder: 'Buscar cliente...',
+            columns: [
+                { title: 'Código', data: 'cve_cli' },
+                { title: 'Nombre', data: 'n_cli', formatter: v => `<p class="limit-text" title="${v}">${v}</p>` },
+                { title: 'RFC', data: 'rfc' },
+                { title: 'Cuenta', data: 'codigo' },
+                {
+                    title: 'Saldo pendiente', data: 'saldo',
+                    formatter: v => `<span style="font-weight:600;color:${v > 0 ? 'var(--warning-color)' : 'var(--success-color)'};">${Currency.format(v)}</span>`
+                },
+                { title: 'Saldo a favor', data: 'saldo_favor', formatter: v => v > 0 ? `<span style="color:var(--accent-blue);font-weight:600;">${Currency.format(v)}</span>` : '-' },
+                {
+                    title: 'Estado cobro',
+                    data: null,
+                    formatter: (_, row) => progressFormatter(row)
+                },
+            ],
+            actions: [
+                { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalle', onClick: row => verDetalle(row) },
+                { icon: 'fa-light fa-abacus', color: 'sky-600', title: 'Agregar Abono', onClick: row => agregarAbono(row) }
+            ],
+            RowsEvents: {
+                onRowDblClick: row => verDetalle(row),
+                onKeyPress: (event, row) => { if (event.key === 'F4') verDetalle(row); }
+            },
+            GlobalEvents: {
+                onDataLoaded: (response) => {
+                    document.getElementById('total-clientes').textContent = response.total;
+                    document.getElementById('saldo_cobrar').textContent = Currency.format(response.saldoCobrar);
+
+                    // Guardar datos para gráficos
+                    allClientesData = response.data || [];
+
+                    // Calcular totales para dona
+                    const totalPendiente = allClientesData.reduce((a, c) => a + (c.saldo || 0), 0);
+                    const totalPagado = allClientesData.reduce((a, c) => a + (c.total_pagado || 0), 0);
+                    const totalFavor = allClientesData.reduce((a, c) => a + (c.saldo_favor || 0), 0);
+
+                    buildDonutChart(totalPendiente, totalPagado, totalFavor);
+                    buildBarTopChart(allClientesData);
+                },
+                onLoading: isLoading => {
+                    document.querySelector('#tablaClientes').classList.toggle('opacity-50', isLoading);
+                },
+                onError: err => { alert('Error al cargar los datos: ' + err.message); }
+            },
+        });
+
+        window.tablaClientes = tablaClientes;
+    });
+</script>

@@ -1,0 +1,970 @@
+﻿@model BOS_ERP.Models.Factura
+@using System.Data
+@using System.Linq
+
+@{
+    Layout = null;
+
+    // Tproductos holds the GROSS unit price and amount plus the per-line discount %,
+    // and the Foreign Trade complement is stamped on the gross amount as well.
+    // The net/gross ratio per product is accumulated here so the PDF can show the
+    // values with the discount already applied.
+    var ceBrutoPorProducto = new Dictionary<string, double>();
+    var ceNetoPorProducto = new Dictionary<string, double>();
+    double ceBrutoTotal = 0.0;
+    double ceNetoTotal = 0.0;
+
+    if (Model.Tproductos != null)
+    {
+        bool hayColDescuento = Model.Tproductos.Columns.Contains("descuento");
+
+        foreach (System.Data.DataRow filaDesc in Model.Tproductos.Rows)
+        {
+            double cantFila = Convert.ToDouble(filaDesc["cantidad"]);
+            double puFila = Convert.ToDouble(filaDesc["precioUnit"]);
+            double pctFila = hayColDescuento && filaDesc["descuento"] != DBNull.Value
+                ? Convert.ToDouble(filaDesc["descuento"])
+                : 0.0;
+
+            double brutoFila = cantFila * puFila;
+            double netoFila = brutoFila - Math.Round(brutoFila * pctFila / 100, 2);
+            string claveFila = filaDesc["numero"]?.ToString() ?? "";
+
+            ceBrutoPorProducto.TryGetValue(claveFila, out double acumBruto);
+            ceBrutoPorProducto[claveFila] = acumBruto + brutoFila;
+
+            ceNetoPorProducto.TryGetValue(claveFila, out double acumNeto);
+            ceNetoPorProducto[claveFila] = acumNeto + netoFila;
+
+            ceBrutoTotal += brutoFila;
+            ceNetoTotal += netoFila;
+        }
+    }
+
+    double factorDescuentoGlobal = ceBrutoTotal > 0 ? ceNetoTotal / ceBrutoTotal : 1.0;
+
+    // Discount ratio of a single product (by identification number). Products missing
+    // from Tproductos fall back to the invoice-wide ratio.
+    Func<string, double> factorDescuento = clave =>
+    {
+        if (!string.IsNullOrEmpty(clave)
+            && ceBrutoPorProducto.TryGetValue(clave, out double brutoProd)
+            && brutoProd > 0)
+        {
+            return ceNetoPorProducto[clave] / brutoProd;
+        }
+
+        return factorDescuentoGlobal;
+    };
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Invoice @Model.UUID</title>
+    <style>
+        @@page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        thead {
+            display: table-header-group;
+            background-color: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            line-height: 1.3; /* bajar de 1.6 a 1.3 */
+            letter-spacing: 0.3px;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            color: #d32f2f;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th {
+            background-color: #1976d2;
+            color: white;
+            padding: 6px 8px; /* antes era 6px 8px */
+            text-align: left;
+            font-size: 10px;
+            letter-spacing: 0.4px;
+        }
+
+        td {
+            padding: 4px 8px; /* antes era 4px 8px - más espacio vertical */
+            vertical-align: top;
+        }
+
+        .section-title {
+            font-size: 13px;
+            color: #d32f2f;
+            margin-top: 15px; /* antes era 15px */
+            margin-bottom: 8px; /* antes era 8px */
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px; /* antes era 3px */
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .productos th, .productos td {
+            border: 1px solid #bbb;
+            font-size: 10px;
+            padding: 5px 6px;
+            line-height: 1.3; /* bajar de 1.5 a 1.3 */
+        }
+
+        .productos tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+
+        .productos td.descripcion {
+            font-weight: 500;
+        }
+
+        .productos td.numero {
+            text-align: center;
+            width: 8%;
+        }
+
+        .productos td.cantidad,
+        .productos td.precio,
+        .productos td.importe {
+            text-align: right;
+        }
+
+        .totales {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 12px;
+        }
+
+            .totales span {
+                font-weight: bold;
+                color: #1976d2;
+            }
+
+        .sello {
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            background-color: #f9f9f9;
+            border: 1px dashed #aaa;
+            padding: 6px;
+            margin-bottom: 8px;
+        }
+
+        .qr {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+            .qr img {
+                width: 150px;
+                height: 150px;
+            }
+
+        .info-box {
+            border: 1px solid #ccc;
+            padding: 6px;
+            margin-top: 3px;
+            background-color: #fafafa;
+            line-height: 1.3; /* bajar de 1.8 a 1.3 */
+        }
+
+            .info-box strong {
+                color: #333;
+            }
+
+        .productos thead {
+            margin-top: 15px;
+        }
+
+        .productos {
+            page-break-inside: auto;
+        }
+
+            .productos thead {
+                display: table-header-group;
+            }
+
+            .productos tfoot {
+                display: table-footer-group;
+            }
+
+            .productos tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+        .observaciones-box {
+            background-color: #fff8e1;
+            border-left: 3px solid #ffc107;
+            padding: 6px;
+            margin: 12px 0;
+            font-size: 10px;
+        }
+
+        .totales-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+            .totales-table td {
+                vertical-align: top;
+            }
+
+        .total-letra {
+            width: 60%;
+            padding-right: 20px;
+            font-size: 11px;
+        }
+
+        .total-numeros {
+            width: 40%;
+        }
+
+            .total-numeros table {
+                width: 100%;
+                border: 1px solid #ccc;
+                background-color: #fafafa;
+            }
+
+            .total-numeros td {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .total-numeros .final-row {
+                border-top: 2px solid #1976d2;
+                background-color: #e3f2fd;
+            }
+
+                .total-numeros .final-row td {
+                    font-weight: bold;
+                    color: #d32f2f;
+                    font-size: 13px;
+                }
+
+        .flete-row {
+            background-color: #e8f5e9 !important;
+            font-style: italic;
+        }
+
+        .header-empresa {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1976d2;
+        }
+
+            .header-empresa h1 {
+                margin: 0;
+                font-size: 18px;
+                color: #1976d2;
+            }
+
+            .header-empresa p {
+                margin: 3px 0;
+                font-size: 10px;
+                color: #666;
+            }
+
+        .comercio-exterior-box {
+            background: #ffffff;
+            border: 3px solid #1976d2;
+            border-radius: 6px;
+            padding: 0;
+            margin: 20px 0;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        .comercio-exterior-title {
+            font-size: 14px;
+            color: #0d47a1;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            margin: 0;
+            padding: 12px 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 4px solid #1976d2;
+            border-top: 2px solid #1976d2;
+        }
+
+        .ce-datos-generales {
+            padding: 15px;
+            background-color: #fafafa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+            .ce-datos-generales table {
+                width: 100%;
+                font-size: 10px;
+                border-collapse: collapse;
+            }
+
+            .ce-datos-generales tr {
+                background-color: white;
+            }
+
+            .ce-datos-generales td {
+                padding: 8px 10px;
+                border: 1px solid #e0e0e0;
+            }
+
+                .ce-datos-generales td:nth-child(odd) {
+                    background-color: #e3f2fd;
+                    font-weight: 700;
+                    color: #0d47a1;
+                    width: 25%;
+                }
+
+                .ce-datos-generales td:nth-child(even) {
+                    width: 25%;
+                    color: #1a1a1a;
+                }
+
+            .ce-datos-generales strong {
+                color: #0d47a1;
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                display: block;
+            }
+
+        .ce-subsection {
+            margin: 0;
+            padding: 15px;
+            background-color: #fafafa;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .ce-subsection-title {
+            font-weight: bold;
+            color: #0d47a1;
+            background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
+            margin: -15px -15px 15px -15px;
+            padding: 10px 15px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-left: 5px solid #1976d2;
+            border-bottom: 2px solid #1976d2;
+        }
+
+        .ce-subsection table {
+            width: 100%;
+            font-size: 10px;
+            border-collapse: collapse;
+            background-color: white;
+        }
+
+        .ce-subsection tr {
+            background-color: white;
+        }
+
+        .ce-subsection td {
+            padding: 8px 10px;
+            border: 1px solid #e0e0e0;
+            color: #1a1a1a;
+        }
+
+            .ce-subsection td:nth-child(odd) {
+                background-color: #e3f2fd;
+                font-weight: 700;
+                color: #0d47a1;
+                width: 20%;
+            }
+
+            .ce-subsection td:nth-child(even) {
+                width: 30%;
+            }
+
+        .ce-subsection strong {
+            color: #0d47a1;
+            font-size: 9px;
+            text-transform: uppercase;
+            display: block;
+        }
+
+        .ce-subsection .productos {
+            margin-top: 10px;
+            border: 2px solid #1976d2;
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+            .ce-subsection .productos thead {
+                background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            }
+
+            .ce-subsection .productos th {
+                background: #0d47a1;
+                color: #ffffff;
+                padding: 8px 10px;
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                font-weight: bold;
+                border: none;
+            }
+
+            .ce-subsection .productos tbody tr {
+                background-color: white;
+            }
+
+                .ce-subsection .productos tbody tr:nth-child(even) {
+                    background-color: #f5f5f5;
+                }
+
+            .ce-subsection .productos td {
+                font-size: 9px;
+                padding: 7px 10px;
+                border: 1px solid #e0e0e0;
+                border-left: none;
+                border-right: none;
+                color: #1a1a1a;
+            }
+
+        .ce-valor-destacado {
+            color: #0d47a1;
+            font-weight: bold;
+            font-size: 10px;
+            background-color: #e3f2fd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border-left: 3px solid #1976d2;
+            display: inline-block;
+        }
+
+        .ce-badge-moneda {
+            display: inline-block;
+            background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+            color: #0aa5ff;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 4px;
+            box-shadow: 0 1px 3px rgba(67, 160, 71, 0.3);
+        }
+
+        .ce-info-box {
+            background-color: #fff8e1;
+            border-left: 5px solid #ffa726;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-size: 10px;
+            color: #1a1a1a;
+        }
+
+            .ce-info-box strong {
+                color: #e65100;
+            }
+
+        @@media print {
+            .comercio-exterior-box {
+                page-break-inside: avoid;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .ce-subsection {
+                page-break-inside: avoid;
+            }
+
+            .comercio-exterior-title {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .ce-subsection-title {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .ce-subsection .productos th {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- VOUCHER DATA -->
+    <div class="section-title">Importer Data</div>
+    <table>
+        <tr>
+            <td style="width: 18%;"><strong>Issue Date:</strong></td>
+            <td style="width: 32%;">@DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")</td>
+            <td style="width: 18%;"><strong>Type:</strong></td>
+            <td style="width: 32%;">@Model.TipoDeComprobante</td>
+        </tr>
+        <tr>
+            <td><strong>Payment:</strong></td>
+            <td>@Model.IdTipoPago -- @Model.formaPagoTexto</td>
+            <td><strong>Method o Payment:</strong></td>
+            <td>@Model.metodoPagoTexto -- @Model.MdpFactura</td>
+        </tr>
+        <tr>
+            <td><strong>Currency:</strong></td>
+            <td>@Model.Moneda</td>
+            <td><strong>Exchange Rate:</strong></td>
+            <td>@Model.TipoCambio</td>
+        </tr>
+    </table>
+
+    <!-- RECEIVER -->
+    <div class="section-title">Receiver</div>
+    <div class="info-box">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 18%;"><strong>RFC:</strong></td>
+                <td style="width: 32%;">@Model.RfcCliente</td>
+                <td style="width: 18%;"><strong>Tax Regime:</strong></td>
+                <td style="width: 32%;">@Model.Regc</td>
+            </tr>
+            <tr>
+                <td><strong>Registred Name:</strong></td>
+                <td colspan="3">@Model.RsoCliente</td>
+            </tr>
+            <tr>
+                <td><strong>Tax Adress:</strong></td>
+                <td>@Model.CpR</td>
+                <td><strong>Using CFDI:</strong></td>
+                <td>@Model.IdUsoCFDI -- @Model.CFDIText</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- LINE ITEMS -->
+    <div class="section-title">Line Items</div>
+    <table class="productos">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 10%;">ID.</th>
+                <th style="width: 38%;">Description</th>
+                <th style="width: 38%;">Client Code</th>
+                <th style="width: 10%;">Qty</th>
+                <th style="width: 10%;">Unit</th>
+                <th style="width: 14%;">Unit Price</th>
+                <th style="width: 18%;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (System.Data.DataRow row in Model.Tproductos.Rows)
+            {
+                <tr>
+                    <td class="numero">@row["numero"]</td>
+                    <td class="descripcion">
+                        <strong>@row["descripcion"]</strong>
+                        <br><small style="color: #888;">Prod/Serv Key: @row["claveProdServ"] | Unit Key: @row["claveUnidad"] | Tax Object: @row["objetoImp"]</small>
+                    </td>
+                    <td class="descripcion">@row["clave_cliente"]</td>
+                    @{
+                        double descPct = row.Table.Columns.Contains("descuento")
+                            ? Convert.ToDouble(row["descuento"]) : 0.0;
+                        double cantidad = Convert.ToDouble(row["cantidad"]);
+                        double precioUnit = Convert.ToDouble(row["precioUnit"]);
+                        double importeBruto = cantidad * precioUnit;
+                        double importeNeto = importeBruto - Math.Round(importeBruto * descPct / 100, 2);
+                        // Unit price already carries the line discount; the discount itself
+                        // is only broken down in the totals block.
+                        double precioUnitNeto = precioUnit * (1 - descPct / 100);
+                    }
+
+                    <td class="cantidad">@string.Format("{0:N2}", row["cantidad"])</td>
+                    <td class="numero">@row["unidad"]</td>
+                    <td class="precio">@string.Format("{0:C2}", precioUnitNeto)</td>
+                    <td class="importe">@string.Format("{0:C2}", importeNeto)</td>
+                </tr>
+            }
+
+            @* Freight if applicable *@
+            @if (Model.Flete > 0)
+            {
+                <tr class="flete-row">
+                    <td class="numero">FREIGHT</td>
+                    <td class="descripcion">
+                        <strong>Freight Service</strong>
+                        <br><small style="color: #888;">Prod/Serv Key: 78101800 | Unit Key: E48 | Tax Object: 02</small>
+                    </td>
+                    <td class="descripcion"></td>
+                    <td class="cantidad">1.00</td>
+                    <td class="numero">Service</td>
+                    <td class="precio">@string.Format("{0:C2}", Model.Flete)</td>
+                    <td class="importe">@string.Format("{0:C2}", Model.Flete)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- FOREIGN TRADE COMPLEMENT -->
+    @if (Model.ComercioExterior != null)
+    {
+        var ce = Model.ComercioExterior;
+        <div class="comercio-exterior-box">
+            <div class="comercio-exterior-title">Foreign Trade Complement v@(ce.Version ?? "2.0")</div>
+
+            <!-- GENERAL DATA -->
+            <div class="ce-datos-generales">
+                <table>
+                    @{
+                        var camposGenerales = new List<(string Label, string Valor)>();
+
+                        if (!string.IsNullOrEmpty(ce.MotivoTraslado))
+                        { camposGenerales.Add(("Transfer Reason", ce.MotivoTraslado)); }
+
+                        if (!string.IsNullOrEmpty(ce.ClaveDePedimento))
+                        { camposGenerales.Add(("Customs Declaration", ce.ClaveDePedimento)); }
+
+                        if (!string.IsNullOrEmpty(ce.Incoterm))
+                        { camposGenerales.Add(("Incoterm", ce.Incoterm)); }
+
+                        if (!string.IsNullOrEmpty(ce.CertificadoOrigen))
+                        { camposGenerales.Add(("Certificate of Origin", ce.CertificadoOrigen + (!string.IsNullOrEmpty(ce.NumCertificadoOrigen) ? $" - {ce.NumCertificadoOrigen}" : ""))); }
+
+                        if (!string.IsNullOrEmpty(ce.NumeroExportadorConfiable))
+                        { camposGenerales.Add(("Authorized Exporter", ce.NumeroExportadorConfiable)); }
+
+                        if (ce.TipoCambioUSD > 0)
+                        { camposGenerales.Add(("USD Exchange Rate", ce.TipoCambioUSD.ToString("N4"))); }
+
+                        for (int i = 0; i < camposGenerales.Count; i += 2)
+                        {
+                            <tr>
+                                <td style="width: 25%;"><strong>@camposGenerales[i].Label</strong></td>
+                                <td style="width: 25%;">@camposGenerales[i].Valor</td>
+
+                                @if (i + 1 < camposGenerales.Count)
+                                {
+                                    <td style="width: 25%;"><strong>@camposGenerales[i + 1].Label</strong></td>
+                                    <td style="width: 25%;">@camposGenerales[i + 1].Valor</td>
+                                }
+                                else
+                                {
+                                    <td colspan="2" style="border: none; background: transparent;"></td>
+                                }
+                            </tr>
+                        }
+
+                        // USD totals row. The complement is stamped on the GROSS amount,
+                        // so both are shown: the complement total and that same total with
+                        // the discount already applied.
+                        if (ce.TipoCambioUSD > 0)
+                        {
+                            decimal totalUsdConDescuento = Math.Round(
+                                ce.TotalUSD * (decimal)factorDescuentoGlobal,
+                                2, MidpointRounding.AwayFromZero);
+
+                            <tr style="background: linear-gradient(to right, #e8f5e9 0%, #c8e6c9 100%) !important;">
+                                <td><strong>Total USD</strong></td>
+                                <td>
+                                    <span class="ce-valor-destacado">$@ce.TotalUSD.ToString("N2")</span>
+                                    <span class="ce-badge-moneda">USD</span>
+                                </td>
+                                <td><strong>Total USD with Discount</strong></td>
+                                <td>
+                                    <span class="ce-valor-destacado">$@totalUsdConDescuento.ToString("N2")</span>
+                                    <span class="ce-badge-moneda">USD</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </table>
+            </div>
+
+            <!-- CUSTOMER / IMPORTER -->
+            @if (ce.DomicilioEmisor != null)
+            {
+                var domE = ce.DomicilioEmisor;
+                var camposDomEmisor = new List<(string Label, string Valor)>();
+
+                if (!string.IsNullOrEmpty(domE.Calle)) { camposDomEmisor.Add(("Street", domE.Calle)); }
+                if (!string.IsNullOrEmpty(domE.NumeroExterior)) { camposDomEmisor.Add(("Number", domE.NumeroExterior)); }
+                if (!string.IsNullOrEmpty(domE.Colonia)) { camposDomEmisor.Add(("Colony", domE.Colonia)); }
+                if (!string.IsNullOrEmpty(domE.CodigoPostal)) { camposDomEmisor.Add(("ZIP Code", domE.CodigoPostal)); }
+                if (!string.IsNullOrEmpty(domE.Localidad)) { camposDomEmisor.Add(("City", domE.Localidad)); }
+                if (!string.IsNullOrEmpty(domE.Municipio)) { camposDomEmisor.Add(("Town", domE.Municipio)); }
+                if (!string.IsNullOrEmpty(domE.Estado)) { camposDomEmisor.Add(("State", domE.Estado)); }
+                if (!string.IsNullOrEmpty(domE.Pais)) { camposDomEmisor.Add(("Country", domE.Pais)); }
+
+                if (camposDomEmisor.Any())
+                {
+                    <div class="ce-subsection">
+                        <div class="ce-subsection-title">Customer / Importer</div>
+                        <table>
+                            @for (int i = 0; i < camposDomEmisor.Count; i += 2)
+                            {
+                                <tr>
+                                    <td style="width: 20%;"><strong>@camposDomEmisor[i].Label</strong></td>
+                                    <td style="width: 30%;">@camposDomEmisor[i].Valor</td>
+
+                                    @if (i + 1 < camposDomEmisor.Count)
+                                    {
+                                        <td style="width: 20%;"><strong>@camposDomEmisor[i + 1].Label</strong></td>
+                                        <td style="width: 30%;">@camposDomEmisor[i + 1].Valor</td>
+                                    }
+                                    else
+                                    {
+                                        <td colspan="2" style="border: none; background: transparent;"></td>
+                                    }
+                                </tr>
+                            }
+                        </table>
+                    </div>
+                }
+            }
+
+            <!-- CUSTOMER -->
+            @if (!string.IsNullOrEmpty(ce.NumRegIdTrib) || ce.DomicilioDestinatario != null)
+            {
+                var hayDatosDestinatario = false;
+                var camposDomDestinatario = new List<(string Label, string Valor)>();
+
+                if (ce.DomicilioDestinatario != null)
+                {
+                    var domD = ce.DomicilioDestinatario;
+
+                    if (!string.IsNullOrEmpty(domD.Calle)) { camposDomDestinatario.Add(("Street", domD.Calle)); }
+                    if (!string.IsNullOrEmpty(domD.NumeroExterior)) { camposDomDestinatario.Add(("Number", domD.NumeroExterior)); }
+                    if (!string.IsNullOrEmpty(domD.Colonia)) { camposDomDestinatario.Add(("Colony", domD.Colonia)); }
+                    if (!string.IsNullOrEmpty(domD.CodigoPostal)) { camposDomDestinatario.Add(("ZIP Code", domD.CodigoPostal)); }
+                    if (!string.IsNullOrEmpty(domD.Localidad)) { camposDomDestinatario.Add(("City", domD.Localidad)); }
+                    if (!string.IsNullOrEmpty(domD.Municipio)) { camposDomDestinatario.Add(("Town", domD.Municipio)); }
+                    if (!string.IsNullOrEmpty(domD.Estado)) { camposDomDestinatario.Add(("State", domD.Estado)); }
+                    if (!string.IsNullOrEmpty(domD.Pais)) { camposDomDestinatario.Add(("Country", domD.Pais)); }
+
+                    hayDatosDestinatario = camposDomDestinatario.Any();
+                }
+
+                if (!string.IsNullOrEmpty(ce.NumRegIdTrib) || hayDatosDestinatario)
+                {
+                    <div class="ce-subsection">
+                        <div class="ce-subsection-title">Customer</div>
+
+                        @if (!string.IsNullOrEmpty(ce.NumRegIdTrib))
+                        {
+                            <div class="ce-info-box">
+                                <strong>Tax Registration ID:</strong> @ce.NumRegIdTrib
+                            </div>
+                        }
+
+                        @if (hayDatosDestinatario)
+                        {
+                            <table>
+                                @for (int i = 0; i < camposDomDestinatario.Count; i += 2)
+                                {
+                                    <tr>
+                                        <td style="width: 20%;"><strong>@camposDomDestinatario[i].Label</strong></td>
+                                        <td style="width: 30%;">@camposDomDestinatario[i].Valor</td>
+
+                                        @if (i + 1 < camposDomDestinatario.Count)
+                                        {
+                                            <td style="width: 20%;"><strong>@camposDomDestinatario[i + 1].Label</strong></td>
+                                            <td style="width: 30%;">@camposDomDestinatario[i + 1].Valor</td>
+                                        }
+                                        else
+                                        {
+                                            <td colspan="2" style="border: none; background: transparent;"></td>
+                                        }
+                                    </tr>
+                                }
+                            </table>
+                        }
+                    </div>
+                }
+            }
+
+            <!-- GOODS DETAIL -->
+            @if (ce.Mercancias != null && ce.Mercancias.Any())
+            {
+                <div class="ce-subsection">
+                    <div class="ce-subsection-title">Goods Detail</div>
+                    <table class="productos">
+                        <thead>
+                            <tr>
+                                <th style="width: 12%;">ID.</th>
+                                <th style="width: 14%;">Tariff Code</th>
+                                <th style="width: 10%;">Quantity</th>
+                                <th style="width: 10%;">Unit</th>
+                                <th style="width: 14%;">Unit Value</th>
+                                <th style="width: 14%;">USD Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var merc in ce.Mercancias)
+                            {
+                                // ValorUnitarioAduana comes in gross; it is netted so it lines
+                                // up with the line USD Value, which already has the discount.
+                                decimal valorUnitConDesc = Math.Round(
+                                    merc.ValorUnitarioAduana * (decimal)factorDescuento(merc.NoIdentificacion),
+                                    2, MidpointRounding.AwayFromZero);
+
+                                <tr>
+                                    <td class="numero">@merc.NoIdentificacion</td>
+                                    <td class="numero">@merc.FraccionArancelaria</td>
+                                    <td class="cantidad">@merc.CantidadAduana.ToString("N2")</td>
+                                    <td class="numero">@merc.UnidadAduana</td>
+                                    <td class="precio">$@valorUnitConDesc.ToString("N2")</td>
+                                    <td class="importe">
+                                        <span class="ce-valor-destacado">$@merc.ValorDolares.ToString("N2")</span>
+                                        <span class="ce-badge-moneda">USD</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- RELATED CFDIs (APPLIED ADVANCES) -->
+    @if (Model.TAnticipos != null && Model.TAnticipos.Rows.Count > 0)
+    {
+        <div class="section-title">Related CFDIs (Applied Advances)</div>
+        <table class="productos">
+            <thead>
+                <tr>
+                    <th>CFDI UUID</th>
+                    <th>Application Date</th>
+                    <th>Balance Before</th>
+                    <th>Applied Amount</th>
+                    <th>Balance After</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (System.Data.DataRow row in Model.TAnticipos.Rows)
+                {
+                    <tr style="background-color:#f0f8ff;">
+                        <td>@row["uuid"]</td>
+                        <td>@Convert.ToDateTime(row["fecha"]).ToString("MM/dd/yyyy HH:mm")</td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", row["saldo_antes"])</td>
+                        <td style="text-align:right; color:#2e7d32; font-weight:bold;">@string.Format("{0:C2}", row["monto_aplicado"])</td>
+                        <td style="text-align:right;">@string.Format("{0:C2}", row["saldo_despues"])</td>
+                    </tr>
+                }
+
+                <tr style="background-color:#e3f2fd; font-weight:bold;">
+                    <td colspan="3" style="text-align:right;">TOTAL APPLIED ADVANCES:</td>
+                    <td colspan="2" style="text-align:right; color:#d32f2f;">
+                        @string.Format("{0:C2}", Model.TAnticipos.AsEnumerable().Sum(r => Convert.ToDecimal(r["monto_aplicado"])))
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    }
+
+    <!-- REMARKS -->
+    @if (!string.IsNullOrEmpty(Model.Observaciones))
+    {
+        <div class="observaciones-box">
+            <strong>Remarks:</strong> @Model.Observaciones
+        </div>
+    }
+
+    @{
+        decimal totalAnticipos = 0;
+        if (Model.TAnticipos != null && Model.TAnticipos.Rows.Count > 0)
+        {
+            totalAnticipos = Model.TAnticipos.AsEnumerable().Sum(r => Convert.ToDecimal(r["monto_aplicado"]));
+        }
+
+        // Number to words in English
+        string totalEnLetras = BOS_ERP.Helpers.InvoiceTranslations.NumberToWordsEN(Model.Total);
+        string textoEN = char.ToUpper(totalEnLetras[0]) + totalEnLetras.Substring(1);
+    }
+
+    <!-- TOTALS -->
+    <table class="totales-table" style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+        <tr>
+            <td style="width: 60%; vertical-align: top; padding-right: 20px;">
+                <strong>Amount in Words:</strong><br>
+                @(totalAnticipos > 0 ? textoEN + " (before advances)" : textoEN) @Model.Moneda
+            </td>
+
+            <td style="width: 40%; vertical-align: top;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    @if (totalAnticipos > 0)
+                    {
+                        <tr>
+                            <td style="text-align: right; color: #2e7d32;"><strong>Advances Applied:</strong></td>
+                            <td style="text-align: right; color: #2e7d32;">@(totalAnticipos)</td>
+                        </tr>
+                        <tr style="border-top: 2px solid #000; font-size: 1.1em;">
+                            <td style="text-align: right;"><strong>TOTAL:</strong></td>
+                            <td style="text-align: right;"><strong>@Model.Moneda @string.Format("{0:C2}", Model.Total)</strong></td>
+                        </tr>
+                    }
+                    else
+                    {
+                        <tr style="border-top: 2px solid #000; font-size: 1.1em;">
+                            <td style="text-align: right;"><strong>TOTAL:</strong></td>
+                            <td style="text-align: right;"><strong>@Model.Moneda @string.Format("{0:C2}", Model.Total)</strong></td>
+                        </tr>
+                    }
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- DIGITAL SEALS & ORIGINAL CHAIN -->
+    <div class="section-title" style="margin-top: 25px;">Digital Seals &amp; Original Chain</div>
+    <table>
+        <tr>
+            <td style="width: 75%; vertical-align: top;">
+                <p style="margin: 5px 0 3px 0;"><strong>SAT Certificate Serial No.:</strong></p>
+                <div class="sello">@Model.NoCertificadoSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Issuer CSD Serial No.:</strong></p>
+                <div class="sello">@Model.NoCertificado</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>CFDI Seal:</strong></p>
+                <div class="sello">@Model.SelloCFDI</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>SAT Seal:</strong></p>
+                <div class="sello">@Model.SelloSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Original Chain:</strong></p>
+                <div class="sello">@Model.CadenaOriginal</div>
+            </td>
+
+            @if (!string.IsNullOrEmpty(Model.RutaQr))
+            {
+                <td style="width: 25%; text-align: center; vertical-align: top; padding-left: 10px;">
+                    <strong style="display: block; margin-bottom: 8px;">QR Code</strong>
+                    <img src="@Url.Content(Model.RutaQr)" alt="QR CFDI" style="width: 150px; height: 150px; border: 1px solid #ccc; padding: 5px; background: white;" />
+                    <br><small style="color: #666;">SAT Verification</small>
+                </td>
+            }
+        </tr>
+    </table>
+
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 25px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 10px; color: #666;">
+        <strong>This document is a printed representation of a CFDI</strong><br>
+        Generated on @DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")
+    </div>
+
+</body>
+</html>

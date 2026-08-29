@@ -1,0 +1,643 @@
+﻿@using BOS_ERP.Controllers
+@model BOS_ERP.Models.FolioInfoGroup
+@{
+    ViewBag.Title = "Zonas";
+    ViewBag.PageTitle = "Facturacion Especial";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section styles {
+    <style>
+        .purchase-mode-toggle {
+            background: linear-gradient(135deg, var(--very-light-blue), var(--light-blue));
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-light);
+        }
+
+        .modern-switch {
+            width: 60px;
+            height: 24px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+            .modern-switch:checked {
+                background-color: var(--primary-blue);
+                border-color: var(--primary-blue);
+            }
+
+        .form-switch .form-check-input {
+            width: 3em;
+        }
+
+        .switch-label {
+            font-weight: 500;
+            color: var(--text-dark);
+            cursor: pointer;
+        }
+
+        .switch-icon {
+            font-size: 1.2rem;
+            margin-right: 0.5rem;
+        }
+
+        .product-card {
+            background: var(--bg-light);
+            border: 2px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .product-card:hover {
+                border-color: var(--primary-blue);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-lg);
+            }
+
+            .product-card.selected {
+                border-color: var(--primary-blue);
+                background: var(--light-blue);
+            }
+
+            .product-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, var(--primary-blue), var(--accent-blue), var(--secondary-blue));
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .product-card.selected::before {
+                opacity: 1;
+            }
+
+            .product-card.selected .product-icon {
+                color: var(--primary-blue-dark);
+            }
+
+        .product-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .product-card-corner {
+            background: var(--bg-light);
+            border: 2px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .product-card-corner:hover {
+                border-color: var(--primary-blue);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-lg);
+            }
+
+            .product-card-corner::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, var(--primary-blue), var(--accent-blue), var(--secondary-blue));
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .product-card-corner:hover::before {
+                opacity: 1;
+            }
+
+        .corner-icon {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--very-light-blue);
+            border-radius: 50%;
+            padding: 0.50rem;
+            transition: all 0.3s ease;
+        }
+
+            .corner-icon svg {
+                fill: var(--primary-blue);
+                transition: all 0.3s ease;
+            }
+
+        .product-card-corner:hover .corner-icon {
+            background: var(--primary-blue);
+            transform: scale(1.1);
+        }
+
+            .product-card-corner:hover .corner-icon svg {
+                fill: white;
+            }
+
+        .product-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .product-features {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+
+            .feature-item i {
+                color: var(--primary-blue);
+                margin-right: 0.5rem;
+                width: 16px;
+            }
+
+        .btn-check {
+            position: absolute;
+            clip: rect(0, 0, 0, 0);
+            pointer-events: none;
+        }
+
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #dc3545;
+        }
+
+        .form-actions {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        @@media (max-width: 768px) {
+            .form-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+
+            .product-card {
+                padding: 1rem;
+            }
+        }
+
+        .info-panel {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+            .info-panel .info-title {
+                color: #92400e;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .info-panel .info-text {
+                color: #92400e;
+                margin: 0;
+                font-size: 0.9rem;
+            }
+
+        .card-resumen {
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow);
+            padding: 1.25rem 1.5rem;
+            transition: background 0.3s ease;
+        }
+
+            .card-resumen h6 {
+                color: var(--text-light);
+                font-size: 0.85rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .card-resumen p {
+                color: var(--text-dark);
+                font-size: 1rem;
+            }
+
+        .badge-tag {
+            background-color: var(--light-blue);
+            color: var(--primary-blue);
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .table-resumen {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+            .table-resumen th {
+                background-color: var(--very-light-blue);
+                color: var(--dark-blue);
+                text-align: left;
+                padding: 0.6rem;
+                border-bottom: 1px solid var(--border-light);
+            }
+
+            .table-resumen td {
+                padding: 0.6rem;
+                color: var(--text-dark);
+                border-bottom: 1px solid var(--border-light);
+            }
+
+            .table-resumen tbody tr:nth-child(even) {
+                background-color: var(--bg-gray);
+            }
+
+        .alert-info-resumen {
+            background-color: var(--light-blue);
+            color: var(--dark-blue);
+            border: 1px solid var(--accent-blue);
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            box-shadow: var(--shadow);
+        }
+    </style>
+
+}
+
+<link href="~/lib/smartwizard/dist/css/smart_wizard_all.min.css" rel="stylesheet" />
+<link href="~/content/Facturacion/facturacion-especial.css" rel="stylesheet" />
+<link href="~/content/Site.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<!-- SmartWizard html -->
+<div id="smartwizard">
+    <ul class="nav nav-progress">
+        <li class="nav-item">
+            <a class="nav-link" style="background:transparent;" href="#step-1">
+                <div class="num">1</div>
+                Tipo de facturación
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" style="background:transparent;" href="#step-2">
+                <span class="num">2</span>
+                Configuración de facturación
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content" style="overflow:auto; height: auto !important;">
+        <div id="step-1" class="tab-pane" style="overflow:auto; height:auto !important;" role="tabpanel" aria-labelledby="step-1">
+            <form id="form-1" novalidate>
+                @Html.AntiForgeryToken()
+                <!-- Form Header -->
+                <div class="form-header">
+                    <h4>Selecciona el tipo de facturación especial que se va a procesar</h4>
+                    <p>Elige la opción que mejor describa el tipo de facturación que necesitas configurar</p>
+                </div>
+
+                <!-- Product Options -->
+                <fieldset class="row g-3" aria-required="true">
+                    <legend class="visually-hidden">Tipo de facturación</legend>
+
+                    @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "factura_arrendamiento"))
+                        {
+
+                            <div class="col-sm-12 col-md-6">
+                                <!-- Facturación Predial -->
+                                <div class="product-card" data-option="predial">
+                                    <div class="corner-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24">
+                                            <path d="M19 9.3V4h-3v2.6L12 3L2 12h3v8h6v-6h2v6h6v-8h3l-3-2.7zM17 18h-2v-6H9v6H7v-7.81l5-4.5l5 4.5V18z" />
+                                            <path d="M10 10h4v1h-4z" />
+                                            <path d="M10 12h4v1h-4z" />
+                                        </svg>
+                                    </div>
+                                    <input type="radio" value="predialV" class="btn-check proceso" name="proceso" id="predial" autocomplete="off" required>
+                                    <label for="predial" class="w-100 h-100 d-block">
+                                        <div class="product-title">
+                                            Facturación Predial
+                                        </div>
+                                        <div class="product-description">
+                                            Facturación especializada para servicios relacionados con propiedades inmobiliarias y predios urbanos.
+                                        </div>
+                                        <div class="product-features">
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Cálculo de impuesto predial</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Gestión de catastro</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Reportes especializados</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    }
+                    @*{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "facturacion_especial_internacional"))
+                        {
+                            <div class="col-sm-12 col-md-6">
+                                <!-- Venta Internacional -->
+                                <div class="product-card" data-option="venta-internacional">
+                                    <div class="corner-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm7.93 9h-3.43c-.15-2.51-1-4.79-2.22-6.5 3.02 1.02 5.19 3.72 5.65 6.5zM12 4.07c1.32 1.61 2.23 3.97 2.39 6.93H9.61c.16-2.96 1.07-5.32 2.39-6.93zM4.07 13h3.43c.15 2.51 1 4.79 2.22 6.5-3.02-1.02-5.19-3.72-5.65-6.5zm3.43-2H4.07c.46-2.78 2.63-5.48 5.65-6.5C8.5 6.21 7.65 8.49 7.5 11zm4.5 8.93c-1.32-1.61-2.23-3.97-2.39-6.93h4.78c-.16 2.96-1.07 5.32-2.39 6.93zM13.5 13h3.43c-.46 2.78-2.63 5.48-5.65 6.5 1.22-1.71 2.07-3.99 2.22-6.5z" />
+                                        </svg>
+                                    </div>
+
+                                    <input type="radio" value="ventaInternacionalV" class="btn-check proceso"
+                                           name="proceso" id="venta-internacional" autocomplete="off" required>
+
+                                    <label for="venta-internacional" class="w-100 h-100 d-block">
+                                        <div class="product-title">Venta Internacional</div>
+
+                                        <div class="product-description">
+                                            Procesos de facturación y control de exportaciones para ventas internacionales.
+                                        </div>
+
+                                        <div class="product-features">
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Gestión de exportaciones</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Documentación aduanal</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Control de pedimentos y cargas</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                        }
+                    }*@
+                    <!--<div class="col-sm-12 col-md-6">-->
+                    <!-- Facturación de Licencias y Permisos -->
+                    <!--<div class="product-card" data-option="licencias">
+                            <div class="corner-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                                    <path d="M14 2v6h6" />
+                                    <path d="M16 13a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2z" />
+                                    <circle cx="12" cy="12" r="1" />
+                                </svg>
+                            </div>
+                            <input type="radio" value="licenciasV" class="btn-check proceso" name="proceso" id="licencias" autocomplete="off" required>
+                            <label for="licencias" class="w-100 h-100 d-block">
+                                <div class="product-title">Facturación de Licencias y Permisos</div>
+                                <div class="product-description">
+                                    Facturación para licencias de construcción, funcionamiento y otros permisos municipales.
+                                </div>
+                                <div class="product-features">
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Gestión de expedientes</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Seguimiento de trámites</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Control de vencimientos</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-12 col-md-6">-->
+                    <!-- Facturación de Multas y Sanciones -->
+                    <!--<div class="product-card" data-option="multas">
+                            <div class="corner-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM13 17h-2v-6h2v6zm0-8h-2V7h2v2z" />
+                                </svg>
+                            </div>
+                            <input type="radio" value="multasV" class="btn-check proceso" name="proceso" id="multas" autocomplete="off" required>
+                            <label for="multas" class="w-100 h-100 d-block">
+                                <div class="product-title">Facturación de Multas y Sanciones</div>
+                                <div class="product-description">
+                                    Facturación para multas de tránsito, infracciones administrativas y otras sanciones.
+                                </div>
+                                <div class="product-features">
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Registro de infracciones</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Cálculo de recargos</span>
+                                    </div>
+                                    <div class="feature-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>Planes de pago</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>-->
+                </fieldset>
+            </form>
+        </div>
+        <div id="step-2" class="tab-pane" style="overflow:auto; height:auto !important;" role="tabpanel" aria-labelledby="step-2">
+            <form id="form-2" novalidate>
+
+                @if (Utilities.DoesUserHasRight(User.Identity.Name, "factura_arrendamiento"))
+                {
+                    <!-- Facturación predial -->
+                    <div id="predial-contenedor" class="d-none">
+                        @Html.Partial("MetodosFacturacion/_Predial", Model.ParcialB)
+                    </div>
+                }
+                @if (Utilities.DoesUserHasRight(User.Identity.Name, "facturacion_especial_internacional"))
+                {
+                    <!-- Facturación servicios públicos -->
+                    <div id="venta-internacional-contenedor" class="d-none">
+                        @Html.Partial("MetodosFacturacion/_FacturaInternacional", Model.ParcialC)
+                    </div>
+                }
+                <!-- Facturación licencias -->
+                <div id="licencias-contenedor" class="d-none">
+                    @*@Html.Partial("MetodosFacturacion/_Licencias")*@
+                </div>
+
+                <!-- Facturación multas -->
+                <div id="multas-contenedor" class="d-none">
+                    @*@Html.Partial("MetodosFacturacion/_Multas")*@
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="progress">
+        <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+</div>
+@section scripts {
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script src="~/Scripts/General/general.js"></script>
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="~/Scripts/Facturas/manejo-respuestas.js"></script>
+    <script src="~/lib/smartwizard/dist/js/jquery.smartWizard.min.js"></script>
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/Credito_Cobranza/Facturacion_Especial/partial-vin-cotizacion.js"></script>
+    <script src="~/Scripts/Credito_Cobranza/Facturacion_Especial/partial-vin-factura.js"></script>
+    <script>
+        const rol = "@Utilities.GetUserRole(User.Identity.Name, "ERP_SRS")";
+    </script>
+    <script>
+        $('#smartwizard').smartWizard({
+            selected: 0,
+            theme: 'basic',
+            justified: true,
+            autoAdjustHeight: true,
+            backButtonSupport: true,
+            enableUrlHash: true,
+            enableFormValidation: true,
+            transition: {
+                animation: 'slideHorizontal',
+                speed: '400',
+            },
+            toolbar: {
+                position: 'both',
+                showNextButton: true,
+                showPreviousButton: true,
+            },
+            anchor: {
+                enableNavigation: true,
+                enableNavigationAlways: false,
+                enableDoneState: true,
+                markPreviousStepsAsDone: true,
+                unDoneOnBackNavigation: false,
+                enableDoneStateNavigation: true
+            },
+            lang: {
+                next: 'Siguiente',
+                previous: 'Anterior'
+            }
+        });
+
+        // Validación manual con clases
+        $("#smartwizard").on("leaveStep", function (e, anchorObject, currentStepIdx, nextStepIdx, stepDirection) {
+            document.querySelector('.tab-content').style.removeProperty('height')
+            if (stepDirection === 'forward') {
+                const form = document.getElementById('form-' + (currentStepIdx + 1));
+                const navItem = document.querySelector(`.nav-link[href="#step-${currentStepIdx + 1}"]`);
+
+                const tabla = document.getElementById('tabla-facturas');
+                const tipoSeleccionado = document.querySelector('input[name="proceso"]:checked');
+                const dataOption = tipoSeleccionado ? tipoSeleccionado.closest('.product-card')?.dataset.option : null;
+
+                if (form && !form.checkValidity()) {
+                    form.classList.add('was-validated');
+                    // Marca el paso como inválido visualmente
+                    navItem?.classList.add('error');
+
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Debes seleccionar el tipo de facturación especial.'
+                    })
+
+                    return false;
+                }
+
+                // Quita el estilo de error si ya es válido
+                if ((currentStepIdx + 1) === 2) {
+                    var validate = validarDatos();
+                    if (!validate) {
+                        navItem?.classList.add('error');
+                        return false;
+                    }
+
+                    navItem?.classList.remove('error');
+                }
+
+                navItem?.classList.remove('error');
+            }
+        });
+
+        $('#smartwizard').smartWizard("reset");
+
+        document.querySelectorAll('input[name="proceso"]').forEach(radio => {
+            radio.addEventListener('click', (e) => {
+
+                // Quitar selección visual previa
+                document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+                e.target.closest('.product-card').classList.add('selected');
+
+                // Ocultar todos los contenedores
+                const contenedores = [
+                    "predial-contenedor",
+                    "venta-internacional-contenedor",
+                    "licencias-contenedor",
+                    "multas-contenedor"
+                ];
+
+                contenedores.forEach(id => document.getElementById(id)?.classList.add('d-none'));
+
+                // Determinar cuál mostrar
+                const value = e.target.value; // ej: "ventaInternacionalV"
+
+                const mapa = {
+                    predialV: "predial-contenedor",
+                    ventaInternacionalV: "venta-internacional-contenedor",
+                    licenciasV: "licencias-contenedor",
+                    multasV: "multas-contenedor"
+                };
+
+                const contenedorId = mapa[value];
+                if (contenedorId) {
+                    document.getElementById(contenedorId)?.classList.remove('d-none');
+                }
+            });
+        });
+
+    </script>
+}

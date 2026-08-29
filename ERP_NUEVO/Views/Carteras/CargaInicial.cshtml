@@ -1,0 +1,953 @@
+﻿@{
+    ViewBag.Title = "Carga Inicial de Cartera Proveedores";
+    ViewBag.PageTitle = "Carga Inicial de Cartera Proveedores";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .table-container {
+        background: var(--bg-light);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+    }
+
+    .filter-section {
+        background: var(--bg-gray);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-primary-custom {
+        background-color: var(--primary-blue);
+        border: none;
+        color: white;
+        transition: background-color 0.2s;
+    }
+
+        .btn-primary-custom:hover {
+            background-color: var(--primary-blue-dark);
+        }
+
+    .btn-success-custom {
+        background-color: #28a745;
+        border: none;
+        color: white;
+    }
+
+        .btn-success-custom:hover {
+            background-color: #218838;
+        }
+
+    .summary-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .client-summary-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid #fff;
+    }
+
+    .badge-exists {
+        background-color: #dc3545;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .badge-new {
+        background-color: #28a745;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .badge-factura {
+        background-color: #007bff;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .badge-otro {
+        background-color: #6c757d;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .row-exists {
+        background-color: #f8d7da !important;
+        opacity: 0.7;
+    }
+
+    .row-new {
+        background-color: #d4edda !important;
+    }
+
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary-blue);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-light);
+    }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+    .action-buttons {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-gray);
+        padding: 1rem;
+        border-top: 2px solid #e9ecef;
+        box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+    }
+
+    .ts-wrapper {
+        width: 100% !important;
+    }
+
+    .stats-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: white;
+        border-radius: 6px;
+        margin-right: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats-label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        display: block;
+    }
+
+    .stats-value {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #495057;
+    }
+
+    .form-check-custom {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: var(--accent-blue);
+        border-radius: 6px;
+        border: 2px solid #007bff;
+        transition: all 0.2s;
+    }
+
+        .form-check-custom:hover {
+            background: var(--very-light-blue);
+        }
+
+        .form-check-custom input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 0.75rem;
+            cursor: pointer;
+        }
+
+        .form-check-custom label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+        }
+
+    .info-icon {
+        margin-left: 0.5rem;
+        color: #6c757d;
+        cursor: help;
+    }
+
+    /* Estilos para la descripción del documento */
+    .descripcion-documento {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        display: none;
+        animation: slideIn 0.3s ease-out;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+        .descripcion-documento.show {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .descripcion-documento .icon {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        .descripcion-documento .content {
+            flex: 1;
+        }
+
+        .descripcion-documento .label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .descripcion-documento .text {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .descripcion-documento.error {
+            background: linear-gradient(135deg, #ffa751 0%, #ffe259 100%);
+        }
+
+        .descripcion-documento .close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+            .descripcion-documento .close-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Spinner pequeño para carga de descripción */
+    .mini-loader {
+        display: inline-block;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 0.8s linear infinite;
+        margin-left: 0.5rem;
+    }
+</style>
+
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+
+<div class="table-container">
+    <div class="container-fluid p-4">
+        <h5 class="mb-2">Carga de Carteras desde Kepler</h5>
+        <p class="text-muted mb-4">
+            Consulta registros desde la base de datos de Kepler y cárgalos a la cartera de proveedores
+        </p>
+
+        <!-- Filtros -->
+        <div class="filter-section">
+            <h6 class="mb-3">Filtros de Búsqueda</h6>
+
+            <!-- Checkbox tipo de documento -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-check-custom">
+                        <input type="checkbox"
+                               id="checkEsFactura"
+                               class="form-check-input"
+                               checked
+                               onchange="toggleTipoDocumento()">
+                        <label for="checkEsFactura" class="form-check-label">
+                            <i class="fas fa-file-invoice"></i>
+                            Consultar Facturas (con UUID)
+                            <i class="fas fa-info-circle info-icon"
+                               title="Si está marcado, consulta facturas timbradas. Si está desmarcado, consulta otros documentos."></i>
+                        </label>
+                    </div>
+                    <small class="text-muted ms-4 mt-1 d-block" id="tipoDocumentoInfo">
+                        Se consultarán <strong>facturas con UUID</strong> de la tabla kdfe33m1
+                    </small>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="selectGenero" class="form-label">Género *</label>
+                    <select id="selectGenero" class="form-select" required onchange="validarYBuscarDescripcion()">
+                        <option value="">Seleccione un género...</option>
+                        <option value="U">Género U</option>
+                        <option value="X">Género X</option>
+                        <option value="N">Género N</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="selectNaturaleza" class="form-label">Naturaleza *</label>
+                    <select id="selectNaturaleza" class="form-select" required onchange="validarYBuscarDescripcion()">
+                        <option value="">Seleccione una naturaleza...</option>
+                        <option value="D">Naturaleza D</option>
+                        <option value="A">Naturaleza A</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="inputGrupo" class="form-label">Grupo *</label>
+                    <input type="text"
+                           id="inputGrupo"
+                           class="form-control"
+                           placeholder="Ingrese el grupo"
+                           required
+                           onchange="validarYBuscarDescripcion()"
+                           onkeyup="validarYBuscarDescripcion()">
+                </div>
+
+                <div class="col-md-3">
+                    <label for="inputTipo" class="form-label">Tipo *</label>
+                    <input type="text"
+                           id="inputTipo"
+                           class="form-control"
+                           placeholder="Ingrese el tipo"
+                           required
+                           onchange="validarYBuscarDescripcion()"
+                           onkeyup="validarYBuscarDescripcion()">
+                </div>
+            </div>
+
+            <!-- Descripción del documento -->
+            <div id="descripcionDocumento" class="descripcion-documento">
+                <div class="icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="content">
+                    <div class="label">Tipo de Documento</div>
+                    <div class="text" id="descripcionTexto">-</div>
+                </div>
+                <button class="close-btn" onclick="ocultarDescripcion()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                    <label for="selectClientes" class="form-label">Proveedores *</label>
+                    <select id="selectClientes" multiple placeholder="Seleccione uno o más proveedores..."></select>
+                </div>
+                <div class="col-md-3">
+                    <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                    <input type="date" id="fechaInicio" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label for="fechaFin" class="form-label">Fecha Fin</label>
+                    <input type="date" id="fechaFin" class="form-control" />
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button type="button" class="btn btn-primary-custom" onclick="consultarRegistros()">
+                        <i class="fas fa-search"></i> Buscar Registros
+                    </button>
+                    <button type="button" class="btn btn-secondary ms-2" onclick="limpiarFiltros()">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div id="summarySection" class="summary-card" style="display: none;">
+            <h6 class="mb-3">Resumen de Consulta</h6>
+            <div class="row mb-3">
+                <div class="col-auto">
+                    <div class="stats-badge">
+                        <span class="stats-label">Total Registros</span>
+                        <span class="stats-value" id="totalRegistros">0</span>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="stats-badge">
+                        <span class="stats-label">Nuevos</span>
+                        <span class="stats-value text-success" id="totalNuevos">0</span>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="stats-badge">
+                        <span class="stats-label">Ya Existentes</span>
+                        <span class="stats-value text-danger" id="totalExistentes">0</span>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="stats-badge">
+                        <span class="stats-label">Proveedores</span>
+                        <span class="stats-value" id="totalClientes">0</span>
+                    </div>
+                </div>
+            </div>
+            <div id="clienteSummary"></div>
+        </div>
+
+        <!-- Loader -->
+        <div id="loaderState" class="text-center py-5" style="display: none;">
+            <div class="loader"></div>
+            <p class="text-muted">Consultando registros...</p>
+        </div>
+
+        <!-- Estado vacío -->
+        <div id="emptyState" class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+            </svg>
+            <p>No hay datos para mostrar</p>
+            <p class="small">Aplique filtros y haga clic en "Buscar Registros"</p>
+        </div>
+
+        <!-- Tabla -->
+        <div id="tableWrapper" class="table-responsive" style="display: none;">
+            <table class="table table-hover modern-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" />
+                        </th>
+                        <th>Estado</th>
+                        <th>Tipo</th>
+                        <th>Cliente</th>
+                        <th>Folio</th>
+                        <th>Fecha</th>
+                        <th>UUID</th>
+                        <th>Subtotal</th>
+                        <th>Descuento</th>
+                        <th>Total</th>
+                        <th>Forma Pago</th>
+                        <th>Método Pago</th>
+                        <th>Plazo</th>
+                        <th>RFC Receptor</th>
+                        <th>Razón Receptor</th>
+                        <th>Folio Kepler</th>
+                        <th>Estatus</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Botones de acción -->
+        <div id="actionButtons" class="action-buttons" style="display: none;">
+            <div class="row">
+                <div class="col-md-6">
+                    <span id="selectionInfo" class="text-muted">
+                        <strong>0</strong> registro(s) seleccionado(s)
+                    </span>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="button" class="btn btn-success-custom" onclick="guardarSeleccionados()">
+                        <i class="fas fa-save"></i> Guardar Seleccionados
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="seleccionarSoloNuevos()">
+                        <i class="fas fa-filter"></i> Seleccionar Solo Nuevos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+
+<script>
+    let clientesSelect;
+    let dataTable = null;
+    let registrosActuales = [];
+    let timeoutDescripcion = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        // Inicializar selector de clientes
+        clientesSelect = new TomSelect("#selectClientes", {
+            maxItems: null,
+            plugins: ['remove_button'],
+            placeholder: 'Seleccione uno o más proveedores...',
+            valueField: 'codigo',
+            labelField: 'displayText',
+            searchField: ['codigo', 'nombre'],
+            render: {
+                option: function (data, escape) {
+                    return `<div>
+                        <strong>${escape(data.codigo)}</strong> - ${escape(data.nombre)}
+                        <br><small class="text-muted">Plazo: ${escape(data.plazo)} días</small>
+                    </div>`;
+                },
+                item: function (data, escape) {
+                    return `<div>${escape(data.codigo)}</div>`;
+                }
+            }
+        });
+
+        // Cargar clientes
+        await cargarClientes();
+
+        // Establecer fechas por defecto
+        const fechaFin = new Date();
+        const fechaInicio = new Date();
+        fechaInicio.setMonth(fechaInicio.getMonth() - 3);
+
+        document.getElementById('fechaInicio').valueAsDate = fechaInicio;
+        document.getElementById('fechaFin').valueAsDate = fechaFin;
+    });
+
+    function toggleTipoDocumento() {
+        const checkbox = document.getElementById('checkEsFactura');
+        const infoText = document.getElementById('tipoDocumentoInfo');
+
+        if (checkbox.checked) {
+            infoText.innerHTML = 'Se consultarán <strong>facturas con UUID</strong> de la tabla kdfe33m1';
+        } else {
+            infoText.innerHTML = 'Se consultarán <strong>otros documentos</strong> de la tabla kdm1';
+        }
+    }
+
+    // Validar y buscar descripción con debounce
+    function validarYBuscarDescripcion() {
+        // Cancelar timeout anterior si existe
+        if (timeoutDescripcion) {
+            clearTimeout(timeoutDescripcion);
+        }
+
+        // Esperar 500ms después de que el usuario deje de escribir
+        timeoutDescripcion = setTimeout(() => {
+            const genero = document.getElementById('selectGenero').value;
+            const naturaleza = document.getElementById('selectNaturaleza').value;
+            const grupo = document.getElementById('inputGrupo').value;
+            const tipo = document.getElementById('inputTipo').value;
+
+            // Verificar que todos los campos estén completos
+            if (genero && naturaleza && grupo && tipo) {
+                buscarDescripcionDocumento(genero, naturaleza, grupo, tipo);
+            } else {
+                ocultarDescripcion();
+            }
+        }, 500);
+    }
+
+    async function buscarDescripcionDocumento(genero, naturaleza, grupo, tipo) {
+        const descripcionDiv = document.getElementById('descripcionDocumento');
+        const descripcionTexto = document.getElementById('descripcionTexto');
+
+        // Mostrar loader
+        descripcionDiv.classList.remove('error');
+        descripcionDiv.classList.add('show');
+        descripcionTexto.innerHTML = 'Cargando... <span class="mini-loader"></span>';
+
+        try {
+            const response = await GetData({
+                path: '/Carteras/ObtenerDescripcionDocumentoProveedores',
+                data: {
+                    genero: genero,
+                    naturaleza: naturaleza,
+                    grupo: grupo,
+                    tipo: tipo
+                }
+            });
+
+            if (response.success && response.descripcion) {
+                descripcionTexto.textContent = response.descripcion;
+                descripcionDiv.classList.remove('error');
+            } else {
+                descripcionTexto.textContent = response.descripcion || 'No se encontró configuración para esta combinación';
+                descripcionDiv.classList.add('error');
+            }
+        } catch (error) {
+            console.error('Error al buscar descripción:', error);
+            descripcionTexto.textContent = 'Error al obtener la descripción';
+            descripcionDiv.classList.add('error');
+        }
+    }
+
+    function ocultarDescripcion() {
+        const descripcionDiv = document.getElementById('descripcionDocumento');
+        descripcionDiv.classList.remove('show');
+    }
+
+    async function cargarClientes() {
+        try {
+            const response = await GetData({
+                path: '/Carteras/ObtenerProveedores'
+            });
+
+            if (response.success && response.clientes) {
+                clientesSelect.clearOptions();
+                clientesSelect.addOptions(response.clientes);
+                clientesSelect.refreshOptions(false);
+            }
+        } catch (error) {
+            console.error('Error cargando clientes:', error);
+            _Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron cargar los clientes'
+            });
+        }
+    }
+
+    async function consultarRegistros() {
+        // Validar campos requeridos
+        document.getElementById('selectAll').checked = false;
+        const genero = document.getElementById('selectGenero').value;
+        const naturaleza = document.getElementById('selectNaturaleza').value;
+        const grupo = document.getElementById('inputGrupo').value;
+        const tipo = document.getElementById('inputTipo').value;
+        const clientes = clientesSelect.getValue();
+        const esFactura = document.getElementById('checkEsFactura').checked;
+
+        if (!genero || !naturaleza || !grupo || !tipo) {
+            _Swal.fire({
+                icon: 'warning',
+                title: 'Campos requeridos',
+                text: 'Debe completar Género, Naturaleza, Grupo y Tipo'
+            });
+            return;
+        }
+
+        if (!clientes || clientes.length === 0) {
+            _Swal.fire({
+                icon: 'warning',
+                title: 'Advertencia',
+                text: 'Debe seleccionar al menos un cliente'
+            });
+            return;
+        }
+
+        const fechaInicio = document.getElementById('fechaInicio').value;
+        const fechaFin = document.getElementById('fechaFin').value;
+
+        // Mostrar loader
+        document.getElementById('loaderState').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('tableWrapper').style.display = 'none';
+        document.getElementById('summarySection').style.display = 'none';
+        document.getElementById('actionButtons').style.display = 'none';
+
+        try {
+            const response = await GetData({
+                path: '/Carteras/ConsultarRegistrosProveedoresKepler',
+                data: {
+                    genero: genero,
+                    naturaleza: naturaleza,
+                    grupo: grupo,
+                    tipo: tipo,
+                    clientes: clientes,
+                    fechaInicio: fechaInicio,
+                    fechaFin: fechaFin,
+                    esFactura: esFactura
+                }
+            });
+
+            document.getElementById('loaderState').style.display = 'none';
+
+            if (response.icon === 'success') {
+                registrosActuales = response.registros;
+                renderizarTabla(response.registros);
+                renderizarResumen(response.resumen);
+                document.getElementById('summarySection').style.display = 'block';
+                document.getElementById('tableWrapper').style.display = 'block';
+                document.getElementById('actionButtons').style.display = 'block';
+            } else {
+                _Swal.fire(response);
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        } catch (error) {
+            document.getElementById('loaderState').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+            _Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Error al consultar registros'
+            });
+        }
+    }
+
+    function renderizarTabla(registros) {
+        const tableBody = document.getElementById('tableBody');
+
+        // IMPORTANTE: Destruir DataTable ANTES de limpiar el tbody
+        if (dataTable !== null) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+
+        // Ahora sí limpiar el tbody
+        tableBody.innerHTML = '';
+
+        let totalNuevos = 0;
+        let totalExistentes = 0;
+
+        registros.forEach(registro => {
+            if (registro.YaExiste) {
+                totalExistentes++;
+            } else {
+                totalNuevos++;
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = registro.YaExiste ? 'row-exists' : 'row-new';
+            tr.dataset.idKepler = registro.IdKepler;
+            tr.dataset.yaExiste = registro.YaExiste;
+
+            const estadoBadge = registro.YaExiste
+                ? '<span class="badge-exists">YA EXISTE</span>'
+                : '<span class="badge-new">NUEVO</span>';
+
+            const tipoBadge = registro.TipoRegistro === 'factura'
+                ? '<span class="badge-factura"><i class="fas fa-file-invoice"></i> Factura</span>'
+                : '<span class="badge-otro"><i class="fas fa-file-alt"></i> Otro Doc</span>';
+
+            const checkbox = registro.YaExiste
+                ? '<input type="checkbox" disabled />'
+                : `<input type="checkbox" class="row-checkbox" value="${registro.IdKepler}" onchange="actualizarContador()" />`;
+
+            const uuidDisplay = registro.Uuid
+                ? `<small>${registro.Uuid.substring(0, 13)}...</small>`
+                : '<small class="text-muted">Sin UUID</small>';
+
+            tr.innerHTML = `
+            <td>${checkbox}</td>
+            <td>${estadoBadge}</td>
+            <td>${tipoBadge}</td>
+            <td>${registro.Usuario || '-'}</td>
+            <td>${registro.Folio || '-'}</td>
+            <td>${dateFormatter(registro.FechaCaptura)}</td>
+            <td>${uuidDisplay}</td>
+            <td>$${parseFloat(registro.Subtotal || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+            <td>$${parseFloat(registro.Descuento || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+            <td><strong>$${parseFloat(registro.Total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></td>
+            <td>${registro.FormaPago || '-'}</td>
+            <td>${registro.MetodoPago || '-'}</td>
+            <td>${registro.Plazo || '-'}</td>
+            <td>${registro.RFCReceptor || '-'}</td>
+            <td>${registro.RazonReceptor || '-'}</td>
+            <td><small>${registro.FolioKepler || '-'}</small></td>
+            <td>${registro.Estatus || '-'}</td>
+        `;
+
+            tableBody.appendChild(tr);
+        });
+
+        // Actualizar estadísticas
+        document.getElementById('totalRegistros').textContent = registros.length;
+        document.getElementById('totalNuevos').textContent = totalNuevos;
+        document.getElementById('totalExistentes').textContent = totalExistentes;
+
+        // Reinicializar DataTable con un pequeño delay para asegurar que el DOM se actualizó
+        setTimeout(() => {
+            dataTable = $('#dataTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+                order: [[3, 'asc'], [5, 'desc']],
+                scrollX: true,
+                columnDefs: [
+                    { orderable: false, targets: 0 }
+                ],
+                // Forzar redibujado
+                drawCallback: function () {
+                    actualizarContador();
+                }
+            });
+        }, 100);
+    }
+
+    function renderizarResumen(resumen) {
+        const container = document.getElementById('clienteSummary');
+        container.innerHTML = '';
+
+        resumen.forEach(cliente => {
+            const div = document.createElement('div');
+            div.className = 'client-summary-item';
+            div.innerHTML = `
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>${cliente.Cliente}</strong>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="row">
+                            <div class="col-auto">
+                                Total: <strong>${cliente.TotalRegistros}</strong> registros
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge-new">${cliente.RegistrosNuevos} nuevos</span>
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge-exists">${cliente.RegistrosExistentes} existentes</span>
+                            </div>
+                            <div class="col-auto">
+                                Monto total: <strong>$${cliente.TotalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        document.getElementById('totalClientes').textContent = resumen.length;
+    }
+
+    function toggleSelectAll(checkbox) {
+        const checkboxes = document.querySelectorAll('.row-checkbox:not(:disabled)');
+        checkboxes.forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+        actualizarContador();
+    }
+
+    function seleccionarSoloNuevos() {
+        document.getElementById('selectAll').checked = false;
+        const checkboxes = document.querySelectorAll('.row-checkbox:not(:disabled)');
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+        });
+        actualizarContador();
+    }
+
+    function actualizarContador() {
+        const seleccionados = document.querySelectorAll('.row-checkbox:checked').length;
+        document.getElementById('selectionInfo').innerHTML = `
+            <strong>${seleccionados}</strong> registro(s) seleccionado(s)
+        `;
+    }
+
+    async function guardarSeleccionados() {
+        const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+
+        if (checkboxes.length === 0) {
+            _Swal.fire({
+                icon: 'warning',
+                title: 'Advertencia',
+                text: 'Debe seleccionar al menos un registro para guardar'
+            });
+            return;
+
+        }
+        const registrosIds = Array.from(checkboxes).map(cb => cb.value);
+        console.log('IDs seleccionados:', registrosIds);
+        console.log('Cantidad:', registrosIds.length);
+
+        const result = await _Swal.fire({
+            icon: 'question',
+            title: '¿Confirmar guardado?',
+            html: `Se guardarán <strong>${registrosIds.length}</strong> registro(s) en la cartera de proveedores.<br><br>
+                   <small class="text-danger">Esta acción no se puede deshacer</small>`,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, guardar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Guardando...',
+                html: 'Procesando registros y generando documentos...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                const response = await GetData({
+                    path: '/Carteras/GuardarRegistrosSeleccionadosProveedores',
+                    data: { registrosIds: registrosIds }
+                });
+
+                if (response.icon === 'success') {
+                    await _SwalReload(response, '/Carteras/CargaInicialKepler');
+                } else {
+                    _Swal.fire(response);
+                }
+            } catch (error) {
+                _Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Error al guardar registros'
+                });
+            }
+        }
+    }
+
+    function limpiarFiltros() {
+        // Limpiar selects y inputs
+        document.getElementById('selectGenero').value = '';
+        document.getElementById('selectNaturaleza').value = '';
+        document.getElementById('inputGrupo').value = '';
+        document.getElementById('inputTipo').value = '';
+        document.getElementById('checkEsFactura').checked = true;
+        toggleTipoDocumento();
+        clientesSelect.clear();
+        ocultarDescripcion();
+
+        const fechaFin = new Date();
+        const fechaInicio = new Date();
+        fechaInicio.setMonth(fechaInicio.getMonth() - 3);
+
+        document.getElementById('fechaInicio').valueAsDate = fechaInicio;
+        document.getElementById('fechaFin').valueAsDate = fechaFin;
+
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('tableWrapper').style.display = 'none';
+        document.getElementById('summarySection').style.display = 'none';
+        document.getElementById('actionButtons').style.display = 'none';
+
+        if (dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+    }
+</script>

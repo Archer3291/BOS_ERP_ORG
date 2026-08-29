@@ -1,0 +1,1402 @@
+@{
+    ViewBag.Title = "Reporte de costo de inventario";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<style>
+    .rpt-page {
+        --rpt-radius: 14px;
+        --rpt-radius-sm: 10px;
+        --rpt-border: 1px solid var(--border-light);
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
+    }
+
+    /* ─── Encabezado ──────────────────────────────────────────────────── */
+    .rpt-hero {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 1.1rem 1.35rem;
+        overflow: hidden;
+        background: var(--bg-light);
+        border: var(--rpt-border);
+        border-radius: var(--rpt-radius);
+        box-shadow: var(--shadow);
+    }
+
+        /* Franja de acento a la izquierda, en lugar de un fondo de color que
+           pelea con el tema del usuario. */
+        .rpt-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--accent-blue), color-mix(in srgb, var(--accent-blue) 20%, transparent));
+        }
+
+    .rpt-hero-icon {
+        flex: 0 0 auto;
+        width: 46px;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 13px;
+        font-size: 1.05rem;
+        color: var(--accent-blue);
+        background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--accent-blue) 22%, transparent);
+    }
+
+    .rpt-eyebrow {
+        margin: 0;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+        color: var(--text-light);
+    }
+
+    .rpt-title {
+        margin: .12rem 0 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.25;
+        color: var(--text-dark);
+    }
+
+    .rpt-subtitle {
+        margin: .2rem 0 0;
+        font-size: .82rem;
+        color: var(--text-light);
+    }
+
+    .rpt-hero-meta {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .rpt-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .3rem .7rem;
+        border-radius: 999px;
+        border: var(--rpt-border);
+        background: var(--bg-gray);
+        color: var(--text-light);
+        font-size: .74rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .rpt-icon-btn {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: var(--rpt-border);
+        background: var(--bg-light);
+        color: var(--text-light);
+        cursor: pointer;
+        transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+    }
+
+        .rpt-icon-btn:hover {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+        }
+
+        .rpt-icon-btn.is-spinning i {
+            animation: rptSpin .7s linear infinite;
+        }
+
+    @@keyframes rptSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* ─── Filtros ─────────────────────────────────────────────────────── */
+    .rpt-filters {
+        padding: 1rem 1.15rem 1.1rem;
+        background: var(--bg-light);
+        border: var(--rpt-border);
+        border-radius: var(--rpt-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .rpt-filters-head {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        margin-bottom: .85rem;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--text-light);
+    }
+
+        .rpt-filters-head i {
+            color: var(--accent-blue);
+            font-size: .8rem;
+        }
+
+    .rpt-filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: .8rem;
+    }
+
+    .rpt-field {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: .35rem;
+    }
+
+    .rpt-label {
+        font-size: .74rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .rpt-control {
+        width: 100%;
+        height: 38px;
+        padding: 0 .75rem;
+        border: var(--rpt-border);
+        border-radius: var(--rpt-radius-sm);
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-size: .85rem;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    }
+
+        .rpt-control:focus {
+            outline: none;
+            background: var(--bg-light);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 14%, transparent);
+        }
+
+    select.rpt-control {
+        cursor: pointer;
+    }
+
+    .rpt-input-wrap {
+        position: relative;
+    }
+
+        .rpt-input-wrap i {
+            position: absolute;
+            left: .75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: .8rem;
+            color: var(--text-light);
+            pointer-events: none;
+        }
+
+        .rpt-input-wrap .rpt-control {
+            padding-left: 2.1rem;
+        }
+
+    .rpt-filters-actions {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+        margin-top: .9rem;
+        padding-top: .9rem;
+        border-top: var(--rpt-border);
+    }
+
+    .rpt-filters-active {
+        margin-right: auto;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        flex-wrap: wrap;
+        min-width: 0;
+        font-size: .78rem;
+        color: var(--text-light);
+    }
+
+    .btn-rpt {
+        height: 38px;
+        padding: 0 1.05rem;
+        border-radius: var(--rpt-radius-sm);
+        font-size: .84rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: opacity var(--transition-fast), background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .btn-rpt-primary {
+        border: 1px solid var(--accent-blue);
+        background: var(--accent-blue);
+        color: #fff;
+        box-shadow: 0 2px 10px color-mix(in srgb, var(--accent-blue) 28%, transparent);
+    }
+
+        .btn-rpt-primary:hover {
+            opacity: .9;
+        }
+
+    .btn-rpt-ghost {
+        border: var(--rpt-border);
+        background: transparent;
+        color: var(--text-light);
+    }
+
+        .btn-rpt-ghost:hover {
+            background: var(--bg-gray);
+            color: var(--text-dark);
+        }
+
+    /* ─── Separador de sección ────────────────────────────────────────── */
+    .rpt-divider {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        margin-top: .35rem;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+        color: var(--text-light);
+    }
+
+        .rpt-divider i {
+            color: var(--accent-blue);
+            font-size: .8rem;
+        }
+
+        .rpt-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-light);
+        }
+
+    /* ─── Indicadores ─────────────────────────────────────────────────── */
+    .kpi-grid {
+        display: grid;
+        gap: .85rem;
+        grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    }
+
+    .kpi-card {
+        --kpi-tone: var(--accent-blue);
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        padding: .95rem 1.05rem;
+        background: var(--bg-light);
+        border: var(--rpt-border);
+        border-radius: var(--rpt-radius);
+        box-shadow: var(--shadow);
+        transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+    }
+
+        .kpi-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .kpi-card.tone-green {
+            --kpi-tone: var(--success-color);
+        }
+
+        .kpi-card.tone-amber {
+            --kpi-tone: var(--warning-color);
+        }
+
+        .kpi-card.tone-slate {
+            --kpi-tone: var(--secondary-blue);
+        }
+
+    .kpi-icon {
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 11px;
+        font-size: .95rem;
+        color: var(--kpi-tone);
+        background: color-mix(in srgb, var(--kpi-tone) 12%, transparent);
+    }
+
+    .kpi-body {
+        min-width: 0;
+    }
+
+    .kpi-label {
+        margin: 0 0 .15rem;
+        font-size: .69rem;
+        font-weight: 600;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--text-light);
+    }
+
+    .kpi-value {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--text-dark);
+        font-variant-numeric: tabular-nums;
+        word-break: break-word;
+    }
+
+        /* Mientras el servidor responde el valor se muestra como barra de
+           carga en vez de un guion, para que no parezca un dato en cero. */
+        .kpi-value.is-loading {
+            display: block;
+            width: 100px;
+            height: 1.2rem;
+            border-radius: 6px;
+            color: transparent;
+            background: linear-gradient(90deg, var(--bg-gray) 25%, var(--border-light) 37%, var(--bg-gray) 63%);
+            background-size: 400% 100%;
+            animation: rptShimmer 1.2s ease-in-out infinite;
+        }
+
+    @@keyframes rptShimmer {
+        from {
+            background-position: 100% 50%;
+        }
+
+        to {
+            background-position: 0 50%;
+        }
+    }
+
+    /* ─── Tarjetas de contenido ───────────────────────────────────────── */
+    .rpt-card {
+        background: var(--bg-light);
+        border: var(--rpt-border);
+        border-radius: var(--rpt-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .rpt-card-head {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        flex-wrap: wrap;
+        padding: .9rem 1.15rem;
+        border-bottom: var(--rpt-border);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--accent-blue) 7%, transparent), transparent 65%);
+    }
+
+    .rpt-card-icon {
+        flex: 0 0 auto;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        font-size: .85rem;
+        color: var(--accent-blue);
+        background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+    }
+
+    .rpt-card-title {
+        margin: 0;
+        font-size: .9rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .rpt-card-sub {
+        margin: .12rem 0 0;
+        font-size: .76rem;
+        color: var(--text-light);
+    }
+
+    .rpt-card-tools {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    .rpt-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .2rem .65rem;
+        border-radius: 999px;
+        border: var(--rpt-border);
+        background: var(--bg-gray);
+        color: var(--text-light);
+        font-size: .72rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .btn-rpt-soft {
+        height: 30px;
+        padding: 0 .75rem;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        border-radius: 8px;
+        border: var(--rpt-border);
+        background: var(--bg-light);
+        color: var(--text-light);
+        font-size: .74rem;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+    }
+
+        .btn-rpt-soft:hover {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+        }
+
+    .rpt-card-body {
+        padding: 1rem 1.15rem 1.15rem;
+    }
+
+    /* TableBuilder ya trae su propia "tarjeta"; dentro de .rpt-card se anula
+       para que el encabezado y la tabla se lean como un solo bloque en vez de
+       una caja dentro de otra. */
+    .rpt-table .custom-table-container {
+        margin-top: 0 !important;
+        padding: 1rem 1.15rem 1.15rem;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    /* ─── Gráficas ────────────────────────────────────────────────────── */
+    .rpt-chart {
+        width: 100%;
+        height: 300px;
+    }
+
+        .rpt-chart.is-tall {
+            height: 340px;
+        }
+
+    .rpt-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .2rem .65rem;
+        border-radius: 999px;
+        font-size: .72rem;
+        color: var(--warning-color);
+        background: color-mix(in srgb, var(--warning-color) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--warning-color) 28%, transparent);
+    }
+
+    /* ─── Celdas de tabla ─────────────────────────────────────────────── */
+    .rpt-code {
+        display: inline-block;
+        padding: .12rem .45rem;
+        border-radius: 6px;
+        border: var(--rpt-border);
+        background: var(--bg-gray);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: .76rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .rpt-num,
+    .rpt-money {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .rpt-money {
+        font-weight: 600;
+    }
+
+        .rpt-money.is-strong {
+            font-weight: 700;
+            color: var(--success-color);
+        }
+
+    .rpt-muted {
+        color: var(--text-light);
+    }
+
+    .rpt-cell-sub {
+        display: block;
+        margin-top: .1rem;
+        font-size: .74rem;
+        color: var(--text-light);
+    }
+
+    .rpt-tag {
+        --tag-tone: var(--text-light);
+        display: inline-flex;
+        align-items: center;
+        padding: .15rem .6rem;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+        color: var(--tag-tone);
+        background: color-mix(in srgb, var(--tag-tone) 14%, transparent);
+    }
+
+        .rpt-tag.tag-frio {
+            --tag-tone: var(--accent-blue);
+        }
+
+        .rpt-tag.tag-seco {
+            --tag-tone: var(--warning-color);
+        }
+
+    @@media (max-width: 767.98px) {
+        .rpt-hero-meta,
+        .rpt-card-tools {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .rpt-filters-actions .btn-rpt {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .rpt-chart,
+        .rpt-chart.is-tall {
+            height: 260px;
+        }
+    }
+</style>
+
+<div class="container-fluid px-3 px-md-4 py-4 rpt-page">
+
+    <!-- ═══ Encabezado ═══════════════════════════════════════════════ -->
+    <header class="rpt-hero">
+        <div class="rpt-hero-icon">
+            <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <div>
+            <p class="rpt-eyebrow">Contabilidad</p>
+            <h1 class="rpt-title">Costo de inventario</h1>
+            <p class="rpt-subtitle">Valuación del inventario a costo promedio de compra, por producto y por almacén.</p>
+        </div>
+        <div class="rpt-hero-meta">
+            <span class="rpt-chip" id="rpt-last-update">
+                <i class="fa-solid fa-clock"></i> Cargando…
+            </span>
+            <button type="button" class="rpt-icon-btn" id="btn-refrescar" title="Volver a consultar" onclick="refrescarTodo()">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ═══ Filtros ══════════════════════════════════════════════════ -->
+    <section class="rpt-filters">
+        <div class="rpt-filters-head">
+            <i class="fa-solid fa-sliders"></i> Filtros
+        </div>
+
+        <div class="rpt-filters-grid">
+            <div class="rpt-field">
+                <label class="rpt-label" for="f-nombre">Producto</label>
+                <div class="rpt-input-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input class="rpt-control" type="text" id="f-nombre" placeholder="Clave o descripción…" autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="rpt-field">
+                <label class="rpt-label" for="f-sucursal">Sucursal</label>
+                <select class="rpt-control" id="f-sucursal" onchange="onSucursalChange()">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+
+            <div class="rpt-field">
+                <label class="rpt-label" for="f-almacen">Almacén</label>
+                <select class="rpt-control" id="f-almacen" onchange="aplicarFiltros()">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="rpt-filters-actions">
+            <div class="rpt-filters-active" id="rpt-filtros-activos"></div>
+            <button type="button" class="btn-rpt btn-rpt-ghost" onclick="limpiarFiltros()">
+                <i class="fa-solid fa-eraser"></i> Limpiar
+            </button>
+            <button type="button" class="btn-rpt btn-rpt-primary" onclick="aplicarFiltros()">
+                <i class="fa-solid fa-filter"></i> Aplicar
+            </button>
+        </div>
+    </section>
+
+    <!-- ═══ Sección: productos ═══════════════════════════════════════ -->
+    <div class="rpt-divider">
+        <i class="fa-solid fa-box"></i> Productos
+    </div>
+
+    <div class="kpi-grid">
+        <article class="kpi-card">
+            <div class="kpi-icon"><i class="fa-solid fa-box"></i></div>
+            <div class="kpi-body">
+                <p class="kpi-label">Total productos</p>
+                <p class="kpi-value is-loading" id="kpi-productos">—</p>
+            </div>
+        </article>
+        <article class="kpi-card tone-green">
+            <div class="kpi-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div class="kpi-body">
+                <p class="kpi-label">Costo total inventario</p>
+                <p class="kpi-value is-loading" id="kpi-costo">—</p>
+            </div>
+        </article>
+        <article class="kpi-card tone-amber">
+            <div class="kpi-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+            <div class="kpi-body">
+                <p class="kpi-label">Costo promedio por pieza</p>
+                <p class="kpi-value is-loading" id="kpi-costo-prom">—</p>
+            </div>
+        </article>
+    </div>
+
+    <section class="rpt-card">
+        <div class="rpt-card-head">
+            <div class="rpt-card-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+            <div>
+                <h2 class="rpt-card-title">Costo de inventario por producto</h2>
+                <p class="rpt-card-sub">Haz clic en un producto para ver su histórico de costos.</p>
+            </div>
+            <div class="rpt-card-tools">
+                <button type="button" class="btn-rpt-soft" onclick="exportarTabla('tbl-costo-inventario', 'inventario_productos')">
+                    <i class="fa-solid fa-file-csv"></i> Exportar página
+                </button>
+                <span class="rpt-badge" id="badge-costo-inv">Cargando…</span>
+            </div>
+        </div>
+        <div class="rpt-table" id="tbl-costo-inventario"></div>
+    </section>
+
+    <section class="rpt-card" id="section-ultimos-costos" style="display:none">
+        <div class="rpt-card-head">
+            <div class="rpt-card-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
+            <div>
+                <h2 class="rpt-card-title">Histórico de costos de compra</h2>
+                <p class="rpt-card-sub" id="costos-producto"></p>
+            </div>
+            <div class="rpt-card-tools">
+                <span class="rpt-badge" id="costos-rango"></span>
+                <button type="button" class="rpt-icon-btn" title="Ocultar" onclick="ocultarUltimosCostos()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <div class="rpt-card-body">
+            <div class="rpt-chart" id="ec-ultimos-costos"></div>
+        </div>
+    </section>
+
+    <!-- ═══ Sección: almacenes ═══════════════════════════════════════ -->
+    <div class="rpt-divider">
+        <i class="fa-solid fa-warehouse"></i> Almacenes
+    </div>
+
+    <div class="kpi-grid">
+        <article class="kpi-card tone-slate">
+            <div class="kpi-icon"><i class="fa-solid fa-warehouse"></i></div>
+            <div class="kpi-body">
+                <p class="kpi-label">Almacenes con stock</p>
+                <p class="kpi-value is-loading" id="kpi-almacenes-count">—</p>
+            </div>
+        </article>
+        <article class="kpi-card tone-green">
+            <div class="kpi-icon"><i class="fa-solid fa-coins"></i></div>
+            <div class="kpi-body">
+                <p class="kpi-label">Valor total en almacenes</p>
+                <p class="kpi-value is-loading" id="kpi-almacen">—</p>
+            </div>
+        </article>
+    </div>
+
+    <section class="rpt-card">
+        <div class="rpt-card-head">
+            <div class="rpt-card-icon"><i class="fa-solid fa-chart-bar"></i></div>
+            <div>
+                <h2 class="rpt-card-title">Valor por almacén</h2>
+                <p class="rpt-card-sub">Calculado sobre los almacenes visibles en la tabla de abajo.</p>
+            </div>
+            <div class="rpt-card-tools">
+                <span class="rpt-badge" id="badge-almacen-chart">Cargando…</span>
+            </div>
+        </div>
+        <div class="rpt-card-body">
+            <div class="rpt-chart is-tall" id="ec-almacen"></div>
+        </div>
+    </section>
+
+    <section class="rpt-card">
+        <div class="rpt-card-head">
+            <div class="rpt-card-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <div>
+                <h2 class="rpt-card-title">Costo de inventario por almacén</h2>
+                <p class="rpt-card-sub">Existencias valuadas al costo promedio de cada producto.</p>
+            </div>
+            <div class="rpt-card-tools">
+                <button type="button" class="btn-rpt-soft" onclick="exportarTabla('tbl-costo-almacen', 'inventario_almacenes')">
+                    <i class="fa-solid fa-file-csv"></i> Exportar página
+                </button>
+                <span class="rpt-badge" id="badge-almacen">Cargando…</span>
+            </div>
+        </div>
+        <div class="rpt-table" id="tbl-costo-almacen"></div>
+    </section>
+
+</div>
+
+@section scripts {
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script>
+        // ── Formato ───────────────────────────────────────────────────────────
+        const fmt$ = n => Currency.format(Number(n ?? 0));
+        const fmtN = n => Number(n ?? 0).toLocaleString('es-MX', { maximumFractionDigits: 2 });
+
+        // Etiquetas de eje: los montos completos no caben, se abrevian a miles.
+        const fmt$k = v => Math.abs(v) >= 1000
+            ? '$' + (v / 1000).toFixed(Math.abs(v) >= 100000 ? 0 : 1) + 'k'
+            : '$' + Number(v ?? 0).toFixed(0);
+
+        const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+
+        const PALETTE = [
+            '#3266ad', '#2a9d7a', '#c96a1a', '#9b59b6', '#e24b4a',
+            '#1d9e75', '#ef9f27', '#5b9ee0', '#5dcaa5', '#f0997b',
+            '#b39ddb', '#ef9a9a'
+        ];
+
+        // ── Estado ────────────────────────────────────────────────────────────
+        let _almacenesCatalogo = [];   // catálogo completo para los selects
+        let _rowsAlmacen       = [];   // filas visibles: alimentan la gráfica
+        let _serieCostos       = null; // { titulo, fechas, costos } del producto abierto
+
+        let ecAlmacen       = echarts.init(document.getElementById('ec-almacen'));
+        let ecUltimosCostos = echarts.init(document.getElementById('ec-ultimos-costos'));
+
+        // ── Tema ──────────────────────────────────────────────────────────────
+        // ECharts no lee variables CSS: los colores del tema se resuelven a mano
+        // en cada pintado y las gráficas se repintan al cambiar claro/oscuro.
+        function themeTokens() {
+            const cs = getComputedStyle(document.body);
+            const read = (name, fallback) => (cs.getPropertyValue(name) || '').trim() || fallback;
+            return {
+                text:    read('--text-dark', '#0f172a'),
+                muted:   read('--text-light', '#64748b'),
+                border:  read('--border-light', '#e2e8f0'),
+                accent:  read('--accent-blue', '#3b82f6'),
+                surface: read('--bg-light', '#ffffff'),
+            };
+        }
+
+        // Los degradados de ECharts necesitan un color literal, no una variable.
+        function conAlfa(color, alfa) {
+            const hex = String(color).trim();
+            const largo = /^#([0-9a-f]{6})$/i.exec(hex);
+            const corto = /^#([0-9a-f]{3})$/i.exec(hex);
+            let r, g, b;
+
+            if (largo)      [r, g, b] = [0, 2, 4].map(i => parseInt(largo[1].substr(i, 2), 16));
+            else if (corto) [r, g, b] = [0, 1, 2].map(i => parseInt(corto[1][i] + corto[1][i], 16));
+            else            return hex;
+
+            return `rgba(${r},${g},${b},${alfa})`;
+        }
+
+        // ── Filtros ───────────────────────────────────────────────────────────
+        function getFiltros() {
+            return {
+                producto: document.getElementById('f-nombre').value.trim(),
+                sucursal: document.getElementById('f-sucursal').value,
+                almacen:  document.getElementById('f-almacen').value,
+            };
+        }
+
+        function textoOpcion(selectId) {
+            const sel = document.getElementById(selectId);
+            return sel.options[sel.selectedIndex]?.textContent ?? '';
+        }
+
+        function aplicarFiltros() {
+            kpiCargando('kpi-productos', 'kpi-costo', 'kpi-costo-prom',
+                        'kpi-almacenes-count', 'kpi-almacen');
+            tablaCosto.reload();
+            tablaAlmacen.reload();
+            actualizarResumenFiltros();
+            actualizarTimestamp();
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('f-nombre').value   = '';
+            document.getElementById('f-sucursal').value = '';
+            document.getElementById('f-almacen').value  = '';
+            poblarAlmacenes();
+            ocultarUltimosCostos();
+            aplicarFiltros();
+        }
+
+        function refrescarTodo() {
+            const btn = document.getElementById('btn-refrescar');
+            btn.classList.add('is-spinning');
+            aplicarFiltros();
+            setTimeout(() => btn.classList.remove('is-spinning'), 700);
+        }
+
+        function actualizarTimestamp() {
+            document.getElementById('rpt-last-update').innerHTML =
+                '<i class="fa-solid fa-clock"></i> Actualizado ' +
+                new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function actualizarResumenFiltros() {
+            const f = getFiltros();
+            const chips = [];
+
+            if (f.producto) chips.push(['fa-box', f.producto]);
+            if (f.sucursal) chips.push(['fa-store', textoOpcion('f-sucursal')]);
+            if (f.almacen)  chips.push(['fa-warehouse', textoOpcion('f-almacen')]);
+
+            document.getElementById('rpt-filtros-activos').innerHTML = chips.length
+                ? chips.map(([icono, texto]) =>
+                    `<span class="rpt-chip"><i class="fa-solid ${icono}"></i>${escapeHtml(texto)}</span>`).join('')
+                : '<span class="rpt-muted">Sin filtros — se muestra todo el inventario</span>';
+        }
+
+        // ── Selects dependientes: sucursal → almacén ──────────────────────────
+        function poblarAlmacenes() {
+            const suc = document.getElementById('f-sucursal').value;
+            const sel = document.getElementById('f-almacen');
+
+            sel.innerHTML = '<option value="">Todos</option>';
+
+            _almacenesCatalogo
+                .filter(a => !suc || String(a.id_sucursal) === String(suc))
+                .forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value       = a.id_almacen ?? '';
+                    opt.textContent = a.descripcion ? `${a.cve_almacen} – ${a.descripcion}` : a.cve_almacen;
+                    sel.appendChild(opt);
+                });
+        }
+
+        // onchange del select de sucursal (declarado en el HTML)
+        function onSucursalChange() {
+            poblarAlmacenes();
+            aplicarFiltros();
+        }
+
+        async function cargarUbicaciones() {
+            const res = await GetData({ path: '@Url.Action("GetUbicacionesInventario", "Contabilidad")' });
+            if (!res) return;
+
+            _almacenesCatalogo = res.almacenes ?? [];
+
+            const sel = document.getElementById('f-sucursal');
+            sel.innerHTML = '<option value="">Todas</option>';
+
+            (res.sucursales ?? []).forEach(s => {
+                const opt = document.createElement('option');
+                opt.value       = s.id_sucursal ?? '';
+                opt.textContent = s.descripcion ? `${s.cve_sucursal} – ${s.descripcion}` : s.cve_sucursal;
+                sel.appendChild(opt);
+            });
+
+            poblarAlmacenes();
+        }
+
+        // ── Indicadores ───────────────────────────────────────────────────────
+        function kpiCargando(...ids) {
+            ids.forEach(id => document.getElementById(id).classList.add('is-loading'));
+        }
+
+        function setKpi(id, valor) {
+            const el = document.getElementById(id);
+            el.classList.remove('is-loading');
+            el.textContent = valor;
+        }
+
+        // ── Gráfica: valor por almacén ────────────────────────────────────────
+        const etiquetaAlmacen = r =>
+            [r.cve_sucursal, r.cve_almacen].filter(Boolean).join(' / ') || '—';
+
+        function renderAlmacenChart(rows) {
+            const tk = themeTokens();
+            const badge = document.getElementById('badge-almacen-chart');
+
+            if (!rows || !rows.length) {
+                ecAlmacen.clear();
+                ecAlmacen.setOption({
+                    backgroundColor: 'transparent',
+                    title: {
+                        text: 'Sin datos para los filtros seleccionados',
+                        left: 'center', top: 'center',
+                        textStyle: { fontSize: 13, color: tk.muted, fontWeight: 400 }
+                    }
+                });
+                badge.textContent = 'Sin datos';
+                return;
+            }
+
+            // ECharts dibuja el eje de categorías de abajo hacia arriba, así que
+            // la lista se invierte para que el almacén más caro quede arriba.
+            const top = [...rows]
+                .sort((a, b) => Number(b.valor_inventario ?? 0) - Number(a.valor_inventario ?? 0))
+                .slice(0, 15)
+                .reverse();
+
+            badge.textContent = rows.length > top.length
+                ? `Top ${top.length} de ${rows.length} visibles`
+                : `${top.length} almacenes`;
+
+            ecAlmacen.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    borderWidth: 0,
+                    formatter: params => {
+                        const p   = params[0];
+                        const row = top[p.dataIndex] ?? {};
+                        return `<strong>${p.axisValue}</strong><br>`
+                             + `${p.marker} Valor: ${fmt$(p.value)}<br>`
+                             + `<span style="opacity:.75">Piezas: ${fmtN(row.piezas)}</span>`;
+                    }
+                },
+                toolbox: {
+                    top: 0, right: 8,
+                    iconStyle: { borderColor: tk.muted },
+                    feature: {
+                        dataView:    { show: true, readOnly: true, title: 'Ver datos' },
+                        saveAsImage: { show: true, title: 'Descargar' }
+                    }
+                },
+                grid: { left: 8, right: 90, top: 40, bottom: 8, containLabel: true },
+                xAxis: {
+                    type: 'value',
+                    axisLabel: { fontSize: 11, color: tk.muted, formatter: fmt$k },
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: { lineStyle: { color: tk.border, type: 'dashed' } }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: top.map(etiquetaAlmacen),
+                    axisLabel: { fontSize: 11, color: tk.text },
+                    axisLine: { lineStyle: { color: tk.border } },
+                    axisTick: { show: false }
+                },
+                series: [{
+                    type: 'bar',
+                    barMaxWidth: 26,
+                    data: top.map((r, i) => ({
+                        value: Number(r.valor_inventario ?? 0),
+                        itemStyle: { color: PALETTE[i % PALETTE.length], borderRadius: [0, 6, 6, 0] }
+                    })),
+                    label: {
+                        show: true, position: 'right',
+                        fontSize: 11, color: tk.text,
+                        formatter: p => fmt$(p.value)
+                    }
+                }]
+            }, true);
+        }
+
+        // ── Gráfica: histórico de costos del producto ─────────────────────────
+        function ocultarUltimosCostos() {
+            document.getElementById('section-ultimos-costos').style.display = 'none';
+            _serieCostos = null;
+        }
+
+        async function cargarUltimosCostos(cveProd, descripcion) {
+            if (!cveProd) { ocultarUltimosCostos(); return; }
+
+            const prod = await GetData({
+                path: '@Url.Action("GetUltimosCostos", "Contabilidad")',
+                data: { productoId: cveProd, limite: 12 },
+            });
+
+            // Según el driver, el json_agg puede llegar como texto o ya parseado.
+            const crudo = prod?.[0]?.ultimos_costos;
+            if (!crudo) { ocultarUltimosCostos(); return; }
+
+            const puntos = (typeof crudo === 'string' ? JSON.parse(crudo) : crudo) ?? [];
+            if (!puntos.length) { ocultarUltimosCostos(); return; }
+
+            _serieCostos = {
+                titulo: `${cveProd}${descripcion ? ' — ' + descripcion : ''}`,
+                fechas: puntos.map(x => String(x.fecha).substring(0, 10)),
+                costos: puntos.map(x => Number(x.costo ?? 0)),
+            };
+
+            document.getElementById('section-ultimos-costos').style.display = '';
+            renderUltimosCostos();
+            ecUltimosCostos.resize();
+        }
+
+        function renderUltimosCostos() {
+            if (!_serieCostos) return;
+
+            const tk = themeTokens();
+            const { titulo, fechas, costos } = _serieCostos;
+            const promedio = costos.reduce((s, v) => s + v, 0) / costos.length;
+
+            document.getElementById('costos-producto').textContent = titulo;
+            document.getElementById('costos-rango').textContent =
+                `${fmt$(Math.min(...costos))} – ${fmt$(Math.max(...costos))}`;
+
+            ecUltimosCostos.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    borderWidth: 0,
+                    formatter: params => {
+                        const p = params[0];
+                        return `<strong>${p.axisValue}</strong><br>${p.marker} Costo unitario: ${fmt$(p.value)}`;
+                    }
+                },
+                toolbox: {
+                    top: 0, right: 8,
+                    iconStyle: { borderColor: tk.muted },
+                    feature: {
+                        dataView:    { show: true, readOnly: true, title: 'Ver datos' },
+                        saveAsImage: { show: true, title: 'Descargar' }
+                    }
+                },
+                grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: fechas,
+                    boundaryGap: false,
+                    axisLabel: { fontSize: 11, color: tk.muted },
+                    axisLine: { lineStyle: { color: tk.border } },
+                    axisTick: { show: false }
+                },
+                yAxis: {
+                    type: 'value',
+                    scale: true,
+                    axisLabel: { fontSize: 11, color: tk.muted, formatter: fmt$k },
+                    axisLine: { show: false },
+                    splitLine: { lineStyle: { color: tk.border, type: 'dashed' } }
+                },
+                series: [{
+                    type: 'line',
+                    data: costos,
+                    smooth: true,
+                    symbolSize: 7,
+                    lineStyle: { width: 2.5, color: tk.accent },
+                    itemStyle: { color: tk.accent, borderColor: tk.surface, borderWidth: 2 },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: conAlfa(tk.accent, .28) },
+                            { offset: 1, color: conAlfa(tk.accent, 0) }
+                        ])
+                    },
+                    markLine: {
+                        silent: true,
+                        symbol: 'none',
+                        data: [{ yAxis: promedio }],
+                        lineStyle: { color: tk.muted, type: 'dashed', width: 1 },
+                        label: {
+                            position: 'insideEndTop',
+                            fontSize: 10, color: tk.muted,
+                            formatter: 'Prom. ' + fmt$(promedio)
+                        }
+                    }
+                }]
+            }, true);
+        }
+
+        // ── Exportar a CSV lo que está en pantalla ────────────────────────────
+        function exportarTabla(containerId, filename) {
+            const tbl = document.querySelector('#' + containerId + ' table');
+            if (!tbl) return;
+
+            const csv = [...tbl.querySelectorAll('tr')].map(tr =>
+                [...tr.querySelectorAll('th, td')]
+                    .map(cell => '"' + cell.innerText.replace(/"/g, '""').replace(/\n/g, ' ') + '"')
+                    .join(',')
+            ).join('\n');
+
+            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+            const a    = document.createElement('a');
+            a.href     = URL.createObjectURL(blob);
+            a.download = filename + '.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // ── Tabla: costo por almacén ──────────────────────────────────────────
+        const tablaAlmacen = createTable({
+            selector: '#tbl-costo-almacen',
+            path: '@Url.Action("GetCostoAlmacen", "Contabilidad")',
+            searchPlaceholder: 'Buscar sucursal o almacén…',
+            defaultPageSize: 25,
+            columns: [
+                {
+                    title: 'Sucursal', data: 'cve_sucursal',
+                    formatter: (v, row) => `<span class="fw-semibold">${escapeHtml(v)}</span>` +
+                        (row.descripcion_sucursal
+                            ? `<span class="rpt-cell-sub">${escapeHtml(row.descripcion_sucursal)}</span>`
+                            : '')
+                },
+                {
+                    title: 'Almacén', data: 'cve_almacen',
+                    formatter: (v, row) => `<span class="rpt-code">${escapeHtml(v)}</span>` +
+                        (row.descripcion_almacen
+                            ? `<span class="rpt-cell-sub">${escapeHtml(row.descripcion_almacen)}</span>`
+                            : '')
+                },
+                {
+                    title: 'Tipo', data: 'tipo', className: 'text-center', sortable: false,
+                    formatter: v => {
+                        if (!v) return '<span class="rpt-muted">—</span>';
+                        const lv  = v.toLowerCase();
+                        const cls = lv.includes('frio') || lv.includes('frío') ? 'tag-frio'
+                                  : lv.includes('seco') ? 'tag-seco' : '';
+                        return `<span class="rpt-tag ${cls}">${escapeHtml(v)}</span>`;
+                    }
+                },
+                {
+                    title: 'Piezas', data: 'piezas', className: 'text-end',
+                    formatter: v => `<span class="rpt-num">${fmtN(v)}</span>`
+                },
+                {
+                    title: 'Valor inventario', data: 'valor_inventario', className: 'text-end',
+                    formatter: v => `<span class="rpt-money is-strong">${fmt$(v)}</span>`
+                },
+                {
+                    title: 'Costo prom.', data: 'costo_promedio_almacen', className: 'text-end',
+                    formatter: v => `<span class="rpt-money rpt-muted">${fmt$(v)}</span>`
+                },
+            ],
+            GlobalEvents: {
+                onDataLoaded: (response) => {
+                    const rows = response.data ?? response;
+                    const t    = response.totales ?? {};
+
+                    _rowsAlmacen = rows;
+
+                    // Los totales llegan del servidor calculados sobre todo el
+                    // filtro; si faltaran, se cae a la suma de la página.
+                    const valor = Number(t.valor_inventario
+                        ?? rows.reduce((s, r) => s + Number(r.valor_inventario ?? 0), 0));
+                    const nAlm  = Number(t.almacenes ?? response.total ?? rows.length);
+
+                    setKpi('kpi-almacenes-count', fmtN(nAlm));
+                    setKpi('kpi-almacen', fmt$(valor));
+                    document.getElementById('badge-almacen').textContent = `${fmtN(nAlm)} almacenes`;
+
+                    renderAlmacenChart(rows);
+                }
+            },
+            data: () => {
+                const f = getFiltros();
+                return { sucursal: f.sucursal, almacen: f.almacen };
+            }
+        });
+
+        // ── Tabla: costo de inventario por producto ───────────────────────────
+        const tablaCosto = createTable({
+            selector: '#tbl-costo-inventario',
+            path: '@Url.Action("ReporteCostoInventario", "Contabilidad")',
+            searchPlaceholder: 'Buscar producto…',
+            defaultPageSize: 25,
+            columns: [
+                {
+                    title: '#', data: null, sortable: false, className: 'text-center',
+                    formatter: (_, row, idx) => `<span class="rpt-num rpt-muted">${idx}</span>`
+                },
+                {
+                    title: 'Clave', data: 'cve_prod',
+                    formatter: v => `<span class="rpt-code">${escapeHtml(v)}</span>`
+                },
+                {
+                    title: 'Descripción', data: 'descr_prod',
+                    formatter: v => escapeHtml(v)
+                },
+                {
+                    title: 'Costo total', data: 'valor_inventario', className: 'text-end',
+                    formatter: v => `<span class="rpt-money is-strong">${fmt$(v)}</span>`
+                },
+                {
+                    title: 'Total piezas', data: 'existencia_actual', className: 'text-end',
+                    formatter: v => `<span class="rpt-num fw-semibold">${fmtN(v)}</span>`
+                },
+                {
+                    title: 'Costo promedio', data: 'costo_promedio', className: 'text-end',
+                    formatter: v => `<span class="rpt-money rpt-muted">${fmt$(v)}</span>`
+                },
+                {
+                    title: 'Ultimo Costo', data: 'ultimo_costo', className: 'text-end',
+                    formatter: v => `<span class="rpt-money rpt-muted">${fmt$(v)}</span>`
+                },
+            ],
+            RowsEvents: {
+                onRowClick: row => cargarUltimosCostos(row.cve_prod, row.descr_prod)
+            },
+            GlobalEvents: {
+                onDataLoaded: (response) => {
+                    const rows = response.data ?? response;
+                    const t    = response.totales ?? {};
+
+                    const costo  = Number(t.costo_total
+                        ?? rows.reduce((s, r) => s + Number(r.costo_total ?? 0), 0));
+                    const piezas = Number(t.total_piezas
+                        ?? rows.reduce((s, r) => s + Number(r.total_piezas ?? 0), 0));
+                    const nProd  = Number(t.productos ?? response.total ?? rows.length);
+
+                    setKpi('kpi-productos', fmtN(nProd));
+                    setKpi('kpi-costo', fmt$(costo));
+                    setKpi('kpi-costo-prom', fmt$(piezas ? costo / piezas : 0));
+                    document.getElementById('badge-costo-inv').textContent = `${fmtN(nProd)} productos`;
+
+                    // Al cambiar el resultado el histórico anterior ya no aplica;
+                    // si la búsqueda dejó un solo producto se abre solo.
+                    ocultarUltimosCostos();
+                    if (rows.length === 1) cargarUltimosCostos(rows[0].cve_prod, rows[0].descr_prod);
+                }
+            },
+            data: () => {
+                const f = getFiltros();
+                return { sucursal: f.sucursal, almacen: f.almacen, producto: f.producto };
+            }
+        });
+
+        // ── Tiempo real: inventario ───────────────────────────────────────────
+        // La migración Kepler emite "InventarioActualizado" al grupo de la empresa.
+        // Esta vista solo recarga si el movimiento cae dentro de los filtros que el
+        // usuario tiene puestos; si está viendo otra sucursal, no le movemos la pantalla.
+        let _refrescoPendiente = null;
+
+        function eventoAplicaAFiltros(evt) {
+            const f = getFiltros();
+
+            if (f.sucursal && Number(f.sucursal) !== Number(evt.sucursal)) return false;
+            if (f.almacen && evt.almacen && Number(f.almacen) !== Number(evt.almacen)) return false;
+
+            // Si la vista está filtrada por producto, solo interesa cuando ese producto
+            // viene entre los migrados.
+            if (f.producto && Array.isArray(evt.codigos) && evt.codigos.length) {
+                const buscado = f.producto.toLowerCase();
+                if (!evt.codigos.some(c => String(c).toLowerCase().includes(buscado))) return false;
+            }
+
+            return true;
+        }
+
+        function avisarInventarioActualizado(evt) {
+            const partes = [];
+            if (evt.conCompra > 0) partes.push(`${fmtN(evt.conCompra)} con compra`);
+            if (evt.soloStock > 0) partes.push(`${fmtN(evt.soloStock)} solo stock`);
+
+            Swal.fire({
+                toast: true,
+                position: 'bottom-end',
+                icon: 'info',
+                title: 'Inventario actualizado',
+                text: partes.length ? `Migración Kepler: ${partes.join(', ')}.` : 'Migración Kepler ejecutada.',
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true
+            });
+        }
+
+        function conectarInventarioEnVivo() {
+            if (typeof signalR === 'undefined') return;
+
+            const conexion = new signalR.HubConnectionBuilder()
+                .withUrl('/hubs/inventario')
+                .withAutomaticReconnect()
+                .build();
+
+            conexion.on('InventarioActualizado', evt => {
+                if (!eventoAplicaAFiltros(evt)) return;
+
+                avisarInventarioActualizado(evt);
+
+                // Una migración masiva dispara varios eventos seguidos: se agrupan para
+                // no lanzar una consulta por cada uno.
+                clearTimeout(_refrescoPendiente);
+                _refrescoPendiente = setTimeout(aplicarFiltros, 600);
+            });
+
+            // Al reconectar pudo haber cambios que no llegaron: se vuelve a consultar.
+            conexion.onreconnected(() => aplicarFiltros());
+
+            conexion.start().catch(err => console.warn('SignalR inventario no disponible:', err));
+        }
+
+        // ── Init ──────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarUbicaciones();
+            actualizarResumenFiltros();
+            actualizarTimestamp();
+            conectarInventarioEnVivo();
+
+            document.getElementById('f-nombre').addEventListener('keydown', e => {
+                if (e.key === 'Enter') aplicarFiltros();
+            });
+
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    ecAlmacen.resize();
+                    ecUltimosCostos.resize();
+                }, 120);
+            });
+
+            // El tema se guarda como atributo del <body>; al cambiarlo hay que
+            // repintar porque ECharts no sigue las variables CSS.
+            new MutationObserver(muts => {
+                if (!muts.some(m => m.attributeName === 'data-theme')) return;
+                renderAlmacenChart(_rowsAlmacen);
+                renderUltimosCostos();
+            }).observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+        });
+    </script>
+}

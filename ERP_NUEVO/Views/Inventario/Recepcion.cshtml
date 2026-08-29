@@ -1,0 +1,682 @@
+﻿@using BOS_ERP.Controllers
+@{
+    ViewBag.Title = "Recepcion de material";
+    ViewBag.PageTitle = "Recepcion de material";
+}
+
+<link href="~/content/Site.css" rel="stylesheet" />
+<style>
+    .form-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+        .form-header h4 {
+            color: var(--primary-blue);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+    .purchase-mode-toggle {
+        background: linear-gradient(135deg, var(--very-light-blue), var(--light-blue));
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-light);
+    }
+
+    .modern-switch {
+        width: 60px;
+        height: 24px;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+        .modern-switch:checked {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+        }
+
+    .form-switch .form-check-input {
+        width: 3em;
+    }
+
+    .switch-label {
+        font-weight: 500;
+        color: var(--text-dark);
+        cursor: pointer;
+    }
+
+    .switch-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+    }
+
+    .product-card {
+        background: var(--bg-light);
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .product-card:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-card.selected {
+            border-color: var(--primary-blue);
+            background: var(--light-blue);
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--accent-blue), var(--secondary-blue));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .product-card.selected::before {
+            opacity: 1;
+        }
+
+        .product-card.selected .product-icon {
+            color: var(--primary-blue-dark);
+        }
+
+    .product-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .product-card-corner {
+        background: var(--bg-light);
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .product-card-corner:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-card-corner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--accent-blue), var(--secondary-blue));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .product-card-corner:hover::before {
+            opacity: 1;
+        }
+
+    .corner-icon {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: var(--very-light-blue);
+        border-radius: 50%;
+        padding: 0.50rem;
+        transition: all 0.3s ease;
+    }
+
+        .corner-icon svg {
+            fill: var(--primary-blue);
+            transition: all 0.3s ease;
+        }
+
+    .product-card-corner:hover .corner-icon {
+        background: var(--primary-blue);
+        transform: scale(1.1);
+    }
+
+        .product-card-corner:hover .corner-icon svg {
+            fill: white;
+        }
+
+    .product-description {
+        color: var(--text-light);
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .product-features {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        color: var(--text-light);
+        font-size: 0.85rem;
+    }
+
+        .feature-item i {
+            color: var(--primary-blue);
+            margin-right: 0.5rem;
+            width: 16px;
+        }
+
+    .btn-check {
+        position: absolute;
+        clip: rect(0, 0, 0, 0);
+        pointer-events: none;
+    }
+
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: #dc3545;
+    }
+
+    .form-actions {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-light);
+    }
+
+    @@media (max-width: 768px) {
+        .form-container {
+            margin: 1rem;
+            padding: 1.5rem;
+        }
+
+        .product-card {
+            padding: 1rem;
+        }
+    }
+
+    .info-panel {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+        .info-panel .info-title {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-panel .info-text {
+            color: #92400e;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+    .card-resumen {
+        background-color: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow);
+        padding: 1.25rem 1.5rem;
+        transition: background 0.3s ease;
+    }
+
+        .card-resumen h6 {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-resumen p {
+            color: var(--text-dark);
+            font-size: 1rem;
+        }
+
+    .badge-tag {
+        background-color: var(--light-blue);
+        color: var(--primary-blue);
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .table-resumen {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+        .table-resumen th {
+            background-color: var(--very-light-blue);
+            color: var(--dark-blue);
+            text-align: left;
+            padding: 0.6rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .table-resumen td {
+            padding: 0.6rem;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .table-resumen tbody tr:nth-child(even) {
+            background-color: var(--bg-gray);
+        }
+
+    .alert-info-resumen {
+        background-color: var(--light-blue);
+        color: var(--dark-blue);
+        border: 1px solid var(--accent-blue);
+        border-radius: 0.75rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+        box-shadow: var(--shadow);
+    }
+</style>
+
+<link href="~/content/requisicion_material/style.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+
+<div class="rq-wizard-shell">
+    <div id="rec-wizard-bar"></div>
+
+    <div class="rq-wizard-body">
+        <div id="rec-wizard-panels">
+            <div id="step-1" class="wizard-panel" role="tabpanel">
+            <form id="form-1" novalidate>
+                <!-- Form Header -->
+                <div class="form-header">
+                    <h4>Selecciona el tipo de proceso que se va a registrar</h4>
+                    <p>Elige la opción que mejor describa el propósito de tu recepcion</p>
+                </div>
+
+                <!-- Product Options -->
+                <fieldset class="row g-3" aria-required="true">
+                    <legend class="visually-hidden">Tipo de proceso</legend>
+
+                    @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "recepcion_nacional"))
+                        {
+                            <div class="col-sm-12 col-md-6">
+                                <!-- Recibir producto de recepcion -->
+                                <div class="product-card" data-option="recepcion">
+                                    <div class="corner-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 512 512">
+                                            <path d="M17.91 93.761c19.4 67.244 47.029 124.21 79.363 187.172l27.561-8.368c-34.337-52.44-62.494-96.45-72.16-152.817l24.231 6.32c12.377 75.413 79.95 133.444 109.213 168.56c4.905 16.388.589 32.776-4.916 46.354c51.616 25.103 104.672 57.56 163.292 69.531c22.014-17.212 44.264-27.73 68.126 7.726l9.833-28.094l23.177-.702L432.636 361c22.372 8.044 50.335-16.05 50.92-22.826c1.675-19.426.496-31.362 10.535-47.056l-55.836 7.725c-1.367 16.264 1.583 34.771-15.1 44.247c-88.44 50.234-115.313-62.388-107.457-109.564c-36.356-16.025-40.996-34.962-62.507-68.126l-22.475-2.81l-15.451 13.345l-40.033-51.27z" />
+                                        </svg>
+                                    </div>
+                                    <input type="radio" value="recepcionV" class="btn-check proceso" name="proceso" id="recepcion" autocomplete="off" required>
+                                    <label for="recepcion" class="w-100 h-100 d-block">
+                                        <div class="product-title">
+                                            Recepcion de material nacional
+                                        </div>
+                                        <div class="product-description">
+                                            Productos provenientes de proveedorres nacionales.
+                                        </div>
+                                        <div class="product-features">
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Control de inventario</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Control de entradas y salidas de material</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Seguimiento de stock</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "recepcion_devolucion"))
+                        {
+                            <div class="col-sm-12 col-md-6">
+                                <!-- Recibir devolucion -->
+                                <div class="product-card" data-option="devolucion">
+                                    <div class="corner-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path d="m14.712 2.289l-.087-.078a1 1 0 0 0-1.327.078l-.078.087a1 1 0 0 0 .078 1.326l1.299 1.297H8.999l-.24.004A6.997 6.997 0 0 0 2 11.993a6.94 6.94 0 0 0 1.189 3.899a.999.999 0 0 0 1.626-1.163l-.135-.218A4.997 4.997 0 0 1 9 6.998h5.595l-1.297 1.297l-.078.087a.999.999 0 0 0 1.492 1.326l3.006-3.003l.077-.087a1 1 0 0 0-.078-1.326zm6.075 5.771A.999.999 0 0 0 19 8.677c0 .209.064.402.172.561a4.997 4.997 0 0 1-4.17 7.75H9.414l1.294-1.29l.083-.096a1 1 0 0 0-.006-1.23l-.077-.088l-.095-.084a1 1 0 0 0-1.232.006l-.088.078l-3.005 3.003l-.083.095a1 1 0 0 0 .006 1.231l.077.087l3.005 3.003l.095.084a1 1 0 0 0 1.397-1.41l-.077-.087l-1.304-1.303H15l.24-.003a6.997 6.997 0 0 0 5.546-10.927z" /></svg>
+                                    </div>
+                                    <input type="radio" value="devolucionV" class="btn-check proceso" name="proceso" id="devolucion" autocomplete="off" required>
+                                    <label for="devolucion" class="w-100 h-100 d-block">
+                                        <div class="product-title">Recepcion de devolucion de material</div>
+                                        <div class="product-description">
+                                            Recepcion de material devuelto por cliente
+                                        </div>
+                                        <div class="product-features">
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Control de inventario</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Control de entradas y salidas de material</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Seguimiento de stock</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    }
+
+
+                    @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "recepcion_internacional"))
+                        {
+                            <div class="col-sm-12 col-md-6">
+                                <!-- Recibir internacional -->
+                                <div class="product-card" data-option="internacional">
+                                    <div class="corner-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 2048 2048"><path d="M496 883q13 0 29 4t32 11t32 13t29 12l-16 2q-8 1-17 1q-17 0-31-5t-26-13t-24-12t-22-6q-10 0-18 4t-16 9q0-4-7-4q7-7 26-11t29-5m135 45q41 0 75 14q-14 5-28 8t-29 4q-20 0-36-4q5-8 10-10t8-12M1024 0q141 0 271 37t244 103t208 161t160 207t104 244t37 272q0 141-37 271t-103 244t-161 208t-207 160t-244 104t-272 37q-141 0-271-37t-244-103t-208-161t-160-207t-104-244t-37-272q0-141 37-271t103-244t161-208t207-160T752 37t272-37m762 555q-14-22-28-42t-29-41q-2 9-5 13t-4 18q0 9 7 17t18 16t22 12t19 7m-69-98q0 8-3 11h6q4 0 6 1zm-693 1463q114 0 223-29t206-82t180-130t145-172q-13-30-25-61t-12-64q0-36 3-58t7-39t4-29t-3-31t-17-41t-37-62q1-7 3-19t4-25t1-24t-5-19q-26-3-54-11t-50-24l6-5q-13 3-26 8t-25 11t-26 8t-27 4l-16-2l3-7q-14 4-30 10t-31 6q-10 0-29-7t-38-17t-34-22t-15-23l2-3q-5-6-13-11t-15-10t-13-11t-5-14l11-9l-23-3l-8-30q2 5 9 4t11-4l-36-19l25-64q-14-52-7-80t27-46t44-36t49-49l-3-12l66-80l15-2q28 0 63-2t71-7t71-10t64-13q-32-38-67-72t-75-65q-11 4-27 11t-32 18t-25 24t-11 27l6 19q-18 29-40 36t-45 8t-48 0t-48 9l-16-34l15-58l-17-25l173-54q-11-28-36-42t-55-14v-10l56-9q-93-46-193-70t-205-24q-87 0-172 17t-164 49t-153 80t-135 108q26 0 40 13t26 29t25 29t35 14l16-12l-2-22l33-47l-26-74q5-3 15-10t17-7q30 0 46 3t28 11t21 23t28 38l36-28q10 4 32 13t45 22t39 27t17 26q0 15-11 24t-29 15t-37 9t-38 8t-29 10t-12 17l58 19q-20 17-43 31t-48 26l4 17l-92 36v28l-7 3l5-35l-4-1q-7 0-8 3t-1 7t2 8t1 6l-13-7l2 4q0 3 3 9t8 11t8 10t4 5q0 3-4 6t-10 4t-8 3t0 1q14 0 6 2t-25 10t-31 23t-16 44q0 17 1 33t-1 33q-14-38-42-58t-68-20l-43 4l21 14q-17-2-35-4t-37-1t-34 8t-30 21l-6 45q0 32 14 52t49 21q30 0 59-9t57-21q-9 22-20 42t-16 44l13 6q24-16 44-5t39 32t39 43t43 32l-34 18l-80-45q1 2 2 9t-1 3l-36-61q-32-1-68-10t-73-24t-69-33t-59-38l-7 107q0 122 33 238t93 218t147 186t193 143q-5-21-1-42t10-42t13-42t7-43q0-32-10-67t-24-71t-31-71t-27-66t-16-58t6-47l-15-7q6-14 16-27t21-26t17-28t7-30q0-10-4-21t-7-21l21 5q17-39 46-53t73-15q5 0 21 4t34 11t34 11t24 8q0 7 8 9t9 7l-2 8q3 1 14 7t24 15t23 16t14 11q18 0 49 12t68 30t73 43t68 50t49 50t20 44l-34 36q4 51-7 78t-34 45t-53 30t-65 34q0 20-10 43t-25 44t-36 35t-42 14l-42-32q2 2 0 7t-5 2q10 19 5 44t-17 51t-27 49t-27 39q54 14 108 21t109 7" /></svg>
+                                    </div>
+                                    <input type="radio" value="internacionalV" class="btn-check proceso" name="proceso" id="internacional" autocomplete="off" required>
+                                    <label for="internacional" class="w-100 h-100 d-block">
+                                        <div class="product-title">Recepcion de material internacional</div>
+                                        <div class="product-description">
+                                            Productos provenientes de proveedores internacionales.
+                                        </div>
+                                        <div class="product-features">
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Control de inventario</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Etiquetado con norma NOM-050</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Seguimiento de stock</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_extraordinario"))
+                        {
+                            <div class="col-sm-12 col-md-6">
+                                <!-- Recibir extraordinario -->
+                                <div class="product-card" data-option="extraordinario">
+                                    <div class="corner-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><g fill="none"><path d="M14 4h20v20H14zM4 24h20v20H4zm20 0h20v20H24z" /><path stroke="#475569" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M24 24H4v20h20zm0 0v20zm0 0h20v20H24zM14 4h20v20H14zm10 6v8" /><path stroke="#475569" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m20 14l4-4l4 4M10 34h8m-4 4l-4-4l4-4m24 4h-8m4-4l4 4l-4 4" /></g></svg>
+                                    </div>
+                                    <input type="radio" value="extraordinario" class="btn-check proceso" name="proceso" id="extraordinario" autocomplete="off" required>
+                                    <label for="extraordinario" class="w-100 h-100 d-block">
+                                        <div class="product-title">Ingreso de inventario extraordinario</div>
+                                        <div class="product-description">
+                                            Ingreso de material al invenrario temporal por medio de un excel para venta internacional
+                                        </div>
+                                        <div class="product-features">
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Control de inventario</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Etiquetado con norma NOM-050</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Seguimiento de stock</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_barras"))
+                        {
+                            <div class="col-sm-12 col-md-6">
+                                <!-- Recibir barras -->
+                                <div class="product-card" data-option="barras">
+                                    <div class="corner-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 48 48"><g fill="none"><path d="M14 4h20v20H14zM4 24h20v20H4zm20 0h20v20H24z" /><path stroke="#475569" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M24 24H4v20h20zm0 0v20zm0 0h20v20H24zM14 4h20v20H14zm10 6v8" /><path stroke="#475569" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m20 14l4-4l4 4M10 34h8m-4 4l-4-4l4-4m24 4h-8m4-4l4 4l-4 4" /></g></svg>
+                                    </div>
+                                    <input type="radio" value="barras" class="btn-check proceso" name="proceso" id="barras" autocomplete="off" required>
+                                    <label for="barras" class="w-100 h-100 d-block">
+                                        <div class="product-title">Ingreso de inventario barras</div>
+                                        <div class="product-description">
+                                            Ingreso de material al inventario de Tubo y Barra
+                                        </div>
+                                        <div class="product-features">
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Control de inventario</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Manejo de materiales</span>
+                                            </div>
+                                            <div class="feature-item">
+                                                <i class="fas fa-check"></i>
+                                                <span>Seguimiento de stock</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    }
+                </fieldset>
+            </form>
+        </div>
+
+            <div id="step-2" class="wizard-panel" role="tabpanel">
+            <form id="form-2" novalidate>
+                <!-- Recepcion nacional -->
+                <div id="recepcion-contenedor" class="d-none">
+                    @Html.Partial("partials/_RecepcionOrdenCompra")
+                </div>
+
+                <!-- Devolucion de material -->
+                <div id="devolucion-contenedor" class="d-none">
+                    @Html.Partial("partials/_RecepcionDevolucion")
+                </div>
+
+                <!-- Recepcion internacional -->
+                <div id="recepcion-internacional" class="d-none">
+                    @Html.Partial("partials/_RecepcionMaterialInternacional")
+                </div>
+
+                @{
+                    if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_extraordinario"))
+                    {
+                        <div id="inventario-extraordinario" class="d-none">
+                            @Html.Partial("partials/_RecepcionInventarioExtraordinario")
+                        </div>
+                    }
+                }
+                
+                @{
+                    if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_barras"))
+                    {
+                        <div id="inventario-barras" class="d-none">
+                            @Html.Partial("partials/_RecepcionInventarioBarras")
+                        </div>
+                    }
+                }
+            </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/scripts/WizardBuilder.js?v=@DateTime.Now.Ticks"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script>
+    const wizardRecepcion = createWizard({
+        selector: '#rec-wizard-bar',
+        panelsSelector: '#rec-wizard-panels',
+        labels: { next: 'Siguiente', prev: 'Anterior' },
+        steps: [
+            {
+                id: 1,
+                label: 'Tipo de proceso',
+                panel: '#step-1',
+                formId: 'form-1',
+                errorMessage: 'Debes seleccionar el tipo de recepcion.'
+            },
+            {
+                id: 2,
+                label: 'Motivo de devolucion / Recepcion',
+                panel: '#step-2',
+                formId: 'form-2'
+            }
+        ],
+        onStepChange: () => window.scrollTo({ top: 0, behavior: 'smooth' })
+    });
+
+    window.wizardRecepcion = wizardRecepcion;
+
+    document.querySelectorAll('input[name="proceso"]').forEach(radio => {
+        radio.addEventListener('click', (e) => {
+            // seleccionar el card
+            document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+            e.target.parentElement.classList.add('selected');
+
+            // marcar el radio como checkeado
+            e.target.checked = true
+
+            @{
+                if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_barras"))
+                {
+                    <text>
+                            document.getElementById("inventario-barras").classList.add('d-none')
+                    </text>
+                }
+            }
+
+            // mostrar las parciales seleccionadas
+            if (e.target.value === 'recepcionV') {
+                document.getElementById("recepcion-contenedor").classList.remove('d-none')
+                document.getElementById("devolucion-contenedor").classList.add('d-none')
+                document.getElementById("recepcion-internacional").classList.add('d-none')
+
+                @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_extraordinario"))
+                        {
+                            <text>
+                                    document.getElementById("inventario-extraordinario").classList.add('d-none')
+                            </text>
+                    }
+                    }
+
+                } else if (e.target.value === 'devolucionV') {
+                document.getElementById("recepcion-contenedor").classList.add('d-none')
+                document.getElementById("devolucion-contenedor").classList.remove('d-none')
+                document.getElementById("recepcion-internacional").classList.add('d-none')
+
+                @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_extraordinario"))
+                        {
+                            <text>
+                                    document.getElementById("inventario-extraordinario").classList.add('d-none')
+                            </text>
+                    }
+                    }
+                } else if (e.target.value === 'internacionalV') {
+                document.getElementById("recepcion-contenedor").classList.add('d-none')
+                document.getElementById("devolucion-contenedor").classList.add('d-none')
+                document.getElementById("recepcion-internacional").classList.remove('d-none')
+
+                @{
+                        if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_extraordinario"))
+                        {
+                            <text>
+                                    document.getElementById("inventario-extraordinario").classList.add('d-none')
+                            </text>
+                    }
+                    }
+                }
+            @{
+                    if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_extraordinario"))
+                    {
+                        <text>
+                                else if (e.target.value === 'extraordinario') {
+                                    document.getElementById("recepcion-contenedor").classList.add('d-none')
+                                            document.getElementById("devolucion-contenedor").classList.add('d-none')
+                                document.getElementById("recepcion-internacional").classList.add('d-none')
+                                document.getElementById("inventario-extraordinario").classList.remove('d-none')
+                                        }
+                        </text>
+                }
+                }
+            @{
+                    if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_barras"))
+                    {
+                        <text>
+                                else if (e.target.value === 'barras') {
+                                    document.getElementById("recepcion-contenedor").classList.add('d-none')
+                                document.getElementById("devolucion-contenedor").classList.add('d-none')
+                                document.getElementById("recepcion-internacional").classList.add('d-none')
+                                document.getElementById("inventario-barras").classList.remove('d-none')
+                        </text>
+
+                    if (Utilities.DoesUserHasRight(User.Identity.Name, "inventario_extraordinario"))
+                    {
+                        <text>
+                                document.getElementById("inventario-extraordinario").classList.add('d-none')
+                        </text>
+                    }
+
+                        <text>
+                                        }
+                        </text>
+                }
+                }
+            })
+    })
+</script>

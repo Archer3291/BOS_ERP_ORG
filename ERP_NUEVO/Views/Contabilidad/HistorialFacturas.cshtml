@@ -1,0 +1,734 @@
+﻿@{
+    ViewBag.Title = "HistorialFacturas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+    <link href="~/content/contabilidad/style.css" rel="stylesheet" />
+
+    <style>
+        /* Tom Select */
+        .hf-wrap .ts-wrapper .ts-control {
+            background: var(--bg-light) !important;
+            border: 1px solid var(--border-light) !important;
+            color: var(--text-dark) !important;
+            border-radius: 8px !important;
+            padding: 8px 12px !important;
+            font-size: .9rem;
+            box-shadow: var(--shadow);
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .hf-wrap .ts-wrapper.focus .ts-control {
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15) !important;
+        }
+
+        .hf-wrap .ts-dropdown {
+            background: var(--bg-light) !important;
+            border: 1px solid var(--border-light) !important;
+            border-radius: 8px !important;
+            color: var(--text-dark) !important;
+            box-shadow: var(--shadow-lg) !important;
+        }
+
+            .hf-wrap .ts-dropdown .option:hover,
+            .hf-wrap .ts-dropdown .option.active {
+                background: var(--accent-blue) !important;
+                color: #fff !important;
+            }
+
+        /* Header */
+        .hf-page-header {
+            padding: 1.5rem 0 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: baseline;
+            gap: .75rem;
+        }
+
+            .hf-page-header h1 {
+                font-size: 1.4rem;
+                font-weight: 700;
+                color: var(--text-dark);
+                margin: 0;
+                letter-spacing: -.3px;
+            }
+
+                .hf-page-header h1 span {
+                    color: var(--accent-blue);
+                }
+
+            .hf-page-header .subtitle {
+                font-size: .82rem;
+                color: var(--text-light);
+            }
+
+        /* Filter bar */
+        .hf-filter-bar {
+            display: flex;
+            gap: .875rem;
+            align-items: flex-end;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+            .hf-filter-bar .field {
+                flex: 1;
+                min-width: 260px;
+            }
+
+            .hf-filter-bar label {
+                font-size: .72rem;
+                font-weight: 600;
+                color: var(--text-light);
+                text-transform: uppercase;
+                letter-spacing: .06em;
+                margin-bottom: .4rem;
+                display: block;
+            }
+
+        .hf-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            background: var(--accent-blue);
+            border: none;
+            color: #fff;
+            border-radius: 8px;
+            padding: 9px 22px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: .875rem;
+            cursor: pointer;
+            transition: opacity .18s, transform .1s, box-shadow .18s;
+            box-shadow: 0 2px 8px rgba(59,130,246,.3);
+            white-space: nowrap;
+        }
+
+            .hf-btn:hover {
+                opacity: .88;
+                box-shadow: 0 4px 14px rgba(59,130,246,.38);
+            }
+
+            .hf-btn:active {
+                transform: scale(.97);
+            }
+
+            .hf-btn:disabled {
+                opacity: .45;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+        /* Total bar */
+        .hf-total-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 1.25rem;
+            padding: .875rem 1.25rem;
+            background: var(--bg-light);
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow);
+        }
+
+        .tb-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: .05rem;
+        }
+
+        .tb-label {
+            font-size: .68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-light);
+        }
+
+        .tb-val {
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+            .tb-val.green {
+                color: var(--success-color);
+            }
+
+            .tb-val.blue {
+                color: var(--accent-blue);
+            }
+
+        .tb-sep {
+            width: 1px;
+            height: 32px;
+            background: var(--border-light);
+        }
+
+        /* Accordion */
+        .hf-accordion {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            margin-bottom: .875rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: box-shadow .2s;
+        }
+
+            .hf-accordion:hover {
+                box-shadow: var(--shadow-lg);
+            }
+
+        .hf-acc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .9rem 1.25rem;
+            cursor: pointer;
+            user-select: none;
+            background: var(--bg-gray);
+            border-bottom: 1px solid transparent;
+            transition: background .15s;
+            gap: 1rem;
+        }
+
+        .hf-accordion.open .hf-acc-header {
+            border-bottom-color: var(--border-light);
+        }
+
+        .hf-acc-header:hover {
+            background: var(--light-blue);
+        }
+
+        .hf-acc-left {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .hf-acc-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .hf-acc-count {
+            font-size: .78rem;
+            color: var(--text-light);
+        }
+
+        .tipo-badge {
+            padding: .25em .8em;
+            border-radius: 20px;
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            white-space: nowrap;
+        }
+
+        .badge-contado {
+            background: rgba(5,150,105,.1);
+            color: var(--success-color);
+            border: 1px solid rgba(5,150,105,.22);
+        }
+
+        .badge-credito {
+            background: rgba(59,130,246,.1);
+            color: var(--accent-blue);
+            border: 1px solid rgba(59,130,246,.22);
+        }
+
+        .badge-cartera {
+            background: rgba(217,119,6,.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(217,119,6,.22);
+        }
+
+        .hf-acc-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: .05rem;
+        }
+
+            .hf-acc-stat .sl {
+                font-size: .68rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: .06em;
+                color: var(--text-light);
+            }
+
+            .hf-acc-stat .sv {
+                font-size: .92rem;
+                font-weight: 700;
+                color: var(--success-color);
+                font-variant-numeric: tabular-nums;
+            }
+
+        .hf-chevron {
+            color: var(--text-light);
+            transition: transform .25s;
+            flex-shrink: 0;
+        }
+
+        .hf-accordion.open .hf-chevron {
+            transform: rotate(180deg);
+        }
+
+        .hf-acc-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .38s cubic-bezier(.4,0,.2,1);
+        }
+
+        .hf-accordion.open .hf-acc-body {
+            max-height: 99999px;
+        }
+
+        /* Tabla */
+        .hf-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .84rem;
+        }
+
+            .hf-table thead tr {
+                background: var(--bg-gray);
+            }
+
+            .hf-table th {
+                padding: .6rem 1rem;
+                font-size: .69rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .07em;
+                color: var(--text-light);
+                text-align: left;
+                white-space: nowrap;
+            }
+
+                .hf-table th.r {
+                    text-align: right;
+                }
+
+        /* Fila factura */
+        .row-fac td {
+            padding: .65rem 1rem;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-dark);
+            font-weight: 500;
+            background: var(--bg-light);
+        }
+
+        .row-fac:hover td {
+            background: var(--very-light-blue);
+        }
+
+        .row-fac .fc {
+            color: var(--primary-blue);
+            font-weight: 600;
+            font-size: .83rem;
+        }
+
+        .row-fac .ic {
+            text-align: right;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .row-fac .nc {
+            font-size: .74rem;
+            color: var(--text-light);
+        }
+
+        .comp-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 10px;
+            font-size: .68rem;
+            font-weight: 700;
+            background: rgba(59,130,246,.1);
+            color: var(--accent-blue);
+            border: 1px solid rgba(59,130,246,.2);
+        }
+
+        /* Fila complemento */
+        .row-comp td {
+            padding: .45rem 1rem .45rem 3rem;
+            border-top: 1px dashed var(--border-light);
+            color: var(--text-light);
+            font-size: .8rem;
+            background: var(--bg-gray);
+        }
+
+        .row-comp:hover td {
+            background: var(--light-blue);
+        }
+
+        .row-comp .cf {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            color: var(--secondary-blue);
+        }
+
+            .row-comp .cf::before {
+                content: '';
+                display: inline-block;
+                width: 14px;
+                height: 1px;
+                background: var(--border-light);
+                flex-shrink: 0;
+            }
+
+        .row-comp .ic {
+            text-align: right;
+            color: var(--text-dark);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Fila subtotal */
+        .row-sub td {
+            padding: .6rem 1rem;
+            border-top: 2px solid var(--border-light);
+            background: var(--bg-gray);
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-align: right;
+        }
+
+        .row-sub .sl {
+            text-align: left;
+        }
+
+        .row-sub .sv {
+            color: var(--success-color);
+            font-size: .88rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Empty / loading */
+        .hf-empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-light);
+        }
+
+            .hf-empty svg {
+                opacity: .3;
+                margin-bottom: .75rem;
+                display: block;
+                margin-inline: auto;
+            }
+
+            .hf-empty p {
+                margin: 0;
+                font-size: .9rem;
+            }
+
+        .hf-spin {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-light);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: hfSpin .65s linear infinite;
+            vertical-align: middle;
+            margin-right: .4rem;
+        }
+
+        @@keyframes hfSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Filtros de Búsqueda</h5>
+    </div>
+    <div class="card-body">
+        <span class="subtitle">Consulta por cuenta · agrupado por tipo de proceso</span>
+
+        <div class="hf-filter-bar">
+            <div class="field">
+                <label>Cuenta / Cliente</label>
+                <select id="clientes"></select>
+            </div>
+            <button class="hf-btn" id="btnBuscar" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2.2" />
+                    <path d="m21 21-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+                </svg>
+                Buscar
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div id="totalBar" class="hf-total-bar d-none">
+    <div class="tb-item">
+        <span class="tb-label">Facturas</span>
+        <span class="tb-val blue" id="tbFact">0</span>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-item">
+        <span class="tb-label">Complementos</span>
+        <span class="tb-val blue" id="tbComp">0</span>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-item">
+        <span class="tb-label">Total Facturas</span>
+        <span class="tb-val green" id="tbTotal">
+            $0.00 <i class="fa-solid"></i>
+        </span>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-item">
+        <span class="tb-label">Total Complementos</span>
+        <span class="tb-val" id="tbPreComp">
+            $0.00 <i class="fa-solid"></i>
+        </span>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-item">
+        <span class="tb-label">Diferencia</span>
+        <span class="tb-val" id="tbDif">
+            $0.00 <i class="fa-solid"></i>
+        </span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Resultados</h5>
+    </div>
+    <div class="card-body">
+        <div id="tablaFacturas"></div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script>
+        let tomManager;
+        const TIPOS = {
+            factura_contado: { label: 'Factura Contado', badgeClass: 'badge-contado' },
+            registro_carteras_cliente: { label: 'Registro Cartera', badgeClass: 'badge-cartera' },
+            factura_credito: { label: 'Factura Crédito', badgeClass: 'badge-credito' },
+        };
+        const ORDEN = ['factura_contado', 'factura_credito', 'registro_carteras_cliente', 'registro_carteras'];
+
+        let codigoSeleccionado = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const clientes = await GetData({ path: '/Contabilidad/GetClientes' });
+
+            tomManager = new TomSelectManager();
+            tomManager.create('clientes', {
+                selector: '#clientes',
+                options: clientes,
+                valueField: 'cliente_id',
+                searchField: ['codigo', 'nombre'],
+                placeholder: 'Selecciona una cuenta...',
+                maxItems: 1,
+                create: false,
+                render: {
+                    option: (d, e) => `<div style="color:var(--text-dark)">${e(d.codigo)} - ${e(d.nombre)}</div>`,
+                    item: (d, e) => `<div style="color:var(--text-dark)">${e(d.codigo)} - ${e(d.nombre)}</div>`
+                },
+                onChange(val) {
+                    const c = clientes.find(x => String(x.cliente_id) === String(val));
+                    codigoSeleccionado = c ? c.codigo : null;
+                    document.getElementById('btnBuscar').disabled = !codigoSeleccionado;
+                }
+            });
+
+            document.getElementById('btnBuscar').addEventListener('click', cargarFacturas);
+        });
+
+        async function cargarFacturas() {
+            const tablaFacturas = createTable({
+                selector: '#tablaFacturas',
+                path: '/Contabilidad/GetFacturas',
+                searchPlaceholder: 'Buscar folio...',
+                rowKey: 'id_encabezado',
+                data: () => ({
+                    codigo: codigoSeleccionado
+                }),
+                exports: [
+                    {
+                        type: 'excel',
+                        path: '/Contabilidad/GetFacturasExcel',
+                        fileName: 'reporte_facturas',
+                        data: () => ({
+                            codigo: codigoSeleccionado
+                        }),
+                        sheets: [
+                            {
+                                key: 'facturas',
+                                sheetName: 'Facturas',
+                            },
+                            {
+                                key: 'complemento',
+                                sheetName: 'Complementos',
+                                columns: [
+                                    { title: 'Folio Complemento', data: 'complemento_folio' },
+                                    { title: 'Fecha', data: 'fecha_complemento', formatter: v => dateFormatter(v) },
+                                    { title: 'Importe', data: 'importe_complemento', formatter: v => Currency.format(v) },
+                                    { title: 'Folio Factura', data: 'factura_folio' },
+                                    { title: 'id_factura' , data: 'id_factura'}
+                                ]
+                            }
+                        ]
+                    },
+                ],
+                columns: [
+                    { title: 'Folio', data: 'factura_folio' },
+                    {
+                        title: 'Tipo', data: 'tipo_proceso_factura',
+                        formatter: v => {
+                            const map = {
+                                factura_contado: { label: 'Contado', cls: 'badge-contado' },
+                                factura_credito: { label: 'Crédito', cls: 'badge-credito' },
+                                registro_carteras_cliente: { label: 'Cartera', cls: 'badge-cartera' },
+                            };
+                            const m = map[v] ?? { label: v, cls: 'badge-contado' };
+                            return `<span class="tipo-badge ${m.cls}">${m.label}</span>`;
+                        }
+                    },
+                    { title: 'Complementos', data: 'cantidad_complementos' },
+                    {
+                        title: 'Importe factura', data: 'importe_factura',
+                        formatter: v => `<span style="color:var(--success-color);font-weight:bold;">${Currency.format(v)}</span>`
+                    },
+                    {
+                        title: 'Importe complemento', data: null,
+                        formatter: (row) => {
+                            let icon = "";
+                            let color = "";
+
+                            if (row.importe_complemento < row.importe_factura) {
+                                icon = "fa-arrow-trend-down";
+                                color = "var(--danger-color)";
+                            } else if (row.importe_complemento === row.importe_factura) {
+                                icon = "fa-equals";
+                                color = "var(--success-color)";
+                            } else {
+                                icon = "fa-arrow-trend-up";
+                                color = "var(--info-color)";
+                            }
+
+                            return `<span style="color:${color};font-weight:bold;">${Currency.format(row.importe_complemento)} <i class="fa-solid ${icon}"></i></span>`
+                        }
+                    },
+                    {
+                        title: 'Diferencia', data: 'diferencia',
+                        formatter: (diferencia) => {
+                            let icon = "";
+                            let color = "";
+
+                            if (diferencia > 0) {
+                                color = 'var(--danger-color)';
+                                icon = 'fa-solid fa-arrow-trend-down';
+                            }
+                            else if (diferencia === 0) {
+                                color = 'var(--success-color)';
+                                icon = 'fa-solid fa-check ';
+                            }
+                            else {
+                                color = 'var(--info-color)';
+                                icon = 'fa-solid fa-arrow-trend-up';
+                            }
+
+                            return `<span style="color:${color};font-weight:bold;">${Currency.format(diferencia)} <i class="fa-solid ${icon}"></i></span>`
+                        }
+                    },
+                    { title: 'Fecha', data: 'fecha_factura', formatter: v => dateFormatter(v) }
+                ],
+                childRows: {
+                    path: '/Contabilidad/GetComplementosFactura',
+                    pathKey: 'id_encabezado',   // key del row padre que se manda
+                    paramName: 'parentId',      // nombre que recibe el backend
+                    emptyText: 'Sin complementos de pago',
+                    columns: [
+                        { title: 'Folio Complemento', data: 'complemento_folio' },
+                        { title: 'Importe', data: 'importe_complemento', formatter: v => Currency.format(v) },
+                        { title: 'Fecha', data: 'fecha_complemento', formatter: v => dateFormatter(v) },
+                        { title: 'Usuario', data: 'usuario' },
+                    ]
+                },
+                GlobalEvents: {
+                    onDataLoaded: (response) => {
+                        let totalFact = response.total;
+                        let totalComp = response.data.reduce((comp, v) => comp + v.cantidad_complementos, 0);
+                        let totalPreFacturas = response.totales.totalPreFac;
+                        let totalPreComplementos = response.totales.totalPreComp;
+                        let diferencia = totalPreFacturas - totalPreComplementos;
+                        document.getElementById('totalBar').classList.remove('d-none');
+
+                        let icon = '';
+                        let color = '';
+
+                        if (totalPreComplementos < totalPreFacturas) {
+                            icon = 'fa-angle-down';
+                            color = 'var(--warning-color)';
+                        } else if (totalPreComplementos === totalPreFacturas) {
+                            icon = 'fa-equals';
+                            color = 'var(--success-color)';
+                        } else {
+                            icon = 'fa-angle-up';
+                            color = 'var(--info-color)';
+                        }
+
+                        const tbDif = document.getElementById('tbDif');
+                        const iconDif = tbDif.querySelector('i');
+
+                        tbDif.firstChild.textContent = Currency.format(diferencia) + ' ';
+
+                        if (diferencia > 0) {
+                            tbDif.style.color = 'var(--danger-color)';
+                            iconDif.className = 'fa-solid fa-angle-down';
+                        }
+                        else if (diferencia === 0) {
+                            tbDif.style.color = 'var(--success-color)';
+                            iconDif.className = 'fa-solid fa-equals';
+                        }
+                        else {
+                            tbDif.style.color = 'var(--info-color)';
+                            iconDif.className = 'fa-solid fa-angle-up';
+                        }
+
+                        document.getElementById('tbFact').textContent = totalFact;
+                        document.getElementById('tbComp').textContent = totalComp;
+                        document.getElementById('tbTotal').textContent = Currency.format(totalPreFacturas);
+                        document.getElementById('tbPreComp').firstChild.textContent = Currency.format(totalPreComplementos) + ' ';
+                        document.getElementById('tbPreComp').style.color = color;
+                        document.getElementById('tbPreComp').querySelector('i').classList.add(icon)
+                    }
+                }
+            });
+        }
+    </script>
+}

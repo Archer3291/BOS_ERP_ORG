@@ -1,0 +1,851 @@
+﻿@{
+    ViewBag.Title = "CalculadoraPesos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+        :root {
+            --primary-blue: #1e3a5f;
+            --primary-blue-dark: #0f1729;
+            --accent-blue: #3b82f6;
+            --text-dark: #0f172a;
+            --text-light: #64748b;
+            --border-light: #e2e8f0;
+            --bg-light: #ffffff;
+            --bg-gray: #f8fafc;
+            --success-color: #059669;
+        }
+
+        body {
+            background-color: var(--bg-gray);
+            color: var(--text-dark);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .search-icon-wrapper {
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.25rem;
+            z-index: 10;
+            color: var(--text-light);
+        }
+
+        .search-icon.searching {
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+
+        .product-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            background: var(--bg-light);
+            border-color: var(--border-light) !important;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            border-left-color: var(--accent-blue);
+            box-shadow: 0 10px 25px rgba(30, 58, 95, 0.15);
+        }
+
+        .product-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover .product-icon {
+            transform: rotate(5deg) scale(1.1);
+        }
+
+        .weight-badge {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.875rem;
+        }
+
+        .result-badge {
+            background: linear-gradient(135deg, var(--success-color), #10b981);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.875rem;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.4s ease;
+        }
+
+        .result-badge.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .input-unit {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-blue);
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        @@keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .product-card {
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .product-card:nth-child(1) { animation-delay: 0.05s; }
+        .product-card:nth-child(2) { animation-delay: 0.1s; }
+        .product-card:nth-child(3) { animation-delay: 0.15s; }
+        .product-card:nth-child(4) { animation-delay: 0.2s; }
+        .product-card:nth-child(5) { animation-delay: 0.25s; }
+        .product-card:nth-child(6) { animation-delay: 0.3s; }
+
+        @@keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .no-results-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+        }
+
+        .badge.bg-primary {
+            background-color: var(--primary-blue) !important;
+        }
+
+        .badge.bg-success {
+            background-color: var(--success-color) !important;
+        }
+
+        .card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+        }
+
+        .provider-item {
+            transition: all 0.3s ease;
+        }
+
+        .provider-item:hover {
+            background-color: var(--bg-gray);
+        }
+</style>
+
+<div class="container py-4">
+    <!-- Header -->
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-body text-center py-5">
+            <h1 class="display-4 fw-bold gradient-text mb-3">
+                ⚖️ Calculadora de Pesos e Inventario
+            </h1>
+            <p class="lead mb-0" style="color: var(--text-light);">
+                Busca productos y calcula las piezas según el peso total en gramos
+            </p>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="card shadow border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="search-icon-wrapper">
+                <span class="search-icon" id="searchIcon">🔎</span>
+                <input type="text"
+                       id="searchInput"
+                       class="form-control form-control-lg ps-5 border-2"
+                       placeholder="Buscar por nombre o código del producto..."
+                       autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div id="statsBar" class="card shadow-sm border-0 mb-4 d-none">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">
+                    <span id="resultCount" class="display-6 gradient-text fw-bold">0</span>
+                    <span class="ms-2">productos encontrados</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Grid -->
+    <div id="results" class="row g-6 d-none d-flex justify-content-center align-items-center">
+        <!-- Los resultados se mostrarán aquí -->
+    </div>
+
+    <!-- No Results -->
+    <div id="noResults" class="card shadow border-0 text-center py-5 d-none">
+        <div class="card-body">
+            <div class="no-results-icon display-1 mb-3 opacity-50">📦</div>
+            <h5 style="color: var(--text-light);">No se encontraron productos con ese criterio</h5>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Variables globales
+    let products = [];
+    let searchTimeout;
+
+    const searchInput = document.getElementById('searchInput');
+    const searchIcon = document.getElementById('searchIcon');
+    const resultsDiv = document.getElementById('results');
+    const noResultsDiv = document.getElementById('noResults');
+    const statsBar = document.getElementById('statsBar');
+    const resultCount = document.getElementById('resultCount');
+
+    // Event listener con debounce de 2 segundos
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value;
+
+        // Limpiar el timeout anterior
+        clearTimeout(searchTimeout);
+
+        // Mostrar icono de búsqueda
+        searchIcon.classList.add('searching');
+
+        // Si el campo está vacío, limpiar resultados
+        if (searchTerm === '') {
+            resultsDiv.classList.add('d-none');
+            noResultsDiv.classList.add('d-none');
+            statsBar.classList.add('d-none');
+            searchIcon.classList.remove('searching');
+            products = [];
+            return;
+        }
+
+        // Esperar 2 segundos después de que el usuario deje de escribir
+        searchTimeout = setTimeout(async () => {
+            try {
+                products = await fetchProducts(searchTerm);
+                const filteredProducts = products;
+                displayResults(filteredProducts);
+            } catch (error) {
+                console.error('Error al buscar productos:', error);
+                showError();
+            } finally {
+                searchIcon.classList.remove('searching');
+            }
+        }, 2000);
+    });
+
+    // Función para hacer fetch de productos
+    async function fetchProducts(searchTerm) {
+        try {
+            const response = await fetch(
+                `/CalculadoraPesos/ObtenerProducto?cve_prod=${encodeURIComponent(searchTerm)}`
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            const text = await response.text();
+            const json = JSON.parse(text);
+
+            // El backend ya envía los pesos en gramos
+            return JSON.parse(json.data.product) ? [JSON.parse(json.data.product)] : [];
+
+        } catch (error) {
+            console.error('Error en fetchProducts:', error);
+            throw error;
+        }
+    }
+
+    // Función para mostrar resultados
+    function displayResults(filteredProducts) {
+        resultsDiv.innerHTML = '';
+
+        if (filteredProducts.length === 0) {
+            resultsDiv.classList.add('d-none');
+            noResultsDiv.classList.remove('d-none');
+            statsBar.classList.add('d-none');
+            return;
+        }
+
+        noResultsDiv.classList.add('d-none');
+        resultsDiv.classList.remove('d-none');
+        statsBar.classList.remove('d-none');
+        resultCount.textContent = filteredProducts.length;
+
+        filteredProducts.forEach(product => {
+            const card = createProductCard(product);
+            resultsDiv.appendChild(card);
+        });
+    }
+
+    // Función para mostrar error
+    function showError() {
+        resultsDiv.classList.add('d-none');
+        statsBar.classList.add('d-none');
+        noResultsDiv.classList.remove('d-none');
+
+        const noResultsCard = document.querySelector('#noResults .card-body');
+        noResultsCard.innerHTML = `
+        <div class="no-results-icon display-1 mb-3 opacity-50">⚠️</div>
+        <h5 style="color: var(--text-light);">Error al cargar los productos</h5>
+        <p class="text-muted">Por favor, intenta nuevamente</p>
+    `;
+    }
+
+    function createProductCard(product) {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6';
+
+        // Filtrar proveedores válidos y asegurar máximo 3
+        const validProviders = product.providers.filter(p => p.name && p.weightPerUnit != null).slice(0, 3);
+
+        // Si no hay proveedores válidos, crear uno por defecto
+        if (validProviders.length === 0) {
+            validProviders.push({
+                name: 'Proveedor Principal',
+                unit: 'kg',
+                weightPerUnit: 0
+            });
+        }
+
+        const currentProvider = validProviders[0];
+
+        let providerSection = `
+            <div class="mb-3 p-3 rounded" style="background-color: var(--bg-gray);">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <label class="form-label fw-semibold mb-0">
+                        👥 Proveedores
+                    </label>
+                    <div class="d-flex gap-2">
+                        ${validProviders.length < 3 ? `
+                        <button class="btn btn-sm btn-outline-primary" id="add-provider-${product.id}">
+                            ➕ Agregar
+                        </button>
+                        ` : ''}
+                        <button class="btn btn-sm btn-success d-none" id="save-provider-${product.id}">
+                            💾 Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+                <div id="providers-list-${product.id}">
+                    ${validProviders.map((provider, index) => `
+                        <div class="provider-item mb-2 p-2 border rounded" data-index="${index}">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-5">
+                                    <input type="text"
+                                           class="form-control form-control-sm provider-name"
+                                           value="${provider.name}"
+                                           placeholder="Nombre proveedor">
+                                </div>
+                                <div class="col-5">
+                                    <div class="input-group input-group-sm">
+                                        <input type="number"
+                                               class="form-control provider-weight"
+                                               value="${provider.weightPerUnit}"
+                                               step="0.01"
+                                               min="0"
+                                               placeholder="Peso">
+                                        <span class="input-group-text">g</span>
+                                    </div>
+                                </div>
+                                <div class="col-2 text-end">
+                                    <button class="btn btn-sm btn-outline-danger delete-provider" title="Eliminar">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                ${validProviders.length > 1 ? `
+                <select id="provider-${product.id}" class="form-select border-2 mt-2">
+                    ${validProviders.map((provider, index) =>
+                        `<option value="${index}">${provider.name} - ${provider.weightPerUnit}g</option>`
+                    ).join('')}
+                </select>
+                ` : ''}
+                <span class="badge bg-success mt-2">
+                    ✓ ${validProviders.length} proveedor(es) disponible(s)
+                </span>
+            </div>
+        `;
+
+        col.innerHTML = `
+        <div class="card shadow border h-100 product-card">
+            <div class="card-body p-4">
+                <!-- Header -->
+                <div class="d-flex align-items-start gap-3 mb-4">
+                    <div class="product-icon shadow">
+                        ${product.icon}
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="card-title fw-bold mb-2">${product.name}</h5>
+                        <span class="badge bg-primary">${product.code}</span>
+                    </div>
+                </div>
+
+                <!-- Provider Section -->
+                ${providerSection}
+
+                <!-- Weight Info -->
+                <div class="weight-badge text-center mb-3" id="weight-${product.id}">
+                    <div class="small text-uppercase mb-2 opacity-75 fw-semibold">
+                        Peso por Pieza
+                    </div>
+                    <div class="display-5 fw-bold">
+                        ${currentProvider.weightPerUnit || 0} g
+                    </div>
+                </div>
+
+                <!-- Calculator Section -->
+                <div class="p-3 rounded" style="background-color: var(--bg-gray);">
+                    <label class="form-label fw-semibold">
+                        ⚖️ Calcular Inventario (gramos)
+                    </label>
+                    <div class="position-relative mb-3">
+                        <input type="number"
+                               id="total-weight-${product.id}"
+                               class="form-control form-control-lg border-2 pe-5"
+                               placeholder="Ingresa el peso total en gramos..."
+                               step="0.01"
+                               min="0">
+                        <span class="input-unit">g</span>
+                    </div>
+                    <div id="result-${product.id}" class="result-badge text-center">
+                        <div class="small text-uppercase mb-2 opacity-75 fw-semibold">
+                            Número de Piezas
+                        </div>
+                        <div class="display-4 fw-bold mb-1">0</div>
+                        <div class="small opacity-75 fw-semibold">piezas disponibles</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        // Store providers data in the element
+        col.dataset.providers = JSON.stringify(validProviders);
+        col.dataset.originalProviders = JSON.stringify(validProviders);
+        // Event listener para agregar proveedor
+        const addProviderBtn = col.querySelector(`#add-provider-${product.id}`);
+        if (addProviderBtn) {
+            addProviderBtn.addEventListener('click', () => {
+                addProvider(col, product.id);
+            });
+        }
+
+        // Event listener para guardar cambios
+        const saveProviderBtn = col.querySelector(`#save-provider-${product.id}`);
+        if (saveProviderBtn) {
+            saveProviderBtn.addEventListener('click', async () => {
+                await saveProviders(col, product.id, saveProviderBtn);
+            });
+        }
+
+        // Event listeners para editar proveedores
+        setupProviderEditListeners(col, product.id);
+
+        // Event listener para selector de proveedor
+        const providerSelect = col.querySelector(`#provider-${product.id}`);
+        if (providerSelect) {
+            providerSelect.addEventListener('change', (e) => {
+                const providers = JSON.parse(col.dataset.providers);
+                const provider = providers[e.target.value];
+                updateProviderInfo(col, product.id, provider);
+            });
+        }
+
+        const weightInput = col.querySelector(`#total-weight-${product.id}`);
+        weightInput.addEventListener('input', (e) => {
+            // Usar solo datos confirmados del backend
+            const confirmedProviders = JSON.parse(col.dataset.originalProviders);
+            const providerSelect = col.querySelector(`#provider-${product.id}`);
+            const providerIndex = providerSelect ? providerSelect.value : 0;
+            const provider = confirmedProviders[providerIndex] || { weightPerUnit: 0 };
+            calculatePieces(col, product.id, e.target.value, provider.weightPerUnit);
+        });
+
+        return col;
+    }
+
+    function setupProviderEditListeners(col, productId) {
+        const providersList = col.querySelector(`#providers-list-${productId}`);
+        if (!providersList) return;
+
+        // Listener para editar nombre o peso - mostrar botón guardar
+        providersList.addEventListener('input', (e) => {
+            if (e.target.classList.contains('provider-name') || e.target.classList.contains('provider-weight')) {
+                showSaveButton(col, productId);
+                updateLocalProvidersData(col, productId);
+            }
+        });
+
+        // Listener para eliminar proveedor
+        providersList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-provider') || e.target.closest('.delete-provider')) {
+                const providerItem = e.target.closest('.provider-item');
+                if (providerItem) {
+                    deleteProvider(col, productId, providerItem);
+                }
+            }
+        });
+    }
+
+    function showSaveButton(col, productId) {
+        const saveBtn = col.querySelector(`#save-provider-${productId}`);
+        if (saveBtn) {
+            saveBtn.classList.remove('d-none');
+        }
+    }
+
+    function hideSaveButton(col, productId) {
+        const saveBtn = col.querySelector(`#save-provider-${productId}`);
+        if (saveBtn) {
+            saveBtn.classList.add('d-none');
+        }
+    }
+
+    function updateLocalProvidersData(col, productId) {
+        const providersList = col.querySelector(`#providers-list-${productId}`);
+        const providerItems = providersList.querySelectorAll('.provider-item');
+
+        const providers = Array.from(providerItems).map(item => {
+            const name = item.querySelector('.provider-name').value;
+            const weight = parseFloat(item.querySelector('.provider-weight').value) || 0;
+            return {
+                name: name,
+                unit: 'kg',
+                weightPerUnit: weight
+            };
+        });
+
+        col.dataset.providers = JSON.stringify(providers);
+        updateProviderSelect(col, productId, providers);
+    }
+
+    async function saveProviders(col, productId, saveBtn) {
+        const providers = JSON.parse(col.dataset.providers);
+
+        // Deshabilitar botón mientras guarda
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '⏳ Guardando...';
+
+        try {
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('providers', JSON.stringify(providers));
+
+            const response = await fetch('/CalculadoraPesos/GuardarProveedores', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Actualizar el estado original con los datos guardados
+                col.dataset.originalProviders = JSON.stringify(providers);
+
+                showNotification('✓ Cambios guardados correctamente', 'success');
+                hideSaveButton(col, productId);
+
+                // Actualizar peso mostrado con datos confirmados
+                const providerSelect = col.querySelector(`#provider-${productId}`);
+                const selectedIndex = providerSelect ? providerSelect.value : 0;
+                if (providers[selectedIndex]) {
+                    updateProviderInfo(col, productId, providers[selectedIndex]);
+                }
+            } else {
+                throw new Error(result.message || 'Error al guardar');
+            }
+
+        } catch (error) {
+            console.error('Error al guardar proveedores:', error);
+            showNotification('⚠️ Error al guardar cambios. Intenta nuevamente.', 'error');
+
+            // Restaurar datos originales en caso de error
+            const originalProviders = JSON.parse(col.dataset.originalProviders);
+            col.dataset.providers = JSON.stringify(originalProviders);
+            renderProvidersList(col, productId, originalProviders);
+            updateProviderSelect(col, productId, originalProviders);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '💾 Guardar Cambios';
+        }
+    }
+
+    function renderProvidersList(col, productId, providers) {
+        const providersList = col.querySelector(`#providers-list-${productId}`);
+        providersList.innerHTML = providers.map((provider, idx) => `
+        <div class="provider-item mb-2 p-2 border rounded" data-index="${idx}">
+            <div class="row g-2 align-items-center">
+                <div class="col-5">
+                    <input type="text"
+                           class="form-control form-control-sm provider-name"
+                           value="${provider.name}"
+                           placeholder="Nombre proveedor">
+                </div>
+                <div class="col-5">
+                    <div class="input-group input-group-sm">
+                        <input type="number"
+                               class="form-control provider-weight"
+                               value="${provider.weightPerUnit}"
+                               step="0.01"
+                               min="0"
+                               placeholder="Peso">
+                        <span class="input-group-text">g</span>
+                    </div>
+                </div>
+                <div class="col-2 text-end">
+                    <button class="btn btn-sm btn-outline-danger delete-provider" title="Eliminar">
+                        🗑️
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    }
+
+    function updateProviderSelect(col, productId, providers) {
+        const select = col.querySelector(`#provider-${productId}`);
+        if (!select) return;
+
+        const currentValue = select.value;
+        select.innerHTML = providers.map((provider, index) =>
+            `<option value="${index}">${provider.name} - ${provider.weightPerUnit}g</option>`
+        ).join('');
+
+        if (currentValue < providers.length) {
+            select.value = currentValue;
+        }
+
+        const badge = select.nextElementSibling;
+        if (badge) {
+            badge.textContent = `✓ ${providers.length} proveedor(es) disponible(s)`;
+        }
+    }
+
+    function updateProviderInfo(col, productId, provider) {
+        const weightDiv = col.querySelector(`#weight-${productId}`);
+        const weightValue = weightDiv.querySelector('.display-5');
+        const totalWeightInput = col.querySelector(`#total-weight-${productId}`);
+
+        // Usar solo datos confirmados (originalProviders)
+        const confirmedProviders = JSON.parse(col.dataset.originalProviders);
+        const providerSelect = col.querySelector(`#provider-${productId}`);
+        const selectedIndex = providerSelect ? providerSelect.value : 0;
+        const confirmedProvider = confirmedProviders[selectedIndex] || provider;
+
+        weightValue.style.opacity = '0';
+        setTimeout(() => {
+            weightValue.textContent = `${confirmedProvider.weightPerUnit} g`;
+            weightValue.style.opacity = '1';
+        }, 150);
+
+        if (totalWeightInput.value) {
+            calculatePieces(col, productId, totalWeightInput.value, confirmedProvider.weightPerUnit);
+        }
+    }
+
+    async function addProvider(col, productId) {
+        const providers = JSON.parse(col.dataset.providers);
+
+        if (providers.length >= 3) {
+            alert('Máximo 3 proveedores permitidos');
+            return;
+        }
+
+        const providersList = col.querySelector(`#providers-list-${productId}`);
+        const newIndex = providers.length;
+
+        const newProviderHTML = `
+            <div class="provider-item mb-2 p-2 border rounded" data-index="${newIndex}">
+                <div class="row g-2 align-items-center">
+                    <div class="col-5">
+                        <input type="text"
+                               class="form-control form-control-sm provider-name"
+                               value="Proveedor ${newIndex + 1}"
+                               placeholder="Nombre proveedor">
+                    </div>
+                    <div class="col-5">
+                        <div class="input-group input-group-sm">
+                            <input type="number"
+                                   class="form-control provider-weight"
+                                   value="0"
+                                   step="0.01"
+                                   min="0"
+                                   placeholder="Peso">
+                            <span class="input-group-text">g</span>
+                        </div>
+                    </div>
+                    <div class="col-2 text-end">
+                        <button class="btn btn-sm btn-outline-danger delete-provider" title="Eliminar">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        providersList.insertAdjacentHTML('beforeend', newProviderHTML);
+
+        providers.push({
+            name: `Proveedor ${newIndex + 1}`,
+            unit: 'kg',
+            weightPerUnit: 0
+        });
+
+        col.dataset.providers = JSON.stringify(providers);
+
+        renderProvidersList(col, productId, providers);
+        updateProviderSelect(col, productId, providers);
+        showSaveButton(col, productId);
+
+        // Ocultar botón si ya hay 3 proveedores
+        if (providers.length >= 3) {
+            const addBtn = col.querySelector(`#add-provider-${productId}`);
+            if (addBtn) addBtn.style.display = 'none';
+        }
+    }
+
+    async function deleteProvider(col, productId, providerItem) {
+        const providers = JSON.parse(col.dataset.providers);
+
+        if (providers.length <= 1) {
+            alert('Debe haber al menos un proveedor');
+            return;
+        }
+
+        const index = parseInt(providerItem.dataset.index);
+        providers.splice(index, 1);
+
+        col.dataset.providers = JSON.stringify(providers);
+
+        // Enviar datos al servidor
+        // Re-renderizar la lista
+        renderProvidersList(col, productId, providers);
+        updateProviderSelect(col, productId, providers);
+        showSaveButton(col, productId);
+
+        // Mostrar botón agregar si hay menos de 3
+        if (providers.length < 3) {
+            const addBtn = col.querySelector(`#add-provider-${productId}`);
+            if (addBtn) addBtn.style.display = 'inline-block';
+        }
+
+        // Actualizar peso mostrado
+        const providerSelect = col.querySelector(`#provider-${productId}`);
+        const selectedIndex = Math.min(parseInt(providerSelect.value || 0), providers.length - 1);
+        if (providerSelect) {
+            providerSelect.value = selectedIndex;
+        }
+        const originalProviders = JSON.parse(col.dataset.originalProviders);
+        if (originalProviders[selectedIndex]) {
+            updateProviderInfo(col, productId, originalProviders[selectedIndex]);
+        }
+    }
+
+    function calculatePieces(col, productId, totalWeight, weightPerUnit) {
+        const resultDiv = col.querySelector(`#result-${productId}`);
+        const resultValue = resultDiv.querySelector('.display-4');
+
+        if (!totalWeight || totalWeight <= 0 || !weightPerUnit || weightPerUnit <= 0) {
+            resultDiv.classList.remove('show');
+            return;
+        }
+
+        const pieces = Math.floor(parseFloat(totalWeight) / parseFloat(weightPerUnit));
+
+        resultValue.style.opacity = '0';
+        setTimeout(() => {
+            resultValue.textContent = pieces.toLocaleString();
+            resultValue.style.opacity = '1';
+            resultDiv.classList.add('show');
+        }, 150);
+    }
+
+    // Función para mostrar notificaciones
+    function showNotification(message, type = 'success') {
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed top-0 start-50 translate-middle-x mt-3`;
+        notification.style.cssText = 'z-index: 9999; min-width: 300px; animation: slideDown 0.3s ease;';
+        notification.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between">
+                <span>${message}</span>
+                <button type="button" class="btn-close btn-close-white ms-3" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
+
+        // Agregar estilos de animación si no existen
+        if (!document.getElementById('notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                @@keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateX(-50%) translateY(-20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(-50%) translateY(0);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(notification);
+
+        // Auto-remover después de 3 segundos
+        setTimeout(() => {
+            notification.style.animation = 'slideDown 0.3s ease reverse';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Dar foco al input al cargar
+    searchInput.focus();
+</script>

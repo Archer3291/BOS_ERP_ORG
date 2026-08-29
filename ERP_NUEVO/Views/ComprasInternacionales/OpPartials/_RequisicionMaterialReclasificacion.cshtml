@@ -1,0 +1,2116 @@
+﻿@using BOS_ERP.Controllers;
+
+@{
+    ViewBag.Title = "Requisision de Material";
+}
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<style>
+    /* Bendto grid */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        /*margin-top: 1rem;*/
+    }
+
+    .bento-item {
+        background: var(--bg-gray);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+
+        .bento-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .bento-item.large {
+            grid-column: span 2;
+        }
+
+    .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        transition: background-color 0.2s;
+    }
+
+        .checkbox-item:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+    .section-title {
+        font-weight: 600;
+        color: var(--secondary-color);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .department-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .department-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+        .department-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+    .comprobante-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        opacity: 0;
+        transform: translateY(20px);
+        overflow: hidden;
+    }
+
+    .comprobante-card-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .comprobante-card-removing {
+        opacity: 0;
+        transform: translateX(-100%);
+        transition: all 0.3s ease;
+    }
+
+    .comprobante-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .comprobante-header {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+        color: white;
+        position: relative;
+    }
+
+    .comprobante-icon {
+        margin-right: 0.75rem;
+        opacity: 0.9;
+    }
+
+    .comprobante-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .btn-eliminar {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .btn-eliminar:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+    .comprobante-content {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+        gap: 0.5rem;
+    }
+
+        .form-label svg {
+            color: var(--primary-blue);
+        }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border-light);
+        border-radius: 8px;
+        background: var(--bg-light);
+        color: var(--text-dark);
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+    .input-with-prefix {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-prefix {
+        position: absolute;
+        left: 1rem;
+        color: var(--text-light);
+        font-weight: 600;
+        z-index: 1;
+    }
+
+    .input-with-prefix .form-input {
+        padding-left: 2.5rem;
+    }
+
+    .file-input-wrapper {
+        position: relative;
+    }
+
+    .file-input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .file-input-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: 2px dashed var(--border-light);
+        border-radius: 8px;
+        background: var(--very-light-blue);
+        color: var(--primary-blue);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+        .file-input-label:hover {
+            border-color: var(--primary-blue);
+            background: var(--light-blue);
+        }
+
+        .file-input-label.file-selected {
+            border-style: solid;
+            color: var(--primary-blue-dark);
+        }
+
+    /* Animaciones adicionales */
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .comprobante-card {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .comprobante-card {
+            margin-bottom: 1rem;
+        }
+
+        .comprobante-header {
+            padding: 0.875rem 1rem;
+        }
+
+        .comprobante-content {
+            padding: 1.25rem 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+@*Ordenes de compra internacional*@
+<div class="accordion modern-accordion fade-in-up" id="acordeonTablas">
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingRECLAS">
+            <button class="accordion-button modern-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRECLAS" aria-expanded="true" aria-controls="collapseRECLAS">
+                <i class="fas fa-random me-3 text-info"></i>
+                🟦 Documentos de reclasificación
+            </button>
+        </h2>
+        <div id="collapseRECLAS" class="accordion-collapse collapse show" aria-labelledby="headingRECLAS" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaRECLAS" class="table modern-table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-file-alt"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-user"></i> Responsable</th>
+                                <th><i class="fas fa-dollar-sign"></i> Importe pendiente</th>
+                                <th><i class="fas fa-comment-dots"></i> Comentarios</th>
+                                <th><i class="fas fa-cogs"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAceptarCotizacion" tabindex="-1" aria-labelledby="modalOpcionesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabel"><i class="bi bi-pencil-square"></i> Editar Requisición</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+
+
+                <div id="modalDireccion"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                @*<button type="button" id="btn-actualizar" class="btn btn-success"><i class="bi bi-save-fill"></i> Guardar cambios</button>*@
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAceptarCotizacion2" tabindex="-1" aria-labelledby="modalOpcionesLabel2" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabel2"><i class="bi bi-pencil-square"></i> Editar Requisición</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody2">
+
+
+                <div id="modalDetalles"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                @*<button type="button" id="btn-actualizar" class="btn btn-success"><i class="bi bi-save-fill"></i> Guardar cambios</button>*@
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para subir CSV y visualizar materiales -->
+<div class="modal fade" id="modalSubirMateriales" tabindex="-1" aria-labelledby="modalSubirMaterialesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalSubirMaterialesLabel">
+                    <i class="fas fa-file-upload me-2"></i> Subir Materiales desde CSV
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Formulario de carga CSV -->
+                <form id="form-subir-csv" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="archivoCsv" class="form-label">Selecciona tu archivo .csv</label>
+                        <input type="file" name="archivoCsv" id="archivoCsv" class="form-control" accept=".csv" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mb-4">
+                        <i class="fas fa-upload me-2"></i> Subir y Procesar
+                    </button>
+                </form>
+
+                <!-- Información importante -->
+                <div class="info-panel mb-3">
+                    <div class="info-title">
+                        <i class="fas fa-info-circle"></i>
+                        Información Importante
+                    </div>
+                    <p class="info-text">
+                        <i class="fas fa-asterisk me-1"></i>
+                        Los campos marcados con * son obligatorios
+                    </p>
+                </div>
+
+                <!-- Tabla de materiales -->
+                <div class="table-responsive mb-4">
+                    <table class="table align-middle table-hover" id="tabla-materiales">
+                        <thead class="text-center" style="background-color: var(--very-light-blue); color: var(--text-dark);">
+                            <tr>
+                                <th class="text-start"><i class="bi bi-check-square"></i></th>
+                                <th class="text-start">#</th>
+                                <th class="text-start">Cantidad *</th>
+                                <th class="text-start">Código *</th>
+                                <th class="text-start">Proveedor *</th>
+                                <th class="text-start">Unidad *</th>
+                                <th class="text-start">Costo Unitario *</th>
+                                <th class="text-start">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="form-floating mb-4">
+                    <textarea class="form-control" id="observaciones" rows="3"></textarea>
+                    <label for="observaciones"><i class="bi bi-journal-text"></i> Observaciones</label>
+                </div>
+
+                <!-- Total -->
+                <div class="row">
+                    <div class="col-4">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="total" class="form-control fw-bold" readonly />
+                            <label for="total"><i class="bi bi-calculator me-1"></i>Total</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Cerrar
+                </button>
+                <button type="button" id="btn-guardar-materiales" class="btn btn-primary">
+                    <i class="bi bi-save me-1"></i> Guardar Materiales
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="modalOpciones" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Seleccionar opción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <select id="selectOpcion" class="form-select">
+                    <option value="">-- Selecciona una opción --</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnEnviarOpcion" onclick="enviarOpcionSeleccionada()">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalComprobantes" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar comprobantes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="contenedorComprobantes" class="mb-3"></div>
+                <button type="button" class="btn btn-outline-success" onclick="agregarNuevoComprobante()">
+                    <i class="fas fa-plus me-1"></i> Agregar nuevo comprobante
+                </button>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="enviarComprobantes()">Guardar comprobantes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script src="~/lib/signature_pad/dist/signature_pad.umd.min.js"></script>
+<script src="~/lib/jquery/jquery.min.js"></script>
+<script>
+    let idEncabezadoSeleccionado = null;
+    function setIdEncabezadoModal(btn) {
+        idEncabezadoSeleccionado = btn.getAttribute("data-idencabezado");
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+        cargarTabla("#tablaRECLAS", "/ProcesoComprasInternacional/GetReclasificaciones");
+    });
+
+    function cargarTabla(selector, url) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        const tabla = $(selector).DataTable({
+            destroy: true,
+            responsive: true,
+            autoWidth: false,
+            ajax: {
+                url: url,
+                data: { id: id }, // Si necesitas pasarlo al backend
+                dataSrc: "data"
+            },
+            columns: [
+                { data: "nuevo_codigo" },
+                {
+                    data: "fch",
+                    render: function (data, type, row) {
+                        if (data && data.startsWith("/Date(")) {
+                            const timestamp = parseInt(data.match(/\d+/)[0]);
+                            const date = new Date(timestamp);
+                            return date.toLocaleDateString('es-MX');
+                        }
+                        return "";
+                    }
+                },
+                { data: "responsable" },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function (data, type, row, meta) {
+                        if (meta.settings.nTable.id === "tablaOCDI" || meta.settings.nTable.id === "tablaRECLAS") {
+                            return `$${parseFloat(data.imp_pendiente).toFixed(2)}`;
+                        }
+                        if (meta.settings.nTable.id === "tablaREQ") {
+                            return `${(data.total_partidas)}`;
+                        }
+                        return "";
+                    },
+                },
+                { data: "coment_aut" },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function (data, type, row, meta) {
+                        let botones = `` +
+                            `<div class="d-flex gap-1" role="group">`;
+
+                        if (meta.settings.nTable.id === "tablaRECLAS") {
+                            botones += '' +
+                                `   <button class="btn btn-sm green-500" style="color: var(--icon-color)" title="Adjuntar Documento" data-encabezado="${data.id_encabezado}" data-nvocodigo="${data.nuevo_codigo}" onclick="agregarComprobantes(this)">` +
+                                `       <i class="fa-solid fa-plus-large"></i>` +
+                                `   </button>` +
+                                `   <button class="btn btn-sm sky-500" style="color: var(--icon-color)" title="Ver detalles" onclick="VerDetalleReclasificacion(${data.id_encabezado})">` +
+                                `       <i class="fa-solid fa-circle-info"></i>` +
+                                `   </button>`;
+
+                            // 👇 validamos si el pendiente es <= 5% del total (a favor o en contra)
+                            const pendiente = parseFloat(data.imp_pendiente || 0);
+                            const total = parseFloat(data.imp || 0);
+                            const margen = total * 0.05;
+
+                            if (Math.abs(pendiente) <= margen) {
+                                botones +=
+                                    `   <button class="btn btn-sm amber-500" style="color: var(--icon-color)" title="Ajustar 5%" onclick="ajustarCincoPorciento(${data.id_encabezado})">` +
+                                    `       <i class="fa-solid fa-scale-balanced"></i>` +
+                                    `   </button>`;
+                            }
+                        }
+
+                        botones += `</div>`;
+                        return botones;
+                    }
+                },
+                { data: "id_encabezado", visible: false, searchable: true }
+            ],
+        });
+
+        // 👇 Espera a que la tabla esté completamente cargada y luego aplica la búsqueda
+        if (id) {
+            $(selector).on('xhr.dt', function () {
+                tabla.search(id).draw();
+            });
+        }
+    }
+
+    const limpiarNumero = (str) => str.replace(/[^\d.]/g, '');
+function VerDetalleReclasificacion(id) {
+    GetData({
+        path: '/ProcesoComprasInternacional/GetReclasificacionData',
+        data: { id: id }
+    }).then((_res) => {
+        if (_res.success) {
+            const body = document.getElementById('modalDetalles');
+            body.innerHTML = ''; // Limpiar contenido previo
+
+            const { partidas, archivos, partidasOC = [], requisicion } = _res.data;
+            let totalGlobal = 0;
+
+            // Crear estructura principal
+            const mainContainer = createMainContainer();
+
+            // Header con información general
+            const headerSection = createHeaderSection(requisicion);
+            mainContainer.appendChild(headerSection);
+
+            // Renderizar partidas
+            if (partidas && partidas.length > 0) {
+                const partidasSection = createPartidasSection(partidas, archivos);
+                totalGlobal = partidasSection.total;
+                mainContainer.appendChild(partidasSection.element);
+            }
+
+            // Renderizar pedimentos si existen
+            if (partidasOC.length > 0) {
+                const pedimentosSection = createPedimentosSection(partidasOC);
+                mainContainer.appendChild(pedimentosSection);
+            }
+
+            // Agregar resumen de totales (sin estadísticas)
+            const summarySection = createSummarySection(totalGlobal);
+            mainContainer.appendChild(summarySection);
+
+            // Aplicar estilos mejorados
+            addModernStyles();
+
+            body.appendChild(mainContainer);
+
+            // Configurar modal
+            $('#modalAceptarCotizacion2').data('encabezado', id);
+            $('#modalOpcionesLabel2').html(`
+                <div class="modal-title-container">
+                    <i class="fas fa-file-alt me-2"></i>
+                    <span>Reclasificación No. ${requisicion.nuevo_codigo}</span>
+                    <span class="badge bg-primary ms-2">${partidas.length} partidas</span>
+                </div>
+            `);
+            $('#modalAceptarCotizacion2').modal('show');
+
+        } else {
+            showErrorToast(_res.message || 'Error al obtener la información.');
+        }
+    }).catch(error => {
+        console.error('Error:', error);
+        showErrorToast('Error de conexión. Por favor, intente nuevamente.');
+    });
+}
+
+function createMainContainer() {
+    const container = document.createElement('div');
+    container.className = 'reclasificacion-wrapper';
+    return container;
+}
+
+function createHeaderSection(requisicion) {
+    const section = document.createElement('div');
+    section.className = 'header-section animate-slide-down';
+
+    section.innerHTML = `
+        <div class="header-card">
+            <div class="header-icon">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="header-content">
+                <h4 class="header-title">Detalle de Reclasificación</h4>
+                <p class="header-subtitle">Código: ${requisicion.nuevo_codigo}</p>
+                <p class="header-subtitle">Proveedor: ${requisicion.n_prov}</p>
+            </div>
+        </div>
+    `;
+
+    return section;
+}
+
+function createPartidasSection(partidas, archivos) {
+    const section = document.createElement('div');
+    section.className = 'content-section partidas-section';
+
+    let total = 0;
+    const partidasHTML = partidas.map((partida, index) => {
+        const importe = parseFloat(partida.imp_part) || 0;
+        total += importe;
+
+        const archivoRelacionado = archivos.find(a => a.partida_id == partida.id_partidas);
+        return createPartidaHTML(partida, archivoRelacionado, index + 1, importe);
+    }).join('');
+
+    section.innerHTML = `
+        <div class="section-header">
+            <div class="section-title-group">
+                <i class="fas fa-boxes section-icon"></i>
+                <div>
+                    <h5 class="section-title">Partidas del Producto</h5>
+                    <p class="section-subtitle">${partidas.length} elementos registrados</p>
+                </div>
+            </div>
+            <div class="section-actions">
+                <button class="btn-toggle-view" onclick="togglePartidasView()" title="Cambiar vista">
+                    <i class="fas fa-th-large"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="partidas-container" id="partidasContainer">
+            ${partidasHTML}
+        </div>
+    `;
+
+    return { element: section, total };
+}
+
+function createPartidaHTML(partida, archivo, numero, importe) {
+    const archivoHTML = createArchivoDisplay(archivo);
+    const importeFormatted = importe.toLocaleString('es-MX', {
+        style: 'currency',
+        currency: 'MXN',
+        minimumFractionDigits: 2
+    });
+
+    return `
+        <div class="partida-card animate-fade-in-up" style="animation-delay: ${numero * 0.1}s">
+            <div class="partida-card-header">
+                <div class="partida-number-badge">#${numero.toString().padStart(2, '0')}</div>
+                <div class="partida-amount-display">
+                    <span class="amount-label">Importe</span>
+                    <span class="amount-value">${importeFormatted}</span>
+                </div>
+            </div>
+
+            <div class="partida-card-body">
+                <div class="partida-details-grid">
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="fas fa-barcode"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Código de Producto</span>
+                            <span class="detail-value">${partida.cve_prod}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-item full-width">
+                        <div class="detail-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Descripción</span>
+                            <span class="detail-value description-text">${partida.descr_prod}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${archivoHTML}
+            </div>
+        </div>
+    `;
+}
+
+function createArchivoDisplay(archivo) {
+    if (!archivo) {
+        return `
+            <div class="archivo-display no-file">
+                <div class="archivo-icon no-file-icon">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <div class="archivo-info">
+                    <span class="archivo-status">Sin archivo adjunto</span>
+                    <small class="archivo-note">No se ha cargado documentación</small>
+                </div>
+            </div>
+        `;
+    }
+
+    const icono = getIconFile(archivo.extencion) || 'fa-file';
+    return `
+        <div class="archivo-display has-file">
+            <div class="archivo-icon has-file-icon">
+                <i class="fas ${icono}"></i>
+            </div>
+            <div class="archivo-info">
+                <a href="/${archivo.path}" target="_blank" class="archivo-link">
+                    <span class="archivo-name">${archivo.nombre_original}</span>
+                    <i class="fas fa-external-link-alt ms-1"></i>
+                </a>
+                <small class="archivo-extension">.${archivo.extencion}</small>
+            </div>
+        </div>
+    `;
+}
+
+function createPedimentosSection(partidasOC) {
+    const section = document.createElement('div');
+    section.className = 'content-section pedimentos-section';
+
+    const pedimentosHTML = partidasOC.map((pedimento, index) => `
+        <div class="pedimento-card animate-slide-in-right" style="animation-delay: ${index * 0.1}s">
+            <div class="pedimento-icon-wrapper">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div class="pedimento-content">
+                <span class="pedimento-label">Pedimento SAT</span>
+                <span class="pedimento-number">${pedimento.pedimento_sat}</span>
+            </div>
+            <div class="pedimento-status">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+    `).join('');
+
+    section.innerHTML = `
+        <div class="section-header">
+            <div class="section-title-group">
+                <i class="fas fa-file-invoice-dollar section-icon"></i>
+                <div>
+                    <h5 class="section-title">Pedimentos Aduanales</h5>
+                    <p class="section-subtitle">${partidasOC.length} documentos vinculados</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="pedimentos-grid">
+            ${pedimentosHTML}
+        </div>
+    `;
+
+    return section;
+}
+
+function createSummarySection(totalGlobal) {
+    const section = document.createElement('div');
+    section.className = 'summary-section animate-fade-in-up';
+
+    const totalFormatted = totalGlobal.toLocaleString('es-MX', {
+        style: 'currency',
+        currency: 'MXN',
+        minimumFractionDigits: 2
+    });
+
+    section.innerHTML = `
+        <div class="summary-cards-container">
+            <div class="summary-card total-card">
+                <div class="summary-card-header">
+                    <i class="fas fa-calculator"></i>
+                    <span>Total General</span>
+                </div>
+                <div class="total-display">
+                    <div class="total-amount-large">${totalFormatted}</div>
+                    <div class="total-currency">Pesos Mexicanos</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return section;
+}
+
+function addModernStyles() {
+    if (document.getElementById('modern-reclasificacion-styles')) return;
+
+    const styles = document.createElement('style');
+    styles.id = 'modern-reclasificacion-styles';
+    styles.textContent = `
+        .reclasificacion-wrapper {
+            overflow-y: auto;
+            padding: 0;
+            background: var(--bg-gray);
+            border-radius: 16px;
+            position: relative;
+        }
+
+        /* Header Section */
+        .header-section {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            color: var(--bg-light);
+            border-radius: 16px 16px 0 0;
+            margin-bottom: 0;
+        }
+
+        .header-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-icon {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        .header-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .header-subtitle {
+            margin: 0.25rem 0 0 0;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        /* Content Sections */
+        .content-section {
+            padding: 1.5rem;
+            background: var(--bg-light);
+            margin-bottom: 1px;
+            position: relative;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .section-title-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-icon {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            padding: 0.75rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+        }
+
+        .section-title {
+            margin: 0;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .section-subtitle {
+            margin: 0.25rem 0 0 0;
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+
+        .btn-toggle-view {
+            background: var(--light-blue);
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem;
+            color: var(--primary-blue);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-toggle-view:hover {
+            background: var(--primary-blue);
+            color: var(--bg-light);
+        }
+
+        /* Partidas Cards */
+        .partidas-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .partida-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .partida-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--accent-blue));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .partida-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .partida-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .partida-card-header {
+            background: var(--very-light-blue);
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .partida-number-badge {
+            background: var(--primary-blue);
+            color: var(--bg-light);
+            padding: 0.5rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .partida-amount-display {
+            text-align: right;
+        }
+
+        .amount-label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+        }
+
+        .amount-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        .partida-card-body {
+            padding: 1.25rem;
+        }
+
+        .partida-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .detail-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .detail-icon {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .detail-content {
+            flex: 1;
+        }
+
+        .detail-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            display: block;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .description-text {
+            line-height: 1.5;
+            max-height: 3em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        /* Archivo Display */
+        .archivo-display {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 12px;
+            border: 2px solid var(--border-light);
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+
+        .archivo-display.has-file {
+            background: linear-gradient(135deg, var(--light-blue), rgba(16, 185, 129, 0.1));
+            border-color: var(--success-color);
+        }
+
+        .archivo-display.no-file {
+            background: var(--bg-gray);
+            border-style: dashed;
+        }
+
+        .archivo-icon {
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .has-file-icon {
+            background: var(--success-color);
+            color: var(--bg-light);
+        }
+
+        .no-file-icon {
+            background: var(--border-light);
+            color: var(--text-light);
+        }
+
+        .archivo-info {
+            flex: 1;
+        }
+
+        .archivo-link {
+            color: var(--success-color);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .archivo-link:hover {
+            color: var(--success-color);
+            text-decoration: underline;
+        }
+
+        .archivo-name {
+            display: block;
+        }
+
+        .archivo-extension {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        .archivo-status {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .archivo-note {
+            display: block;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Pedimentos Section */
+        .pedimentos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .pedimento-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pedimento-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--success-color);
+        }
+
+        .pedimento-card:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow);
+        }
+
+        .pedimento-icon-wrapper {
+            background: var(--success-color);
+            color: var(--bg-light);
+            padding: 0.75rem;
+            border-radius: 50%;
+            font-size: 1.1rem;
+        }
+
+        .pedimento-content {
+            flex: 1;
+        }
+
+        .pedimento-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+        }
+
+        .pedimento-number {
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 1rem;
+        }
+
+        .pedimento-status {
+            color: var(--success-color);
+            font-size: 1.1rem;
+        }
+
+        /* Summary Section */
+        .summary-section {
+            padding: 1.5rem;
+            background: var(--bg-light);
+            border-radius: 0 0 16px 16px;
+        }
+
+        .summary-cards-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .summary-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .summary-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+            font-weight: 600;
+            justify-content: center;
+        }
+
+        .summary-card-header i {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .total-card {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            color: var(--bg-light);
+            text-align: center;
+        }
+
+        .total-card .summary-card-header {
+            color: var(--bg-light);
+        }
+
+        .total-card .summary-card-header i {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--bg-light);
+        }
+
+        .total-display {
+            text-align: center;
+        }
+
+        .total-amount-large {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .total-currency {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Modal Title */
+        .modal-title-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .modal-title-container .badge {
+            font-size: 0.75rem;
+        }
+
+        /* Animations */
+        @@keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @@keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @@keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-slide-down {
+            animation: slideDown 0.5s ease forwards;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease forwards;
+            opacity: 0;
+        }
+
+        .animate-slide-in-right {
+            animation: slideInRight 0.4s ease forwards;
+            opacity: 0;
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 768px) {
+            .reclasificacion-wrapper {
+                border-radius: 12px;
+            }
+
+            .header-section {
+                padding: 1rem;
+                border-radius: 12px 12px 0 0;
+            }
+
+            .header-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .content-section {
+                padding: 1rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .partidas-container {
+                grid-template-columns: 1fr;
+            }
+
+            .partida-details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-item.full-width {
+                grid-column: 1;
+            }
+
+            .pedimentos-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .total-amount-large {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Scrollbar */
+        .reclasificacion-wrapper::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .reclasificacion-wrapper::-webkit-scrollbar-track {
+            background: var(--bg-gray);
+            border-radius: 4px;
+        }
+
+        .reclasificacion-wrapper::-webkit-scrollbar-thumb {
+            background: var(--text-light);
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        .reclasificacion-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-blue);
+        }
+    `;
+
+    document.head.appendChild(styles);
+}
+
+// Funciones auxiliares
+function showErrorToast(message) {
+    toastMixin.fire({
+        icon: 'error',
+        title: message
+    });
+}
+
+function togglePartidasView() {
+    const container = document.getElementById('partidasContainer');
+    const button = document.querySelector('.btn-toggle-view i');
+
+    if (container.style.gridTemplateColumns === '1fr') {
+        container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(400px, 1fr))';
+        button.className = 'fas fa-th-large';
+    } else {
+        container.style.gridTemplateColumns = '1fr';
+        button.className = 'fas fa-list';
+    }
+}
+
+    function calcularTotales() {
+        let subtotal = 0;
+        const filas = document.querySelectorAll("#tabla-materiales tbody tr");
+
+        filas.forEach((row, i) => {
+            row.cells[1].innerText = i + 1;
+            const cantidad = limpiarNumero(row.cells[2].innerText);
+            const costoUnitario = limpiarNumero(row.cells[6].innerText);
+            const total = cantidad * costoUnitario;
+            row.querySelector(".total-fila").innerText = total ? `$ ${total.toFixed(2)}` : "$ 0.00";
+            subtotal += total;
+        });
+
+        const totalFinal = subtotal;
+        document.getElementById("total").value = `$ ${totalFinal.toFixed(2)}`;
+    }
+</script>
+
+<script>
+    // Variable global para almacenar los datos de pago
+    let datosEncabezado = {
+        total_encabezado: 0,
+        total_pagado: 0,
+        total_pendiente: 0,
+        porcentaje_pagado: 0
+    };
+
+    function agregarComprobantes(btn) {
+        idEncabezadoSeleccionado = btn.dataset.encabezado;
+
+        // Primero verificar el estado de pagos
+        verificarEstadoPagos(idEncabezadoSeleccionado).then(() => {
+
+            const totalEncabezado = parseFloat(datosEncabezado.total_encabezado || 0);
+            const totalPagado = parseFloat(datosEncabezado.total_pagado || 0); // lo que ya se pagó
+            const tolerancia = totalEncabezado * 0.05;
+
+            // Validar si ya se alcanzó o excedió el límite +5%
+            if (totalPagado >= totalEncabezado + tolerancia) {
+                toastMixin.fire({
+                    icon: 'warning',
+                    title: 'El pedido ya está pagado fuera del rango permitido (±5%). No se pueden agregar más comprobantes.'
+                });
+                return; // No mostrar el modal
+            }
+
+            // Limpiar comprobantes anteriores
+            const contenedor = document.getElementById("contenedorComprobantes");
+            contenedor.innerHTML = '';
+
+            // Actualizar información en el modal
+            actualizarInfoPagosModal();
+
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('modalComprobantes'));
+            modal.show();
+        });
+    }
+
+
+    function verificarEstadoPagos(idEncabezado) {
+        return fetch(`/ProcesoComprasInternacional/VerificarPrecioReclasificacion?id_encabezado=${idEncabezado}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    datosEncabezado = data.data;
+                    console.log(datosEncabezado)
+                    return data;
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .catch(error => {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error al obtener datos de pago: ' + error.message
+                });
+            });
+    }
+
+    function actualizarInfoPagosModal() {
+        // Buscar o crear el contenedor de información
+        let infoContainer = document.getElementById('infoPagosModal');
+        if (!infoContainer) {
+            infoContainer = document.createElement('div');
+            infoContainer.id = 'infoPagosModal';
+            infoContainer.className = 'alert alert-info mb-3';
+
+            // Insertar antes del contenedor de comprobantes
+            const contenedor = document.getElementById("contenedorComprobantes");
+            contenedor.parentNode.insertBefore(infoContainer, contenedor);
+        }
+
+        const porcentajePendiente = 100 - datosEncabezado.porcentaje_pagado;
+        const clasePorcentaje = datosEncabezado.porcentaje_pagado >= 100 ? 'text-success' : 'text-warning';
+
+        infoContainer.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <strong>💰 Total del Pedido:</strong> $${parseFloat(datosEncabezado.total_encabezado).toFixed(2)}
+            </div>
+            <div class="col-md-6">
+                <strong class="text-success">✅ Total Pagado:</strong> $${parseFloat(datosEncabezado.total_pagado).toFixed(2)}
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-6">
+                <strong class="${clasePorcentaje}">⏳ Pendiente por Pagar:</strong> $${parseFloat(datosEncabezado.maximo_por_pagar).toFixed(2)}
+            </div>
+            <div class="col-md-6">
+                <strong>📊 Progreso de Pago:</strong> 
+                <span class="${clasePorcentaje}">${datosEncabezado.porcentaje_pagado}%</span>
+            </div>
+        </div>
+        ${datosEncabezado.total_pendiente <= 0 ?
+                '<div class="alert alert-success mt-2 mb-0"><strong>¡Pedido completamente pagado! ✅</strong></div>' :
+                ''
+            }
+    `;
+    }
+
+    function agregarNuevoComprobante() {
+        const totalEncabezado = parseFloat(datosEncabezado.total_encabezado || 0);
+        const totalPagado = parseFloat(datosEncabezado.total_pagado || 0);
+        const totalPendiente = totalEncabezado - totalPagado;
+
+        // Tolerancia ±5%
+        const tolerancia = totalEncabezado * 0.05;
+        const maxPermitido = totalEncabezado + tolerancia - totalPagado;
+
+        if (totalPendiente + totalPagado > totalEncabezado + tolerancia) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'El pedido ya está pagado fuera del rango permitido (±5%). No se pueden agregar más comprobantes.'
+            });
+            return;
+        }
+
+        const contenedor = document.getElementById("contenedorComprobantes");
+        const wrapper = document.createElement("div");
+        wrapper.className = "comprobante-card";
+
+
+        const html = `
+    <div class="comprobante-header">
+        <div class="comprobante-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10,9 9,9 8,9"/>
+            </svg>
+        </div>
+        <h6 class="comprobante-title">Nuevo Documento</h6>
+        <button type="button" class="btn-eliminar" onclick="eliminarComprobante(this)" aria-label="Eliminar comprobante">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="comprobante-content">
+        <div class="form-group">
+            <label class="form-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                </svg>
+                Título del documento
+            </label>
+           <select class="form-select" id="clave_pago" name="clave_pago[]">
+                <option value="">-- Selecciona un gasto de importación --</option>
+
+                <!-- Impuestos y derechos -->
+                <optgroup label="Impuestos y derechos aduaneros">
+                  <option value="aranceles">Aranceles (IGI)</option>
+                  <option value="iva_importacion">IVA de Importación</option>
+                  <option value="dta">Derecho de Trámite Aduanero (DTA)</option>
+                  <option value="otros_impuestos">Otros impuestos específicos</option>
+                </optgroup>
+
+                <!-- Servicios aduanales -->
+                <optgroup label="Servicios aduanales y regulatorios">
+                  <option value="agente_aduanal">Honorarios del agente aduanal</option>
+                  <option value="prevalidacion">Prevalidación de pedimento</option>
+                  <option value="permisos">Permisos / NOM / COFEPRIS</option>
+                  <option value="multas_rectificaciones">Multas o rectificaciones de pedimento</option>
+                </optgroup>
+
+                <!-- Transporte internacional -->
+                <optgroup label="Transporte y logística internacional">
+                  <option value="flete_internacional">Flete internacional (marítimo/aéreo/terrestre)</option>
+                  <option value="seguro_internacional">Seguro de transporte internacional</option>
+                  <option value="cargos_portuarios">Cargos portuarios (THC)</option>
+                  <option value="maniobras_puerto">Maniobras en puerto / aeropuerto</option>
+                  <option value="demoras_almacenajes">Demoras y almacenajes en puerto</option>
+                </optgroup>
+
+                <!-- Transporte nacional -->
+                <optgroup label="Transporte y logística nacional">
+                  <option value="flete_nacional">Flete nacional</option>
+                  <option value="maniobras_aduana">Maniobras en aduana</option>
+                  <option value="custodia">Custodia y seguridad</option>
+                  <option value="cargas_descargas">Cargas y descargas en almacén</option>
+                </optgroup>
+
+                <!-- Almacenaje -->
+                <optgroup label="Almacenaje y manejo de mercancías">
+                  <option value="almacenaje">Almacenaje en recinto fiscalizado</option>
+                  <option value="maniobras">Maniobras de carga y descarga</option>
+                  <option value="embalajes">Tarimas / embalajes adicionales</option>
+                  <option value="cross_docking">Cross-docking</option>
+                </optgroup>
+
+                <!-- Financieros -->
+                <optgroup label="Servicios bancarios y financieros">
+                  <option value="comisiones_bancarias">Comisiones bancarias (transferencias, SWIFT)</option>
+                  <option value="cartas_credito">Cartas de crédito / cobranza documentaria</option>
+                  <option value="tipo_cambio">Diferencias por tipo de cambio</option>
+                </optgroup>
+
+                <!-- Otros -->
+                <optgroup label="Otros gastos">
+                  <option value="inspecciones">Inspecciones (SENASICA, fitosanitarias, sanitarias)</option>
+                  <option value="certificados_origen">Certificados de origen / legalización</option>
+                  <option value="gestoria">Gastos de gestoría / notariales</option>
+                  <option value="seguros_adicionales">Seguros adicionales (almacenaje, RC)</option>
+                </optgroup>
+            </select>
+
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                </svg>
+                Descripción
+            </label>
+            <input type="text" name="titulo[]" class="form-input" placeholder="Ej. Factura, Nota, Comprobante">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                Importe
+            </label>
+            <div class="input-with-prefix">
+                <span class="input-prefix">$</span>
+                <input type="number" 
+                       name="importe[]" 
+                       class="form-input importe-input lock-min lock-max" 
+                       min="0"                       
+                       step="0.01"
+                       placeholder="0.00"
+                       onblur="validarImporte(this)">
+            </div>
+            <small class="text-muted">Máximo disponible: $${parseFloat(datosEncabezado.maximo_por_pagar).toFixed(2)}</small>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                Archivo
+            </label>
+            <div class="file-input-wrapper">
+                <input type="file" name="archivo[]" class="file-input" accept="application/pdf" id="archivo_${Date.now()}">
+                <label for="archivo_${Date.now()}" class="file-input-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Seleccionar archivo
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                </svg>
+                XML (opcional)
+            </label>
+            <div class="file-input-wrapper">
+                <input type="file" name="xml[]" class="file-input xml-input" accept=".xml" id="xml_${Date.now()}">
+                <label for="xml_${Date.now()}" class="file-input-label xml-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Seleccionar XML
+                </label>
+            </div>
+        </div>
+    </div>
+    `;
+
+        wrapper.innerHTML = html;
+        contenedor.appendChild(wrapper);
+
+        setTimeout(() => {
+            wrapper.classList.add('comprobante-card-visible');
+        }, 10);
+
+        configurarEventosArchivo(wrapper);
+
+        // Actualizar atributo max de input importe para este comprobante
+        const importeInput = wrapper.querySelector('input[name="importe[]"]');
+        importeInput.max = maxPermitido.toFixed(2);
+        importeInput.addEventListener('blur', () => validarImporte(importeInput));
+    }
+
+    function validarImporte(input) {
+        const valor = parseFloat(input.value) || 0;
+        const totalEncabezado = parseFloat(datosEncabezado.total_encabezado || 0);
+        const totalPagado = parseFloat(datosEncabezado.total_pagado || 0);
+        const tolerancia = totalEncabezado * 0.05;
+
+        // Total acumulado si se guarda este comprobante
+        const totalAcumulado = totalPagado + valor;
+
+        if (totalAcumulado > totalEncabezado + tolerancia) {
+            toastMixin.fire({
+                icon: 'error',
+                title: `El importe no puede exceder el 105% del total del pedido ($${(totalEncabezado + tolerancia).toFixed(2)})`
+            });
+            input.value = (totalEncabezado + tolerancia - totalPagado).toFixed(2);
+            return;
+        } else if (totalAcumulado < totalEncabezado - tolerancia) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: `El total acumulado ($${totalAcumulado.toFixed(2)}) está por debajo del 95% del total del pedido, se permitirá guardar.`
+            });
+        }
+    }
+
+    function configurarEventosArchivo(wrapper) {
+        // Evento para archivo PDF
+        const fileInput = wrapper.querySelector('.file-input:not(.xml-input)');
+        const fileLabel = wrapper.querySelector('.file-input-label:not(.xml-label)');
+
+        fileInput.addEventListener('change', function () {
+            if (this.files && this.files[0]) {
+                if (this.files[0].type !== 'application/pdf') {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Solo se permiten archivos PDF.'
+                    });
+                    this.value = '';
+                    fileLabel.innerHTML = 'Seleccionar archivo';
+                    fileLabel.classList.remove('file-selected');
+                    return;
+                }
+
+                fileLabel.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                </svg>
+                ${this.files[0].name}
+            `;
+                fileLabel.classList.add('file-selected');
+            }
+        });
+
+        // Evento para archivo XML
+        const xmlInput = wrapper.querySelector('.xml-input');
+        const xmlLabel = wrapper.querySelector('.xml-label');
+
+        xmlInput.addEventListener('change', function () {
+            if (this.files && this.files[0]) {
+                if (!this.files[0].name.endsWith('.xml')) {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Solo se permiten archivos XML.'
+                    });
+                    this.value = '';
+                    xmlLabel.innerHTML = 'Seleccionar XML';
+                    xmlLabel.classList.remove('file-selected');
+                    return;
+                }
+
+                // Mostrar nombre del archivo seleccionado
+                xmlLabel.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                </svg>
+                ${this.files[0].name}
+            `;
+                xmlLabel.classList.add('file-selected');
+
+                // Procesar el XML para extraer el total
+                procesarXMLYLlenarCampos(this.files[0], wrapper);
+            }
+        });
+    }
+
+    function procesarXMLYLlenarCampos(xmlFile, wrapper) {
+        const formData = new FormData();
+        formData.append('xmlFile', xmlFile);
+
+        // Agregar token antiforgery si existe
+        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (token) {
+            formData.append("__RequestVerificationToken", token.value);
+        }
+
+        // Mostrar indicador de carga en el campo de importe
+        const importeInput = wrapper.querySelector('input[name="importe[]"]');
+        const originalPlaceholder = importeInput.placeholder;
+        importeInput.placeholder = "Procesando XML...";
+        importeInput.disabled = true;
+
+        fetch('/ProcesoComprasInternacional/ProcesarXML', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const xmlData = data.data;
+                    // Llenar el campo de importe con el total del XML
+                    if (xmlData.Total) {
+                        const totalXML = parseFloat(xmlData.Total);
+
+                        // Validar que no exceda el saldo pendiente
+                        if (totalXML > datosEncabezado.maximo_por_pagar) {
+                            toastMixin.fire({
+                                icon: 'warning',
+                                title: `El total del XML (${totalXML.toFixed(2)}) excede el saldo pendiente (${datosEncabezado.maximo_por_pagar.toFixed(2)}). Se ajustará al máximo permitido.`
+                            });
+                            importeInput.value = datosEncabezado.maximo_por_pagar.toFixed(2);
+
+                        } else {
+                            $(importeInput).val(totalXML.toFixed(2)).trigger('input');
+                        }
+                    }
+
+                    // Opcional: Llenar otros campos si es necesario
+                    const tituloInput = wrapper.querySelector('input[name="titulo[]"]');
+                    if (tituloInput && !tituloInput.value.trim()) {
+                        let titulo = '';
+                        if (xmlData.Serie && xmlData.Folio) {
+                            titulo = `${xmlData.Serie}-${xmlData.Folio}`;
+                        } else if (xmlData.Folio) {
+                            titulo = `Factura ${xmlData.Folio}`;
+                        } else {
+                            titulo = `Factura ${xmlData.EmisorRFC || 'XML'}`;
+                        }
+                        tituloInput.value = titulo;
+                    }
+
+                    // Mostrar información adicional del XML
+                    mostrarInfoXML(xmlData, wrapper);
+
+                    //toastMixin.fire({
+                    //    icon: 'success',
+                    //    title: 'XML procesado correctamente. Campos actualizados.'
+                    //});
+
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: data.message || 'Error al procesar el XML'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error de conexión al procesar el XML'
+                });
+            })
+            .finally(() => {
+                // Restaurar el campo de importe
+                importeInput.placeholder = originalPlaceholder;
+                importeInput.disabled = false;
+            });
+    }
+
+    function mostrarInfoXML(xmlData, wrapper) {
+        // Buscar o crear contenedor para mostrar información del XML
+        let infoXML = wrapper.querySelector('.xml-info');
+        if (!infoXML) {
+            infoXML = document.createElement('div');
+            infoXML.className = 'xml-info alert alert-info mt-2';
+
+            // Insertarlo después del grupo del XML
+            const xmlGroup = wrapper.querySelector('.form-group:last-child');
+            xmlGroup.appendChild(infoXML);
+        }
+
+        infoXML.innerHTML = `
+        <small>
+            <strong>📄 Datos del XML:</strong><br>
+            ${xmlData.EmisorRFC ? `<strong>RFC Emisor:</strong> ${xmlData.EmisorRFC}<br>` : ''}
+            ${xmlData.EmisorNombre ? `<strong>Emisor:</strong> ${xmlData.EmisorNombre}<br>` : ''}
+            ${xmlData.Fecha ? `<strong>Fecha:</strong> ${xmlData.Fecha}<br>` : ''}
+            ${xmlData.Moneda ? `<strong>Moneda:</strong> ${xmlData.Moneda}` : ''}
+            ${xmlData.TipoCambio && xmlData.TipoCambio !== '1' ? ` (TC: ${xmlData.TipoCambio})` : ''}
+        </small>
+    `;
+    }
+
+
+    function eliminarComprobante(button) {
+        const wrapper = button.closest('.comprobante-card');
+        wrapper.classList.add('comprobante-card-removing');
+
+        setTimeout(() => {
+            wrapper.remove();
+        }, 300);
+    }
+    function enviarComprobantes() {
+        const formData = new FormData();
+        let valid = true;
+        let totalComprobantes = 0;
+
+        // Obtener token antiforgery
+        const token = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (token) {
+            formData.append("__RequestVerificationToken", token.value);
+        }
+
+        // Agregar encabezado
+        formData.append("id_encabezado", idEncabezadoSeleccionado);
+
+        // Obtener todos los comprobantes
+        const comprobantes = document.querySelectorAll(".comprobante-card");
+        if (comprobantes.length === 0) {
+            toastMixin.fire({
+                icon: 'error',
+                title: 'Debes agregar al menos un comprobante.'
+            });
+            return;
+        }
+
+        // Recorrer cada comprobante y validar
+        comprobantes.forEach((card, index) => {
+            const tituloInput = card.querySelector('input[name="titulo[]"]');
+            const gastoInput = card.querySelector('select[name="clave_pago[]"]');
+            const importeInput = card.querySelector('input[name="importe[]"]');
+            const archivoInput = card.querySelector('input[name="archivo[]"]');
+            const xmlInput = card.querySelector('input[name="xml[]"]');
+
+            const titulo = tituloInput?.value.trim();
+            const gasto = gastoInput.options[gastoInput.selectedIndex]?.text.trim();
+            const importe = parseFloat(importeInput?.value.trim());
+            const archivo = archivoInput?.files[0];
+            const xmlArchivo = xmlInput?.files[0];
+
+            // Validaciones individuales
+            if (!titulo) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `El título del comprobante ${index + 1} es obligatorio.`
+                });
+                valid = false;
+                return;
+            }
+
+            if (!importe || isNaN(importe) || importe <= 0) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `El importe del comprobante ${index + 1} debe ser un número mayor a 0.`
+                });
+                valid = false;
+                return;
+            }
+
+            if (!archivo) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `Debes seleccionar un archivo PDF para el comprobante ${index + 1}.`
+                });
+                valid = false;
+                return;
+            }
+
+            if (archivo.type !== 'application/pdf') {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: `El archivo del comprobante ${index + 1} debe ser un PDF.`
+                });
+                valid = false;
+                return;
+            }
+
+            // Sumar al total de comprobantes nuevos
+            totalComprobantes += importe;
+
+            // Agregar al FormData
+            formData.append(`comprobantes[${index}]_titulo`, titulo);
+            formData.append(`comprobantes[${index}]_gasto`, gasto);
+            formData.append(`comprobantes[${index}]_importe`, importe);
+            formData.append(`comprobantes[${index}]_archivo`, archivo);
+            if (xmlArchivo) {
+                formData.append(`comprobantes[${index}]_xml`, xmlArchivo);
+            }
+        });
+
+        if (!valid) return;
+
+        // Validar considerando lo ya pagado
+        const totalEncabezado = parseFloat(datosEncabezado.total_encabezado || 0);
+        const totalPagado = parseFloat(datosEncabezado.total_pagado || 0);
+        const tolerancia = totalEncabezado * 0.05;
+        const totalAcumulado = totalPagado + totalComprobantes;
+
+        if (totalAcumulado > (totalEncabezado + tolerancia)) {
+            toastMixin.fire({
+                icon: 'error',
+                title: `El total acumulado ($${totalAcumulado.toFixed(2)}) excede en más del 5% el total del pedido ($${totalEncabezado.toFixed(2)}).`
+            });
+            return;
+        } else if (totalAcumulado < (totalEncabezado - tolerancia)) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: `El total acumulado ($${totalAcumulado.toFixed(2)}) es menor al total del pedido ($${totalEncabezado.toFixed(2)}), pero se guardará.`
+            });
+        }
+
+        // Enviar datos
+        fetch('/ProcesoComprasInternacional/GuardarComprobantes', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: 'Comprobantes guardados correctamente.'
+                    });
+                    bootstrap.Modal.getInstance(document.getElementById('modalComprobantes')).hide();
+                    location.reload();
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: res.message || 'Ocurrió un error al guardar.'
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'No se pudo enviar la solicitud.'
+                });
+            });
+    }
+
+
+</script>

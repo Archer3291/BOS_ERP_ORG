@@ -1,0 +1,435 @@
+﻿<!-- Modal para agregar las opciones de proveedor de cada partida -->
+<div class="modal fade" id="modalAgregarOpciones" tabindex="-1" aria-labelledby="modalOpcionesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabel"><i class="bi bi-pencil-square"></i> Editar Requisición</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <div class="bento-grid mb-4">
+                    <div class="bento-item large">
+                        <div class="section-title">
+                            <i class="fa-thin fa-comment-dots"></i>
+                            Comentario
+                        </div>
+                        <div class="form-floating">
+                            <textarea class="form-control" id="Comentario" name="Comentario" style="height: 100px;"></textarea>
+                            <label for="Comentario">Comentario</label>
+                        </div>
+                    </div>
+
+                    <div class="bento-item">
+                        <div class="section-title">
+                            <i class="fa-thin fa-clipboard-list"></i>
+                            Tipo de Documento <small style="color:red;">*</small>
+                        </div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="orden_compra" name="tipo_proceso" value="orden_compra">
+                                <label for="orden_compra">Orden de Compra</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="gasto" name="tipo_proceso" value="gasto">
+                                <label for="gasto">Solicitud de gasto</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="opcionesCompras"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn orange-500" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btn-guardar-opciones" class="btn gray-500" onclick="guardarCambios()">
+                    <i class="bi bi-save-fill"></i> Guardar cambios
+                </button>
+                <button type="button" id="btn-crear-documento" class="btn blue-500" onclick="crearOpciones()">
+                    <i class="bi bi-save-fill"></i> Guardar documento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // OPCIONES DE PROVEEDOR POR PARTIDA
+    // El descuento (dto1) es un PORCENTAJE por partida.
+    // ============================================
+    let proveedoresList = [];
+    let encabezadoOpciones = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        proveedoresList = await GetData({ path: '/Requisicion/getListaProveedores', method: 'GET' }) || [];
+    });
+
+    document.getElementById('modalAgregarOpciones').addEventListener('hidden.bs.modal', () => {
+        document.querySelectorAll('input[name="tipo_proceso"]').forEach(cb => { cb.checked = false; cb.disabled = false; });
+        document.getElementById('Comentario').value = '';
+        tomCompras.destroyAll();
+    });
+
+    async function agregarOpciones(row) {
+        const _res = await GetData({
+            path: '/Requisicion/GetRequisicionData',
+            data: { id: row.id_encabezado }
+        });
+
+        if (!_res?.success) {
+            toastMixin.fire({ icon: 'error', title: _res?.message || 'No se pudo cargar la requisición.' });
+            return;
+        }
+
+        const { requisicion, partidas, opciones } = _res.returnResult;
+        encabezadoOpciones = requisicion.id_encabezado;
+
+        const tipoProducto = requisicion.tipo_producto;
+        const body = document.getElementById('opcionesCompras');
+        body.innerHTML = '';
+
+        const opcionesPorPartida = {};
+        (opciones || []).forEach(opt => {
+            (opcionesPorPartida[opt.partidas_id] ??= []).push(opt);
+        });
+
+        partidas.forEach(partida => {
+            const idTabla = `tabla-materiales_${partida.id_partidas}`;
+            const guardadas = opcionesPorPartida[partida.id_partidas];
+
+            const div = document.createElement('div');
+            div.id = partida.id_partidas;
+            div.innerHTML = `
+                <div class="card shadow-sm border-0 mb-4" style="background-color: var(--bg-gray); border-radius: 0.3rem; padding: 1rem;">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <table class="table table-borderless mb-3" style="max-width: 400px;">
+                            <tbody>
+                                <tr>
+                                    <th scope="row" style="font-size:.9rem;color:var(--text-light);width:120px;">Clave:</th>
+                                    <td class="fw-bold">${partida.cve_prod}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" style="font-size:.9rem;color:var(--text-light);">Descripción:</th>
+                                    <td class="fw-bold">${partida.descr_prod}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" style="font-size:.9rem;color:var(--text-light);">Cantidad:</th>
+                                    <td class="fw-bold">${partida.cant_ud} ${partida.ud || ''}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div>
+                            ${guardadas ? '' : `
+                            <button type="button" class="btn btn-sm btn-outline-primary me-2"
+                                    onclick="agregarFilaOpcion('${idTabla}', ${partida.id_partidas})">
+                                <i class="bi bi-plus-lg"></i> Agregar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    onclick="eliminarFilasOpcion('${idTabla}')">
+                                <i class="bi bi-trash3"></i> Eliminar
+                            </button>`}
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="border-radius: 0.75rem;">
+                        <table class="table align-middle table-hover"
+                               data-nombre="${partida.descr_prod}"
+                               data-cantidad="${partida.cant_ud}"
+                               data-unidad="${partida.ud || ''}"
+                               data-clave="${partida.cve_prod}"
+                               data-venta="${partida.precioventa ?? 0}"
+                               data-tipo="${tipoProducto}"
+                               id="${idTabla}">
+                            <thead class="text-center" style="background-color: var(--very-light-blue); color: var(--text-dark);">
+                                <tr>
+                                    <th class="text-start"><i class="fa-solid fa-check-to-slot"></i></th>
+                                    <th class="text-start">Proveedor *</th>
+                                    <th class="text-start">Producto *</th>
+                                    <th class="text-start">Descripción *</th>
+                                    <th class="text-start">Unidad *</th>
+                                    <th class="text-start">C/U *</th>
+                                    <th class="text-start">Descuento %</th>
+                                    ${tipoProducto === 'directo' ? '<th class="text-start">Precio de venta</th>' : ''}
+                                    <th class="text-start">Subtotal</th>
+                                    <th class="text-start">Total</th>
+                                    <th class="text-start">Adjunto</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>`;
+
+            body.appendChild(div);
+
+            const tabla = document.getElementById(idTabla);
+            tabla.addEventListener('blur', e => formatearCeldaOpcion(e, tabla), true);
+            tabla.addEventListener('focusin', limpiarCeldaOpcion);
+
+            (guardadas || []).forEach(op => tabla.tBodies[0].appendChild(filaOpcionGuardada(op, partida, tipoProducto)));
+        });
+
+        document.getElementById('modalOpcionesLabel').innerHTML =
+            `Requisicion No. ${requisicion.nuevo_codigo} <small style="font-size:12px">(Variacion: ${requisicion.variacion})</small>`;
+
+        // El tipo de documento lo determina el generador del documento origen
+        document.querySelectorAll('input[name="tipo_proceso"]').forEach(cb => { cb.checked = false; cb.disabled = true; });
+        if (requisicion.gen === 'AF') document.getElementById('gasto').checked = true;
+        else if (requisicion.gen === 'CPN') document.getElementById('orden_compra').checked = true;
+
+        new bootstrap.Modal(document.getElementById('modalAgregarOpciones')).show();
+    }
+
+    // ============================================
+    // FILAS
+    // ============================================
+    function filaOpcionGuardada(op, partida, tipoProducto) {
+        const tr = document.createElement('tr');
+        tr.dataset.ignorar = '1';
+
+        const precio = parseFloat(op.precio) || 0;
+        const cantidad = parseFloat(partida.cant_ud) || 0;
+        const dto1 = porcentajeDescuento(op.descuento);
+
+        tr.innerHTML = `
+            <td class="text-center align-middle"></td>
+            <td class="proveedor">${op.proveedor_nombre || ''}</td>
+            <td class="producto">${op.producto || ''}</td>
+            <td class="descripcion">${op.descripcion || ''}</td>
+            <td class="unidad">${op.unidad || ''}</td>
+            <td class="precio-unitario">${Currency.format(precio)}</td>
+            <td class="descuento">${formatoPorcentaje(dto1)}</td>
+            ${tipoProducto === 'directo' ? `<td class="precio-venta">${Currency.format(parseFloat(op.precio_venta ?? partida.precioventa) || 0)}</td>` : ''}
+            <td class="subtotal-fila">${Currency.format(brutoPartida(cantidad, precio))}</td>
+            <td class="total-fila">${Currency.format(netoPartida(cantidad, precio, dto1))}</td>
+            <td class="text-center">${enlaceAdjunto(op.ruta, op.nombre_original, op.extencion)}</td>`;
+
+        return tr;
+    }
+
+    function agregarFilaOpcion(idTabla, partidaId) {
+        const tabla = document.getElementById(idTabla);
+        const tipoProducto = tabla.dataset.tipo;
+        const uniqueId = `${partidaId}_${Date.now()}`;
+        const fila = document.createElement('tr');
+
+        fila.innerHTML = `
+            <td class="text-center align-middle">
+                <div class="form-check custom-checkbox mx-auto" style="width: 24px;">
+                    <input type="checkbox" class="form-check-input seleccionar-fila" id="chk_${uniqueId}">
+                    <label for="chk_${uniqueId}"></label>
+                </div>
+            </td>
+            <td class="proveedor"><select class="proveedorId" id="prov_${uniqueId}" autocomplete="off" style="color: var(--text-dark)"></select></td>
+            <td contenteditable="true" class="producto">${tabla.dataset.clave}</td>
+            <td contenteditable="true" class="descripcion">${tabla.dataset.nombre}</td>
+            <td contenteditable="true" class="unidad">${tabla.dataset.unidad}</td>
+            <td contenteditable="true" class="precio-unitario">${Currency.format(0)}</td>
+            <td contenteditable="true" class="descuento">${formatoPorcentaje(0)}</td>
+            ${tipoProducto === 'directo' ? `<td contenteditable="true" class="precio-venta">${Currency.format(parseFloat(tabla.dataset.venta) || 0)}</td>` : ''}
+            <td class="subtotal-fila">${Currency.format(0)}</td>
+            <td class="total-fila">${Currency.format(0)}</td>
+            <td>
+                <input type="file" class="form-control archivo" id="file_${uniqueId}" style="display:none">
+                <label for="file_${uniqueId}" class="btn btn-sm blue-500 archivo-label"><i class="fa-solid fa-file-arrow-up"></i></label>
+            </td>`;
+
+        tabla.tBodies[0].appendChild(fila);
+        selectProveedor(`prov_${uniqueId}`, `#prov_${uniqueId}`, proveedoresList, `#${idTabla}`);
+    }
+
+    function eliminarFilasOpcion(idTabla) {
+        document.querySelectorAll(`#${idTabla} .seleccionar-fila:checked`).forEach(chk => {
+            const fila = chk.closest('tr');
+            const select = fila.querySelector('select.proveedorId');
+            if (select) tomCompras.destroy(select.id);
+            fila.remove();
+        });
+    }
+
+    // ============================================
+    // FORMATO DE CELDAS
+    // ============================================
+    function formatearCeldaOpcion(e, tabla) {
+        if (!e.target.matches('td.precio-unitario, td.descuento, td.precio-venta')) return;
+
+        const tr = e.target.closest('tr');
+        const cantidad = parseFloat(tabla.dataset.cantidad) || 0;
+
+        const tdPrecio = tr.querySelector('.precio-unitario');
+        const tdDescuento = tr.querySelector('.descuento');
+        const tdVenta = tr.querySelector('.precio-venta');
+
+        const precio = limpiarNumero(tdPrecio.innerText);
+        const dto1 = porcentajeDescuento(limpiarNumero(tdDescuento.innerText));
+
+        tdPrecio.innerText = Currency.format(precio);
+        tdDescuento.innerText = formatoPorcentaje(dto1);
+        if (tdVenta) tdVenta.innerText = Currency.format(limpiarNumero(tdVenta.innerText));
+
+        tr.querySelector('.subtotal-fila').innerText = Currency.format(brutoPartida(cantidad, precio));
+        tr.querySelector('.total-fila').innerText = Currency.format(netoPartida(cantidad, precio, dto1));
+    }
+
+    function limpiarCeldaOpcion(e) {
+        if (!e.target.matches('td.precio-unitario, td.descuento, td.precio-venta')) return;
+        const valor = limpiarNumero(e.target.innerText);
+        e.target.innerText = valor || '';
+    }
+
+    // ============================================
+    // RECOLECCIÓN (compartida por guardarCambios y crearOpciones)
+    // ============================================
+    function recolectarOpciones(partidasConOpciones = []) {
+        const partidas = [];
+        const archivos = {};
+
+        for (const tabla of document.querySelectorAll("table[id^='tabla-materiales_']")) {
+            const partidaId = parseInt(tabla.id.split('_')[1]);
+            const nombrePartida = tabla.dataset.nombre;
+            const cantidad = parseFloat(tabla.dataset.cantidad) || 0;
+            const filas = [...tabla.querySelectorAll('tbody tr')].filter(f => f.dataset.ignorar !== '1');
+
+            if (!filas.length) {
+                if (partidasConOpciones.includes(partidaId)) continue;
+                return { error: `La tabla de la partida ${nombrePartida} no tiene ninguna fila válida.` };
+            }
+
+            for (const fila of filas) {
+                const select = fila.querySelector('select.proveedorId');
+                const valor = select?.tomselect?.getValue() || '';
+                const texto = select?.tomselect?.getItem(valor)?.textContent?.trim() || '';
+
+                const proveedorId = valor && !isNaN(valor) ? parseInt(valor) : null;
+                const proveedorNombre = proveedorId ? texto : valor;
+
+                const producto = fila.querySelector('td.producto')?.innerText.trim() || '';
+                const descripcion = fila.querySelector('td.descripcion')?.innerText.trim() || '';
+                const unidad = fila.querySelector('td.unidad')?.innerText.trim() || '';
+                const costoUnitario = limpiarNumero(fila.querySelector('td.precio-unitario')?.innerText);
+                const descuento = porcentajeDescuento(limpiarNumero(fila.querySelector('td.descuento')?.innerText));
+                const venta = limpiarNumero(fila.querySelector('td.precio-venta')?.innerText);
+                const archivo = fila.querySelector('input.archivo')?.files?.[0];
+
+                if (!(proveedorId || proveedorNombre) || !producto || costoUnitario <= 0) {
+                    return { error: `La tabla de la partida ${nombrePartida} tiene filas incompletas.` };
+                }
+
+                if (archivo) archivos[`partidas[${partidas.length}][archivo]`] = archivo;
+
+                partidas.push({
+                    encabezadoId: encabezadoOpciones,
+                    partidaId,
+                    proveedorId,
+                    proveedorNombre,
+                    producto,
+                    descripcion,
+                    unidad,
+                    costoUnitario,
+                    descuento,
+                    venta,
+                    cantidad,
+                    tieneArchivo: !!archivo
+                });
+            }
+        }
+
+        return { partidas, archivos };
+    }
+
+    function payloadOpciones({ partidas, archivos }) {
+        return {
+            ...archivos,
+            partidasJson: JSON.stringify(partidas),
+            partidaIds: JSON.stringify([...new Set(partidas.map(p => p.partidaId))]),
+            encabezadoId: encabezadoOpciones,
+            comentario: document.getElementById('Comentario').value
+        };
+    }
+
+    // ============================================
+    // ACCIONES
+    // ============================================
+    function guardarCambios() {
+        const resultado = recolectarOpciones();
+
+        if (resultado.error) {
+            toastMixin.fire({ icon: 'error', title: resultado.error });
+            return;
+        }
+
+        if (!resultado.partidas.length) {
+            toastMixin.fire({ icon: 'error', title: 'No se encontró información para guardar.' });
+            return;
+        }
+
+        confirmarOpciones({
+            texto: '¿Está seguro que desea guardar las opciones de estas partidas?',
+            cargando: 'Guardando opciones, espera un momento...',
+            path: '/Requisicion/GuardarOpciones',
+            data: payloadOpciones(resultado),
+            onSuccess: () => toastMixinReload({ icon: 'success', title: 'Las opciones se guardaron correctamente.' })
+        });
+    }
+
+    async function crearOpciones() {
+        const guardadas = await GetData({
+            path: '/Requisicion/VerificarPartidasConOpciones',
+            data: { encabezadoId: encabezadoOpciones }
+        });
+
+        const partidasConOpciones = (guardadas || []).map(p => p.partidas_id);
+        const resultado = recolectarOpciones(partidasConOpciones);
+
+        if (resultado.error) {
+            toastMixin.fire({ icon: 'error', title: resultado.error });
+            return;
+        }
+
+        if (!resultado.partidas.length && !partidasConOpciones.length) {
+            toastMixin.fire({ icon: 'error', title: 'No se encontró información para guardar.' });
+            return;
+        }
+
+        const tipoProceso = document.querySelector('input[name="tipo_proceso"]:checked')?.value;
+        if (!tipoProceso) {
+            toastMixin.fire({ icon: 'error', title: 'El tipo de documento es obligatorio.' });
+            return;
+        }
+
+        confirmarOpciones({
+            texto: '¿Está seguro que desea crear el documento y pasar al siguiente proceso de aprobación?',
+            cargando: 'Guardando opciones y generando documento, espere un momento...',
+            path: '/Requisicion/crearOpcionesCompras',
+            data: { ...payloadOpciones(resultado), tipoProceso },
+            onSuccess: _res => _SwalReload({
+                icon: 'success',
+                title: 'Las opciones se guardaron correctamente.',
+                text: `Se generó la solicitud de cotización con el folio ${_res.folio}`,
+                showCancelButton: false
+            })
+        });
+    }
+
+    function confirmarOpciones({ texto, cargando, path, data, onSuccess }) {
+        _Swal.fire({
+            icon: 'warning',
+            title: '¿Seguro?',
+            text: texto,
+            footer: '<b style="color: red;">ADVERTENCIA - Este cambio no se puede revertir</b>',
+            preConfirm: async () => {
+                Swal.fire({
+                    title: cargando,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                const _res = await GetData({ path, data });
+
+                if (_res?.success) onSuccess(_res);
+                else _Swal.fire({ icon: 'error', title: 'Ocurrió un error', html: _res?.message || _res?.error, showCancelButton: false });
+            }
+        });
+    }
+</script>

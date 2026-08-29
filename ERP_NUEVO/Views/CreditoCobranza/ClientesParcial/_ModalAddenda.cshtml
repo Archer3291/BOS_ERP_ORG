@@ -1,0 +1,383 @@
+@*
+    Modal de alta/edición de addenda CFDI y CRUD completo de addendas
+    del cliente (incluye el render de las tarjetas de la pestaña
+    Addendas del modal de edición).
+*@
+<div class="modal fade cli-modal" id="modalAddenda" tabindex="-1" aria-labelledby="modalAddendaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="cli-icon">
+                    <i class="fa-solid fa-file-code"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title" id="modalAddendaLabel"><span id="tituloModalAddenda">Nueva Addenda</span></h5>
+                    <span class="modal-subtitle">Complemento XML que se adjunta al CFDI de este cliente.</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAddenda" autocomplete="off">
+                    <input type="hidden" id="addenda_id" name="id_addenda">
+                    <input type="hidden" id="addenda_cliente_id" name="id_cliente">
+
+                    <fieldset class="cli-fieldset">
+                        <legend class="cli-legend">Información general</legend>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-0">
+                                <label for="addenda_nombre" class="form-label required">Nombre de la addenda</label>
+                                <input type="text" class="form-control" id="addenda_nombre" name="nombre" required
+                                       placeholder="Ej: ACME, Walmart, etc.">
+                                <small class="text-muted">Identificador único para esta addenda</small>
+                            </div>
+                            <div class="col-md-4 mb-0">
+                                <label for="addenda_version" class="form-label">Versión</label>
+                                <input type="text" class="form-control" id="addenda_version" name="version" value="1.0">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="cli-fieldset">
+                        <legend class="cli-legend">Configuración XML</legend>
+
+                        <div class="mb-3">
+                            <label for="addenda_namespace" class="form-label required">XML Namespace</label>
+                            <input type="url" class="form-control" id="addenda_namespace" name="xml_namespace" required
+                                   placeholder="https://recepcionfe.ejemplo.com/cfd/addenda/v1">
+                            <small class="text-muted">URI del namespace XML de la addenda</small>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-0">
+                                <label for="addenda_prefix" class="form-label required">XML Prefix</label>
+                                <input type="text" class="form-control" id="addenda_prefix" name="xml_prefix" required
+                                       placeholder="Ej: acme, walmart">
+                                <small class="text-muted">Prefijo para las etiquetas XML</small>
+                            </div>
+                            <div class="col-md-6 mb-0">
+                                <label for="addenda_schema" class="form-label">XML Schema (XSD)</label>
+                                <input type="url" class="form-control" id="addenda_schema" name="xml_schema"
+                                       placeholder="http://ejemplo.com/schema.xsd">
+                            </div>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="addenda_usar_conceptos" name="usar_conceptos">
+                            <label class="form-check-label" for="addenda_usar_conceptos">
+                                Usar conceptos en la addenda
+                            </label>
+                            <small class="text-muted d-block">Marque si la addenda requiere información de los conceptos/partidas</small>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="cli-fieldset">
+                        <legend class="cli-legend">
+                            Template de datos (JSON)
+                            <button type="button" class="cli-btn cli-btn-soft cli-btn-sm cli-legend-action" onclick="mostrarEjemploJSON()">
+                                <i class="fa-solid fa-circle-question"></i> Ver ejemplo
+                            </button>
+                        </legend>
+
+                        <textarea class="form-control cli-json" id="addenda_template" name="data_template" rows="10" required></textarea>
+                        <small class="text-muted">
+                            Estructura JSON con los campos requeridos por la addenda.
+                            <a href="#" onclick="formatearJSON(); return false;">Formatear JSON</a>
+                        </small>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cli-btn cli-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>Cancelar
+                </button>
+                <button type="button" class="cli-btn cli-btn-success" onclick="guardarAddenda()">
+                    <i class="fa-solid fa-floppy-disk"></i>Guardar addenda
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        let _modal = null;
+        let _addendas = [];
+
+        /* ── Consulta ─────────────────────────────────────────────── */
+        window.cargarAddendas = function (idCliente) {
+            GetData({
+                path: '/Clientes/GetAddendas',
+                data: { id_cliente: idCliente }
+            }).then(response => {
+                _addendas = (response && response.data) ? response.data : [];
+                renderizarAddendas();
+            }).catch(error => {
+                console.error('Error al cargar addendas:', error);
+                _addendas = [];
+                renderizarAddendas();
+            });
+        };
+
+        /* ── Tarjetas de la pestaña Addendas ──────────────────────── */
+        function renderizarAddendas() {
+            const container = document.getElementById('listaAddendas');
+            const sinAddendas = document.getElementById('sinAddendas');
+
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (_addendas.length === 0) {
+                sinAddendas.style.display = 'block';
+                return;
+            }
+
+            sinAddendas.style.display = 'none';
+
+            _addendas.forEach(addenda => {
+                const card = document.createElement('div');
+                card.className = 'col-md-6 col-xl-4';
+                card.innerHTML = `
+                    <div class="cli-addenda-card">
+                        <div class="cli-addenda-head">
+                            <div class="cli-addenda-ident">
+                                <h6 class="cli-addenda-name">
+                                    <i class="fa-solid fa-file-code"></i>${addenda.nombre}
+                                </h6>
+                                <span class="cli-addenda-version">v${addenda.version || '1.0'}</span>
+                            </div>
+                            <div class="cli-addenda-actions">
+                                <button type="button" class="cli-icon-btn" onclick="verAddenda(${addenda.id_addenda})" title="Ver detalles">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                <button type="button" class="cli-icon-btn" onclick="editarAddenda(${addenda.id_addenda})" title="Editar">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button type="button" class="cli-icon-btn cli-icon-btn--danger" onclick="eliminarAddenda(${addenda.id_addenda})" title="Eliminar">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="cli-addenda-row">
+                            <strong>Namespace</strong>
+                            <span class="cli-truncate" title="${addenda.xml_namespace}">${addenda.xml_namespace}</span>
+                        </div>
+
+                        <div class="cli-addenda-row"><strong>Prefix:</strong> ${addenda.xml_prefix}</div>
+
+                        <div class="cli-addenda-row"><strong>Campos:</strong> ${resumirTemplate(addenda.data_template)}</div>
+
+                        <div>
+                            ${addenda.usar_conceptos ? '<span class="cli-tag cli-tag--accent">Usa conceptos</span>' : ''}
+                            ${addenda.xml_schema ? '<span class="cli-tag cli-tag--success">Con XSD</span>' : ''}
+                        </div>
+                    </div>`;
+
+                container.appendChild(card);
+            });
+        }
+
+        /** Primeras claves del template, para mostrarlas en la tarjeta */
+        function resumirTemplate(dataTemplate) {
+            try {
+                const keys = Object.keys(JSON.parse(dataTemplate));
+                return keys.slice(0, 3).join(', ') + (keys.length > 3 ? '...' : '');
+            } catch (e) {
+                return 'Template configurado';
+            }
+        }
+
+        /** Devuelve el JSON indentado, o el original si no es parseable */
+        function formatearTemplate(dataTemplate) {
+            try {
+                return JSON.stringify(JSON.parse(dataTemplate), null, 2);
+            } catch (e) {
+                return dataTemplate;
+            }
+        }
+
+        /* ── Alta ─────────────────────────────────────────────────── */
+        window.abrirModalAgregarAddenda = function () {
+            document.getElementById('formAddenda').reset();
+            document.getElementById('addenda_id').value = '';
+            document.getElementById('tituloModalAddenda').textContent = 'Nueva Addenda';
+            document.getElementById('addenda_cliente_id').value = ClientesState.idClienteActivo();
+
+            document.getElementById('addenda_version').value = '1.0';
+            document.getElementById('addenda_template').value = '{\n  \n}';
+
+            _modal.show();
+        };
+
+        /* ── Detalle de sólo lectura ──────────────────────────────── */
+        window.verAddenda = function (idAddenda) {
+            GetData({
+                path: '/Clientes/GetAddenda',
+                data: { id_addenda: idAddenda }
+            }).then(response => {
+                if (!response || !response.data) return;
+                const addenda = response.data;
+
+                const detalle = [
+                    ['Versión', addenda.version || '1.0'],
+                    ['Namespace', addenda.xml_namespace],
+                    ['Prefix', addenda.xml_prefix],
+                    ['Schema', addenda.xml_schema],
+                    ['Usa conceptos', addenda.usar_conceptos ? 'Sí' : 'No'],
+                ].filter(([, valor]) => valor);
+
+                _Swal.fire({
+                    title: `<i class="fa-solid fa-file-code me-2"></i>${addenda.nombre}`,
+                    html: `
+                        <div class="text-start cli-modal">
+                            <div class="cli-summary mb-3">
+                                ${detalle.map(([etiqueta, valor]) => `
+                                    <div class="cli-summary-item">
+                                        <span class="cli-summary-label">${etiqueta}</span>
+                                        <span class="cli-summary-value">${valor}</span>
+                                    </div>`).join('')}
+                            </div>
+                            <pre class="cli-code">${formatearTemplate(addenda.data_template)}</pre>
+                            <p class="text-muted mt-2 mb-0">
+                                Creada: ${new Date(addenda.created_at).toLocaleString()} ·
+                                Actualizada: ${new Date(addenda.updated_at).toLocaleString()}
+                            </p>
+                        </div>
+                    `,
+                    width: '700px',
+                    showCancelButton: false,
+                    confirmButtonText: 'Cerrar'
+                });
+            });
+        };
+
+        /* ── Edición ──────────────────────────────────────────────── */
+        window.editarAddenda = function (idAddenda) {
+            GetData({
+                path: '/Clientes/GetAddenda',
+                data: { id_addenda: idAddenda }
+            }).then(response => {
+                if (!response || !response.data) return;
+                const addenda = response.data;
+
+                document.getElementById('addenda_id').value = addenda.id_addenda;
+                document.getElementById('addenda_cliente_id').value = addenda.id_cliente;
+                document.getElementById('addenda_nombre').value = addenda.nombre;
+                document.getElementById('addenda_version').value = addenda.version || '1.0';
+                document.getElementById('addenda_namespace').value = addenda.xml_namespace;
+                document.getElementById('addenda_schema').value = addenda.xml_schema || '';
+                document.getElementById('addenda_prefix').value = addenda.xml_prefix;
+                document.getElementById('addenda_usar_conceptos').checked = addenda.usar_conceptos;
+                document.getElementById('addenda_template').value = formatearTemplate(addenda.data_template);
+
+                document.getElementById('tituloModalAddenda').textContent = 'Editar Addenda';
+                _modal.show();
+            });
+        };
+
+        /* ── Baja (borrado lógico en el servidor) ─────────────────── */
+        window.eliminarAddenda = function (idAddenda) {
+            _Swal.fire({
+                title: '¿Está seguro?',
+                text: '¿Desea eliminar esta addenda? Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33'
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+
+                GetData({
+                    path: '/Clientes/EliminarAddenda',
+                    data: { id_addenda: idAddenda },
+                    swalResponse: false
+                }).then(response => {
+                    if (response.icon === 'success') {
+                        toastMixin.fire({ icon: 'success', title: 'Addenda eliminada exitosamente' });
+                        cargarAddendas(ClientesState.idClienteActivo());
+                    } else {
+                        toastMixin.fire({
+                            icon: 'error',
+                            title: response.message || 'Error al eliminar addenda'
+                        });
+                    }
+                });
+            });
+        };
+
+        /* ── Guardado (crear o actualizar según haya id) ───────────── */
+        window.guardarAddenda = function () {
+            const form = document.getElementById('formAddenda');
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            try {
+                JSON.parse(document.getElementById('addenda_template').value.trim());
+            } catch (e) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'El template de datos no es un JSON válido',
+                    text: e.message
+                });
+                return;
+            }
+
+            const data = {};
+            new FormData(form).forEach((value, key) => {
+                data[key] = key === 'usar_conceptos'
+                    ? document.getElementById('addenda_usar_conceptos').checked
+                    : value.trim();
+            });
+
+            const path = data.id_addenda ? '/Clientes/ActualizarAddenda' : '/Clientes/CrearAddenda';
+
+            GetData({ path, data, swalResponse: false }).then(response => {
+                if (response.icon === 'success') {
+                    toastMixin.fire({ icon: 'success', title: response.title });
+                    _modal.hide();
+                    cargarAddendas(data.id_cliente);
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: response.title || 'Error',
+                        text: response.html || response.message
+                    });
+                }
+            });
+        };
+
+        /* ── Indenta el JSON del textarea ─────────────────────────── */
+        window.formatearJSON = function () {
+            const textarea = document.getElementById('addenda_template');
+            const valor = textarea.value.trim();
+
+            if (!valor) {
+                toastMixin.fire({ icon: 'warning', title: 'No hay contenido para formatear' });
+                return;
+            }
+
+            try {
+                textarea.value = JSON.stringify(JSON.parse(valor), null, 2);
+                toastMixin.fire({ icon: 'success', title: 'JSON formateado correctamente' });
+            } catch (e) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error al formatear JSON',
+                    text: e.message
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            _modal = new bootstrap.Modal(document.getElementById('modalAddenda'));
+        });
+    })();
+</script>

@@ -1,0 +1,237 @@
+﻿
+@{
+    ViewBag.Title = "Categories";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script>window.document.title = 'Categories de proveedor'</script>
+
+<div class="card">
+    <div class="card-header text-bg-primary">
+        <h2 class="animate__animated animate__rubberBand">Categorias de proveedor</h2>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="button" class="btn btn-outline-primary mb-3" data-mdb-ripple-init data-mdb-ripple-color="primary" data-mdb-ripple-duration="1000ms" id="btnAdd" onclick="createCategory()">
+                    <i class="fa-duotone fa-solid fa-plus fa-beat"></i> Nueva categoria
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive-sm">
+            <table id="categoriesTable" class="table table-striped table-bordered table-hover" style="width:100%">
+                <thead class="bg-secondary">
+                    <tr>
+                        <th>Nomrbe</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar/editar -->
+<div class="modal fade animate__animated animate__bounceIn" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="categoryModalLabel">Registrar Nueva categoria</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" title="Cerrar"></button>
+            </div>
+            <form id="categoryForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="action" value="create">
+                    <input type="hidden" id="Id" name="Id" value="0">
+                    <div class="form-outline mb-4" data-mdb-input-init>
+                        <i class="fa-duotone fa-solid fa-key trailing"></i>
+                        <input type="text" id="Nombre" class="form-control form-icon-trailing" name="Nombre" />
+                        <label class="form-label" for="Nombre">Ingresar Nombre</label>
+                    </div>
+                    <div class="form-outline mb-4" data-mdb-input-init>
+                        <i class="fa-duotone fa-solid fa-keyboard trailing"></i>
+                        <input type="text" id="Descripcion" class="form-control form-icon-trailing" name="Descripcion" />
+                        <label class="form-label" for="Descripcion">Ingresar descripción</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger" data-mdb-ripple-init data-mdb-ripple-color="danger" data-mdb-ripple-duration="1000ms" data-bs-dismiss="modal">
+                        <i class="fa-duotone fa-solid fa-xmark fa-beat"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-outline-success" data-mdb-ripple-init data-mdb-ripple-color="success" data-mdb-ripple-duration="1000ms" onclick="sendForm()">
+                        <i class="fa-duotone fa-solid fa-floppy-disk fa-beat"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Configuración de DataTables
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const res = await fetch('/scripts/paises.json')
+
+            const pais = await res.json()
+
+            console.log(pais)
+        })
+
+        var table = $('#categoriesTable').DataTable({
+            ajax: {
+                url: '/categories/list',
+                type: 'GET',
+                dataType: 'json',
+                dataSrc: 'data',
+                error: function (xhr, error, thrown) {
+                    console.error('Error al cargar datos: ', error, thrown);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudieron cargar los datos. Por favor, recarga la página.'
+                    });
+                }
+            },
+            columns: [
+                { data: 'nombre', title: 'Nombre' },
+                { data: 'descripcion', title: 'Descripcion' },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        return `
+                                    <div class="" role="group">
+                                        <button class="btn btn-sm btn-floating btn-outline-warning btn-edit" data-mdb-ripple-init data-mdb-ripple-color="warning" data-mdb-ripple-duration="1000ms" title="Editar" data-id="${data.id}" onclick="editCategory(this)">
+                                            <i class="fa-duotone fa-solid fa-pen-to-square fa-beat"></i>
+                                        </button>
+                                    </div>
+                                    `;
+                    },
+                    orderable: false,
+                    width: '20%'
+                }
+            ],
+            responsive: true,
+            select: true,
+            layout: {
+                topStart: {
+                    pageLength: {
+                        menu: [5, 10, 25, 50]
+                    }
+                }
+            },
+            columnDefs: [
+                { className: 'dt-center', targets: '_all' }
+            ]
+        });
+
+        // Mostrar modal para agregar
+        function createCategory() {
+            $('#action').val('create');
+            $('#categoryForm')[0].reset();
+            $('#Nombre').prop('readonly', false).removeClass('is-valid is-invalid');
+            $('#Descripcion').removeClass('is-valid is-invalid');
+            $('#categoryModal').modal('show');
+        }
+
+        // Editar grupo
+        function editCategory(e) {
+            const id = $(e).data('id');
+
+            GetData({
+                path: '/categories/details',
+                data: { id: id },
+            }).then((_res) => {
+                if (_res.success) {
+                    $('#action').val('edit');
+                    $('#categoryModalLabel').text('Editar categoria');
+                    $('#Id').val(_res.data.id)
+                    $('#Nombre').val(_res.data.nombre).prop('readonly', true).removeClass('is-valid is-invalid');
+                    $('#Descripcion').val(_res.data.descripcion).removeClass('is-valid is-invalid');
+                    $('#categoryModal').modal('show');
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: _res.message
+                    })
+                }
+            })
+        }
+
+        // Enviar formulario
+        function sendForm() {
+            let url = $('#action').val() === 'create' ? '/categories/create' : '/categories/update';
+
+            // Validación manual
+            var isValid = true;
+            if (!$('#Nombre').val()) {
+                $('#Nombre').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#Nombre').removeClass('is-invalid').addClass('is-valid');
+            }
+
+            if (!isValid) {
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Por favor complete todos los campos requeridos.'
+                });
+                return;
+            }
+
+            postFormData('categoryForm', url).then((res) => {
+                if (res.success) {
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: res.message,
+                    });
+                    $('#categoryModal').modal('hide');
+                    table.ajax.reload(null, false);
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: res.message
+                    });
+                }
+            })
+        }
+
+        // Validación en tiempo real
+        $('#categoryForm input').on('input', function () {
+            if ($(this).val()) {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            } else {
+                $(this).removeClass('is-valid').addClass('is-invalid');
+            }
+        });
+
+        // Configuración del validador del formulario
+        $("#categoryForm").validate({
+            rules: {
+                Nombre: {
+                    required: true,
+                }
+            },
+            messages: {
+                Nombre: {
+                    required: "El nombre es obligatorio",
+                }
+            },
+            errorElement: 'div',
+            errorPlacement: function (error, element) {
+                error.addClass('invalid-feedback');
+                element.closest('.form-outline').append(error);
+            },
+            highlight: function (element, errorClass, validClass) {
+                $(element).addClass('is-invalid').removeClass('is-valid');
+            },
+            unhighlight: function (element, errorClass, validClass) {
+                $(element).removeClass('is-invalid').addClass('is-valid');
+            }
+        });
+    </script>
+}

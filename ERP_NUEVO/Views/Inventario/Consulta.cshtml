@@ -1,0 +1,102 @@
+﻿@{
+    ViewBag.Title = "Vista Ocupación — Almacén";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@* ─── CSS ─────────────────────────────────────────────── *@
+<link href="~/content/Inventario/rack-view.css" rel="stylesheet" />
+
+@* ─── Loading overlay (visible hasta que data.js lo oculte) *@
+<div id="loadingOverlay" class="rv-loading-overlay">
+    <div class="rv-loading-box">
+        <div class="rv-spinner"></div>
+        <h3 style="font-size:15px;margin-bottom:6px">Cargando almacén...</h3>
+        <p id="loadingStatus" style="font-size:12px;color:var(--text-light)">Iniciando...</p>
+    </div>
+</div>
+
+@* ─── Contenido principal ─────────────────────────────── *@
+<div id="mainContainer" style="display:none; padding: 0 4px;">
+
+    @* Stats *@
+    <div class="rv-stats-bar" style="margin-top:8px">
+        <div class="rv-stat-card">
+            <div class="rv-stat-label"><i class="fas fa-map-marker-alt"></i> Sucursales</div>
+            <div class="rv-stat-val" id="totalSucursales">0</div>
+        </div>
+        <div class="rv-stat-card">
+            <div class="rv-stat-label"><i class="fas fa-warehouse"></i> Almacenes</div>
+            <div class="rv-stat-val" id="totalAlmacenes">0</div>
+        </div>
+        <div class="rv-stat-card">
+            <div class="rv-stat-label"><i class="fas fa-th-large"></i> Ubicaciones</div>
+            <div class="rv-stat-val" id="totalUbicaciones">0</div>
+        </div>
+        <div class="rv-stat-card">
+            <div class="rv-stat-label"><i class="fas fa-box"></i> SKUs</div>
+            <div class="rv-stat-val" id="totalProductos">0</div>
+        </div>
+        <div class="rv-stat-card">
+            <div class="rv-stat-label"><i class="fas fa-chart-bar"></i> Ocupación prom.</div>
+            <div class="rv-stat-val" id="totalOcupacionPromedio">0%</div>
+        </div>
+    </div>
+
+    @* Toolbar: búsqueda + toggle de vista + leyenda *@
+    <div class="rv-toolbar">
+        <div class="rv-search-wrap">
+            <i class="fas fa-search rv-search-icon" aria-hidden="true"></i>
+            <input type="text"
+                   id="rvSearchInput"
+                   class="rv-search-input"
+                   placeholder="Buscar por ubicación, rack o clave de producto…"
+                   autocomplete="off"
+                   oninput="handleSearchInput(this.value)" />
+        </div>
+
+        <div class="btn-group" style="display:flex;gap:4px">
+            <button type="button"
+                    id="btnViewRack"
+                    class="rv-btn active"
+                    onclick="switchView('rack')">
+                <i class="fas fa-th" aria-hidden="true"></i> Racks
+            </button>
+            <button type="button"
+                    id="btnViewList"
+                    class="rv-btn"
+                    onclick="switchView('list')">
+                <i class="fas fa-list" aria-hidden="true"></i> Lista
+            </button>
+        </div>
+
+        <div class="rv-legend">
+            <span class="rv-leg-item"><span class="rv-leg-dot high"></span> Alto (≥70%)</span>
+            <span class="rv-leg-item"><span class="rv-leg-dot medium"></span> Medio (30–69%)</span>
+            <span class="rv-leg-item"><span class="rv-leg-dot low"></span> Bajo (&lt;30%)</span>
+            <span class="rv-leg-item"><span class="rv-leg-dot empty"></span> Vacío</span>
+        </div>
+    </div>
+
+    @* Área del rack *@
+    <div id="rackViewContainer"></div>
+
+</div>
+
+@* ─── Tooltip flotante ────────────────────────────────── *@
+<div id="rvTooltip"></div>
+
+@* ─── Panel de detalle lateral ────────────────────────── *@
+<div id="rvDetailPanel">
+    <button type="button"
+            class="rv-dp-close"
+            onclick="closeDetailPanel()"
+            aria-label="Cerrar panel">
+        <i class="fas fa-times"></i>
+    </button>
+    <div id="rvDetailContent"></div>
+</div>
+
+@* ─── Scripts ──────────────────────────────────────────── *@
+<script src="~/Scripts/Inventario/Consulta/app-ocupacion.js"> </script>
+<script src="~/Scripts/Inventario/Consulta/data.js"> </script>
+<script src="~/Scripts/Inventario/Consulta/rack-view.js"> </script>

@@ -1,0 +1,181 @@
+﻿@model BOS_ERP.Models.Requisicion
+
+@{
+    ViewBag.Title = "Nueva Requisición";
+}
+
+<h2>@ViewBag.Title</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    @Html.LabelFor(model => model.Solicitante, htmlAttributes: new { @class = "control-label col-md-4" })
+                    <div class="col-md-8">
+                        @Html.EditorFor(model => model.Solicitante, new { htmlAttributes = new { @class = "form-control" } })
+                        @Html.ValidationMessageFor(model => model.Solicitante, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(model => model.Departamento, htmlAttributes: new { @class = "control-label col-md-4" })
+                    <div class="col-md-8">
+                        @Html.EditorFor(model => model.Departamento, new { htmlAttributes = new { @class = "form-control" } })
+                        @Html.ValidationMessageFor(model => model.Departamento, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(model => model.FechaSolicitud, htmlAttributes: new { @class = "control-label col-md-2" })
+                    <div class="col-md-10">
+                        @{
+                            // Formatear la fecha para el input type="date"
+                            var fechaFormateada = Model.FechaSolicitud.ToString("yyyy-MM-dd");
+                        }
+                        <input type="date" id="FechaSolicitud" name="FechaSolicitud"
+                               value="@fechaFormateada" class="form-control" />
+                        @Html.ValidationMessageFor(model => model.FechaSolicitud, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    @Html.LabelFor(model => model.Proyecto, htmlAttributes: new { @class = "control-label col-md-4" })
+                    <div class="col-md-8">
+                        @Html.EditorFor(model => model.Proyecto, new { htmlAttributes = new { @class = "form-control" } })
+                        @Html.ValidationMessageFor(model => model.Proyecto, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(model => model.CentroCostos, htmlAttributes: new { @class = "control-label col-md-4" })
+                    <div class="col-md-8">
+                        @Html.EditorFor(model => model.CentroCostos, new { htmlAttributes = new { @class = "form-control" } })
+                        @Html.ValidationMessageFor(model => model.CentroCostos, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Justificacion, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.TextAreaFor(model => model.Justificacion, new { @class = "form-control", rows = "3" })
+                @Html.ValidationMessageFor(model => model.Justificacion, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <h4>Detalles de la Requisición</h4>
+        <table id="detallesTable" class="table">
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Unidad de Medida</th>
+                    <th>Costo Unitario</th>
+                    <th>Subtotal</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Detalles.Count; i++)
+                {
+                    <tr>
+                        <td>@Html.EditorFor(model => model.Detalles[i].Descripcion, new { htmlAttributes = new { @class = "form-control" } })</td>
+                        <td>@Html.EditorFor(model => model.Detalles[i].Cantidad, new { htmlAttributes = new { @class = "form-control" } })</td>
+                        <td>@Html.EditorFor(model => model.Detalles[i].UnidadMedida, new { htmlAttributes = new { @class = "form-control" } })</td>
+                        <td>@Html.EditorFor(model => model.Detalles[i].CostoUnitario, new { htmlAttributes = new { @class = "form-control" } })</td>
+                        <td>@Html.DisplayFor(model => model.Detalles[i].Subtotal, new { @class = "form-control" })</td>
+                        <td><button type="button" class="btn btn-danger btn-sm remove-row">Eliminar</button></td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" class="text-right"><strong>Total:</strong></td>
+                    <td><strong id="total">@Model.Total.ToString("C2")</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <button type="button" id="addRow" class="btn btn-primary">Agregar Item</button>
+                <input type="submit" value="Guardar Requisición" class="btn btn-success" />
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    @Html.ActionLink("Volver al Listado", "Index")
+</div>
+
+@section Scripts {
+    <script src="~/bundles/jqueryval"></script>
+    <script>
+        $(document).ready(function () {
+            // Agregar nueva fila
+            $("#addRow").click(function () {
+                var index = $("#detallesTable tbody tr").length;
+                var newRow = '<tr>' +
+                    '<td><input class="form-control" type="text" name="Detalles[' + index + '].Descripcion" /></td>' +
+                    '<td><input class="form-control cantidad" type="number" name="Detalles[' + index + '].Cantidad" value="1" min="1" /></td>' +
+                    '<td><input class="form-control" type="text" name="Detalles[' + index + '].UnidadMedida" /></td>' +
+                    '<td><input class="form-control costo" type="number" name="Detalles[' + index + '].CostoUnitario" step="0.01" min="0.01" /></td>' +
+                    '<td><span class="subtotal">0.00</span></td>' +
+                    '<td><button type="button" class="btn btn-danger btn-sm remove-row">Eliminar</button></td>' +
+                    '</tr>';
+                $("#detallesTable tbody").append(newRow);
+            });
+
+            // Eliminar fila
+            $(document).on("click", ".remove-row", function () {
+                $(this).closest("tr").remove();
+                calculateTotal();
+                reindexRows();
+            });
+
+            // Calcular subtotal y total cuando cambian cantidad o costo
+            $(document).on("change", ".cantidad, .costo", function () {
+                var row = $(this).closest("tr");
+                var cantidad = parseFloat(row.find(".cantidad").val()) || 0;
+                var costo = parseFloat(row.find(".costo").val()) || 0;
+                var subtotal = cantidad * costo;
+                row.find(".subtotal").text(subtotal.toFixed(2));
+                calculateTotal();
+            });
+
+            // Reindexar filas para mantener el orden correcto en el modelo
+            function reindexRows() {
+                $("#detallesTable tbody tr").each(function (index) {
+                    $(this).find("input").each(function () {
+                        var name = $(this).attr("name");
+                        if (name) {
+                            name = name.replace(/\[\d+\]/, '[' + index + ']');
+                            $(this).attr("name", name);
+                        }
+                    });
+                });
+            }
+
+            // Calcular total
+            function calculateTotal() {
+                var total = 0;
+                $(".subtotal").each(function () {
+                    total += parseFloat($(this).text()) || 0;
+                });
+                $("#total").text(total.toFixed(2));
+            }
+        });
+    </script>
+}

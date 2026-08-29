@@ -1,0 +1,271 @@
+@{
+    ViewBag.Title = "Acceso";
+    ViewBag.MostrarBarra = false;
+    Layout = "~/Views/Portal/_LayoutPortal.cshtml";
+}
+
+@section styles {
+    <style>
+        .caja-acceso {
+            max-width: 440px;
+            margin: 48px auto;
+        }
+
+        .encabezado-acceso {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+            .encabezado-acceso i {
+                font-size: 2.4rem;
+                color: var(--azul);
+                margin-bottom: 10px;
+            }
+
+            .encabezado-acceso h1 {
+                font-size: 1.35rem;
+                font-weight: 700;
+                margin: 0;
+            }
+
+            .encabezado-acceso p {
+                color: var(--texto-suave);
+                font-size: .9rem;
+                margin-top: 6px;
+            }
+
+        .cambiar-modo {
+            text-align: center;
+            margin-top: 18px;
+            font-size: .88rem;
+        }
+
+        .nota {
+            background: #eff6ff;
+            border-left: 3px solid var(--azul);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: .82rem;
+            color: #1e3a5f;
+            margin-bottom: 18px;
+        }
+    </style>
+}
+
+<div class="caja-acceso">
+    <div class="encabezado-acceso">
+        <i class="fas fa-file-invoice"></i>
+        <h1>Portal de Clientes</h1>
+        <p>Consulta y descarga tus facturas</p>
+    </div>
+
+    <div class="tarjeta">
+        @Html.AntiForgeryToken()
+
+        @* ── Entrar ──────────────────────────────────────────────── *@
+        <div id="modoEntrar">
+            <div class="mb-3">
+                <label class="form-label">Clave de cliente</label>
+                <input type="text" id="claveCliente" class="form-control" placeholder="01-0001" autocomplete="username" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Correo</label>
+                <input type="email" id="correo" class="form-control" placeholder="tu@@correo.com" autocomplete="email" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Contraseña</label>
+                <input type="password" id="password" class="form-control" autocomplete="current-password" />
+            </div>
+
+            @* Sólo aparece si el servidor avisa que ese correo tiene acceso en más de una
+               empresa. Preguntarlo siempre estorbaría a la mayoría, que tiene una sola. *@
+            <div class="mb-3" id="grupoEmpresaLogin" style="display:none;">
+                <label class="form-label">Empresa</label>
+                <select id="empresaLogin" class="form-select"></select>
+            </div>
+
+            <button type="button" class="btn btn-portal w-100" id="btnEntrar">
+                <i class="fas fa-right-to-bracket me-1"></i>Entrar
+            </button>
+
+            <div class="cambiar-modo">
+                <a href="#" id="irActivar">Primera vez o ¿olvidaste tu contraseña?</a>
+            </div>
+        </div>
+
+        @* ── Solicitar acceso ────────────────────────────────────── *@
+        <div id="modoSolicitar" style="display:none;">
+            <div class="nota">
+                <i class="fas fa-info-circle me-1"></i>
+                Te enviaremos el enlace al correo que ya tengas registrado con nosotros.
+                Si no reconoces ninguno, comunícate con tu asesor.
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Clave de cliente</label>
+                <input type="text" id="sClaveCliente" class="form-control" placeholder="01-0001" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Correo registrado</label>
+                <input type="email" id="sCorreo" class="form-control" placeholder="tu@@correo.com" />
+            </div>
+
+            @* La clave de cliente se repite entre empresas, así que sola no identifica a
+               nadie. Con la empresa, la combinación es única y no hay forma de acabar
+               viendo las facturas del cliente equivocado. *@
+            <div class="mb-3">
+                <label class="form-label">Empresa con la que facturas</label>
+                <select id="sEmpresa" class="form-select">
+                    <option value="">Cargando…</option>
+                </select>
+            </div>
+
+            <button type="button" class="btn btn-portal w-100" id="btnSolicitar">
+                <i class="fas fa-paper-plane me-1"></i>Enviarme el enlace
+            </button>
+
+            <div class="cambiar-modo">
+                <a href="#" id="irEntrar">Volver a iniciar sesión</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            const token = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            function alternar(mostrarSolicitud) {
+                document.getElementById('modoEntrar').style.display = mostrarSolicitud ? 'none' : '';
+                document.getElementById('modoSolicitar').style.display = mostrarSolicitud ? '' : 'none';
+            }
+
+            document.getElementById('irActivar').addEventListener('click', e => {
+                e.preventDefault();
+                // Se arrastran los datos ya capturados para no hacerlos teclear otra vez.
+                document.getElementById('sClaveCliente').value = document.getElementById('claveCliente').value;
+                document.getElementById('sCorreo').value = document.getElementById('correo').value;
+                alternar(true);
+            });
+
+            document.getElementById('irEntrar').addEventListener('click', e => {
+                e.preventDefault();
+                alternar(false);
+            });
+
+            async function postear(url, datos, boton) {
+                const htmlOriginal = boton.innerHTML;
+                boton.disabled = true;
+                boton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Un momento…';
+
+                try {
+                    const fd = new FormData();
+                    Object.entries(datos).forEach(([k, v]) => fd.append(k, v));
+                    const t = token();
+                    if (t) fd.append('__RequestVerificationToken', t);
+
+                    const r = await fetch(url, { method: 'POST', body: fd });
+
+                    if (!r.ok) {
+                        Swal.fire({ icon: 'error', title: 'Error del servidor', text: `El servidor respondió ${r.status}.` });
+                        return null;
+                    }
+
+                    return await r.json();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Sin conexión', text: 'No pudimos comunicarnos con el servidor.' });
+                    return null;
+                } finally {
+                    boton.disabled = false;
+                    boton.innerHTML = htmlOriginal;
+                }
+            }
+
+            // Catálogo de empresas para el alta. Se pide una sola vez al abrir la página.
+            (async function cargarEmpresas() {
+                const select = document.getElementById('sEmpresa');
+                try {
+                    const r = await fetch('@Url.Action("Empresas", "PortalClientes")');
+                    const data = r.ok ? await r.json() : null;
+
+                    if (!data?.success) {
+                        select.innerHTML = '<option value="">No se pudo cargar</option>';
+                        return;
+                    }
+
+                    select.innerHTML = '<option value="">-- Selecciona --</option>' +
+                        data.empresas.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+                } catch {
+                    select.innerHTML = '<option value="">No se pudo cargar</option>';
+                }
+            })();
+
+            document.getElementById('btnEntrar').addEventListener('click', async e => {
+                const datos = {
+                    claveCliente: document.getElementById('claveCliente').value,
+                    correo: document.getElementById('correo').value,
+                    password: document.getElementById('password').value
+                };
+
+                // Si el selector ya está visible, el cliente eligió empresa: se manda.
+                const empresaLogin = document.getElementById('empresaLogin').value;
+                if (empresaLogin) datos.empresaId = empresaLogin;
+
+                const data = await postear('@Url.Action("Entrar", "PortalClientes")', datos, e.currentTarget);
+                if (!data) return;
+
+                if (data.success) {
+                    window.location.href = data.redirectUrl;
+                    return;
+                }
+
+                // El servidor sólo pide empresa cuando la contraseña ya fue verificada y
+                // hay más de una cuenta con ella.
+                if (data.requiereEmpresa) {
+                    const select = document.getElementById('empresaLogin');
+                    select.innerHTML = data.empresas
+                        .map(x => `<option value="${x.id}">${x.nombre}</option>`).join('');
+                    document.getElementById('grupoEmpresaLogin').style.display = '';
+
+                    Swal.fire({ icon: 'info', title: 'Elige la empresa', text: data.message });
+                    return;
+                }
+
+                Swal.fire({ icon: 'error', title: 'No pudimos entrar', text: data.message });
+            });
+
+            document.getElementById('btnSolicitar').addEventListener('click', async e => {
+                const empresa = document.getElementById('sEmpresa').value;
+
+                if (!empresa) {
+                    Swal.fire({ icon: 'warning', title: 'Falta la empresa', text: 'Selecciona la empresa con la que facturas.' });
+                    return;
+                }
+
+                const data = await postear('@Url.Action("SolicitarAcceso", "PortalClientes")', {
+                    claveCliente: document.getElementById('sClaveCliente').value,
+                    correo: document.getElementById('sCorreo').value,
+                    empresaId: empresa
+                }, e.currentTarget);
+
+                if (!data) return;
+
+                Swal.fire({
+                    icon: data.success ? 'success' : 'warning',
+                    title: data.success ? 'Revisa tu correo' : 'Atención',
+                    text: data.message
+                }).then(() => { if (data.success) alternar(false); });
+            });
+
+            // Enter envía el formulario visible.
+            document.addEventListener('keydown', e => {
+                if (e.key !== 'Enter') return;
+                const solicitando = document.getElementById('modoSolicitar').style.display !== 'none';
+                document.getElementById(solicitando ? 'btnSolicitar' : 'btnEntrar').click();
+            });
+        })();
+    </script>
+}

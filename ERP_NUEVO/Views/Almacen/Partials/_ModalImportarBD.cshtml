@@ -1,0 +1,202 @@
+@*
+    Modal de importación selectiva desde la base de datos externa.
+    Se elige empresa, se marcan productos en la tabla y se importan
+    los seleccionados (a diferencia de "Sincronizar todo", que trae
+    el catálogo completo de Kepler).
+*@
+<div class="modal fade prod-modal prod-modal--importar" id="modalImportarBD" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="prod-icon">
+                    <i class="fa-solid fa-database"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title">Sincronizar productos seleccionados</h5>
+                    <span class="modal-subtitle">Marca los productos que quieras importar y confirma al final.</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <fieldset class="prod-fieldset">
+                    <legend class="prod-legend"><i class="fa-solid fa-building"></i>Empresa origen</legend>
+
+                    <div class="prod-field mb-0" style="max-width:320px">
+                        <label class="prod-label" for="selectEmpresa">Base de datos de la que se importa</label>
+                        <select id="selectEmpresa" class="form-select">
+                            <option value="SRS">Sellos y Retenes</option>
+                            <option value="AHN">Artículos Hidráulicos</option>
+                            <option value="ITF">Interfijo</option>
+                            <option value="SRV">Sellos y Retenes Veracruz</option>
+                        </select>
+                    </div>
+                </fieldset>
+
+                <fieldset class="prod-fieldset">
+                    <legend class="prod-legend"><i class="fa-solid fa-list-check"></i>Productos disponibles</legend>
+
+                    <div id="tablaProductosBDExterna"></div>
+
+                    <div class="prod-sync-panel" id="syncSelectedPanel">
+                        <div class="prod-sync-title">
+                            <i class="fa-solid fa-circle-check"></i>
+                            Seleccionados
+                            <span id="syncSelectedCount" class="prod-sync-count">0</span>
+                        </div>
+                        <div class="prod-sync-chips" id="syncChipsContainer">
+                            <span class="prod-empty">Ningún producto seleccionado aún.</span>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="prod-btn prod-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i>Cancelar
+                </button>
+                <button type="button" class="prod-btn prod-btn-warning" id="btnSincronizarSeleccionados"
+                        onclick="sincronizarSeleccionados()">
+                    <i class="fa-solid fa-rotate"></i>Sincronizar seleccionados
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        let _tabla = null;
+        let _seleccionados = new Map(); // clave -> fila
+
+        /* ── Abre el modal y monta (o recarga) la tabla ───────────── */
+        window.abrirModalImportarBD = function () {
+            _seleccionados.clear();
+            renderChips();
+
+            const modalEl = document.getElementById('modalImportarBD');
+            new bootstrap.Modal(modalEl).show();
+
+            const selectEmpresa = document.getElementById('selectEmpresa');
+
+            modalEl.addEventListener('shown.bs.modal', () => {
+                if (_tabla) _tabla.reload();
+                else montarTabla(selectEmpresa.value);
+            }, { once: true });
+        };
+
+        function montarTabla(empresa) {
+            _tabla = createTable({
+                selector: '#tablaProductosBDExterna',
+                path: '/Productos/GetProductosEmpresa',
+                searchPlaceholder: 'Buscar producto en BD externa...',
+                columns: [
+                    { title: 'Clave', data: 'id' },
+                    { title: 'Descripción', data: 'descripcion' },
+                    { title: 'Línea', data: 'lin_prod' },
+                    { title: 'UDM', data: 'udm' },
+                    { title: 'Estado', data: 'stat', formatter: v => badgeEstado(v) },
+                ],
+                data: () => ({ empresa: document.getElementById('selectEmpresa').value }),
+                selectable: {
+                    enabled: true,
+                    onChange: filas => {
+                        _seleccionados.clear();
+                        filas.forEach(row => _seleccionados.set(row.id, row));
+                        renderChips();
+                    }
+                },
+                rowKey: 'id',
+            });
+        }
+
+        /* ── Chips de la selección ────────────────────────────────── */
+        function renderChips() {
+            const container = document.getElementById('syncChipsContainer');
+            const countEl = document.getElementById('syncSelectedCount');
+
+            countEl.textContent = _seleccionados.size;
+
+            if (!_seleccionados.size) {
+                container.innerHTML = '<span class="prod-empty">Ningún producto seleccionado aún.</span>';
+                return;
+            }
+
+            container.innerHTML = '';
+            _seleccionados.forEach((row, clave) => {
+                const chip = document.createElement('span');
+                chip.className = 'prod-chip';
+                chip.innerHTML = `
+                    <span class="prod-chip-text" title="${row.descripcion || clave}">${row.descripcion || clave}</span>
+                    <button type="button" class="prod-chip-remove" title="Quitar" onclick="quitarChip('${clave}')">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>`;
+                container.appendChild(chip);
+            });
+        }
+
+        window.quitarChip = function (id) {
+            _seleccionados.delete(id);
+            _tabla.removeSelectedRow(id);
+            renderChips();
+        };
+
+        /* ── Importación ──────────────────────────────────────────── */
+        window.sincronizarSeleccionados = async function () {
+            if (!_seleccionados.size) {
+                _Swal.fire({
+                    icon: 'warning',
+                    title: 'Sin selección',
+                    text: 'Selecciona al menos un producto para sincronizar.'
+                });
+                return;
+            }
+
+            const ids = Array.from(_seleccionados.keys());
+
+            const confirmacion = await _Swal.fire({
+                icon: 'question',
+                title: '¿Sincronizar productos?',
+                html: `Se importarán <strong>${ids.length}</strong> producto(s) desde la BD externa.`,
+                showCancelButton: true,
+                confirmButtonText: 'Sí, sincronizar',
+                cancelButtonText: 'Cancelar',
+            });
+
+            if (!confirmacion.isConfirmed) return;
+
+            _Swal.fire({
+                title: 'Sincronizando...',
+                html: 'Importando productos desde BD externa.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                GetData({
+                    path: '/Productos/GetProductosSync',
+                    data: {
+                        ids: ids,
+                        empresa: document.getElementById('selectEmpresa').value
+                    },
+                    swalResponse: true,
+                    swalType: 'modal'
+                });
+            } catch (err) {
+                console.error(err);
+                _Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar con el servidor.' });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cambiar de empresa recarga el catálogo externo
+            document.getElementById('selectEmpresa').addEventListener('change', () => {
+                if (_tabla) _tabla.reload();
+            });
+        });
+    })();
+</script>

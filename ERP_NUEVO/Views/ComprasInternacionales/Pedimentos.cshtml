@@ -1,0 +1,1849 @@
+﻿@using BOS_ERP.Controllers;
+
+@{
+    ViewBag.Title = "Pedimentos";
+    ViewBag.PageTitle = "Pedimentos";
+}
+@section styles {
+    <link href="~/content/compras-nacionales.css" rel="stylesheet" />
+    <link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+    <style>
+        .product-item {
+            background: var(--light-blue);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+
+            .product-item:hover {
+                box-shadow: var(--shadow);
+            }
+
+            .product-item.checked {
+                background-color: rgba(5, 150, 105, 0.1);
+                border-color: var(--success-color);
+            }
+
+            .product-item.error {
+                background-color: rgba(220, 38, 38, 0.1);
+                border-color: var(--danger-color);
+            }
+
+        .search-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .document-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            display: none;
+        }
+
+            .document-card.show {
+                display: block;
+                animation: fadeInUp 0.3s ease-out;
+            }
+
+        @@keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .product-item {
+            background: var(--light-blue);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+
+            .product-item:hover {
+                box-shadow: var(--shadow);
+            }
+
+            .product-item.checked {
+                background-color: rgba(5, 150, 105, 0.1);
+                border-color: var(--success-color);
+            }
+
+            .product-item.error {
+                background-color: rgba(220, 38, 38, 0.1);
+                border-color: var(--danger-color);
+            }
+
+        .form-check-input:checked {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .tom-select .ts-control {
+            background-color: var(--bg-light);
+            border-color: var(--border-light);
+            color: var(--text-dark);
+        }
+
+        .tom-select .ts-dropdown {
+            background-color: var(--bg-light);
+            border-color: var(--border-light);
+            color: var(--text-dark);
+        }
+
+        .stats-summary {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: default;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-4px);
+                box-shadow: var(--shadow-lg);
+            }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-blue-dark);
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+            color: var(--text-light);
+        }
+
+        /* Variantes de color */
+        .stat-success .stat-number {
+            color: var(--success-color);
+        }
+
+        .stat-warning .stat-number {
+            color: var(--warning-color);
+        }
+
+        .stat-danger .stat-number {
+            color: var(--danger-color);
+        }
+
+        .alert-info {
+            position: relative;
+            background: var(--light-blue);
+            padding: 10px 10px 10px 20px;
+            color: var(--text-dark);
+        }
+
+            .alert-info::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 5px;
+                height: 100%;
+                background-color: var(--accent-blue);
+            }
+
+        .discrepancia {
+            border: 1px solid var(--bs-body-bg);
+            background-color: var(--bg-gray);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 7px;
+        }
+
+        .ts-wrapper .option .title {
+            display: block;
+            color: var(--text-dark);
+        }
+
+        .ts-wrapper .option .url {
+            font-size: 12px;
+            display: block;
+            color: var(--primary-blue);
+        }
+
+        .assignment-section {
+            background: var(--light-blue);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .selected-for-assignment {
+            background-color: rgba(13, 110, 253, 0.1);
+            border-color: var(--bs-primary);
+        }
+
+        .quantity-input:disabled {
+            background-color: var(--bg-gray);
+        }
+
+        .assignment-checkbox:checked {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+
+        .modal-xl {
+            max-width: 1200px;
+        }
+
+        .table th {
+            font-weight: 600;
+            background-color: var(--light-blue);
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+        .btn-group-sm > .btn, .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            font-size: 0.75em;
+        }
+
+        .form-control:invalid {
+            border-color: var(--danger-color);
+        }
+
+        .form-control:valid {
+            border-color: var(--success-color);
+        }
+
+        .search-highlight {
+            background-color: yellow;
+            font-weight: bold;
+        }
+
+        .table-row-actions {
+            white-space: nowrap;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+    </style>
+}
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+<!-- Search Section -->
+<div class="search-card">
+    <h3 class="mb-4">
+        <i class="fas fa-search me-2 text-primary"></i>
+        Buscar Documento
+    </h3>
+
+    <div class="row align-items-end">
+        <div class="col-md-6 mb-2">
+            <label for="documentSearch" class="form-label">Seleccionar Documento</label>
+            <select id="documentSearch" class="form-select">
+                <option value="0">Selecciona un folio</option>
+                @{
+                    foreach (var folio in Model["folios"])
+                    {
+                        <option value="@folio["uuid"]">@folio["folio"]</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="col-md-6 mb-2 d-flex align-items-end gap-2">
+            <button type="button" class="btn btn-primary w-50" id="searchBtn">
+                <i class="fas fa-search me-1"></i> Buscar
+            </button>
+            <button type="button" class="btn btn-outline-primary w-50" id="verPedimentosBtn">
+                <i class="fas fa-table me-1"></i> Ver Pedimentos
+            </button>
+        </div>
+
+        <!-- Document Information -->
+        <div class="document-card" id="documentCard">
+            <div class="stats-summary container-fluid">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalProducts">0</div>
+                            <div class="stat-label">Total Productos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-success">
+                            <div class="stat-number" id="checkedProducts">0</div>
+                            <div class="stat-label">Verificados</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-warning">
+                            <div class="stat-number" id="uncheckedProducts">0</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row d-flex justify-content-between align-items-center mb-4">
+                <h4 class="col-md-5 col-sm-12 mb-1 mb-1">
+                    <i class="fas fa-file-invoice me-2 text-primary"></i>
+                    <span id="documentTitle">Información del Documento</span>
+                </h4>
+            </div>
+        </div>
+
+        <div class="assignment-section" id="assignmentSection" style="display: none;">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6">
+                    <label for="pedimentoSelect" class="form-label">Seleccionar Pedimento</label>
+                    <select id="pedimentoSelect" class="form-select">
+                        <option value="">Selecciona un pedimento...</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end gap-2">
+                    <button type="button" class="btn btn-info" id="selectAllBtn">
+                        <i class="fas fa-check-double me-1"></i> Seleccionar Todo
+                    </button>
+                    <button type="button" class="btn btn-success" id="assignPedimentoBtn" disabled>
+                        <i class="fas fa-check me-1"></i> Asignar Pedimento
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="clearSelectionBtn">
+                        <i class="fas fa-times me-1"></i> Limpiar Selección
+                    </button>
+                </div>
+            </div>
+            <div class="alert alert-info" id="assignmentInfo" style="display: none;">
+                <i class="fas fa-info-circle me-2"></i>
+                <span id="assignmentInfoText">Selecciona los productos y un pedimento para asignar.</span>
+            </div>
+        </div>
+
+        <div id="productsList" class="products-list">
+            <!-- Products will be d1ynamically loaded here -->
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal principal para listar pedimentos -->
+<div class="modal fade" id="modalListaPedimentos" tabindex="-1" aria-labelledby="modalListaPedimentosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalListaPedimentosLabel">
+                    <i class="fas fa-table me-2"></i>Lista de Pedimentos
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Barra de herramientas -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="input-group" style="max-width: 300px;">
+                        <input type="text" id="searchPedimentos" class="form-control" placeholder="Buscar pedimentos...">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-success" id="nuevoPedimentoBtn">
+                        <i class="fas fa-plus me-1"></i> Nuevo Pedimento
+                    </button>
+                </div>
+
+                <!-- Tabla de pedimentos -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Pedimento SAT</th>
+                                <th>Descripción</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th width="120">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPedimentosBody">
+                            <!-- Contenido dinámico -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Loading spinner -->
+                <div id="loadingPedimentos" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando pedimentos...</p>
+                </div>
+
+                <!-- No results message -->
+                <div id="noPedimentosMessage" class="text-center py-4" style="display: none;">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5>No se encontraron pedimentos</h5>
+                    <p class="text-muted">No hay pedimentos que coincidan con tu búsqueda</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear/editar pedimento (modificado) -->
+<div class="modal fade" id="modalPedimento" tabindex="-1" aria-labelledby="modalPedimentoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPedimentoLabel">
+                    <i class="fas fa-file-alt me-2"></i>
+                    <span id="modalPedimentoTitulo">Nuevo Pedimento</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <form class="row g-3" id="formPedimento">
+                    <!-- Campo oculto para ID en modo edición -->
+                    <input type="hidden" id="pedimentoId" value="">
+
+                    <!-- Pedimento + Descripción -->
+                    <div class="col-md-6">
+                        <label for="pedimento" class="form-label">Pedimento aduanal</label>
+                        <input type="text" id="pedimento" class="form-control" required>
+                        <div class="invalid-feedback">Este campo es requerido</div>
+                    </div>
+
+                    <!-- Agencia + Aduana + Fecha -->
+                    <div class="col-md-6">
+                        <label for="agencia" class="form-label">Agencia aduanal</label>
+                        <select id="agencia" class="form-select">
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="aduana" class="form-label">Aduana</label>
+                        <select id="aduana" class="form-select">
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="fecha" class="form-label">Fecha</label>
+                        <input type="date" id="fecha" class="form-control" required>
+                        <div class="invalid-feedback">Este campo es requerido</div>
+                    </div>
+                    <!-- Patente SAT + Consecutivo -->
+                    <div class="col-md-6">
+                        <label for="patenteSat" class="form-label">Patente SAT</label>
+                        <select id="patenteSat" class="form-select">
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="consecutivoSat" class="form-label">Consecutivo SAT</label>
+                        <input type="text" id="consecutivoSat" class="form-control" required>
+                        <div class="invalid-feedback">Este campo es requerido</div>
+                    </div>
+
+                    <!-- Número pedimento -->
+                    <div class="col-12">
+                        <label for="numeroPedimentoSat" class="form-label">Número pedimento SAT</label>
+                        <input type="text" id="numeroPedimentoSat" class="form-control" readonly>
+                        <small class="form-text text-muted">Se genera automáticamente</small>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="guardarPedimentoBtn">
+                    <i class="fas fa-save me-1"></i>
+                    <span id="guardarPedimentoTexto">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/lib/signature_pad/dist/signature_pad.umd.min.js"></script>
+    <script src="~/Scripts/General/general.js"></script>
+    <script>
+
+        let pedimentosListData = [];
+        let filteredPedimentosData = [];
+        let isEditMode = false;
+        // Instancia global del manager
+        const tomManager = new TomSelectManager();
+
+        // Variables globales
+        let documentsData = {};
+        let productStates = {};
+        let pedimentosData = [];
+        let selectedProductsForAssignment = new Set();
+
+        // Función para extraer opciones del select de documentos
+        function prepareDocumentSearchOptions() {
+            const selectElement = document.querySelector('#documentSearch');
+            const options = [];
+
+            Array.from(selectElement.options).forEach(option => {
+                options.push({
+                    value: option.value,
+                    text: option.text
+                });
+            });
+
+            return options;
+        }
+
+        // Configuraciones para todos los TomSelects
+        const allConfigs = {
+            // Document search
+            documentSearch: {
+                selector: '#documentSearch',
+                valueField: 'value',
+                displayField: 'text',
+                searchField: ['text'],
+                placeholder: "Selecciona un folio",
+                render: {
+                    option: function (data, escape) {
+                        return `<div style="color: var(--text-dark);">${escape(data.text)}</div>`;
+                    }
+                }
+            },
+
+            // Pedimento select
+            pedimentoSelect: {
+                selector: '#pedimentoSelect',
+                dataProperty: 'pedimentos',
+                valueField: 'id_pedimento',
+                displayField: 'pedimento_sat',
+                secondaryField: 'descripcion',
+                searchField: ['pedimento_sat', 'descripcion'],
+                placeholder: "Selecciona un pedimento...",
+                render: {
+                    option: function (item, escape) {
+                        return `
+                        <div>
+                            <span class="title">${escape(item.pedimento_sat)}</span>
+                            <span class="url">${escape(item.descripcion || '')}</span>
+                        </div>`;
+                    },
+                    item: function (item, escape) {
+                        return `<span style="color:var(--text-dark)">${escape(item.pedimento_sat)}</span>`;
+                    }
+                }
+            },
+
+            // Pedimento configs
+            agencia: {
+                selector: '#agencia',
+                dataProperty: 'aduanas',
+                valueField: 'id_agencia_aduanal',
+                displayField: 'cve_agencia',
+                secondaryField: 'nombre',
+                searchField: ['cve_agencia', 'nombre'],
+                placeholder: "Seleccione agencia..."
+            },
+            patente: {
+                selector: '#patenteSat',
+                dataProperty: 'patentes',
+                valueField: 'id_patente_sat',
+                displayField: 'cve_patente_sat',
+                searchField: ['id_patente_sat', 'cve_patente_sat'],
+                placeholder: "Seleccione patente...",
+                render: {
+                    option: function (item, escape) {
+                        return `
+                        <div>
+                            <span class="title">${escape(item.cve_patente_sat)}</span>
+                            <span class="url"> - ID ${escape(item.id_patente_sat)}</span>
+                        </div>`;
+                    },
+                    item: function (item, escape) {
+                        return `<span style="color:var(--text-dark)">${escape(item.cve_patente_sat)} (ID: ${escape(item.id_patente_sat)})</span>`;
+                    }
+                }
+            },
+            aduana: {
+                selector: '#aduana',
+                dataProperty: 'aduanasSAT',
+                valueField: 'id_aduana',
+                displayField: 'cve_aduana',
+                secondaryField: 'nombre',
+                searchField: ['cve_aduana', 'nombre'],
+                placeholder: "Seleccione aduana...",
+                render: {
+                    item: function (item, escape) {
+                        return `<span style="color:var(--text-dark)">${escape(item.nombre)} (ID: ${escape(item.cve_aduana)})</span>`;
+                    }
+                }
+            }
+        };
+
+        // Función para generar número de pedimento
+        function generarNumeroPedimento() {
+            const fecha = document.getElementById("fecha").value;
+            const aduanaInstance = tomManager.getInstance('aduana');
+            const patenteInstance = tomManager.getInstance('patente');
+            const consecutivo = document.getElementById("consecutivoSat").value;
+
+            if (!fecha || !aduanaInstance || !patenteInstance || !consecutivo) {
+                document.getElementById("numeroPedimentoSat").value = "";
+                return;
+            }
+
+            const aduanaValue = aduanaInstance.getValue();
+            const patenteValue = patenteInstance.getValue();
+
+            if (!aduanaValue || !patenteValue) {
+                document.getElementById("numeroPedimentoSat").value = "";
+                return;
+            }
+
+            const aduanaItem = aduanaInstance.options[aduanaValue];
+            const patenteItem = patenteInstance.options[patenteValue];
+
+            const cveAduana = aduanaItem ? aduanaItem.cve_aduana : "";
+            const cvePatente = patenteItem ? patenteItem.cve_patente_sat : "";
+
+            if (!cveAduana || !cvePatente) {
+                document.getElementById("numeroPedimentoSat").value = "";
+                return;
+            }
+
+            const anio = fecha.substring(2, 4);
+            const aduanaSat = cveAduana.toString().padStart(2, "0");
+            const patenteSat = cvePatente.toString().padStart(4, "0");
+            const consecutivoSat = consecutivo.toString().padStart(7, "0");
+
+            const numeroPedimento = `${anio} ${aduanaSat} ${patenteSat} ${consecutivoSat}`;
+            document.getElementById("numeroPedimentoSat").value = numeroPedimento;
+        }
+
+        // Load document and its products
+        function loadDocument(documentId) {
+            if (documentId == 0 || !documentId) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Selecciona un folio para poder filtrar."
+                });
+                return;
+            }
+
+            GetData({
+                path: "/ProcesoComprasInternacional/GetOrdenesCompra",
+                data: { uuid: documentId }
+            }).then((docData) => {
+                if (docData.ordenCompra.length === 0) {
+                    console.error("Document not found");
+                    toastMixin.fire({
+                        icon: "error",
+                        title: "Documento no encontrado",
+                    });
+                    return;
+                }
+
+                documentsData = docData;
+                document.getElementById("documentTitle").textContent = `${docData.ordenCompra.folio}`;
+
+                const productsList = document.getElementById("productsList");
+                productsList.innerHTML = "";
+
+                productStates = {};
+                selectedProductsForAssignment.clear(); // Limpiar selecciones anteriores
+
+                docData.partidas.forEach((product, index) => {
+                    const productElement = createProductElement(product, index);
+                    productsList.appendChild(productElement);
+                    productStates[product.id_partidas] = {
+                        checked: false,
+                        selected: false,
+                        hasError: false
+                    };
+                });
+
+                const assignmentSection = document.getElementById('assignmentSection');
+
+
+                if (docData.partidas && docData.partidas.length > 0) {
+                    assignmentSection.style.display = 'block';
+                } else {
+                    assignmentSection.style.display = 'none';
+                }
+
+                document.getElementById("documentCard").classList.add("show");
+                updateStatistics();
+                updateSelectAllButton(); // Nueva línea agregada
+
+                document.getElementById("documentCard").scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+            }).catch((error) => {
+                console.error("Error loading document:", error);
+                toastMixin.fire({
+                    icon: "error",
+                    title: "Error al cargar el documento"
+                });
+            });
+        }
+
+        // Función mejorada para crear elemento de producto
+        function createProductElement(product, index) {
+            const div = document.createElement("div");
+            div.className = "product-item";
+            div.dataset.productId = product.id_partidas;
+
+            div.innerHTML = `
+            <div class="row align-items-center">
+                <div class="col-md-1">
+                    <input class="btn-check product-checkbox"
+                           type="checkbox"
+                           id="product_${product.id_partidas}"
+                           data-product-id="${product.id_partidas}">
+                    <label class="btn btn-outline-success"
+                           for="product_${product.id_partidas}"
+                           title="Seleccionar producto">
+                        <i class="fa-solid fa-badge-check"></i>
+                    </label>
+                </div>
+
+                <div class="col-md-7 col-sm-12">
+                    <h6 class="mb-1">${product.descripcion}</h6>
+                    <small class="text-muted">Código: ${product.codigo}</small>
+                    <small class="text-muted ms-3">Unidad: ${product.unidad}</small>
+                </div>
+                <div class="col-md-2 col-sm-12">
+                    <span class="badge bg-secondary">Disponible: ${formatNumber(product.cantidad_pendiente)}</span>
+                </div>
+                <div class="col-md-2 col-sm-12">
+                    <div class="input-group">
+                        <input type="number"
+                               class="form-control quantity-input"
+                               id="quantity_${product.id_partidas}"
+                               min="0.01"
+                               step="0.01"
+                               max="${product.cantidad_pendiente}"
+                               value="${product.cantidad_pendiente}"
+                               disabled
+                               placeholder="0.00">
+                        <div class="invalid-feedback" id="quantity_error_${product.id_partidas}"></div>
+                    </div>
+                </div>
+            </div>`;
+
+            // Event listener para checkbox
+            const checkbox = div.querySelector(".product-checkbox");
+            checkbox.addEventListener("change", (e) => {
+                handleProductSelection(product.id_partidas, e.target.checked, div);
+            });
+
+            // Event listener mejorado para input de cantidad
+            const quantityInput = div.querySelector(".quantity-input");
+
+            // Validación en tiempo real
+            quantityInput.addEventListener("input", (e) => {
+                validateQuantityInput(product.id_partidas, e.target.value, product.cantidad_pendiente, div);
+            });
+
+            // Validación al perder el foco
+            quantityInput.addEventListener("blur", (e) => {
+                formatAndValidateQuantity(product.id_partidas, e.target.value, product.cantidad_pendiente, div);
+            });
+
+            // Prevenir valores negativos con teclado
+            quantityInput.addEventListener("keydown", (e) => {
+                // Permitir: backspace, delete, tab, escape, enter, punto decimal, coma decimal
+                if ([46, 8, 9, 27, 13, 110, 190, 188].indexOf(e.keyCode) !== -1 ||
+                    // Permitir: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                    (e.keyCode === 65 && e.ctrlKey === true) ||
+                    (e.keyCode === 67 && e.ctrlKey === true) ||
+                    (e.keyCode === 86 && e.ctrlKey === true) ||
+                    (e.keyCode === 88 && e.ctrlKey === true) ||
+                    // Permitir: home, end, left, right
+                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                    return;
+                }
+
+                // Asegurar que es un número
+                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                }
+            });
+
+            return div;
+        }
+        // Función para formatear números
+        function formatNumber(value) {
+            if (value == null || value === '') return '0.00';
+            const num = parseFloat(value);
+            return isNaN(num) ? '0.00' : num.toFixed(2);
+        }
+        // Función para formatear y validar al perder el foco
+        function formatAndValidateQuantity(productId, value, maxQuantity, element) {
+            const input = document.getElementById(`quantity_${productId}`);
+
+            if (value && !isNaN(parseFloat(value))) {
+                const numValue = parseFloat(value);
+                if (numValue > 0 && numValue <= maxQuantity) {
+                    // Formatear a 2 decimales
+                    input.value = formatNumber(numValue);
+                }
+            }
+
+            // Validar nuevamente
+            validateQuantityInput(productId, input.value, maxQuantity, element);
+        }
+        // Función mejorada para manejar selección de productos
+        function handleProductSelection(productId, isSelected, element) {
+            const quantityInput = element.querySelector('.quantity-input');
+            const maxQuantity = parseFloat(quantityInput.max);
+
+            // Actualizar estado
+            productStates[productId].checked = isSelected;
+            productStates[productId].selected = isSelected;
+            productStates[productId].hasError = false;
+
+            if (isSelected) {
+                selectedProductsForAssignment.add(productId);
+                quantityInput.disabled = false;
+                element.classList.add('checked', 'selected-for-assignment');
+
+                // Validar la cantidad actual
+                validateQuantityInput(productId, quantityInput.value, maxQuantity, element);
+            } else {
+                selectedProductsForAssignment.delete(productId);
+                quantityInput.disabled = true;
+                quantityInput.classList.remove('is-invalid', 'is-valid');
+                element.classList.remove('checked', 'selected-for-assignment', 'error');
+
+                // Limpiar mensaje de error
+                const errorDiv = document.getElementById(`quantity_error_${productId}`);
+                if (errorDiv) errorDiv.textContent = '';
+            }
+
+            updateStatistics();
+            updateAssignmentUI();
+            updateSelectAllButton(); // Nueva línea agregada
+        }
+
+        // Función mejorada para validar antes de asignar
+        function validateAllSelectedQuantities() {
+            let allValid = true;
+            const invalidProducts = [];
+
+            selectedProductsForAssignment.forEach(productId => {
+                const input = document.getElementById(`quantity_${productId}`);
+                const element = document.querySelector(`[data-product-id="${productId}"]`);
+                const maxQuantity = parseFloat(input.max);
+
+                if (!validateQuantityInput(productId, input.value, maxQuantity, element)) {
+                    allValid = false;
+
+                    // Encontrar el nombre del producto para el mensaje
+                    const productData = documentsData.partidas.find(p => p.id_partidas == productId);
+                    invalidProducts.push(productData ? productData.descripcion : `Producto ${productId}`);
+                }
+            });
+
+            if (!allValid) {
+                const productList = invalidProducts.length > 3
+                    ? `${invalidProducts.slice(0, 3).join(', ')} y ${invalidProducts.length - 3} más`
+                    : invalidProducts.join(', ');
+
+                toastMixin.fire({
+                    icon: "error",
+                    title: "Cantidades inválidas",
+                    text: `Corrige las cantidades en: ${productList}`
+                });
+            }
+
+            return allValid;
+        }
+
+        // Función mejorada para validar input de cantidad
+        function validateQuantityInput(productId, value, maxQuantity, element) {
+            const input = document.getElementById(`quantity_${productId}`);
+            const errorDiv = document.getElementById(`quantity_error_${productId}`);
+
+            // Limpiar estados previos
+            input.classList.remove('is-invalid', 'is-valid');
+            errorDiv.textContent = '';
+            element.classList.remove('error');
+
+            // Validar si está vacío
+            if (!value || value.trim() === '') {
+                setQuantityError(input, errorDiv, element, 'La cantidad es requerida');
+                productStates[productId].hasError = true;
+                return false;
+            }
+
+            // Convertir a número decimal
+            const numValue = parseFloat(value);
+
+            // Validar si es un número válido
+            if (isNaN(numValue)) {
+                setQuantityError(input, errorDiv, element, 'Ingrese un número válido');
+                productStates[productId].hasError = true;
+                return false;
+            }
+
+            // Validar si es positivo
+            if (numValue <= 0) {
+                setQuantityError(input, errorDiv, element, 'La cantidad debe ser mayor a 0');
+                productStates[productId].hasError = true;
+                return false;
+            }
+
+            // Validar si no excede el máximo disponible
+            if (numValue > maxQuantity) {
+                setQuantityError(input, errorDiv, element, `La cantidad no puede ser mayor a ${formatNumber(maxQuantity)}`);
+                productStates[productId].hasError = true;
+                return false;
+            }
+
+            // Si llegamos aquí, la validación es correcta
+            input.classList.add('is-valid');
+            element.classList.remove('error');
+            productStates[productId].hasError = false;
+            updateStatistics();
+            return true;
+        }
+
+        // Función para establecer error de cantidad
+        function setQuantityError(input, errorDiv, element, message) {
+            input.classList.add('is-invalid');
+            errorDiv.textContent = message;
+            element.classList.add('error');
+            updateStatistics();
+        }
+
+        // Función para actualizar UI de asignación
+        function updateAssignmentUI() {
+            const assignmentSection = document.getElementById('assignmentSection');
+            const assignBtn = document.getElementById('assignPedimentoBtn');
+            const assignmentInfo = document.getElementById('assignmentInfo');
+            const assignmentInfoText = document.getElementById('assignmentInfoText');
+
+            if (selectedProductsForAssignment.size > 0) {
+                assignmentSection.style.display = 'block';
+                assignmentInfo.style.display = 'block';
+                assignmentInfoText.textContent = `${selectedProductsForAssignment.size} producto(s) seleccionado(s) para asignación.`;
+
+                // Habilitar botón si hay pedimento seleccionado
+                const pedimentoInstance = tomManager.getInstance('pedimentoSelect');
+                assignBtn.disabled = !pedimentoInstance?.getValue();
+            } else {
+                //assignmentSection.style.display = 'none';
+                assignBtn.disabled = true;
+            }
+        }
+
+        // Función mejorada para asignar pedimento
+        async function assignPedimento() {
+            const pedimentoInstance = tomManager.getInstance('pedimentoSelect');
+            const pedimentoId = pedimentoInstance?.getValue();
+
+            if (!pedimentoId) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Selecciona un pedimento"
+                });
+                return;
+            }
+
+            if (selectedProductsForAssignment.size === 0) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "Selecciona al menos un producto"
+                });
+                return;
+            }
+
+            // Validar todas las cantidades antes de proceder
+            if (!validateAllSelectedQuantities()) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("pedimentoId", pedimentoId);
+
+            const assignments = [];
+            let totalQuantity = 0;
+
+            selectedProductsForAssignment.forEach(productId => {
+                const quantityInput = document.getElementById(`quantity_${productId}`);
+                const quantity = parseFloat(quantityInput.value) || 0;
+
+                if (quantity > 0) {
+                    assignments.push({
+                        productId: productId,
+                        quantity: quantity.toFixed(2) // Enviar con 2 decimales
+                    });
+                    totalQuantity += quantity;
+                }
+            });
+
+            if (assignments.length === 0) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "No hay productos con cantidades válidas"
+                });
+                return;
+            }
+
+            formData.append("assignments", JSON.stringify(assignments));
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            // Mostrar loading
+            const assignBtn = document.getElementById('assignPedimentoBtn');
+            const originalText = assignBtn.innerHTML;
+            assignBtn.disabled = true;
+            assignBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Procesando...';
+
+            try {
+                const response = await fetch("/ProcesoComprasInternacional/AsignarPedimento", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: result.message || 'Pedimento asignado correctamente',
+                        text: `Se asignaron ${assignments.length} productos con un total de ${formatNumber(totalQuantity)} unidades`
+                    });
+
+                    clearAssignmentSelection();
+
+                    const selectedDoc = tomManager.getInstance('documentSearch')?.getValue();
+                    if (selectedDoc) {
+                        loadDocument(selectedDoc);
+                    }
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: result.message || 'Error al asignar pedimento'
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error en fetch:", error);
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error inesperado: ' + error.message
+                });
+            } finally {
+                // Restaurar botón
+                assignBtn.disabled = false;
+                assignBtn.innerHTML = originalText;
+                updateAssignmentUI(); // Actualizar estado del botón
+            }
+        }
+
+        // Función mejorada para limpiar selección
+        function clearAssignmentSelection() {
+            selectedProductsForAssignment.clear();
+
+            document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+
+            document.querySelectorAll('.quantity-input').forEach(input => {
+                input.disabled = true;
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+
+            document.querySelectorAll('.invalid-feedback').forEach(errorDiv => {
+                errorDiv.textContent = '';
+            });
+
+            document.querySelectorAll('.selected-for-assignment, .checked, .error').forEach(element => {
+                element.classList.remove('selected-for-assignment', 'checked', 'error');
+            });
+
+            const pedimentoInstance = tomManager.getInstance('pedimentoSelect');
+            pedimentoInstance?.clear();
+
+            // Resetear estados
+            Object.keys(productStates).forEach(productId => {
+                productStates[productId].checked = false;
+                productStates[productId].selected = false;
+                productStates[productId].hasError = false;
+            });
+
+            updateStatistics();
+            updateAssignmentUI();
+            updateSelectAllButton(); // Nueva línea agregada
+        }
+
+        // Función mejorada para actualizar estadísticas
+        function updateStatistics() {
+            const total = documentsData.partidas ? documentsData.partidas.length : 0;
+            let checked = 0;
+            let errors = 0;
+
+            Object.values(productStates).forEach(state => {
+                if (state.hasError) errors++;
+                else if (state.checked) checked++;
+            });
+
+            const pending = total - checked - errors;
+
+            document.getElementById("totalProducts").textContent = total;
+            document.getElementById("checkedProducts").textContent = checked;
+            document.getElementById("uncheckedProducts").textContent = pending;
+
+            // Actualizar también el color de las estadísticas de error si las hay
+            const errorStat = document.querySelector('.stat-danger');
+            if (errorStat) {
+                errorStat.querySelector('.stat-number').textContent = errors;
+            }
+        }
+
+
+        // Función para cargar pedimentos
+        function loadPedimentos() {
+            GetData({
+                path: "/ProcesoComprasInternacional/GetPedimentos",
+            }).then((data) => {
+                pedimentosData = data.pedimentos || [];
+
+                // Crear TomSelect para pedimentos
+                const pedimentoOptions = pedimentosData.map(pedimento => ({
+                    id_pedimento: pedimento.id_pedimento,
+                    pedimento_sat: pedimento.pedimento_sat,
+                    descripcion: pedimento.pedimento_aduanal || ''
+                }));
+
+                const pedimentoConfig = {
+                    ...allConfigs.pedimentoSelect,
+                    options: pedimentoOptions
+                };
+
+                const result = tomManager.create('pedimentoSelect', pedimentoConfig);
+
+                if (data.success) {
+                    // Configurar evento de cambio
+                    const pedimentoInstance = tomManager.getInstance('pedimentoSelect');
+                    if (pedimentoInstance) {
+                        pedimentoInstance.on('change', (value) => {
+                            const assignBtn = document.getElementById('assignPedimentoBtn');
+                            assignBtn.disabled = !value || selectedProductsForAssignment.size === 0;
+                        });
+                    }
+                } else {
+                    console.error('Error creating pedimento TomSelect:', result.error);
+                }
+            }).catch((error) => {
+                console.error('Error loading pedimentos:', error);
+            });
+        }
+
+        // Guardar pedimento
+        async function guardarPedimento() {
+            // Validar formulario
+            if (!validarFormularioPedimento()) {
+                return;
+            }
+
+            const guardarBtn = document.getElementById('guardarPedimentoBtn');
+            const originalText = guardarBtn.innerHTML;
+
+            guardarBtn.disabled = true;
+            guardarBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Procesando...';
+
+            try {
+                const formData = new FormData();
+
+                // Agregar ID si está en modo edición
+                if (isEditMode) {
+                    formData.append("pedimentoId", document.getElementById("pedimentoId").value);
+                }
+
+                formData.append("pedimento", document.getElementById("pedimento").value);
+                formData.append("agencia", tomManager.getInstance('agencia')?.getValue() || "");
+                formData.append("aduana", tomManager.getInstance('aduana')?.getValue() || "");
+                formData.append("fecha", document.getElementById("fecha").value);
+                formData.append("patenteSat", tomManager.getInstance('patente')?.getValue() || "");
+                formData.append("consecutivoSat", document.getElementById("consecutivoSat").value);
+                formData.append("numeroPedimentoSat", document.getElementById("numeroPedimentoSat").value);
+
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (token) formData.append('__RequestVerificationToken', token);
+
+                const endpoint = isEditMode
+                    ? "/ProcesoComprasInternacional/ActualizarPedimento"
+                    : "/ProcesoComprasInternacional/GuardarPedimento";
+
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById("modalPedimento")).hide();
+
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: result.message || (isEditMode ? 'Pedimento actualizado' : 'Pedimento guardado')
+                    });
+
+                    // Recargar datos
+                    await cargarTablaPedimentos();
+                    loadPedimentos();
+
+                    // Si el modal de lista está abierto, mostrarlo de nuevo
+                    const modalLista = bootstrap.Modal.getInstance(document.getElementById("modalListaPedimentos"));
+                    if (modalLista) {
+                        setTimeout(() => {
+                            modalLista.show();
+                        }, 300);
+                    }
+
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: result.message || 'Error al procesar pedimento'
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error en fetch:", error);
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error inesperado: ' + error.message
+                });
+            } finally {
+                guardarBtn.disabled = false;
+                guardarBtn.innerHTML = originalText;
+            }
+        }
+
+        // Inicialización principal
+        document.addEventListener("DOMContentLoaded", () => {
+            // 1. Inicializar document search
+            const documentSearchOptions = prepareDocumentSearchOptions();
+            tomManager.create('documentSearch', {
+                ...allConfigs.documentSearch,
+                options: documentSearchOptions
+            });
+
+            // Configurar evento de cambio para document search
+            const documentSearchInstance = tomManager.getInstance('documentSearch');
+            if (documentSearchInstance) {
+                documentSearchInstance.on('change', (value) => {
+                    if (value && value !== "0") {
+                        loadDocument(value);
+                    }
+                });
+            }
+
+            // 2. Event listeners
+            document.getElementById("searchBtn").addEventListener("click", () => {
+                const selectedDoc = tomManager.getInstance('documentSearch')?.getValue();
+                if (selectedDoc && selectedDoc !== "0") {
+                    loadDocument(selectedDoc);
+                } else {
+                    toastMixin.fire({
+                        title: "Por favor selecciona un documento",
+                        icon: "warning"
+                    });
+                }
+            });
+
+            document.getElementById('verPedimentosBtn').addEventListener('click', () => {
+                new bootstrap.Modal(document.getElementById('modalListaPedimentos')).show();
+                cargarTablaPedimentos();
+            });
+
+            document.getElementById('nuevoPedimentoBtn').addEventListener('click', () => {
+                bootstrap.Modal.getInstance(document.getElementById('modalListaPedimentos')).hide();
+                setTimeout(() => {
+                    prepararNuevoPedimento();
+                    new bootstrap.Modal(document.getElementById('modalPedimento')).show();
+                }, 300);
+            });
+
+            document.getElementById('searchPedimentos').addEventListener('input', filtrarPedimentos);
+            document.getElementById('clearSearchBtn').addEventListener('click', () => {
+                document.getElementById('searchPedimentos').value = '';
+                filtrarPedimentos();
+            });
+
+            document.getElementById('selectAllBtn').addEventListener('click', selectAllProducts);
+            document.getElementById("fecha").addEventListener("change", generarNumeroPedimento);
+            document.getElementById("consecutivoSat").addEventListener("input", generarNumeroPedimento);
+            document.getElementById('assignPedimentoBtn').addEventListener('click', assignPedimento);
+            document.getElementById('clearSelectionBtn').addEventListener('click', clearAssignmentSelection);
+
+            // Event listener para guardar pedimento
+            const saveButton = document.querySelector("#modalPedimento .btn-primary");
+            if (saveButton) {
+                saveButton.removeEventListener("click", guardarPedimento); // Remover listener anterior
+                saveButton.addEventListener("click", guardarPedimento);
+            }
+            // Validación en tiempo real
+            document.querySelectorAll('#formPedimento input[required]').forEach(input => {
+                input.addEventListener('blur', () => {
+                    if (input.value.trim()) {
+                        input.classList.add('is-valid');
+                        input.classList.remove('is-invalid');
+                    } else {
+                        input.classList.add('is-invalid');
+                        input.classList.remove('is-valid');
+                    }
+                });
+            });
+
+            // 3. Inicializar los TomSelects del pedimento
+            GetData({
+                path: '/ProcesoComprasInternacional/GetPedimentoDataSelect',
+            }).then((data) => {
+                const pedimentoConfigs = {
+                    agencia: allConfigs.agencia,
+                    patente: allConfigs.patente,
+                    aduana: allConfigs.aduana
+                };
+
+                const results = tomManager.initializeFromConfig(data, pedimentoConfigs);
+
+                Object.entries(results).forEach(([id, result]) => {
+                    if (!result.success) {
+                        console.warn(`No se pudo inicializar TomSelect '${id}':`, result.error);
+                    }
+                });
+
+                // Configurar eventos para generar número de pedimento
+                setTimeout(() => {
+                    const instances = ['agencia', 'patente', 'aduana'];
+                    instances.forEach(instanceName => {
+                        const instance = tomManager.getInstance(instanceName);
+                        if (instance) {
+                            instance.on("change", generarNumeroPedimento);
+                        }
+                    });
+                }, 100);
+
+                // Cargar pedimentos
+                loadPedimentos();
+            }).catch((error) => {
+                console.error('Error al obtener los datos para TomSelects:', error);
+            });
+        });
+
+        function selectAllProducts() {
+            if (!documentsData.partidas || documentsData.partidas.length === 0) {
+                toastMixin.fire({
+                    icon: "warning",
+                    title: "No hay productos disponibles para seleccionar"
+                });
+                return;
+            }
+
+            let selectedCount = 0;
+            let invalidCount = 0;
+            const invalidProducts = [];
+
+            documentsData.partidas.forEach(product => {
+                const productId = product.id_partidas;
+                const checkbox = document.getElementById(`product_${productId}`);
+                const quantityInput = document.getElementById(`quantity_${productId}`);
+                const element = document.querySelector(`[data-product-id="${productId}"]`);
+
+                if (checkbox && !checkbox.checked) {
+                    // Verificar si el producto tiene cantidad disponible
+                    if (product.cantidad_pendiente > 0) {
+                        // Simular click en el checkbox
+                        checkbox.checked = true;
+                        handleProductSelection(productId, true, element);
+                        selectedCount++;
+                    } else {
+                        invalidProducts.push(product.descripcion);
+                        invalidCount++;
+                    }
+                }
+            });
+
+            // Mostrar resultado
+            if (selectedCount > 0) {
+                toastMixin.fire({
+                    icon: "success",
+                    title: `${selectedCount} productos seleccionados`,
+                    text: invalidCount > 0 ? `${invalidCount} productos sin stock disponible fueron omitidos` : undefined
+                });
+
+                // Scroll hacia la sección de asignación si está visible
+                const assignmentSection = document.getElementById('assignmentSection');
+                if (assignmentSection.style.display !== 'none') {
+                    assignmentSection.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+                }
+            } else {
+                const message = invalidCount > 0
+                    ? "No hay productos con stock disponible para seleccionar"
+                    : "Todos los productos ya están seleccionados";
+
+                toastMixin.fire({
+                    icon: "info",
+                    title: message
+                });
+            }
+        }
+
+        function updateSelectAllButton() {
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            if (!selectAllBtn || !documentsData.partidas) return;
+
+            const totalProducts = documentsData.partidas.length;
+            const selectedProducts = selectedProductsForAssignment.size;
+
+            if (selectedProducts === 0) {
+                selectAllBtn.innerHTML = '<i class="fas fa-check-double me-1"></i> Seleccionar Todo';
+                selectAllBtn.className = 'btn btn-info';
+            } else if (selectedProducts === totalProducts) {
+                selectAllBtn.innerHTML = '<i class="fas fa-square-check me-1"></i> Todo Seleccionado';
+                selectAllBtn.className = 'btn btn-success';
+            } else {
+                selectAllBtn.innerHTML = '<i class="fas fa-check-double me-1"></i> Seleccionar Restantes';
+                selectAllBtn.className = 'btn btn-info';
+            }
+        }
+        // Función para cargar y mostrar pedimentos en la tabla
+        async function cargarTablaPedimentos() {
+            const loading = document.getElementById('loadingPedimentos');
+            const tbody = document.getElementById('tablaPedimentosBody');
+            const noResultsMsg = document.getElementById('noPedimentosMessage');
+
+            loading.style.display = 'block';
+            tbody.innerHTML = '';
+            noResultsMsg.style.display = 'none';
+
+            try {
+                const data = await GetData({
+                    path: "/ProcesoComprasInternacional/GetPedimentos"
+                });
+
+                pedimentosListData = data.pedimentos || [];
+                filteredPedimentosData = [...pedimentosListData];
+
+                loading.style.display = 'none';
+
+                if (pedimentosListData.length === 0) {
+                    noResultsMsg.style.display = 'block';
+                    return;
+                }
+
+                renderTablaPedimentos(filteredPedimentosData);
+
+            } catch (error) {
+                loading.style.display = 'none';
+                console.error('Error cargando pedimentos:', error);
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error al cargar pedimentos'
+                });
+            }
+        }
+
+        // Función para renderizar la tabla
+        function renderTablaPedimentos(data) {
+            const tbody = document.getElementById('tablaPedimentosBody');
+            const noResultsMsg = document.getElementById('noPedimentosMessage');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                noResultsMsg.style.display = 'block';
+                return;
+            }
+
+            noResultsMsg.style.display = 'none';
+
+            tbody.innerHTML = data.map(pedimento => `
+        <tr>
+            <td>
+                <strong>${pedimento.pedimento_sat || 'N/A'}</strong>
+            </td>
+            <td>
+                <span title="${pedimento.descripcion_larga || pedimento.descripcion || ''}">${truncateText(pedimento.descripcion || 'Sin descripción', 30)
+                }</span>
+            </td>
+            <td>${formatDate(pedimento.fecha) || 'N/A'}</td>
+            <td>
+                <span class="badge ${getEstadoBadgeClass(pedimento.estado)}">
+                    ${getEstadoText(pedimento.estado)}
+                </span>
+            </td>
+            <td class="table-row-actions">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary" 
+                            onclick="editarPedimento(${pedimento.id_pedimento})"
+                            title="Editar pedimento">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" 
+                            onclick="eliminarPedimento(${pedimento.id_pedimento})"
+                            title="Eliminar pedimento">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+        }
+
+        // Funciones auxiliares
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+
+            try {
+                let date;
+
+                // Verificar si es formato .NET /Date(timestamp)/
+                const dotNetMatch = dateString.match(/\/Date\((\d+)\)\//);
+                if (dotNetMatch) {
+                    const timestamp = parseInt(dotNetMatch[1]);
+                    date = new Date(timestamp);
+                } else {
+                    date = new Date(dateString);
+                }
+
+                if (isNaN(date.getTime())) {
+                    return dateString; // Retornar original si no se puede parsear
+                }
+
+                return date.toLocaleDateString('es-MX', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                console.error('Error formateando fecha:', error);
+                return dateString;
+            }
+        }
+
+        function getEstadoBadgeClass(estado) {
+            switch (estado?.toLowerCase()) {
+                case 'activo':
+                case 'active':
+                    return 'bg-success';
+                case 'inactivo':
+                case 'inactive':
+                    return 'bg-secondary';
+                case 'pendiente':
+                case 'pending':
+                    return 'bg-warning';
+                default:
+                    return 'bg-info';
+            }
+        }
+
+        function getEstadoText(estado) {
+            return estado || 'Activo';
+        }
+
+        // Función para filtrar pedimentos
+        function filtrarPedimentos() {
+            const searchTerm = document.getElementById('searchPedimentos').value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                filteredPedimentosData = [...pedimentosListData];
+            } else {
+                filteredPedimentosData = pedimentosListData.filter(pedimento => {
+                    return (
+                        (pedimento.pedimento_sat || '').toLowerCase().includes(searchTerm) ||
+                        (pedimento.pedimento_aduanal || '').toLowerCase().includes(searchTerm) ||
+                        (pedimento.descripcion || '').toLowerCase().includes(searchTerm) ||
+                        (pedimento.descripcion_larga || '').toLowerCase().includes(searchTerm)
+                    );
+                });
+            }
+
+            renderTablaPedimentos(filteredPedimentosData);
+        }
+
+        // Función para limpiar el formulario
+        function limpiarFormularioPedimento() {
+            document.getElementById('formPedimento').reset();
+            document.getElementById('pedimentoId').value = '';
+            document.getElementById('numeroPedimentoSat').value = '';
+
+            // Limpiar TomSelects
+            const selects = ['agencia', 'aduana', 'patenteSat'];
+            selects.forEach(selectId => {
+                const instance = tomManager.getInstance(selectId);
+                if (instance) {
+                    instance.clear();
+                }
+            });
+
+            // Remover clases de validación
+            document.querySelectorAll('.form-control').forEach(input => {
+                input.classList.remove('is-valid', 'is-invalid');
+            });
+        }
+
+        // Función para preparar modal para nuevo pedimento
+        function prepararNuevoPedimento() {
+            isEditMode = false;
+            limpiarFormularioPedimento();
+
+            document.getElementById('modalPedimentoTitulo').textContent = 'Nuevo Pedimento';
+            document.getElementById('guardarPedimentoTexto').textContent = 'Guardar';
+
+            // Establecer fecha actual por defecto
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha').value = today;
+        }
+
+        // Función para editar pedimento
+        async function editarPedimento(pedimentoId) {
+            try {
+                // Buscar el pedimento en los datos cargados
+                const pedimento = pedimentosListData.find(p => p.id_pedimento === pedimentoId);
+
+                if (!pedimento) {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: 'Pedimento no encontrado'
+                    });
+                    return;
+                }
+
+                isEditMode = true;
+                limpiarFormularioPedimento();
+
+                // Cerrar modal de lista y abrir modal de formulario
+                bootstrap.Modal.getInstance(document.getElementById('modalListaPedimentos')).hide();
+
+                setTimeout(() => {
+                    // Llenar formulario con datos del pedimento
+                    document.getElementById('pedimentoId').value = pedimento.id_pedimento;
+                    document.getElementById('pedimento').value = pedimento.pedimento_aduanal || '';
+                    document.getElementById('consecutivoSat').value = pedimento.consecutivo_sat || '';
+                    document.getElementById('numeroPedimentoSat').value = pedimento.pedimento_sat || '';
+
+                    const agenciaTS = tomManager.getInstance('agencia');
+                    const valorActual = agenciaTS?.getValue();
+                    agenciaTS?.setValue(pedimento.agente_id || '');
+
+                    const aduanaTS = tomManager.getInstance('aduana');
+                    aduanaTS?.setValue(pedimento.aduana_id || '');
+
+                    const patenteSatTS = tomManager.getInstance('patente');
+                    patenteSatTS?.setValue(pedimento.patente_id || '');
+
+
+                    // Manejar la fecha con formato especial
+                    const fechaOriginal = dateFormatter(pedimento.fecha);
+                    // Separar fecha y hora
+                    const [soloFecha] = fechaOriginal.split(" "); // "01/09/40"
+                    const [dia, mes, anioCorto] = soloFecha.split("/");
+
+                    // Convertir a entero (para manejar bien el siglo)
+                    let anio = parseInt(anioCorto, 10);
+
+                    // ⚡ regla simple: si el año < 50, asumimos 2000+, si no 1900+
+                    // (puedes ajustar el umbral según tu caso)
+                    anio = anio < 50 ? 2000 + anio : 1900 + anio;
+
+                    // Crear objeto Date
+                    const fecha = new Date(anio, mes - 1, dia);
+
+                    // Formato compatible con input[type="date"]
+                    const fechaISO = fecha.toISOString().split("T")[0]; // "2040-09-01"
+
+                    document.getElementById("fecha").value = fechaISO;
+
+                    // Establecer valores en TomSelects con más tiempo de espera
+                    setTimeout(() => {
+                        // Preseleccionar Agencia Aduanal
+                        if (pedimento.id_agencia_aduanal) {
+                            const agenciaInstance = tomManager.getInstance('agencia');
+                            if (agenciaInstance) {
+                                console.log('Configurando agencia:', pedimento.id_agencia_aduanal);
+                                agenciaInstance.setValue(pedimento.id_agencia_aduanal.toString());
+                            }
+                        }
+
+                        // Preseleccionar Aduana
+                        if (pedimento.id_aduana) {
+                            const aduanaInstance = tomManager.getInstance('aduana');
+                            if (aduanaInstance) {
+                                console.log('Configurando aduana:', pedimento.id_aduana);
+                                aduanaInstance.setValue(pedimento.id_aduana.toString());
+                            }
+                        }
+
+                        // Preseleccionar Patente SAT
+                        if (pedimento.id_patente_sat) {
+                            const patenteInstance = tomManager.getInstance('patenteSat');
+                            if (patenteInstance) {
+                                console.log('Configurando patente SAT:', pedimento.id_patente_sat);
+                                patenteInstance.setValue(pedimento.id_patente_sat.toString());
+                            }
+                        }
+                    }, 500); // Aumentar tiempo de espera
+
+                    // Actualizar títulos
+                    document.getElementById('modalPedimentoTitulo').textContent = 'Editar Pedimento';
+                    document.getElementById('guardarPedimentoTexto').textContent = 'Actualizar';
+
+                    // Mostrar modal
+                    new bootstrap.Modal(document.getElementById('modalPedimento')).show();
+                    generarNumeroPedimento();
+                }, 300);
+
+            } catch (error) {
+                console.error('Error preparando edición:', error);
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error al preparar la edición'
+                });
+            }
+        }
+
+        // Función para eliminar pedimento
+        async function eliminarPedimento(pedimentoId) {
+            const pedimento = pedimentosListData.find(p => p.id_pedimento === pedimentoId);
+            const nombrePedimento = pedimento ? pedimento.pedimento_sat || pedimento.pedimento_aduanal : 'este pedimento';
+
+            const result = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: `¿Deseas eliminar ${nombrePedimento}? Esta acción no se puede deshacer.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('pedimentoId', pedimentoId);
+
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (token) formData.append('__RequestVerificationToken', token);
+
+                const response = await fetch('/ProcesoComprasInternacional/EliminarPedimento', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    toastMixin.fire({
+                        icon: 'success',
+                        title: data.message || 'Pedimento eliminado correctamente'
+                    });
+
+                    // Recargar tabla
+                    await cargarTablaPedimentos();
+
+                    // Recargar pedimentos en el select principal
+                    loadPedimentos();
+                } else {
+                    toastMixin.fire({
+                        icon: 'error',
+                        title: data.message || 'Error al eliminar pedimento'
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error eliminando pedimento:', error);
+                toastMixin.fire({
+                    icon: 'error',
+                    title: 'Error inesperado al eliminar'
+                });
+            }
+        }
+        // Función para validar formulario
+        function validarFormularioPedimento() {
+            const requiredFields = [
+                { id: 'pedimento', name: 'Pedimento aduanal' },
+                { id: 'fecha', name: 'Fecha' },
+                { id: 'consecutivoSat', name: 'Consecutivo SAT' }
+            ];
+
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                const input = document.getElementById(field.id);
+                const value = input.value.trim();
+
+                if (!value) {
+                    input.classList.add('is-invalid');
+                    input.classList.remove('is-valid');
+                    isValid = false;
+                } else {
+                    input.classList.add('is-valid');
+                    input.classList.remove('is-invalid');
+                }
+            });
+
+            if (!isValid) {
+                toastMixin.fire({
+                    icon: 'warning',
+                    title: 'Campos requeridos',
+                    text: 'Por favor completa todos los campos requeridos'
+                });
+            }
+
+            return isValid;
+        }
+    </script>
+}

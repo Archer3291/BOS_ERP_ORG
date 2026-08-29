@@ -1,0 +1,1222 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ALMACÉN VIRTUAL — Capa de UI de la vista 3D
+   Reutiliza los tokens --av-* definidos en almacen-virtual.css
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Contenedor del canvas WebGL ───────────────────────────────── */
+#av-3d-container {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    overflow: hidden;
+    background: var(--av-bg);
+}
+
+    #av-3d-container:active {
+        cursor: grabbing;
+    }
+
+    #av-3d-container canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        outline: none;
+    }
+
+/* Alternancia de vistas: el motor añade .av-hidden al inactivo */
+.av-hidden {
+    display: none !important;
+}
+
+/* Konva pasa a ocupar el mismo hueco absoluto que el canvas 3D */
+#av-konva-container {
+    position: absolute;
+    inset: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SELECTOR DE VISTA 2D / 3D (segmentado, dentro del toolbar)
+══════════════════════════════════════════════════════════════════ */
+.av-viewswitch {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 20px;
+    background: var(--av-surface2);
+    border: 1px solid var(--av-border);
+}
+
+.av-vs-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 18px;
+    background: transparent;
+    color: var(--av-text-muted);
+    font-family: var(--av-font);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all var(--av-transition);
+    white-space: nowrap;
+}
+
+    .av-vs-btn i {
+        font-size: 11px;
+    }
+
+    .av-vs-btn:hover {
+        color: var(--av-text);
+    }
+
+    .av-vs-btn.active {
+        background: var(--av-accent);
+        color: #001018;
+        box-shadow: 0 1px 6px color-mix(in srgb, var(--av-accent) 45%, transparent);
+    }
+
+/* Elementos que solo aplican a una vista.
+   No se fija `display` aquí a propósito: cada elemento conserva el suyo
+   (los botones ya son flex, el minimapa es un bloque posicionado, etc.)
+   y solo se oculta cuando el motor le añade .av-off. */
+.av-off {
+    display: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ENCUADRES DE CÁMARA — grupo segmentado dentro del toolbar
+   (antes flotaban sueltos en la esquina; ahí competían con el plano
+   y quedaban lejos del resto de controles de vista)
+══════════════════════════════════════════════════════════════════ */
+.av-camgroup {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    padding: 2px;
+    border-radius: 16px;
+    background: var(--av-surface2);
+    border: 1px solid var(--av-border);
+}
+
+.av-cam-btn {
+    width: 28px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--av-text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all var(--av-transition);
+}
+
+    .av-cam-btn:hover {
+        background: var(--av-surface3);
+        color: var(--av-text);
+    }
+
+    .av-cam-btn.active {
+        background: color-mix(in srgb, var(--av-accent) 18%, transparent);
+        color: var(--av-accent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--av-accent) 40%, transparent);
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+   LEYENDA DE OCUPACIÓN
+══════════════════════════════════════════════════════════════════ */
+#av-3d-legend {
+    position: absolute;
+    right: 18px;
+    top: 70px;
+    z-index: 20;
+    padding: 10px 12px;
+    border-radius: var(--av-radius-lg);
+    background: color-mix(in srgb, var(--av-surface) 88%, transparent);
+    border: 1px solid var(--av-border);
+    box-shadow: var(--av-shadow);
+    backdrop-filter: blur(6px);
+    min-width: 132px;
+}
+
+    #av-3d-legend h6 {
+        margin: 0 0 8px;
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--av-text-muted);
+    }
+
+.av3d-lg-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10.5px;
+    color: var(--av-text);
+    padding: 2.5px 0;
+}
+
+.av3d-lg-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px currentColor;
+    background: currentColor;
+}
+
+.av3d-lg-sep {
+    height: 1px;
+    background: var(--av-border);
+    margin: 8px 0 6px;
+}
+
+.av3d-lg-meta {
+    font-size: 9.5px;
+    color: var(--av-text-muted);
+    line-height: 1.5;
+}
+
+    .av3d-lg-meta b {
+        color: var(--av-text);
+        font-family: var(--av-font-mono);
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+   TOOLTIP FLOTANTE — plano 3D y visores del modal
+══════════════════════════════════════════════════════════════════ */
+#av-3d-tooltip,
+.av3d-tip {
+    position: absolute;
+    z-index: 30;
+    min-width: 190px;
+    max-width: 260px;
+    padding: 10px 12px;
+    border-radius: var(--av-radius-lg);
+    background: color-mix(in srgb, var(--av-surface) 94%, transparent);
+    border: 1px solid var(--av-accent);
+    box-shadow: var(--av-shadow), var(--av-shadow-glow);
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.13s ease, transform 0.13s ease;
+}
+
+    #av-3d-tooltip.show,
+    .av3d-tip.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+.av3d-tt-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--av-accent);
+    margin-bottom: 8px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--av-border);
+    flex-wrap: wrap;
+}
+
+    .av3d-tt-title i {
+        font-size: 11px;
+    }
+
+    .av3d-tt-title span {
+        font-size: 10px;
+        font-weight: 400;
+        color: var(--av-text-muted);
+    }
+
+.av3d-tt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 10.5px;
+    padding: 2px 0;
+    color: var(--av-text-muted);
+}
+
+    .av3d-tt-row b {
+        color: var(--av-text);
+        font-family: var(--av-font-mono);
+        font-weight: 600;
+    }
+
+.av3d-tt-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--av-surface3);
+    overflow: hidden;
+    margin-top: 7px;
+}
+
+    .av3d-tt-bar i {
+        display: block;
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.2s ease;
+    }
+
+.av3d-tt-hint {
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid var(--av-border);
+    font-size: 9px;
+    color: var(--av-text-dim, var(--av-text-muted));
+    text-align: center;
+}
+
+.av3d-tt-title.av3d-tt-tarima {
+    color: var(--av-warn);
+}
+
+.av3d-tt-sep {
+    height: 1px;
+    background: var(--av-border);
+    margin: 7px 0 5px;
+}
+
+.av3d-tt-mas {
+    font-size: 9px;
+    color: var(--av-text-muted);
+    text-align: right;
+    font-style: italic;
+}
+
+.av3d-tt-desc {
+    font-size: 10px;
+    color: var(--av-text-muted);
+    line-height: 1.45;
+    margin-bottom: 7px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   VISOR 3D DEL RACK (pestaña "Niveles" del inspector)
+══════════════════════════════════════════════════════════════════ */
+#av-rack-3d-wrap {
+    position: relative;
+    background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--av-accent) 7%, transparent), transparent 62%), var(--av-surface2);
+    border-bottom: 1px solid var(--av-border);
+    min-height: 300px;
+    overflow: hidden;
+}
+
+#av-rack-3d-container {
+    position: absolute;
+    inset: 0;
+}
+
+    #av-rack-3d-container canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        cursor: grab;
+        outline: none;
+    }
+
+#av-rack-3d-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--av-text-muted);
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+    #av-rack-3d-placeholder.hide {
+        opacity: 0;
+    }
+
+    #av-rack-3d-placeholder i {
+        font-size: 32px;
+        opacity: 0.2;
+    }
+
+    #av-rack-3d-placeholder span {
+        font-size: 11px;
+    }
+
+/* Barra inferior del visor */
+#av-rack-3d-bar {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.av-r3d-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--av-surface) 86%, transparent);
+    border: 1px solid var(--av-border);
+    backdrop-filter: blur(6px);
+    font-size: 9.5px;
+    color: var(--av-text-muted);
+    white-space: nowrap;
+}
+
+    .av-r3d-hint i {
+        color: var(--av-accent);
+        opacity: 0.8;
+    }
+
+.av-r3d-btn {
+    pointer-events: auto;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--av-border);
+    background: color-mix(in srgb, var(--av-surface) 90%, transparent);
+    backdrop-filter: blur(6px);
+    color: var(--av-text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all var(--av-transition);
+}
+
+    .av-r3d-btn:hover {
+        color: var(--av-accent);
+        border-color: var(--av-accent);
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+   MODAL DE TARIMA — 3D + lista de productos
+══════════════════════════════════════════════════════════════════ */
+/* Orden de apilamiento de los modales del módulo:
+   inspector 9200 → tarima 9300 → producto 9400 → historial 9500.
+   Cada uno se abre desde el anterior, así que debe quedar por encima. */
+#av-tarima-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2,4,8,0.84);
+    backdrop-filter: blur(6px);
+    z-index: 9300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+}
+
+    #av-tarima-modal-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+#av-tarima-modal {
+    width: 100%;
+    max-width: 1240px;
+    height: calc(100vh - 48px);
+    max-height: 820px;
+    background: var(--av-surface);
+    border: 1px solid var(--av-border);
+    border-radius: var(--av-radius-lg);
+    box-shadow: 0 24px 70px rgba(0,0,0,0.65), var(--av-shadow-glow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.96) translateY(12px);
+    transition: transform 0.26s cubic-bezier(0.34,1.2,0.4,1);
+}
+
+#av-tarima-modal-overlay.open #av-tarima-modal {
+    transform: scale(1) translateY(0);
+}
+
+#av-tarima-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: linear-gradient(180deg, var(--av-surface2), var(--av-surface));
+    border-bottom: 1px solid var(--av-border);
+    flex-shrink: 0;
+}
+
+.av-tm-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--av-radius);
+    background: color-mix(in srgb, var(--av-warn) 18%, transparent);
+    color: var(--av-warn);
+    font-size: 15px;
+}
+
+.av-tm-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+    .av-tm-header-text h5 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--av-text);
+        font-family: var(--av-font-mono);
+    }
+
+#av-tarima-modal-subtitle {
+    font-size: 10.5px;
+    color: var(--av-text-muted);
+    margin-top: 2px;
+}
+
+#av-tarima-modal-close {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--av-text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all var(--av-transition);
+}
+
+    #av-tarima-modal-close:hover {
+        background: color-mix(in srgb, var(--av-danger) 16%, transparent);
+        color: var(--av-danger);
+    }
+
+#av-tarima-modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#av-tarima-3d-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 320px;
+    background: radial-gradient(ellipse at 50% 10%, color-mix(in srgb, var(--av-accent) 8%, transparent), transparent 65%), var(--av-surface2);
+    border-bottom: 1px solid var(--av-border);
+    overflow: hidden;
+}
+
+#av-tarima-3d-container {
+    position: absolute;
+    inset: 0;
+}
+
+    #av-tarima-3d-container canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        cursor: grab;
+        outline: none;
+    }
+
+/* Selector de disposición de los productos dentro del visor de tarima */
+.av-tm-modos {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    z-index: 6;
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--av-surface) 88%, transparent);
+    border: 1px solid var(--av-border);
+    box-shadow: var(--av-shadow);
+    backdrop-filter: blur(6px);
+}
+
+.av-tm-modo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border: none;
+    border-radius: 15px;
+    background: transparent;
+    color: var(--av-text-muted);
+    font-family: var(--av-font);
+    font-size: 10.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--av-transition);
+}
+
+    .av-tm-modo i {
+        font-size: 11px;
+    }
+
+    .av-tm-modo:hover {
+        background: var(--av-surface2);
+        color: var(--av-text);
+    }
+
+    .av-tm-modo.active {
+        background: var(--av-accent);
+        color: #001018;
+        box-shadow: 0 1px 6px color-mix(in srgb, var(--av-accent) 45%, transparent);
+    }
+
+@media (max-width: 760px) {
+    .av-tm-modo span {
+        display: none;
+    }
+}
+
+.av-tm-3d-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 10px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--av-surface) 86%, transparent);
+    border: 1px solid var(--av-border);
+    backdrop-filter: blur(6px);
+    font-size: 9.5px;
+    color: var(--av-text-muted);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+    .av-tm-3d-hint i {
+        color: var(--av-accent);
+    }
+
+#av-tarima-modal-side {
+    flex-shrink: 0;
+    max-height: 46%;
+    overflow-y: auto;
+    padding: 14px 18px 18px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--av-border) transparent;
+}
+
+@media (min-width: 820px) {
+    #av-tarima-modal-body {
+        flex-direction: row;
+    }
+
+    #av-tarima-3d-wrap {
+        border-bottom: none;
+        border-right: 1px solid var(--av-border);
+    }
+
+    #av-tarima-modal-side {
+        width: 360px;
+        flex-shrink: 0;
+        max-height: none;
+        height: 100%;
+    }
+}
+
+/* Cabecera de resumen dentro del panel lateral */
+.av-tm-resumen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.av-tm-stat {
+    padding: 9px 11px;
+    border-radius: var(--av-radius);
+    background: var(--av-surface2);
+    border: 1px solid var(--av-border);
+}
+
+    .av-tm-stat b {
+        display: block;
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--av-accent);
+        font-family: var(--av-font-mono);
+        line-height: 1.2;
+    }
+
+    .av-tm-stat span {
+        font-size: 8.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--av-text-muted);
+    }
+
+.av-tm-trail {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 8px 11px;
+    margin-bottom: 14px;
+    border-radius: var(--av-radius);
+    background: color-mix(in srgb, var(--av-accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--av-accent) 22%, transparent);
+    font-size: 10px;
+    color: var(--av-text-muted);
+}
+
+    .av-tm-trail strong {
+        color: var(--av-text);
+        font-family: var(--av-font-mono);
+    }
+
+    .av-tm-trail i {
+        font-size: 7px;
+        opacity: 0.55;
+    }
+
+.av-tm-lista-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--av-text-muted);
+    margin-bottom: 8px;
+}
+
+.av-tm-prod {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 9px 10px;
+    margin-bottom: 6px;
+    border-radius: var(--av-radius);
+    background: var(--av-surface2);
+    border: 1px solid var(--av-border);
+    border-left: 3px solid var(--prod-color, var(--av-accent));
+    cursor: pointer;
+    transition: all var(--av-transition);
+}
+
+    .av-tm-prod:hover,
+    .av-tm-prod.activo {
+        background: var(--av-surface3);
+        border-color: var(--prod-color, var(--av-accent));
+        transform: translateX(2px);
+    }
+
+.av-tm-prod-main {
+    flex: 1;
+    min-width: 0;
+}
+
+    .av-tm-prod-main strong {
+        display: block;
+        font-size: 11px;
+        font-family: var(--av-font-mono);
+        color: var(--prod-color, var(--av-accent));
+    }
+
+    .av-tm-prod-main span {
+        display: block;
+        font-size: 10px;
+        color: var(--av-text-muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+.av-tm-prod-qty {
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--av-font-mono);
+    color: var(--av-text);
+}
+
+    .av-tm-prod-qty small {
+        display: block;
+        font-size: 8.5px;
+        font-weight: 400;
+        color: var(--av-text-muted);
+    }
+
+/* Botón "ver en 3D" dentro de cada tarjeta de tarima */
+.av-tarima-3d-btn {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid var(--av-border);
+    background: transparent;
+    color: var(--av-text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all var(--av-transition);
+}
+
+    .av-tarima-3d-btn:hover {
+        background: color-mix(in srgb, var(--av-accent) 16%, transparent);
+        border-color: var(--av-accent);
+        color: var(--av-accent);
+    }
+
+.av-tm-vacio {
+    text-align: center;
+    padding: 30px 12px;
+    color: var(--av-text-muted);
+    font-size: 11px;
+}
+
+    .av-tm-vacio i {
+        display: block;
+        font-size: 28px;
+        opacity: 0.25;
+        margin-bottom: 8px;
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+   LECTOR DE CÓDIGO DE BARRAS
+══════════════════════════════════════════════════════════════════ */
+#av-scan-btn.active {
+    color: var(--av-success);
+    position: relative;
+}
+
+    /* Punto que indica que el lector está a la escucha */
+    #av-scan-btn.active::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--av-success);
+        box-shadow: 0 0 6px var(--av-success);
+        animation: av-scan-latido 1.8s ease-in-out infinite;
+    }
+
+@keyframes av-scan-latido {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+}
+
+#av-scan-overlay {
+    position: absolute;
+    top: 74px;
+    left: 50%;
+    transform: translate(-50%, -12px);
+    z-index: 45;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 18px;
+    border-radius: var(--av-radius-lg);
+    background: color-mix(in srgb, var(--av-surface) 94%, transparent);
+    border: 1px solid var(--av-success);
+    box-shadow: var(--av-shadow), 0 0 24px color-mix(in srgb, var(--av-success) 35%, transparent);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
+}
+
+    #av-scan-overlay.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0);
+    }
+
+    #av-scan-overlay.error {
+        border-color: var(--av-danger);
+        box-shadow: var(--av-shadow), 0 0 24px color-mix(in srgb, var(--av-danger) 35%, transparent);
+    }
+
+    #av-scan-overlay > i {
+        font-size: 20px;
+        color: var(--av-success);
+        flex-shrink: 0;
+    }
+
+    #av-scan-overlay.error > i {
+        color: var(--av-danger);
+    }
+
+.av-scan-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+    .av-scan-txt strong {
+        font-family: var(--av-font-mono);
+        font-size: 13px;
+        letter-spacing: 0.06em;
+        color: var(--av-text);
+    }
+
+    .av-scan-txt span {
+        font-size: 10.5px;
+        color: var(--av-text-muted);
+        max-width: 380px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+   AYUDA DE NAVEGACIÓN (se autooculta)
+══════════════════════════════════════════════════════════════════ */
+#av-3d-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 7px 16px;
+    border-radius: 30px;
+    background: color-mix(in srgb, var(--av-surface) 88%, transparent);
+    border: 1px solid var(--av-border);
+    box-shadow: var(--av-shadow);
+    backdrop-filter: blur(6px);
+    font-size: 10px;
+    color: var(--av-text-muted);
+    white-space: nowrap;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+    #av-3d-hint.fade {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+        pointer-events: none;
+    }
+
+    #av-3d-hint span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    #av-3d-hint kbd {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--av-border);
+        background: var(--av-surface2);
+        color: var(--av-text);
+        font-family: var(--av-font-mono);
+        font-size: 9px;
+        line-height: 1.5;
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+   PANEL DE CONFIGURACIÓN 3D
+══════════════════════════════════════════════════════════════════ */
+#av-3d-config {
+    position: absolute;
+    top: 62px;
+    right: 18px;
+    z-index: 40;
+    width: 250px;
+    border-radius: var(--av-radius-lg);
+    background: var(--av-surface);
+    border: 1px solid var(--av-border);
+    box-shadow: var(--av-shadow);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all var(--av-transition);
+}
+
+    #av-3d-config.open {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    #av-3d-config .av3d-cfg-header {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--av-border);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--av-accent);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    #av-3d-config .av3d-cfg-body {
+        padding: 12px 14px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+    }
+
+.av3d-cfg-range {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+    .av3d-cfg-range label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--av-text-muted);
+    }
+
+        .av3d-cfg-range label b {
+            color: var(--av-accent);
+            font-family: var(--av-font-mono);
+        }
+
+    .av3d-cfg-range input[type=range] {
+        width: 100%;
+        accent-color: var(--av-accent);
+        height: 4px;
+        cursor: pointer;
+    }
+
+.av3d-cfg-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10.5px;
+    color: var(--av-text);
+    cursor: pointer;
+    user-select: none;
+}
+
+    .av3d-cfg-check input {
+        accent-color: var(--av-accent);
+        width: 13px;
+        height: 13px;
+        cursor: pointer;
+    }
+
+.av3d-cfg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   AVISO DE FALLBACK (WebGL / three.js no disponible)
+══════════════════════════════════════════════════════════════════ */
+#av-3d-fallback {
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+    padding: 24px;
+    background: var(--av-bg);
+    color: var(--av-text-muted);
+}
+
+    #av-3d-fallback.show {
+        display: flex;
+    }
+
+    #av-3d-fallback i {
+        font-size: 34px;
+        opacity: 0.25;
+    }
+
+    #av-3d-fallback p {
+        margin: 0;
+        font-size: 12px;
+        max-width: 340px;
+        line-height: 1.6;
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    #av-3d-legend,
+    #av-3d-hint {
+        display: none;
+    }
+
+    .av-vs-btn span {
+        display: none;
+    }
+
+    .av-camgroup .av-cam-btn:nth-child(n+3) {
+        display: none;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EL MONITO — arrastrarlo al plano para bajar al piso
+   ══════════════════════════════════════════════════════════════ */
+
+#av-monito {
+    position: absolute;
+    left: 18px;
+    top: 78px;
+    z-index: 22;
+    width: 62px;
+    padding: 10px 8px 6px;
+    border-radius: var(--av-radius-lg);
+    background: color-mix(in srgb, var(--av-surface) 88%, transparent);
+    border: 1px solid var(--av-border);
+    box-shadow: var(--av-shadow);
+    backdrop-filter: blur(6px);
+    cursor: grab;
+    touch-action: none;          /* el arrastre lo gestionamos nosotros */
+    user-select: none;
+    transition: transform var(--av-transition), box-shadow var(--av-transition),
+                border-color var(--av-transition);
+}
+
+    #av-monito:hover {
+        transform: translateY(-2px);
+        border-color: var(--av-accent);
+        box-shadow: 0 8px 22px color-mix(in srgb, var(--av-accent) 28%, transparent);
+    }
+
+    #av-monito:focus-visible {
+        outline: 2px solid var(--av-accent);
+        outline-offset: 2px;
+    }
+
+    #av-monito svg {
+        display: block;
+        width: 100%;
+        height: 52px;
+        overflow: visible;
+    }
+
+.av-monito-fig circle {
+    fill: var(--av-accent);
+}
+
+.av-monito-fig path {
+    fill: none;
+    stroke: var(--av-accent);
+    stroke-width: 7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Sombra bajo los pies: da la sensación de que está posado, no flotando */
+.av-monito-base {
+    display: block;
+    width: 30px;
+    height: 6px;
+    margin: 2px auto 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--av-accent) 30%, transparent);
+    filter: blur(1px);
+}
+
+/* Mientras se arrastra, el que manda es el fantasma 3D: el del panel se apaga */
+#av-monito.arrastrando {
+    cursor: grabbing;
+    transform: none;
+    opacity: .35;
+    box-shadow: var(--av-shadow);
+    border-color: var(--av-border);
+}
+
+    /* Soltar ahí no vale (fuera de la nave o mirando al cielo) */
+    #av-monito.fuera .av-monito-fig circle { fill: var(--av-danger); }
+    #av-monito.fuera .av-monito-fig path { stroke: var(--av-danger); }
+    #av-monito.fuera .av-monito-base {
+        background: color-mix(in srgb, var(--av-danger) 30%, transparent);
+    }
+
+/* El cursor de arrastre debe mandar sobre toda la página, no solo sobre el dock */
+body.av-arrastrando-monito,
+body.av-arrastrando-monito * {
+    cursor: grabbing !important;
+    user-select: none !important;
+}
+
+/* Chip que sigue al cursor diciendo dónde vas a caer */
+#av-monito-pista {
+    position: fixed;
+    z-index: 9998;
+    padding: 5px 11px;
+    border-radius: 20px;
+    background: var(--av-accent);
+    color: #04121f;
+    font: 600 0.76rem/1.2 var(--av-font);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity .14s ease, transform .14s ease;
+}
+
+    #av-monito-pista.show {
+        opacity: 1;
+        transform: none;
+    }
+
+@media (max-width: 720px) {
+    #av-monito {
+        width: 52px;
+        top: 70px;
+        left: 12px;
+    }
+
+        #av-monito svg { height: 44px; }
+}

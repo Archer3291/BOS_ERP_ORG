@@ -1,0 +1,124 @@
+@model IEnumerable<BOS_ERP.Models.UserSession>
+
+@{
+    ViewBag.Title = "Gestión de Sesiones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Formulario oculto para el token anti-falsificación -->
+@using (Html.BeginForm(null, null, FormMethod.Post, new { id = "__AjaxAntiForgeryForm" }))
+{
+    @Html.AntiForgeryToken()
+}
+
+<script>window.document.title = 'Sesiones'</script>
+
+<div class="card">
+    <div class="card-header text-bg-primary">
+        <h2>Listado de Sesiones</h2>
+    </div>
+
+    <div class="card-body">
+        <div class="row">
+            <div class="col-sm-6 mb-3">
+                <div class="btn-group btn-group-toggle mb-3" data-toggle="buttons">
+                    <label class="btn btn-outline-info active">
+                        <input type="radio" name="estadoSesionFilter" value="" checked> Todas
+                    </label>
+                    <label class="btn btn-outline-success">
+                        <input type="radio" name="estadoSesionFilter" value="true"> Activas
+                    </label>
+                    <label class="btn btn-outline-danger">
+                        <input type="radio" name="estadoSesionFilter" value="false"> Inactivas
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive-sm">
+            <table id="tablaSesiones" class="table table-striped table-bordered table-hover" style="width:100%">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Dispositivo</th>
+                        <th>Fecha Expiración</th>
+                        <th>Activa</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+     $(document).ready(function () {
+    var tablaSesiones = $('#tablaSesiones').DataTable({
+        ajax: {
+            url: '@Url.Action("GetUserSessions", "UserSessions")',
+            type: 'GET',
+            dataType: 'json',
+            dataSrc: 'data'
+        },
+        columns: [
+            { data: 'Usuario' },
+            { data: 'DeviceIdentifier' },
+            {
+                data: 'ExpiryTime',
+                render: function (data) {
+                    if (!data) return '';
+                    const fecha = new Date(data);
+                    if (isNaN(fecha)) return '';
+
+                    // Formato de fecha y hora (dd/mm/yyyy hh:mm:ss)
+                    const dia = fecha.getDate().toString().padStart(2, '0');
+                    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+                    const anio = fecha.getFullYear();
+                    const hora = fecha.getHours().toString().padStart(2, '0');
+                    const minutos = fecha.getMinutes().toString().padStart(2, '0');
+                    const segundos = fecha.getSeconds().toString().padStart(2, '0');
+
+                    return `${dia}/${mes}/${anio} ${hora}:${minutos}:${segundos}`;
+                }
+            },
+            {
+                data: 'IsActive',
+                render: function (data) {
+                    return data ? '<span class="badge1 badge-success">Sí</span>' : '<span class="badge1 badge-danger">No</span>';
+                }
+            },
+            {
+                data: 'SessionId',
+                render: function (data, type, row) {
+                    if (row.IsActive) {
+                        return `
+                            <a href="/UserSessions/Desactivar/${data}" class="btn btn-sm btn-danger" title="Desactivar">
+                                <i class="fas fa-power-off"></i>
+                            </a>
+                        `;
+                    }
+                    return '';
+                },
+                orderable: false,
+                searchable: false
+            }
+        ],
+        responsive: true
+    });
+
+    // Filtrado por estado activa/inactiva
+    $('input[name="estadoSesionFilter"]').change(function () {
+        const valor = $(this).val();
+        if (valor === "") {
+            tablaSesiones.column(3).search('').draw(); // Todas
+        } else if (valor === "true") {
+            tablaSesiones.column(3).search('Sí').draw(); // Solo activas
+        } else if (valor === "false") {
+            tablaSesiones.column(3).search('No').draw(); // Solo inactivas
+        }
+    });
+});
+
+    </script>
+}

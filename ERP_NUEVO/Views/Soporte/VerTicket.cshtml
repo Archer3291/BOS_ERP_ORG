@@ -1,0 +1,319 @@
+﻿@{
+    ViewBag.Title = "Ver Ticket";
+    ViewData["PageTitle"] = "Mis tickets";
+
+    var estados = ViewBag.Estados as List<Dictionary<string, object>>
+                  ?? new List<Dictionary<string, object>>();
+    var prioridades = ViewBag.Prioridades as List<Dictionary<string, object>>
+                      ?? new List<Dictionary<string, object>>();
+
+    var resumen = ViewBag.Resumen as Dictionary<string, object>;
+
+    string Contador(string clave) =>
+        resumen != null && resumen.ContainsKey(clave) && resumen[clave] != null
+            ? resumen[clave].ToString()
+            : "0";
+}
+
+@section styles {
+    @* createTable (TableBuilder) trae su propia hoja de estilos, igual que en
+       AdministracionTicket. *@
+    <link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+    <style>
+        .tkv-wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem 0 3rem;
+            font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+        }
+
+        /* ── Encabezado ─────────────────────────────────────────────── */
+        .tkv-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .tkv-title {
+            margin: 0 0 .35rem;
+            font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+            font-weight: 700;
+            letter-spacing: -.02em;
+            color: var(--text-dark);
+        }
+
+        .tkv-sub {
+            margin: 0;
+            color: var(--text-light);
+        }
+
+        .tkv-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            height: 46px;
+            padding: 0 1.5rem;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4f6bf6, #7c5cfc);
+            color: #fff;
+            font-size: .95rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 8px 18px rgba(79, 107, 246, .28);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+            .tkv-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 24px rgba(79, 107, 246, .35);
+                color: #fff;
+            }
+
+        /* ── Resumen ────────────────────────────────────────────────── */
+        .tkv-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tkv-stat {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.1rem 1.25rem;
+            border-radius: 14px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, .06);
+        }
+
+        .tkv-stat__icono {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--c-soft);
+            color: var(--c);
+            font-size: 1.1rem;
+        }
+
+        .tkv-stat__valor {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--text-dark);
+        }
+
+        .tkv-stat__label {
+            font-size: .82rem;
+            color: var(--text-light);
+        }
+
+        /* ── Panel de la tabla ──────────────────────────────────────── */
+        .tkv-panel {
+            padding: 1.5rem;
+            border-radius: 16px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, .06);
+        }
+
+        .tkv-filtros {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: .85rem;
+            padding-bottom: 1.25rem;
+            margin-bottom: .25rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .tkv-filtro {
+            display: flex;
+            flex-direction: column;
+            min-width: 190px;
+        }
+
+        .tkv-filtro__label {
+            margin-bottom: .35rem;
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .tkv-wrap .form-select {
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            font-size: .9rem;
+        }
+
+            .tkv-wrap .form-select:focus {
+                border-color: #4f6bf6;
+                box-shadow: 0 0 0 4px rgba(79, 107, 246, .14);
+            }
+
+        .tkv-limpiar {
+            height: 42px;
+            padding: 0 1.1rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background: transparent;
+            color: var(--text-light);
+            font-size: .88rem;
+            font-weight: 600;
+            transition: border-color .2s ease, color .2s ease;
+        }
+
+            .tkv-limpiar:hover {
+                border-color: var(--text-light);
+                color: var(--text-dark);
+            }
+
+        /* El asunto lo escribe el usuario y puede ser largo: se recorta y el texto
+           completo (mas el inicio de la descripcion) queda en el tooltip. */
+        .tkv-asunto {
+            display: inline-block;
+            max-width: 320px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        /* Enlace del folio dentro de la tabla. */
+        .tkv-wrap a.ver-ticket {
+            font-weight: 600;
+            color: #4f6bf6;
+            text-decoration: none;
+            letter-spacing: .02em;
+        }
+
+            .tkv-wrap a.ver-ticket:hover {
+                text-decoration: underline;
+            }
+
+        /* ── Tema oscuro ────────────────────────────────────────────── */
+        [data-theme="dark"] .tkv-panel,
+        [data-theme="dark"] .tkv-stat {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+        }
+
+        /* ── Responsivo ─────────────────────────────────────────────── */
+        @@media (max-width: 768px) {
+            .tkv-stats {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .tkv-filtro {
+                min-width: 100%;
+            }
+
+            .tkv-panel {
+                padding: 1rem;
+            }
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .tkv-btn {
+                transition: none;
+            }
+
+                .tkv-btn:hover {
+                    transform: none;
+                }
+        }
+    </style>
+}
+
+<div class="tkv-wrap">
+    @* createTable manda el token en cada peticion; tiene que existir en la pagina. *@
+    <form>
+        @Html.AntiForgeryToken()
+    </form>
+
+    <div class="tkv-head">
+        <div>
+            <h2 class="tkv-title">Mis tickets</h2>
+            <p class="tkv-sub">Todos los tickets que has levantado y en qué van.</p>
+        </div>
+        <a class="tkv-btn" href="@Url.Action("EnviarTicket", "Soporte")">
+            <i class="fa-duotone fa-solid fa-plus"></i> Nuevo ticket
+        </a>
+    </div>
+
+    <div class="tkv-stats">
+        <div class="tkv-stat" style="--c:#4f6bf6;--c-soft:rgba(79,107,246,.12)">
+            <span class="tkv-stat__icono"><i class="fa-duotone fa-solid fa-ticket"></i></span>
+            <div>
+                <span class="tkv-stat__valor">@Contador("total")</span>
+                <span class="tkv-stat__label">Tickets levantados</span>
+            </div>
+        </div>
+        <div class="tkv-stat" style="--c:#22c55e;--c-soft:rgba(34,197,94,.12)">
+            <span class="tkv-stat__icono"><i class="fa-duotone fa-solid fa-folder-open"></i></span>
+            <div>
+                <span class="tkv-stat__valor">@Contador("abiertos")</span>
+                <span class="tkv-stat__label">Abiertos</span>
+            </div>
+        </div>
+        <div class="tkv-stat" style="--c:#7c5cfc;--c-soft:rgba(124,92,252,.12)">
+            <span class="tkv-stat__icono"><i class="fa-duotone fa-solid fa-circle-check"></i></span>
+            <div>
+                <span class="tkv-stat__valor">@Contador("resueltos")</span>
+                <span class="tkv-stat__label">Resueltos</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="tkv-panel">
+        <div class="tkv-filtros">
+            <div class="tkv-filtro">
+                <label class="tkv-filtro__label" for="filtroEstado">Estado</label>
+                <select class="form-select" id="filtroEstado">
+                    <option value="">Todos</option>
+                    @foreach (var est in estados)
+                    {
+                        <option value="@est["id_stat_tkt"]">@est["n"]</option>
+                    }
+                </select>
+            </div>
+
+            <div class="tkv-filtro">
+                <label class="tkv-filtro__label" for="filtroPrioridad">Prioridad</label>
+                <select class="form-select" id="filtroPrioridad">
+                    <option value="">Todas</option>
+                    @foreach (var pr in prioridades)
+                    {
+                        <option value="@pr["id_prio"]">@pr["n"]</option>
+                    }
+                </select>
+            </div>
+
+            <button type="button" class="tkv-limpiar" id="btnLimpiarFiltros">
+                <i class="fa-solid fa-broom"></i> Limpiar
+            </button>
+        </div>
+
+        @* createTable construye aqui la tabla completa: encabezados, buscador,
+           paginacion y exportacion. *@
+        <div id="tablaMisTickets"></div>
+    </div>
+</div>
+
+@section Scripts {
+    @* jQuery y sweetalert los carga el layout. *@
+    <script src="~/Scripts/TableBuilder.js"></script>
+    <script src="~/Scripts/Soporte/ticket-mis-tickets.js"></script>
+}

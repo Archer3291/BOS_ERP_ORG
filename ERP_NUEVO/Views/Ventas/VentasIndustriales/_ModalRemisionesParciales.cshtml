@@ -1,0 +1,307 @@
+@* ============================================================
+   _ModalRemisionesParciales.cshtml
+   Vista parcial — incluir al final de la vista principal:
+   @Html.Partial("_ModalRemisionesParciales")
+
+   Requiere que exista un cliente seleccionado (#vi-fac-cliente).
+   El botón "Especiales" permanece deshabilitado hasta entonces;
+   la apertura la controla facturacion-remisiones-parciales.js.
+   ============================================================ *@
+
+<style>
+    /* ── Tabla de partidas ── */
+    .vi-fac-tabla-partidas thead th {
+        background: var(--primary-blue);
+        color: white;
+        font-size: 0.78rem;
+        padding: 0.5rem 0.6rem;
+        white-space: nowrap;
+    }
+    .vi-fac-tabla-partidas td {
+        font-size: 0.82rem;
+        padding: 0.45rem 0.6rem;
+        vertical-align: middle;
+    }
+    .vi-fac-tabla-partidas tbody tr:hover {
+        background: var(--very-light-blue);
+    }
+
+    /* ── Panel izquierdo: lista de remisiones ── */
+    #vi-fac-listaRemisiones .list-group-item-action:hover {
+        transform: translateX(4px);
+        border-left: 3px solid var(--accent-blue);
+    }
+    #vi-fac-listaRemisiones .list-group-item.list-group-item-success {
+        border-left: 4px solid #10b981;
+    }
+
+    /* ── Resumen selección ── */
+    #vi-fac-resumenSeleccion {
+        max-height: 420px;
+        overflow-y: auto;
+        font-size: 0.83rem;
+    }
+
+    /* ── Input cantidad ── */
+    .vfac-cant-facturar {
+        border: 2px solid var(--accent-blue);
+        border-radius: 6px;
+        transition: border-color 0.2s;
+    }
+    .vfac-cant-facturar:focus {
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    .vfac-cant-facturar.is-invalid {
+        border-color: #dc2626 !important;
+        animation: shake 0.3s;
+    }
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25%       { transform: translateX(-4px); }
+        75%       { transform: translateX(4px); }
+    }
+
+    /* ── Columnas del modal ── */
+    .vi-fac-rem-col-left  { width: 30%; border-right: 1px solid var(--border-light); }
+    .vi-fac-rem-col-mid   { width: 43%; }
+    .vi-fac-rem-col-right { width: 27%; border-left: 1px solid var(--border-light); }
+
+    @@media (max-width: 992px) {
+        .vi-fac-rem-col-left,
+        .vi-fac-rem-col-mid,
+        .vi-fac-rem-col-right { width: 100%; border: none; }
+    }
+
+    /* ── Tab del resumen sticky ── */
+    .vi-fac-resumen-sticky {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 2;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--light-blue);
+        margin-bottom: 0.75rem;
+    }
+
+    /* ── Banda informativa del modo activo ── */
+    #vi-fac-modoHint {
+        font-size: 0.76rem;
+        line-height: 1.35;
+        border-radius: 6px;
+        padding: 0.45rem 0.6rem;
+        background: var(--very-light-blue, #eff6ff);
+        border-left: 3px solid var(--accent-blue, #3b82f6);
+    }
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL PRINCIPAL: FACTURACIÓN ESPECIAL DESDE REMISIONES
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal fade"
+     id="vi-fac-modalRemisionesParciales"
+     tabindex="-1"
+     aria-labelledby="vi-fac-modalRemisionesParciales-label"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-fullscreen-lg-down modal-xl" style="max-width:1400px;">
+        <div class="modal-content" style="min-height:80vh;">
+
+            <!-- Header -->
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,var(--primary-blue),var(--accent-blue));color:white;">
+                <div class="flex-grow-1">
+                    <h5 class="modal-title mb-1" id="vi-fac-modalRemisionesParciales-label">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Facturación Especial desde Remisiones
+                    </h5>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-user me-1"></i>
+                            <span id="vi-fac-rem-clienteActual">Sin cliente</span>
+                        </span>
+                        <small class="opacity-75" style="font-size:0.75rem;">
+                            Solo se listan remisiones de este cliente con saldo por facturar
+                        </small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Body: layout 3 columnas -->
+            <div class="modal-body p-0 d-flex flex-wrap" style="overflow:hidden;">
+
+                <!-- ── COLUMNA 1: Lista de remisiones ── -->
+                <div class="vi-fac-rem-col-left p-3 d-flex flex-column"
+                     style="overflow:hidden;">
+
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <h6 class="mb-0 fw-bold text-primary">
+                            <i class="fas fa-list me-1"></i> Remisiones
+                        </h6>
+                        <span id="vi-fac-totalRemisiones"
+                              class="badge bg-secondary">0</span>
+                        <div id="vi-fac-spinnerRemisiones"
+                             class="spinner-border spinner-border-sm text-primary d-none ms-auto"
+                             role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+
+                    <!-- Modo de facturación -->
+                    <div class="mb-2">
+                        <label class="form-label mb-1 fw-bold" style="font-size:0.8rem;">
+                            <i class="fas fa-sliders-h me-1"></i>Tipo de facturación
+                        </label>
+                        <select id="vi-fac-selectorModo" class="form-select form-select-sm">
+                            <option value="parcial">Parcial — elegir partidas y cantidades</option>
+                            <option value="multiple">Múltiple — varias remisiones completas</option>
+      @*                       <option value="individual">Individual — una remisión completa</option> *@
+                        </select>
+                        <div id="vi-fac-modoHint" class="mt-2 text-muted"></div>
+                    </div>
+
+                    <!-- Búsqueda -->
+                    <div class="input-group mb-2">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text"
+                               id="vi-fac-inputBuscarRemision"
+                               class="form-control form-control-sm"
+                               placeholder="Folio…">
+                    </div>
+
+                    <!-- Lista -->
+                    <ul class="list-group list-group-flush flex-grow-1"
+                        id="vi-fac-listaRemisiones"
+                        style="overflow-y:auto;max-height:460px;">
+                        <li class="list-group-item text-center text-muted py-5">
+                            <i class="fas fa-search fa-2x mb-2 d-block opacity-25"></i>
+                            Cargando remisiones…
+                        </li>
+                    </ul>
+
+                    <!-- Paginación -->
+                    <nav class="mt-2">
+                        <ul class="pagination pagination-sm justify-content-center mb-0"
+                            id="vi-fac-paginationRemisiones"></ul>
+                    </nav>
+                </div>
+
+                <!-- ── COLUMNA 2: Partidas de la remisión seleccionada ── -->
+                <div class="vi-fac-rem-col-mid p-3 d-flex flex-column">
+
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <h6 class="mb-0 fw-bold text-primary" id="vi-fac-headerTablaPartidas">
+                            <i class="fas fa-boxes me-1"></i> Partidas
+                        </h6>
+                        <small class="text-muted ms-2">
+                            Edita las cantidades a facturar (≤ pendiente)
+                        </small>
+                    </div>
+
+                    <!-- Tabla de partidas -->
+                    <div id="vi-fac-tablaPartidas" style="display:none;overflow-x:auto;flex-grow:1;">
+                        <table class="table table-bordered vi-fac-tabla-partidas mb-2"
+                               style="min-width:760px;">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;" class="text-center">✓</th>
+                                    <th>Clave</th>
+                                    <th>Descripción</th>
+                                    <th>Estado</th>
+                                    <th class="text-end">Original</th>
+                                    <th class="text-end">Pendiente</th>
+                                    <th class="text-center">A Facturar</th>
+                                    <th class="text-end">Importe</th>
+                                    <th class="text-end">Pend. $</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vi-fac-tbodyPartidas">
+                            </tbody>
+                        </table>
+
+                        <!-- Acciones sobre las partidas (solo modo parcial) -->
+                        <div class="d-flex justify-content-end gap-2" id="vi-fac-accionesPartidas">
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    id="vi-fac-btnMarcarTodas">
+                                <i class="fas fa-check-double me-1"></i>Marcar / desmarcar todas
+                            </button>
+                            <button type="button"
+                                    id="vi-fac-btnAgregarSeleccion"
+                                    class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus me-1"></i>
+                                Agregar partidas al resumen
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Estado vacío -->
+                    <div id="vi-fac-estadoVacioPartidas"
+                         class="flex-grow-1 d-flex align-items-center justify-content-center text-muted"
+                         style="min-height:200px;">
+                        <div class="text-center">
+                            <i class="fas fa-hand-point-left fa-3x mb-3 opacity-25"></i>
+                            <p class="mb-0" id="vi-fac-textoVacioPartidas">
+                                Selecciona una remisión de la izquierda<br>para ver sus partidas pendientes
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── COLUMNA 3: Resumen de selección ── -->
+                <div class="vi-fac-rem-col-right p-3 d-flex flex-column"
+                     style="overflow:hidden;">
+
+                    <div class="vi-fac-resumen-sticky d-flex align-items-center gap-2">
+                        <h6 class="fw-bold text-success mb-0">
+                            <i class="fas fa-shopping-cart me-1"></i>
+                            Resumen a Facturar
+                        </h6>
+                        <span id="vi-fac-contadorSeleccion" class="badge bg-success ms-auto">0</span>
+                    </div>
+
+                    <div id="vi-fac-resumenSeleccion" class="flex-grow-1">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Sin partidas seleccionadas
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <div class="me-auto small text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Las partidas no facturadas quedarán pendientes para futuras facturas
+                </div>
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        id="vi-fac-btnLimpiarSeleccion">
+                    <i class="fas fa-broom me-1"></i>Limpiar selección
+                </button>
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button"
+                        id="vi-fac-btnAplicarRemisiones"
+                        class="btn btn-success fw-bold"
+                        disabled>
+                    <i class="fas fa-check me-1"></i>
+                    Aplicar selección al formulario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     CAMPOS OCULTOS — los lee facturacion-remisiones-parciales.js
+     al momento de armar el FormData de la factura.
+     ══════════════════════════════════════════════════════════ -->
+<input type="hidden" id="vi-fac-remisiones-ids"     name="remisionesIds"          value="">
+<input type="hidden" id="vi-fac-remisiones-detalle" name="remisionesParcialesJSON" value="">

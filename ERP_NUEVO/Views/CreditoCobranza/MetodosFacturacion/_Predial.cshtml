@@ -1,0 +1,1728 @@
+﻿@using BOS_ERP.Models;
+@using System;
+@using System.Collections.Generic;
+@using System.Collections.Specialized;
+@using System.Configuration;
+@using System.Data;
+@using System.Data.SqlClient;
+@using System.IO;
+@using System.Linq;
+@using System.Net;
+@using System.Net.Mail;
+@using System.Threading.Tasks;
+@using Microsoft.AspNetCore.Mvc;
+@using System.Windows;
+@using BOS_ERP.Controllers
+@using Microsoft.AspNetCore.Http;
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+<style>
+    /* Label estático para campos con TomSelect */
+    .predial-label--static {
+        position: static !important;
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--predial-primary, #2d6a4f);
+        margin-bottom: 4px;
+        padding-left: 2rem; /* alinea con el icono */
+        transform: none !important;
+        pointer-events: auto;
+    }
+
+    /* Asegura que el contenedor con TomSelect no apile mal */
+    .predial-input-group:has(.predial-tom-select) {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+        /* El ícono queda alineado con el label, no flotando sobre el select */
+        .predial-input-group:has(.predial-tom-select) .predial-icon {
+            position: static;
+            align-self: flex-start;
+            margin-top: 0.2rem;
+            margin-right: 0.4rem;
+        }
+
+    /* Ajuste del wrapper para ícono + label en línea */
+    .predial-input-group:has(.predial-tom-select) {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+        .predial-input-group:has(.predial-tom-select) .predial-label--static {
+            flex: 1 1 100%;
+            order: -1;
+            padding-left: 0;
+            margin-bottom: 6px;
+        }
+
+        .predial-input-group:has(.predial-tom-select) .predial-icon {
+            order: 0;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .predial-input-group:has(.predial-tom-select) .ts-wrapper {
+            flex: 1 1 100%;
+            order: 1;
+        }
+</style>
+<!-- Formulario principal - Cuenta Predial -->
+<form id="predialForm" class="predial-form active" data-form-type="impuesto-predial">
+    @Html.AntiForgeryToken()
+    <div class="predial-section">
+        <h4 class="predial-section-title">
+            <i class="fas fa-home"></i>
+            Datos del Comprobante Predial
+        </h4>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="predial-input-group">
+                    <i class="fas fa-hashtag predial-icon"></i>
+                    <input id="serie" name="Serie" class="predial-input" placeholder="Ingrese la serie" value="FAR">
+                    <label class="predial-label">Serie</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="predial-input-group">
+                    <i class="fas fa-barcode predial-icon"></i>
+                    <input id="folio" name="Folio" class="predial-input" placeholder="Ingrese el folio" value="@Model.Folio">
+                    <label class="predial-label">Folio</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="predial-input-group">
+                    <i class="fas fa-dollar-sign predial-icon"></i>
+                    <input id="moneda" name="Moneda" class="predial-input" placeholder="MXN" value="MXN" readonly>
+                    <label class="predial-label">Moneda</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="predial-input-group">
+                    <i class="fas fa-map-marker-alt predial-icon"></i>
+                    <input id="lugarExpedicion" name="LugarExpedicion" class="predial-input" placeholder="Código postal de expedición" value="78394" readonly>
+                    <label class="predial-label">Lugar de Expedición (CP)</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="predial-input-group">
+                    <i class="fas fa-receipt predial-icon"></i>
+                    <select id="usoCfdi" name="IdUsoCFDI" class="predial-select">
+                        <option value="P01" selected>P01 - Por definir</option>
+                        <option value="G01">G01 - Adquisición de mercancías</option>
+                        <option value="G02">G02 - Devoluciones, descuentos o bonificaciones</option>
+                        <option value="G03" selected>G03 - Gastos en general</option>
+                    </select>
+                    <label class="predial-label">Uso CFDI</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="predial-input-group">
+                    <label class="predial-label predial-label--static">Forma de Pago</label>
+                    <select id="formaPago" class="predial-tom-select" placeholder="Selecciona forma de pago">
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="predial-input-group">
+                    <label class="predial-label predial-label--static">Método de Pago</label>
+                    <select id="metodoPago" class="predial-tom-select" placeholder="Selecciona método de pago">
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    @{
+      
+    var perfil = Convert.ToBoolean(Utilities.GetSetting("perfil_factura"))
+        ? HttpContextAccessor.HttpContext.Session.GetString("EmpresaFactura")
+        : "pruebas";
+
+        var emisoresSection = Configuration.GetSection($"Emisores:{perfil}");
+        <div class="predial-section">
+            <h4 class="predial-section-title">
+                <i class="fas fa-university"></i>
+                Datos del Emisor
+            </h4>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="predial-input-group">
+                        <i class="fas fa-id-card predial-icon"></i>
+                        <input id="rfcEmisor" name="RfcEmisor" class="predial-input" placeholder="RFC del gobierno municipal" value="@emisoresSection["Rfc"]" readonly>
+                        <label class="predial-label">RFC Gobierno Municipal</label>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="predial-input-group">
+                        <i class="fas fa-building predial-icon"></i>
+                        <input id="nombreEmisor" name="RsoEmisor" class="predial-input" placeholder="Nombre del municipio" value="@emisoresSection["RazonSocial"]" readonly>
+                        <label class="predial-label">Nombre del Municipio</label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="predial-input-group">
+                        <i class="fas fa-clipboard predial-icon"></i>
+                        <select id="regimenFiscal" name="Rege" class="predial-select" readonly>
+                            <option value="601" selected>601 - General de Ley Personas Morales</option>
+                            <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
+                        </select>
+                        <label class="predial-label">Régimen Fiscal</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    <div class="predial-section">
+        <h4 class="predial-section-title">
+            <i class="fas fa-user"></i> Datos del Receptor
+        </h4>
+
+        <!-- Select de búsqueda de cliente -->
+        <div class="row g-4 mb-3">
+            <div class="col-12">
+                <div class="client-search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <select id="documentSearch" class="form-select client-search-select">
+                        <option value="0" disabled selected>Selecciona un cliente</option>
+                    </select>
+                    <label class="search-label">Buscar Cliente</label>
+                    <i class="fas fa-spinner fa-spin loading-indicator" id="loadingIndicator"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="predial-input-group">
+                    <i class="fas fa-id-card predial-icon"></i>
+                    <input id="rfcReceptor" name="RfcCliente" class="predial-input" placeholder="RFC del propietario">
+                    <label class="predial-label">RFC Propietario</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="predial-input-group">
+                    <i class="fas fa-user predial-icon"></i>
+                    <input id="nombreReceptor" name="RsoCliente" class="predial-input" placeholder="Nombre del propietario">
+                    <label class="predial-label">Nombre del Propietario</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="predial-input-group">
+                    <i class="fas fa-home predial-icon"></i>
+                    <input id="domFiscalReceptor" name="CpR" class="predial-input" placeholder="CP del propietario">
+                    <label class="predial-label">CP Propietario</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="predial-input-group">
+                    <i class="fas fa-building predial-icon"></i>
+                    <select id="regimenFiscalReceptor" name="RegimenFiscalReceptor" class="predial-select">
+                        <option value="612">612 - Persona Física con Actividad Empresarial</option>
+                        <option value="605">605 - Sueldos y Salarios e Ingresos Asimilados</option>
+                        <option value="606">606 - Arrendamiento</option>
+                        <option value="608">608 - Demás ingresos</option>
+                        <option value="601" selected>601 - General de Ley Personas Morales</option>
+                    </select>
+                    <label class="predial-label">Régimen Fiscal</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="predial-section">
+        <h4 class="predial-section-title">
+            <i class="fas fa-calculator"></i>
+            Conceptos de Impuesto Predial
+        </h4>
+
+        <div class="predial-table-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h6><i class="fas fa-home me-2"></i>Impuestos Prediales a Pagar</h6>
+                    <small class="text-muted">Agregue los conceptos de impuesto predial del inmueble</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" id="addPredialRow" class="btn predial-btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Agregar Concepto Predial
+                    </button>
+                    <button type="button" id="clearPredialRows" class="btn predial-btn-secondary">
+                        <i class="fas fa-trash" style="margin-left: 12px;"></i>
+                        Limpiar Todo
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="predialTable" class="table table-sm align-middle mb-0 predial-table">
+                    <thead class="predial-table-header">
+                        <tr>
+                            <th style="width:50px">#</th>
+                            <th style="width:120px">Clave Prod/Serv</th>
+                            <th style="width:100px">Clave Unidad</th>
+                            <th>Descripción del Impuesto</th>
+                            <th style="width: 100px">Cantidad</th>
+                            <th style="width: 130px">Precio Unit.</th>
+                            <th style="width: 130px">Importe</th>
+                            <th style="width: 110px">Objeto Imp.</th>
+                            <th style="width: 150px">Cuenta Predial</th>
+                            <th style="width: 70px">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="predialBody">
+                        <!-- Filas dinámicas -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="predial-totals-section">
+            <div class="predial-totals-grid">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-calculator fa-3x text-success me-3"></i>
+                    <div>
+                        <h5 class="mb-1 text-success">Total Impuesto Predial</h5>
+                        <p class="text-muted mb-0">Calculado automáticamente</p>
+                    </div>
+                </div>
+                <div class="predial-totals-display">
+                    <div class="predial-total-row">
+                        <span><i class="fas fa-minus me-2"></i>Subtotal:</span>
+                        <strong id="subtotalTxt">$0.00</strong>
+                    </div>
+                    <div class="predial-total-row">
+                        <span><i class="fas fa-percentage me-2"></i>IVA (16%):</span>
+                        <strong id="ivaTxt">$0.00</strong>
+                    </div>
+                    <div class="predial-total-row">
+                        <span><i class="fas fa-equals me-2"></i>Total a Pagar:</span>
+                        <strong id="totalTxt">$0.00</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="predial-form-actions">
+        <div class="d-flex gap-2 d-none">
+            <div class="predial-file-wrapper">
+                <input type="file" id="loadPredialXML" accept=".xml" class="predial-file-input">
+                <button type="button" id="btnLoadPredialXML" class="btn predial-btn-file">
+                    <i class="fas fa-upload"></i>
+                    Cargar XML Predial
+                </button>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" id="btnSavePredial" class="btn predial-btn-secondary d-none">
+                <i class="fas fa-save"></i>
+                Guardar XML
+            </button>
+            <button type="button" id="btnGeneratePredial" class="btn predial-btn-success">
+                <i class="fas fa-file-invoice-dollar"></i>
+                Generar Factura Predial
+            </button>
+        </div>
+    </div>
+</form>
+<script>
+    let tomFormaPago = null;
+    let tomMetodoPago = null;
+
+    function initTomSelects() {
+        tomFormaPago = new TomSelect('#formaPago', {
+            valueField: 'id',
+            labelField: 'nombre',
+            searchField: 'nombre',
+            options: [],
+            placeholder: 'Selecciona forma de pago',
+            allowEmptyOption: false,
+            render: {
+                option: (data, escape) => `<div><strong>${escape(data.id)}</strong> - ${escape(data.nombre)}</div>`,
+                item: (data, escape) => `<div>${escape(data.id)} - ${escape(data.nombre)}</div>`
+            }
+        });
+
+        tomMetodoPago = new TomSelect('#metodoPago', {
+            valueField: 'id',
+            labelField: 'nombre',
+            searchField: 'nombre',
+            options: [],
+            placeholder: 'Selecciona método de pago',
+            allowEmptyOption: false,
+            render: {
+                option: (data, escape) => `<div><strong>${escape(data.id)}</strong> - ${escape(data.nombre)}</div>`,
+                item: (data, escape) => `<div>${escape(data.id)} - ${escape(data.nombre)}</div>`
+            }
+        });
+    }
+
+    function cargarCatalogos() {
+        fetch('/DatosGenerales/DatosSelect')   // ← ajusta la ruta a tu controlador real
+            .then(r => {
+                if (!r.ok) throw new Error('Error HTTP ' + r.status);
+                return r.json();
+            })
+            .then(data => {
+                // Formas de pago
+                if (data.formaspago && tomFormaPago) {
+                    const opcionesForma = data.formaspago.map(x => ({
+                        id: String(x.id),
+                        nombre: x.nombre
+                    }));
+                    tomFormaPago.clearOptions();
+                    tomFormaPago.addOptions(opcionesForma);
+                    // Valor por defecto: 99
+                    const def99 = opcionesForma.find(o => o.id === '99');
+                    if (def99) tomFormaPago.setValue('99', true);
+                }
+
+                // Métodos de pago
+                if (data.metodopago && tomMetodoPago) {
+                    const opcionesMdp = data.metodopago.map(x => ({
+                        id: String(x.id),
+                        nombre: x.nombre
+                    }));
+                    tomMetodoPago.clearOptions();
+                    tomMetodoPago.addOptions(opcionesMdp);
+                    // Valor por defecto: PPD
+                    const defPPD = opcionesMdp.find(o => o.id === 'PPD');
+                    if (defPPD) tomMetodoPago.setValue('PPD', true);
+                }
+            })
+            .catch(err => console.error('Error al cargar catálogos:', err));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initTomSelects();
+        cargarCatalogos();
+    });
+
+    const limpiarNumero = (str) => str.replace(/[^\d.]/g, '');
+    // =====================================
+    // CONFIGURACIÓN ESPECÍFICA PARA PREDIAL
+    // =====================================
+    const PREDIAL_CONFIG = {
+        conceptosPrediales: {
+            '84101600': 'Impuesto predial anual',
+            '84101601': 'Impuesto predial bimestral',
+            '84101602': 'Impuesto predial trimestral',
+            '84101603': 'Recargos por impuesto predial',
+            '84101604': 'Multas por impuesto predial'
+        },
+        taxRate: 0.16,
+        animations: {
+            fadeOut: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            scaleUp: 'all 0.3s ease'
+        }
+    };
+
+    // =====================================
+    // VARIABLES GLOBALES PARA PREDIAL
+    // =====================================
+    let predialRowIndex = 0;
+    const predialBody = document.getElementById('predialBody');
+
+    // =====================================
+    // UTILIDADES PARA PREDIAL
+    // =====================================
+    const PredialUtils = {
+        formatCurrency(value) {
+            const num = parseFloat(value) || 0;
+            return '$' + num.toLocaleString('es-MX', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        },
+
+        parseCurrency(text) {
+            return parseFloat(text.replace(/[$,]/g, '')) || 0;
+        },
+
+        validateRFC(rfc) {
+            return /^[A-ZÑ&]{3,4}\d{6}[A-V1-9][A-Z0-9]{2}$/.test(rfc) || rfc === 'XAXX010101000';
+        },
+
+        validateCP(cp) {
+            return /^\d{5}$/.test(cp);
+        },
+
+        validateCuentaPredial(cuenta) {
+            return /^\d{10,40}$/.test(cuenta);
+        },
+
+        debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        },
+
+        moveCaretToEnd(element) {
+            const range = document.createRange();
+            const selection = window.getSelection();
+            range.selectNodeContents(element);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    };
+
+    // =====================================
+    // GESTIÓN DE TABLA PREDIAL
+    // =====================================
+    const PredialTableManager = {
+        getCellValue(tr, fieldName) {
+            const element = tr.querySelector(`[data-field="${fieldName}"]`);
+            if (!element) return '';
+
+            if (element.tagName === 'SELECT') {
+                return element.value;
+            }
+
+            let value = element.textContent.trim();
+            if (fieldName === 'precio' || fieldName === 'importe') {
+                value = value.replace(/[$,]/g, '');
+            }
+            return value;
+        },
+
+        setCellValue(tr, fieldName, value) {
+            const element = tr.querySelector(`[data-field="${fieldName}"]`);
+            if (!element) return;
+
+            if (element.tagName === 'SELECT') {
+                element.value = value;
+            } else {
+                if (fieldName === 'precio' || fieldName === 'importe') {
+                    element.textContent = PredialUtils.formatCurrency(value);
+                } else {
+                    element.textContent = value;
+                }
+                this.updatePlaceholder(element);
+            }
+        },
+
+        createRow(data = {}) {
+            predialRowIndex++;
+            const tr = document.createElement('tr');
+            tr.dataset.index = predialRowIndex;
+            tr.classList.add('predial-fade-in-up');
+
+            tr.innerHTML = this.generateRowHTML(predialRowIndex, data);
+            predialBody.appendChild(tr);
+
+            this.setupRowEvents(tr);
+            this.applyPlaceholders(tr);
+            this.recalcRow(tr);
+
+            return tr;
+        },
+
+        generateRowHTML(index, data) {
+            return `
+                <td class="align-middle text-center">
+                    <div class="predial-row-badge">${index}</div>
+                </td>
+                <td contenteditable="true"
+                    data-field="articulo"
+                    data-placeholder="84101600"
+                    title="Código SAT para impuesto predial">${data.articulo || ''}</td>
+                <td contenteditable="true"
+                    data-field="ClaveUnidad"
+                    data-placeholder="E48"
+                    title="Unidad de medida - Servicio">${data.ClaveUnidad || ''}</td>
+                <td contenteditable="true"
+                    data-field="descripcion"
+                    data-placeholder="Impuesto predial del ejercicio fiscal"
+                    title="Descripción del concepto de impuesto predial"
+                    style="white-space: pre-wrap;">${data.descripcion || ''}</td>
+                <td contenteditable="true"
+                    data-field="Cantidad"
+                    data-placeholder="1"
+                    title="Cantidad (generalmente 1 para impuestos)"
+                    class="predial-numeric-field">${data.Cantidad || 1}</td>
+                <td contenteditable="true"
+                    data-field="precio"
+                    data-placeholder="0.00"
+                    title="Monto del impuesto predial"
+                    class="predial-numeric-field">${PredialUtils.formatCurrency(data.precio || 0)}</td>
+                <td contenteditable="false"
+                    data-field="importe"
+                    title="Importe total calculado"
+                    class="predial-numeric-field"
+                    style="cursor: not-allowed;">${PredialUtils.formatCurrency(0)}</td>
+                <td>
+                    <select class="form-select table-input"
+                            data-field="objeto"
+                            title="Objeto de impuesto">
+                        <option value="01" ${data.objeto === '01' ? 'selected' : ''}>01 - Exento</option>
+                        <option value="02" ${data.objeto !== '01' ? 'selected' : ''}>02 - Con impuesto</option>
+                    </select>
+                </td>
+                <td contenteditable="true"
+                    data-field="predial"
+                    data-placeholder="1234567890123"
+                    title="Número de cuenta predial del inmueble (obligatorio)">${data.predial || ''}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm predial-remove-row"
+                            title="Eliminar concepto predial"
+                            style="width: 40px; height: 40px; padding: 0; border-radius: 50%;">
+                        <i class="fas fa-trash" style="font-size: 1rem; margin-left: 12px;"></i>
+                    </button>
+                </td>
+            `;
+        },
+
+        setupRowEvents(tr) {
+            // Eliminar fila
+            tr.querySelector('.predial-remove-row').addEventListener('click', () => this.removeRow(tr));
+
+            // Campos editables
+            tr.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+                cell.addEventListener('input', () => this.handleCellInput(cell, tr));
+                cell.addEventListener('blur', () => this.handleCellBlur(cell, tr));
+                cell.addEventListener('focus', () => this.handleCellFocus(cell));
+
+                if (cell.classList.contains('predial-numeric-field')) {
+                    cell.addEventListener('keypress', this.allowNumericInput);
+                }
+            });
+
+            // Select de objeto
+            tr.querySelector('[data-field="objeto"]').addEventListener('change', () => this.recalcRow(tr));
+        },
+
+        handleCellInput(cell, tr) {
+            const fieldName = cell.dataset.field;
+
+            if (cell.classList.contains('predial-numeric-field')) {
+                //this.processNumericField(cell, fieldName);
+            }
+
+            if (fieldName === 'Cantidad' || fieldName === 'precio') {
+                this.recalcRow(tr);
+                PredialCalculator.recalcAll();
+            }
+
+            // Autocompletar conceptos prediales
+            if (fieldName === 'articulo') {
+                this.autoCompletePredialConcept(tr, cell.textContent.trim());
+            }
+
+            // Validar cuenta predial
+            if (fieldName === 'predial') {
+                this.validateCuentaPredialVisual(cell, cell.textContent.trim());
+            }
+
+            this.updatePlaceholder(cell);
+        },
+
+        validateCuentaPredialVisual(cell, cuenta) {
+            if (cuenta.length >= 10 && PredialUtils.validateCuentaPredial(cuenta)) {
+                cell.style.borderBottom = '2px solid #28a745';
+                cell.title = 'Cuenta predial válida';
+            } else if (cuenta.length > 0) {
+                cell.style.borderBottom = '2px solid #dc3545';
+                cell.title = 'La cuenta predial debe tener entre 10 y 15 dígitos';
+            } else {
+                cell.style.borderBottom = '';
+                cell.title = 'Número de cuenta predial del inmueble (obligatorio)';
+            }
+        },
+
+        processNumericField(cell, fieldName) {
+            let value = cell.textContent;
+
+            if (fieldName === 'precio') {
+                value = value.replace(/[^0-9.]/g, '');
+                if (value) {
+                    cell.textContent = PredialUtils.formatCurrency(parseFloat(value) || 0);
+                    PredialUtils.moveCaretToEnd(cell);
+                }
+            } else {
+                value = value.replace(/[^0-9.]/g, '');
+                cell.textContent = value;
+                PredialUtils.moveCaretToEnd(cell);
+            }
+        },
+
+        handleCellBlur(cell, tr) {
+            const fieldName = cell.dataset.field;
+
+            if (cell.classList.contains('predial-numeric-field')) {
+                const value = parseFloat(this.getCellValue(tr, fieldName)) || 0;
+                if (fieldName === 'precio') {
+                    cell.textContent = PredialUtils.formatCurrency(value);
+                } else if (fieldName === 'Cantidad') {
+                    cell.textContent = value.toString();
+                }
+            }
+
+            this.updatePlaceholder(cell);
+            this.recalcRow(tr);
+            PredialCalculator.recalcAll();
+        },
+
+        handleCellFocus(cell) {
+            if (cell.classList.contains('predial-placeholder-active')) {
+                cell.textContent = '';
+                cell.style.opacity = '';
+                cell.style.fontStyle = '';
+                cell.classList.remove('predial-placeholder-active');
+            }
+        },
+
+        allowNumericInput(event) {
+            const char = String.fromCharCode(event.which);
+            if (!/[0-9.]/.test(char)) {
+                event.preventDefault();
+                return false;
+            }
+
+            const currentValue = event.target.textContent.replace(/[$,]/g, '');
+            if (char === '.' && currentValue.includes('.')) {
+                event.preventDefault();
+                return false;
+            }
+
+            return true;
+        },
+
+        autoCompletePredialConcept(tr, codigo) {
+            if (PREDIAL_CONFIG.conceptosPrediales[codigo]) {
+                const descripcionElement = tr.querySelector('[data-field="descripcion"]');
+                if (!descripcionElement.textContent.trim()) {
+                    descripcionElement.textContent = PREDIAL_CONFIG.conceptosPrediales[codigo];
+                    this.updatePlaceholder(descripcionElement);
+                }
+
+                // Auto-completar clave unidad para impuestos
+                const claveUnidadElement = tr.querySelector('[data-field="ClaveUnidad"]');
+                if (!claveUnidadElement.textContent.trim()) {
+                    claveUnidadElement.textContent = 'E48'; // Servicio
+                    this.updatePlaceholder(claveUnidadElement);
+                }
+            }
+        },
+
+        removeRow(tr) {
+            if (predialBody.children.length <= 1) {
+                toastMixin.fire({
+                    title: 'Debe mantener al menos un concepto predial en la factura',
+                    icon: 'warning'
+                });
+                return;
+            }
+
+            tr.style.transition = PREDIAL_CONFIG.animations.fadeOut;
+            tr.style.transform = 'translateX(-100%) scale(0.8)';
+            tr.style.opacity = '0';
+
+            setTimeout(() => {
+                tr.remove();
+                PredialCalculator.recalcAll();
+                this.renumberRows();
+            }, 400);
+        },
+
+        recalcRow(tr) {
+            const qty = parseFloat(this.getCellValue(tr, 'Cantidad')) || 0;
+            const price = parseFloat(this.getCellValue(tr, 'precio')) || 0;
+            const importe = qty * price;
+
+            this.setCellValue(tr, 'importe', importe.toFixed(2));
+
+            // Efecto visual para resaltar cambio
+            const importeCell = tr.querySelector('[data-field="importe"]');
+            //importeCell.style.background = 'linear-gradient(135deg, #d4edda, #c3e6cb)';
+            setTimeout(() => {
+                //importeCell.style.background = '#f8f9fa';
+            }, 300);
+        },
+
+        renumberRows() {
+            const rows = predialBody.querySelectorAll('tr');
+            rows.forEach((row, index) => {
+                const badge = row.querySelector('.predial-row-badge');
+                if (badge) {
+                    badge.textContent = index + 1;
+                }
+                row.dataset.index = index + 1;
+            });
+            predialRowIndex = rows.length;
+        },
+
+        applyPlaceholders(tr) {
+            tr.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+                this.updatePlaceholder(cell);
+            });
+        },
+
+        updatePlaceholder(element) {
+            const placeholder = element.dataset.placeholder;
+            const content = element.textContent.trim().replace(/[$,]/g, '');
+
+            if (!content && placeholder) {
+                element.style.opacity = '0.6';
+                element.style.fontStyle = 'italic';
+                element.classList.add('predial-placeholder-active');
+            } else {
+                element.style.opacity = '';
+                element.style.fontStyle = '';
+                element.classList.remove('predial-placeholder-active');
+            }
+        },
+
+        clearAllRows() {
+            const rows = [...predialBody.querySelectorAll('tr')];
+            rows.forEach((row, index) => {
+                setTimeout(() => {
+                    row.style.transition = 'all 0.3s ease';
+                    row.style.transform = 'translateX(-100%)';
+                    row.style.opacity = '0';
+                }, index * 50);
+            });
+
+            setTimeout(() => {
+                predialBody.innerHTML = '';
+                predialRowIndex = 0;
+                PredialCalculator.recalcAll();
+                this.createRow();
+                PredialCalculator.recalcAll();
+            }, rows.length * 50 + 300);
+        },
+
+        getTableData() {
+            const rows = predialBody.querySelectorAll('tr');
+            return Array.from(rows).map(tr => ({
+                articulo: this.getCellValue(tr, 'articulo'),
+                ClaveUnidad: this.getCellValue(tr, 'ClaveUnidad'),
+                descripcion: this.getCellValue(tr, 'descripcion'),
+                Cantidad: parseFloat(this.getCellValue(tr, 'Cantidad')) || 0,
+                precio: parseFloat(this.getCellValue(tr, 'precio')) || 0,
+                importe: parseFloat(this.getCellValue(tr, 'importe')) || 0,
+                objeto: this.getCellValue(tr, 'objeto'),
+                predial: this.getCellValue(tr, 'predial')
+            }));
+        },
+    };
+
+    // =====================================
+    // CALCULADORA DE TOTALES PREDIAL
+    // =====================================
+    const PredialCalculator = {
+        recalcAll() {
+            let subtotal = 0;
+            const rows = predialBody.querySelectorAll('tr');
+
+            rows.forEach(tr => {
+                const importe = parseFloat(PredialTableManager.getCellValue(tr, 'importe')) || 0;
+                subtotal += importe;
+            });
+
+            const iva = subtotal * PREDIAL_CONFIG.taxRate;
+            const total = subtotal + iva;
+
+            this.animateValue(document.getElementById('subtotalTxt'), subtotal);
+            this.animateValue(document.getElementById('ivaTxt'), iva);
+            this.animateValue(document.getElementById('totalTxt'), total);
+        },
+
+        animateValue(element, newValue) {
+            element.style.transform = 'scale(1.1)';
+            element.style.color = '#28a745';
+
+            setTimeout(() => {
+                element.textContent = PredialUtils.formatCurrency(newValue);
+                element.style.transform = 'scale(1)';
+                element.style.color = '';
+            }, 150);
+        }
+    };
+
+    // =====================================
+    // VALIDADOR ESPECÍFICO PARA PREDIAL
+    // =====================================
+    const PredialValidator = {
+        validateForm() {
+            const errors = [];
+
+            this.validateBasicData(errors);
+            this.validatePredialConceptos(errors);
+
+            return errors;
+        },
+
+        validateBasicData(errors) {
+            const rfcEmisor = document.getElementById('rfcEmisor').value?.trim();
+            const rfcReceptor = document.getElementById('rfcReceptor').value?.trim();
+            const nombreEmisor = document.getElementById('nombreEmisor').value?.trim();
+            const nombreReceptor = document.getElementById('nombreReceptor').value?.trim();
+            const lugarExpedicion = document.getElementById('lugarExpedicion').value?.trim();
+
+            if (!rfcEmisor) {
+                errors.push('RFC del gobierno municipal es obligatorio');
+            } else if (!PredialUtils.validateRFC(rfcEmisor)) {
+                errors.push('RFC del gobierno municipal tiene formato incorrecto');
+            }
+
+            if (!rfcReceptor) {
+                errors.push('RFC del propietario es obligatorio');
+            } else if (!PredialUtils.validateRFC(rfcReceptor)) {
+                errors.push('RFC del propietario tiene formato incorrecto');
+            }
+
+            if (!nombreEmisor) errors.push('Nombre del municipio es obligatorio');
+            if (!nombreReceptor) errors.push('Nombre del propietario es obligatorio');
+
+            if (!lugarExpedicion) {
+                errors.push('Lugar de expedición (CP) es obligatorio');
+            } else if (!PredialUtils.validateCP(lugarExpedicion)) {
+                errors.push('Código postal debe tener 5 dígitos');
+            }
+        },
+
+        validatePredialConceptos(errors) {
+            const conceptos = PredialTableManager.getTableData();
+
+            if (conceptos.length === 0) {
+                errors.push('Debe agregar al menos un concepto de impuesto predial');
+                return;
+            }
+
+            conceptos.forEach((concepto, index) => {
+                const num = index + 1;
+                if (!concepto.articulo) {
+                    errors.push(`Concepto ${num}: Clave de producto/servicio es obligatoria`);
+                }
+                if (!concepto.ClaveUnidad) {
+                    errors.push(`Concepto ${num}: Clave de unidad es obligatoria`);
+                }
+                if (!concepto.descripcion) {
+                    errors.push(`Concepto ${num}: Descripción del impuesto es obligatoria`);
+                }
+                if (concepto.Cantidad <= 0) {
+                    errors.push(`Concepto ${num}: Cantidad debe ser mayor a 0`);
+                }
+                if (concepto.precio <= 0) {
+                    errors.push(`Concepto ${num}: Monto del impuesto debe ser mayor a 0`);
+                }
+                if (!concepto.predial) {
+                    errors.push(`Concepto ${num}: Cuenta predial es obligatoria para facturación de impuestos`);
+                } else if (!PredialUtils.validateCuentaPredial(concepto.predial)) {
+                    errors.push(`Concepto ${num}: Cuenta predial debe tener entre 10 y 15 dígitos`);
+                }
+            });
+        },
+
+        setupRealTimeValidation() {
+            // RFC validation
+            ['rfcEmisor', 'rfcReceptor'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', PredialUtils.debounce((e) => {
+                        const rfc = e.target.value.toUpperCase();
+                        e.target.value = rfc;
+                        this.validateRFCVisual(e.target, rfc);
+                    }, 300));
+                }
+            });
+
+            // CP validation
+            const cpInput = document.getElementById('lugarExpedicion');
+            if (cpInput) {
+                cpInput.addEventListener('input', PredialUtils.debounce((e) => {
+                    const cp = e.target.value;
+                    this.validateCPVisual(e.target, cp);
+                }, 300));
+            }
+        },
+
+        validateRFCVisual(input, rfc) {
+            if (rfc.length >= 12) {
+                if (PredialUtils.validateRFC(rfc)) {
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
+                    input.style.borderColor = '#28a745';
+                } else {
+                    input.classList.remove('is-valid');
+                    input.classList.add('is-invalid');
+                    input.style.borderColor = '#dc3545';
+                }
+            } else {
+                input.classList.remove('is-valid', 'is-invalid');
+                input.style.borderColor = '#e9ecef';
+            }
+        },
+
+        validateCPVisual(input, cp) {
+            if (cp.length === 5 && PredialUtils.validateCP(cp)) {
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+                input.style.borderColor = '#28a745';
+            } else if (cp.length > 0) {
+                input.classList.remove('is-valid');
+                input.classList.add('is-invalid');
+                input.style.borderColor = '#dc3545';
+            } else {
+                input.classList.remove('is-valid', 'is-invalid');
+                input.style.borderColor = '#e9ecef';
+            }
+        }
+    };
+
+    // =====================================
+    // MANEJADOR DE FACTURAS PREDIALES
+    // =====================================
+    const PredialFacturaManager = {
+        buildPredialFactura() {
+            const factura = {};
+
+            // Datos del comprobante
+            factura.Serie = document.getElementById('serie').value?.trim() || '';
+            factura.Folio = document.getElementById('folio').value?.trim() || '';
+            factura.IdTipoPago = tomFormaPago ? tomFormaPago.getValue() : document.getElementById('formaPago').value;
+            factura.Moneda = 'MXN';
+            factura.CpE = document.getElementById('lugarExpedicion').value?.trim() || '';
+
+            // Gobierno Municipal (Emisor)
+            factura.RfcEmisor = document.getElementById('rfcEmisor').value?.trim().toUpperCase() || '';
+            factura.RsoEmisor = document.getElementById('nombreEmisor').value?.trim() || '';
+            factura.Rege = document.getElementById('regimenFiscal').value;
+
+            // Propietario (Receptor)
+            factura.RfcCliente = document.getElementById('rfcReceptor').value?.trim().toUpperCase() || '';
+            factura.RsoCliente = document.getElementById('nombreReceptor').value?.trim() || '';
+            factura.CpR = document.getElementById('domFiscalReceptor').value?.trim() || '';
+            factura.IdUsoCFDI = document.getElementById('usoCfdi').value;
+            factura.RegimenFiscalReceptor = document.getElementById('regimenFiscalReceptor')?.value || '';
+
+            // Conceptos de Impuesto Predial
+            const conceptos = PredialTableManager.getTableData().map((item, index) => ({
+                NoIdentificacion: `PRED-${(index + 1).toString().padStart(3, '0')}`,
+                articulo: item.articulo,
+                ClaveUnidad: item.ClaveUnidad,
+                descripcion: item.descripcion,
+                Cantidad: item.Cantidad,
+                precio: item.precio,
+                importe: +item.importe.toFixed(2),
+                objeto: item.objeto,
+                predial: item.predial,
+                iva: +(item.importe * PREDIAL_CONFIG.taxRate).toFixed(2),
+                ValorUnitario: item.precio,
+                Descuento: 0
+            }));
+
+            factura.Tproductos = conceptos;
+
+            // Totales
+            const subtotal = PredialUtils.parseCurrency(document.getElementById('subtotalTxt').innerText);
+            const iva = PredialUtils.parseCurrency(document.getElementById('ivaTxt').innerText);
+            const total = PredialUtils.parseCurrency(document.getElementById('totalTxt').innerText);
+
+            factura.Subtotal = +subtotal.toFixed(2);
+            factura.IVA = +iva.toFixed(2);
+            factura.Total = +total.toFixed(2);
+
+            // Campos adicionales específicos para predial
+            Object.assign(factura, {
+                TipoCambio: 1,
+                FechaCreacion: new Date().toISOString(),
+                TipoFacturacion: 'ImpuestoPredial',
+                LugarExpedicion: factura.CpE,
+                MetodoPago: tomMetodoPago ? tomMetodoPago.getValue() : 'PPD',
+                TipoDeComprobante: 'I',
+                Version: '4.0',
+                Observaciones: 'Factura de Impuesto Predial'
+            });
+
+            return factura;
+        },
+
+        async saveAsXML() {
+            const errors = PredialValidator.validateForm();
+            if (errors.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Corrija los siguientes errores antes de guardar',
+                    html: '<ul style="text-align:left;">' +
+                        errors.map(e => `<li>${e}</li>`).join('') +
+                        '</ul>'
+                });
+                return;
+            }
+
+            const factura = this.buildPredialFactura();
+            const xmlString = this.buildXMLFromFactura(factura);
+
+            const blob = new Blob([xmlString], { type: 'text/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            const fecha = new Date().toISOString().slice(0, 10);
+            const serie = factura.Serie || 'PRED';
+            const folio = factura.Folio || '001';
+            a.download = `Predial_${serie}_${folio}_${fecha}.xml`;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            toastMixin.fire({
+                title: 'XML de impuesto predial guardado como: ' + a.download,
+                icon: 'success'
+            });
+
+        },
+
+        buildXMLFromFactura(factura) {
+            const fecha = new Date().toISOString();
+
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante
+        xmlns:cfdi="http://www.sat.gob.mx/cfd/4"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd"
+        Version="4.0"
+        Serie="${factura.Serie}"
+        Folio="${factura.Folio}"
+        Fecha="${fecha}"
+        FormaPago="${factura.IdTipoPago}"
+        NoCertificado="00001000000505521838"
+        SubTotal="${factura.Subtotal}"
+        Moneda="${factura.Moneda}"
+        TipoCambio="${factura.TipoCambio}"
+        Total="${factura.Total}"
+        TipoDeComprobante="${factura.TipoDeComprobante}"
+        MetodoPago="${factura.MetodoPago}"
+        LugarExpedicion="${factura.CpE}"
+        Exportacion="01">
+
+        <cfdi:Emisor
+            Rfc="${factura.RfcEmisor}"
+            Nombre="${factura.RsoEmisor}"
+            RegimenFiscal="${factura.Rege}" />
+
+        <cfdi:Receptor
+            Rfc="${factura.RfcCliente}"
+            Nombre="${factura.RsoCliente}"
+            DomicilioFiscalReceptor="${factura.CpR}"
+            RegimenFiscalReceptor="${factura.RegimenFiscalReceptor}"
+            UsoCFDI="${factura.IdUsoCFDI}" />
+
+        <cfdi:Conceptos>`;
+
+            factura.Tproductos.forEach(concepto => {
+                xml += `
+            <cfdi:Concepto
+                ClaveProdServ="${concepto.articulo}"
+                NoIdentificacion="${concepto.NoIdentificacion}"
+                Cantidad="${concepto.Cantidad}"
+                ClaveUnidad="${concepto.ClaveUnidad}"
+                Unidad="Servicio"
+                Descripcion="${concepto.descripcion}"
+                ValorUnitario="${concepto.precio}"
+                Importe="${concepto.importe}"
+                ObjetoImp="${concepto.objeto}">`;
+
+                // Información de cuenta predial (obligatoria para impuestos prediales)
+                if (concepto.predial) {
+                    xml += `
+                <cfdi:CuentaPredial Numero="${concepto.predial}"/>`;
+                }
+
+                // Impuestos si aplica
+                if (concepto.objeto === "02") {
+                    xml += `
+                <cfdi:Impuestos>
+                    <cfdi:Traslados>
+                        <cfdi:Traslado Base="${concepto.importe}" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="${concepto.iva}" />
+                    </cfdi:Traslados>
+                </cfdi:Impuestos>`;
+                }
+
+                xml += `
+            </cfdi:Concepto>`;
+            });
+
+            xml += `
+        </cfdi:Conceptos>
+
+        <cfdi:Impuestos TotalImpuestosTrasladados="${factura.IVA}">
+            <cfdi:Traslados>
+                <cfdi:Traslado Base="${factura.Subtotal}" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="${factura.IVA}" />
+            </cfdi:Traslados>
+        </cfdi:Impuestos>
+
+</cfdi:Comprobante>`;
+
+            return xml;
+        },
+
+        async generatePredialInvoice() {
+            const errors = PredialValidator.validateForm();
+            if (errors.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Corrija los siguientes errores antes de generar la factura',
+                    html: '<ul style="text-align:left;">' +
+                        errors.map(e => `<li>${e}</li>`).join('') +
+                        '</ul>'
+                });
+                return;
+            }
+
+            const generateBtn = document.getElementById('btnGeneratePredial');
+            const originalHTML = generateBtn.innerHTML;
+
+            // ── Preparar el payload ──────────────────────────────────
+            const factura = this.buildPredialFactura();
+            const productos = getPredialTableProducts();
+            const totalDocumentos = productos.length || 1;
+
+            factura.Tproductos = JSON.stringify(productos);
+
+            const formData = new FormData();
+            for (const key in factura) {
+                if (Object.prototype.hasOwnProperty.call(factura, key)) {
+                    formData.append(key, factura[key]);
+                }
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            // ── Modales compartidos (Scripts/Facturas/manejo-respuestas.js) ──
+            const modalProgreso = mostrarModalProgresoMejorado(totalDocumentos);
+
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando Factura...';
+            generateBtn.disabled = true;
+            generateBtn.classList.add('loading');
+
+            try {
+                actualizarProgresoDetallado(modalProgreso, 1, 'Enviando datos al servidor...');
+
+                const response = await fetch('/CreditoCobranza/FacturacionPredial/FacturaPredial', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Error HTTP (500, 404, timeout del proxy…)
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    cerrarModalProgreso(modalProgreso);
+                    mostrarErrorServidor(response.status, errorText);
+                    return;
+                }
+
+                // La respuesta debe ser JSON: si no lo es, algo se rompió a medias
+                let result;
+                try {
+                    result = await response.json();
+                } catch {
+                    cerrarModalProgreso(modalProgreso);
+                    mostrarErrorFormato();
+                    return;
+                }
+
+                if (result.success) {
+                    await simularProgresoExitoso(modalProgreso);
+                }
+
+                cerrarModalProgreso(modalProgreso);
+
+                if (result.success) {
+                    // ✅ Resumen con descarga PDF/XML y envío por correo
+                    mostrarResumenExitoso(result, totalDocumentos);
+                } else if (result.step) {
+                    // ❌ Falló un paso concreto: se revirtió todo (incluido el folio)
+                    mostrarErrorPorPaso(result, totalDocumentos);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error en el proceso',
+                        text: result.message || result.error || 'Ocurrió un error desconocido',
+                        confirmButtonColor: '#7c3aed'
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error al generar factura predial:', error);
+                cerrarModalProgreso(modalProgreso);
+                mostrarErrorConexion(error);
+            } finally {
+                generateBtn.innerHTML = originalHTML;
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('loading');
+            }
+        },
+
+        loadDataFromXML(xmlString) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+                const parseError = xmlDoc.querySelector('parsererror');
+                if (parseError) {
+                    throw new Error('XML mal formado');
+                }
+
+                const comprobante = xmlDoc.querySelector('Comprobante') || xmlDoc.querySelector('cfdi\\:Comprobante');
+                if (!comprobante) {
+                    throw new Error('No se encontró el elemento Comprobante en el XML');
+                }
+
+                this.loadComprobanteData(comprobante);
+                this.loadEmisorData(xmlDoc);
+                this.loadReceptorData(xmlDoc);
+                this.loadPredialConceptosData(xmlDoc);
+
+                PredialCalculator.recalcAll();
+
+            } catch (error) {
+                throw new Error('Error al procesar el XML predial: ' + error.message);
+            }
+        },
+
+        loadComprobanteData(comprobante) {
+            const fields = {
+                serie: 'Serie',
+                folio: 'Folio',
+                formaPago: 'FormaPago',
+                lugarExpedicion: 'LugarExpedicion'
+            };
+
+            Object.entries(fields).forEach(([elementId, attribute]) => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.value = comprobante.getAttribute(attribute) || (elementId === 'formaPago' ? '03' : '');
+                }
+            });
+        },
+
+        loadEmisorData(xmlDoc) {
+            const emisor = xmlDoc.querySelector('Emisor') || xmlDoc.querySelector('cfdi\\:Emisor');
+            if (emisor) {
+                const fields = {
+                    rfcEmisor: 'Rfc',
+                    nombreEmisor: 'Nombre',
+                    regimenFiscal: 'RegimenFiscal'
+                };
+
+                Object.entries(fields).forEach(([elementId, attribute]) => {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.value = emisor.getAttribute(attribute) || (elementId === 'regimenFiscal' ? '601' : '');
+                    }
+                });
+            }
+        },
+
+        loadReceptorData(xmlDoc) {
+            const receptor = xmlDoc.querySelector('Receptor') || xmlDoc.querySelector('cfdi\\:Receptor');
+            if (receptor) {
+                const fields = {
+                    rfcReceptor: 'Rfc',
+                    nombreReceptor: 'Nombre',
+                    domFiscalReceptor: 'DomicilioFiscalReceptor',
+                    usoCfdi: 'UsoCFDI'
+                };
+
+                Object.entries(fields).forEach(([elementId, attribute]) => {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.value = receptor.getAttribute(attribute) || (elementId === 'usoCfdi' ? 'P01' : '');
+                    }
+                });
+
+                const regimenReceptor = receptor.getAttribute('RegimenFiscalReceptor');
+                if (regimenReceptor) {
+                    const element = document.getElementById('regimenFiscalReceptor');
+                    if (element) element.value = regimenReceptor;
+                }
+            }
+        },
+
+        loadPredialConceptosData(xmlDoc) {
+            const conceptos = xmlDoc.querySelectorAll('Concepto') || xmlDoc.querySelectorAll('cfdi\\:Concepto');
+
+            predialBody.innerHTML = '';
+            predialRowIndex = 0;
+
+            if (conceptos.length > 0) {
+                conceptos.forEach(concepto => {
+                    const conceptoData = {
+                        articulo: concepto.getAttribute('ClaveProdServ') || '',
+                        ClaveUnidad: concepto.getAttribute('ClaveUnidad') || '',
+                        descripcion: concepto.getAttribute('Descripcion') || '',
+                        Cantidad: parseFloat(concepto.getAttribute('Cantidad')) || 1,
+                        precio: parseFloat(concepto.getAttribute('ValorUnitario')) || 0,
+                        objeto: concepto.getAttribute('ObjetoImp') || '02'
+                    };
+
+                    // Buscar cuenta predial en el XML
+                    const cuentaPredial = concepto.querySelector('CuentaPredial') || concepto.querySelector('cfdi\\:CuentaPredial');
+                    if (cuentaPredial) {
+                        conceptoData.predial = cuentaPredial.getAttribute('Numero') || '';
+                    }
+
+                    PredialTableManager.createRow(conceptoData);
+                });
+            } else {
+                PredialTableManager.createRow();
+            }
+        }
+    };
+    // Función para obtener los productos de la tabla
+    function getPredialTableProducts() {
+        const rows = document.querySelectorAll('#predialBody tr');
+        const productos = [];
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const selectObjeto = cells[7]?.querySelector('select'); // obtener el select dentro de la celda
+
+            productos.push({
+                numero: cells[0]?.innerText.trim(),
+                claveProdServ: cells[1]?.innerText.trim(),
+                claveUnidad: cells[2]?.innerText.trim(),
+                descripcion: cells[3]?.innerText.trim(),
+                cantidad: parseFloat(cells[4]?.innerText.trim()) || 0,
+                precioUnit: parseFloat(limpiarNumero(cells[5]?.innerText.trim())) || 0,
+                importe: parseFloat(limpiarNumero(cells[6]?.innerText.trim())) || 0,
+                objetoImp: selectObjeto ? selectObjeto.value : '', // <-- aquí tomamos el valor seleccionado
+                cuentaPredial: cells[8]?.innerText.trim()
+            });
+        });
+
+
+        return productos;
+    }
+    // =====================================
+    // INICIALIZADOR DE LA APLICACIÓN PREDIAL
+    // =====================================
+    const PredialAppInitializer = {
+        init() {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.initializeTooltips();
+                this.setupEventListeners();
+                this.setupGlobalEventListeners();
+
+                const ahora = new Date();
+                const meses = [
+                    'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+                    'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+                ];
+                const mesActual = meses[ahora.getMonth()];
+                const anioActual = ahora.getFullYear();
+
+                PredialTableManager.createRow({
+                    articulo: '80131502',
+                    ClaveUnidad: 'E48',
+                    descripcion: `ARRENDAMIENTO ${mesActual} ${anioActual}`,  // ej: "ARRENDAMIENTO MARZO 2026"
+                    Cantidad: 1,
+                    precio: 0.00,
+                    predial: '',
+                    objeto: '02'
+                });
+
+                PredialCalculator.recalcAll();
+                PredialValidator.setupRealTimeValidation();
+            });
+        },
+
+        initializeTooltips() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        },
+
+        setupEventListeners() {
+            // Botón agregar concepto predial
+            const addPredialRowBtn = document.getElementById('addPredialRow');
+            if (addPredialRowBtn) {
+                addPredialRowBtn.addEventListener('click', () => {
+                    PredialTableManager.createRow();
+                    setTimeout(() => {
+                        const newRow = predialBody.lastElementChild;
+                        newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                });
+            }
+
+            // Botón limpiar conceptos
+            const clearPredialRowsBtn = document.getElementById('clearPredialRows');
+            if (clearPredialRowsBtn) {
+                clearPredialRowsBtn.addEventListener('click', () => {
+                    this.showConfirmModal(
+                        'Confirmar limpieza de conceptos prediales',
+                        '¿Está seguro de eliminar todos los conceptos de impuesto predial? Esta acción no se puede deshacer.',
+                        () => PredialTableManager.clearAllRows()
+                    );
+                });
+            }
+
+            // Botón guardar XML
+            const btnSavePredial = document.getElementById('btnSavePredial');
+            if (btnSavePredial) {
+                btnSavePredial.addEventListener('click', () => PredialFacturaManager.saveAsXML());
+            }
+
+            // Botón generar factura predial (función principal)
+            const btnGeneratePredial = document.getElementById('btnGeneratePredial');
+            if (btnGeneratePredial) {
+                btnGeneratePredial.addEventListener('click', () => PredialFacturaManager.generatePredialInvoice());
+            }
+
+            // Botón cargar XML
+            const btnLoadPredialXML = document.getElementById('btnLoadPredialXML');
+            if (btnLoadPredialXML) {
+                btnLoadPredialXML.addEventListener('click', () => {
+                    document.getElementById('loadPredialXML').click();
+                });
+            }
+
+            // Input file para cargar XML
+            const loadPredialXML = document.getElementById('loadPredialXML');
+            if (loadPredialXML) {
+                loadPredialXML.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    if (!file.name.toLowerCase().endsWith('.xml')) {
+                        toastMixin.fire({
+                            title: 'Por favor seleccione un archivo XML válido para impuesto predial',
+                            icon: 'warning'
+                        });
+                        return;
+                    }
+                    try {
+                        const text = await file.text();
+                        PredialFacturaManager.loadDataFromXML(text);
+                        toastMixin.fire({
+                            title: 'XML de impuesto predial cargado exitosamente',
+                            icon: 'success'
+                        });
+                    } catch (error) {
+                        console.error('Error al cargar XML predial:', error);
+                        toastMixin.fire({
+                            title: 'Error al cargar el archivo XML: ' + error.message,
+                            icon: 'error'
+                        });
+                    }
+                    e.target.value = '';
+                });
+            }
+        },
+
+        setupGlobalEventListeners() {
+            // Eventos globales para placeholders en campos editables
+            document.addEventListener('focus', function (e) {
+                if (e.target.hasAttribute('contenteditable') && e.target.classList.contains('predial-placeholder-active')) {
+                    e.target.innerHTML = '';
+                    e.target.style.opacity = '';
+                    e.target.style.fontStyle = '';
+                    e.target.classList.remove('predial-placeholder-active');
+                }
+            }, true);
+
+            document.addEventListener('blur', function (e) {
+                if (e.target.hasAttribute('contenteditable')) {
+                    if (e.target.classList.contains('predial-numeric-field')) {
+                        const fieldName = e.target.dataset.field;
+                        const value = parseFloat(e.target.textContent.replace(/[$,]/g, '')) || 0;
+                        if (fieldName === 'precio') {
+                            e.target.textContent = PredialUtils.formatCurrency(value);
+                        } else {
+                            e.target.textContent = value.toString();
+                        }
+                    }
+                    PredialTableManager.updatePlaceholder(e.target);
+                }
+            }, true);
+
+            // Prevenir envío de formulario con Enter
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        },
+
+        showConfirmModal(title, message, onConfirm) {
+            const modalHTML = `
+                    <div class="modal fade" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-warning">
+                                <div class="modal-header bg-warning text-dark">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>${title}
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>${message}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn predial-btn-secondary" data-bs-dismiss="modal">
+                                        <i class="fas fa-times me-2"></i>Cancelar
+                                    </button>
+                                    <button type="button" class="btn btn-warning confirm-predial-btn">
+                                        <i class="fas fa-check me-2"></i>Confirmar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = modalHTML;
+            const modalElement = tempDiv.firstElementChild;
+            document.body.appendChild(modalElement);
+
+            const modal = new bootstrap.Modal(modalElement);
+            modalElement.querySelector('.confirm-predial-btn').addEventListener('click', () => {
+                onConfirm();
+                modal.hide();
+            });
+
+            modalElement.addEventListener('hidden.bs.modal', () => {
+                modalElement.remove();
+            });
+
+            modal.show();
+            return modal;
+        }
+    };
+
+    // =====================================
+    // FUNCIONES GLOBALES PARA PREDIAL
+    // =====================================
+    window.getPredialTableData = () => PredialTableManager.getTableData();
+    window.generatePredialInvoice = () => PredialFacturaManager.generatePredialInvoice();
+    window.savePredialXML = () => PredialFacturaManager.saveAsXML();
+
+    // =====================================
+    // INICIALIZAR APLICACIÓN PREDIAL
+    // =====================================
+    PredialAppInitializer.init();
+    function limpiarCampos() {
+        document.getElementById('rfcReceptor').value = '';
+        document.getElementById('nombreReceptor').value = '';
+        document.getElementById('domFiscalReceptor').value = '';
+        // No limpiamos el régimen fiscal para mantener el valor por defecto
+    }
+
+    // Función para llenar los campos con los datos del cliente
+    function llenarDatosCliente(clienteData) {
+        if (clienteData && clienteData.length > 0) {
+            const cliente = clienteData[0];
+
+            document.getElementById('rfcReceptor').value = cliente.rfc || '';
+            document.getElementById('nombreReceptor').value = cliente.n_cli || '';
+            document.getElementById('domFiscalReceptor').value = cliente.cp || '';
+
+            // ✅ NUEVO: Cargar cuenta predial desde observaciones
+            if (cliente.observaciones) {
+                const primeraFila = document.querySelector('#predialBody tr');
+                if (primeraFila) {
+                    const cuentaPredialCell = primeraFila.querySelector('[data-field="predial"]');
+                    if (cuentaPredialCell) {
+                        cuentaPredialCell.textContent = cliente.observaciones.trim();
+                        PredialTableManager.updatePlaceholder(cuentaPredialCell);
+                        PredialTableManager.validateCuentaPredialVisual(
+                            cuentaPredialCell,
+                            cliente.observaciones.trim()
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // Función para mostrar/ocultar el indicador de carga
+    function toggleLoading(show) {
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    // Event listener para cuando cambie la selección del cliente
+    document.getElementById('documentSearch').addEventListener('change', function () {
+        const selectedValue = this.value;
+
+        if (selectedValue === "0") {
+            // Si selecciona "Selecciona un cliente", limpiar campos
+            limpiarCampos();
+            alert("Por favor, selecciona un cliente válido");
+            return false; // evita el envío
+        }
+
+        // Mostrar indicador de carga
+        toggleLoading(true);
+
+        // Hacer fetch para obtener los datos del cliente seleccionado
+        fetch(`/CreditoCobranza/FacturacionPredial/GetCliente?id_cliente=${selectedValue}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                // Llenar los campos con los datos del cliente
+                llenarDatosCliente(result.data);
+            })
+            .catch(error => {
+                console.error('Error al obtener los datos del cliente:', error);
+                alert('Error al cargar los datos del cliente. Por favor, inténtalo de nuevo.');
+                // En caso de error, limpiar campos
+                limpiarCampos();
+            })
+            .finally(() => {
+                // Ocultar indicador de carga
+                toggleLoading(false);
+            });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Tu código existente para cargar la lista de clientes
+        fetch('/CreditoCobranza/FacturacionPredial/GetClientes')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                const categoriasSelect = document.getElementById('documentSearch');
+                if (categoriasSelect) {
+                    // Usamos result.data que es el array
+                    llenarSelect('documentSearch', result.data, 'id_cliente', 'n_cli');
+                }
+            })
+            .catch(error => {
+                console.error('Error al obtener los datos de clientes:', error);
+            });
+    });
+
+
+</script>

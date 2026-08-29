@@ -1,0 +1,521 @@
+﻿
+@{
+    ViewBag.Title = "CarteraProveedors";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .metrics-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        background: var(--bg-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-light);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+        .metric-icon.blue {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .metric-icon.green {
+            background-color: rgba(5, 150, 105, 0.1);
+            color: var(--success-color);
+        }
+
+        .metric-icon.orange {
+            background-color: rgba(217, 119, 6, 0.1);
+            color: var(--warning-color);
+        }
+
+        .metric-icon.purple {
+            background-color: rgba(147, 51, 234, 0.1);
+            color: #9333ea;
+        }
+
+    .metric-label {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+        color: var(--text-dark);
+        font-size: 1.75rem;
+        font-weight: 700;
+    }
+
+    .content-card {
+        background: var(--bg-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-light);
+    }
+
+    .modal-subtitle {
+        margin: 0;
+        font-size: 0.875rem;
+        color: var(--text-light);
+        font-weight: 400;
+    }
+
+    .cartera-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-card {
+        background: var(--bg-gray);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: 1px solid var(--border-light);
+    }
+
+    .summary-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+        .summary-icon.blue {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .summary-icon.green {
+            background-color: rgba(5, 150, 105, 0.1);
+            color: var(--success-color);
+        }
+
+        .summary-icon.orange {
+            background-color: rgba(217, 119, 6, 0.1);
+            color: var(--warning-color);
+        }
+
+        .summary-icon.purple {
+            background-color: rgba(147, 51, 234, 0.1);
+            color: #9333ea;
+        }
+
+    .summary-content {
+        flex: 1;
+    }
+
+    .summary-label {
+        font-size: 0.75rem;
+        color: var(--text-light);
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+
+    .summary-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .cartera-table-wrapper {
+        background: var(--bg-light);
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+        padding: 1rem;
+    }
+
+    .badge-estado {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-pagado {
+        background-color: rgba(5, 150, 105, 0.1);
+        color: var(--success-color);
+    }
+
+    .badge-pendiente {
+        background-color: rgba(217, 119, 6, 0.1);
+        color: var(--warning-color);
+    }
+
+    .tipo-proceso-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        display: inline-block;
+    }
+
+    .uuid-text {
+        font-family: 'Courier New', monospace;
+        font-size: 0.75rem;
+        color: var(--text-light);
+        max-width: 250px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+    }
+
+    .modal-content {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+    }
+
+    .modal-header {
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+    }
+
+    .modal-footer {
+        border-top: 1px solid var(--border-light);
+        background: var(--bg-gray);
+    }
+
+    .btn-close {
+        filter: var(--bs-btn-close-filter, invert(1));
+    }
+
+    [data-theme="dark"] .btn-close {
+        filter: invert(0);
+    }
+</style>
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+
+<!-- Metrics -->
+<div class="metrics-container">
+    <div class="metric-card">
+        <div class="metric-icon orange">
+            <i class="fas fa-truck"></i>
+        </div>
+        <div class="metric-label">Total Proveedores</div>
+        <div class="metric-value start-counter" data-target="0" data-format="number" id="totalProv">0</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon purple">
+            <i class="fas fa-hand-holding-usd"></i>
+        </div>
+        <div class="metric-label">Saldo por Pagar</div>
+        <div class="metric-value start-counter" data-target="0" data-format="currency" id="totalSaldo">$0.00</div>
+    </div>
+</div>
+
+<!-- Content Card -->
+<div class="content-card">
+    <!-- Filters -->
+    <div class="filters-section">
+
+    </div>
+
+    <!-- Proveedores Tab -->
+    <div class="tab-pane fade show active" id="proveedores" role="tabpanel">
+        <div class="table-container">
+            <div id="tablaProveedores"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal HTML -->
+<div class="modal fade" id="modalDetalleCartera" tabindex="-1" aria-labelledby="modalDetalleCarteraLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="modalDetalleCarteraLabel">Detalle de Cartera</h5>
+                    <p class="modal-subtitle" id="proveedorNombre"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Resumen -->
+                <div class="cartera-summary">
+                    <div class="summary-card" id="saldoFavorContent">
+                        <div class="summary-icon blue">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-label">Saldo a favor</div>
+                            <div class="summary-value" id="saldoFavor">-</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon green">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-label">Total comprado del mes</div>
+                            <div class="summary-value set-counter" data-target="0" data-format="currency" id="montoTotal">-</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-label">Saldo Pendiente</div>
+                            <div class="summary-value set-counter" data-target="0" data-format="currency" id="saldoPendiente">-</div>
+                        </div>
+                    </div>
+                    <div class="summary-card d-none">
+                        <div class="summary-icon purple">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-label">Pagado del mes</div>
+                            <div class="summary-value set-counter" data-target="0" data-format="currency" id="montoPagado">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Movimientos con TableBuilder -->
+                <div class="cartera-table-wrapper">
+                    <div id="tablaDetalleCartera"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="~/Scripts/TableBuilder.js"></script>
+
+<script>
+    let currentProvId = null;
+
+    async function detallesPagoProveedor(row) {
+        currentCarteraId = row.factura_original;
+
+        Swal.fire({
+            title: 'Detalles de Pago',
+            html: `
+            <p style="color: #6c757d; font-size: 0.875rem; margin-bottom: 1rem;">
+                Folio: ${row.folio || row.folio}
+            </p>
+            <div id="tablaDetallesPagoProvSwal" style="width: 100%;"></div>
+        `,
+            width: '90%',
+            showCloseButton: true,
+            showCancelButton: true,
+            cancelButtonText: 'Cerrar',
+            showConfirmButton: false,
+            customClass: {
+                popup: 'swal-wide',
+                htmlContainer: 'swal-no-padding'
+            },
+            didOpen: () => {
+                // Crear la tabla dentro del SweetAlert
+                createTable({
+                    selector: '#tablaDetallesPagoProvSwal',
+                    path: '/Carteras/GetDetallesCompraProveedor', // Ajusta esta ruta según tu controlador
+                    searchPlaceholder: 'Buscar en detalles...',
+                    columns: [
+                        {
+                            title: 'Tipo Proceso',
+                            data: 'tipo_proceso',
+                            formatter: (v) => v ? `<span class="tipo-proceso-badge">${v.replace('_', ' ').toUpperCase()}</span>` : '-'
+                        },
+                        { title: 'Folio', data: 'folio' },
+                        {
+                            title: 'UUID',
+                            data: 'uuid',
+                            formatter: (v) => v ? `<span class="uuid-text" title="${v}">${v}</span>` : '-'
+                        },
+                        {
+                            title: 'Monto Pagado',
+                            data: 'monto',
+                            formatter: (v) => Currency.format(v),
+                            className: 'text-end'
+                        },
+                        {
+                            title: 'Estado',
+                            data: 'saldo_pendiente',
+                            formatter: (v) => {
+                                const isPagado = v === 0;
+                                return isPagado
+                                    ? '<span class="badge-estado badge-pagado">Pagado</span>'
+                                    : '<span class="badge-estado badge-pendiente">Pendiente</span>';
+                            },
+                            className: 'text-center'
+                        },
+                        {
+                            title: 'Fecha',
+                            data: 'fecha',
+                            formatter: (v) => v ? dateFormatter(v) : '-'
+                        }
+                    ],
+                    actions: [
+                        { icon: 'fa-up-right-from-square', color: 'green-500', title: 'Ver Detalle', onClick: row => window.open(`/Contabilidad/ConsultarPolizas?q=${row.folio}`, '_blank') },
+                    ],
+                    data: () => ({
+                        id_factura_padre: row.factura_original
+                    }),
+                });
+            },
+            willClose: () => {
+                currentCarteraId = null;
+            }
+        });
+    }
+
+    async function verDetalle(proveedor) {
+        // Actualizar título con nombre del proveedor
+        document.getElementById('proveedorNombre').textContent = proveedor.n_prov || 'Proveedor';
+        currentProvId = proveedor.id_prov;
+
+        // Resetear valores del resumen
+        document.getElementById('saldoFavor').textContent = '-';
+        document.getElementById('montoTotal').textContent = '-';
+        document.getElementById('saldoPendiente').textContent = '-';
+        document.getElementById('montoPagado').textContent = '-';
+
+        // Crear la tabla con TableBuilder
+        const tablaCarteras = createTable({
+            selector: '#tablaDetalleCartera',
+            path: '/Carteras/GetCarteraProveedores',
+            searchPlaceholder: 'Buscar en cartera...',
+            columns: [
+                { title: 'Tipo Proceso', data: 'tipo_proceso', formatter: (v) => v ? `<span class="tipo-proceso-badge">${v.replace('_', ' ').toUpperCase()}</span>` : '-' },
+                { title: 'Folio referencia', data: 'folio' },
+                { title: 'Cartera UUID', data: 'cartera_uuid', formatter: (v) => v ? `<span class="uuid-text" title="${v}">${v}</span>` : '-' },
+                { title: 'Monto Total', data: 'monto_total', formatter: (v) => Currency.format(v), className: 'text-end' },
+                { title: 'Saldo Pendiente', data: 'saldo_pendiente', formatter: (v) => Currency.format(v), className: 'text-end' },
+                {
+                    title: 'Estado',
+                    data: 'saldo_pendiente',
+                    formatter: (v) => {
+                        const isPagado = v === 0;
+                        return isPagado
+                            ? '<span class="badge-estado badge-pagado">Pagado</span>'
+                            : '<span class="badge-estado badge-pendiente">Pendiente</span>';
+                    },
+                    className: 'text-center'
+                },
+                { title: 'Fecha Emision', data: 'fecha_emision', formatter: (v) => v ? dateFormatter(v) : '-' },
+            ],
+            actions: [
+                { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalles de Pago', onClick: row => detallesPagoProveedor(row) },
+                { icon: 'fa-up-right-from-square', color: 'green-500', title: 'Ver Detalle', onClick: row => window.open(`/Contabilidad/ConsultarPolizas?q=${row.folio}`, '_blank') },
+            ],
+            RowsEvents: {
+                onRowDblClick: row => detallesPagoProveedor(row),
+                onKeyPress: (event, row) => {
+                    if (event.key === 'F4') detallesPagoProveedor(row);
+                }
+            },
+            data: () => ({
+                provId: currentProvId
+            }),
+            GlobalEvents: {
+                onDataLoaded: (response) => {
+                    // Actualizar resumen con los totales
+                    document.getElementById('saldoFavor').textContent = Currency.format(response.totales.saldoFavor) || 0;
+                    document.getElementById('montoTotal').textContent = Currency.format(response.totales.totalVendido);
+                    document.getElementById('saldoPendiente').textContent = Currency.format(response.totales.totalPendiente);
+                    document.getElementById('montoPagado').textContent = Currency.format(response.totales.totalVendido - response.totales.totalPendiente);
+
+                    tablaCarteras.meta = {
+                        saldoFavor: response.totales.saldoFavor
+                    };
+                },
+                onLoading: (isLoading) => {
+                    document.querySelector('#tablaDetalleCartera').classList.toggle('opacity-50', isLoading);
+                },
+            }
+        });
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalleCartera'));
+        modal.show();
+    }
+
+    // Limpiar la tabla cuando se cierre el modal
+    document.getElementById('modalDetalleCartera').addEventListener('hidden.bs.modal', function () {
+        currentProvId = null;
+    });
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const tablaProveedores = createTable({
+            selector: '#tablaProveedores',
+            path: '/Carteras/GetProveedores',
+            searchPlaceholder: 'Buscar Proveedor...',
+            columns: [
+                { title: 'Codigo', data: 'cve_prov' },
+                { title: 'Nombre', data: 'n_prov' },
+                { title: 'Telefono', data: 'tel' },
+                { title: 'RFC', data: 'rfc' },
+                { title: 'Cuenta', data: 'codigo' },
+                { title: 'Saldo Pendiente', data: 'saldo', formatter: (v) => Currency.format(v) },
+                { title: 'Saldo a Favor', data: 'saldo_favor', formatter: (v) => Currency.format(v) },
+            ],
+            actions: [
+                { icon: 'fa-circle-info', color: 'cyan-500', title: 'Ver Detalle', onClick: row => verDetalle(row) },
+            ],
+            RowsEvents: {
+                onRowDblClick: row => verDetalle(row),
+                onKeyPress: (event, row) => {
+                    if (event.key === 'F4') verDetalle(row);
+                }
+            },
+            GlobalEvents: {
+                onDataLoaded: (response) => {
+                    const totalProv = document.getElementById('totalProv');
+                    const totalSaldo = document.getElementById('totalSaldo');
+
+                    totalProv.setAttribute('data-target', response.total);
+                    totalProv.innerHTML = response.total;
+
+                    totalSaldo.setAttribute('data-target', response.saldoPagar);
+                    totalSaldo.innerHTML = Currency.format(response.saldoPagar);
+                },
+                onError: (err) => {
+                    alert('Error al cargar los datos: ' + err.message);
+                }
+            },
+        });
+
+        window.tablaProveedores = tablaProveedores;
+    })
+</script>

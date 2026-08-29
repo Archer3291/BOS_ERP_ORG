@@ -1,0 +1,654 @@
+﻿
+@{
+    ViewBag.Title = "ConsultarAlmacen";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* ── Variables & Reset ──────────────────────────────────────────── */
+    .page-traslados {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ── Panel de filtros ───────────────────────────────────────────── */
+    .filters-panel {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+    }
+
+        .filters-panel .panel-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-light);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+    /* ── Barra de acciones ──────────────────────────────────────────── */
+    .actions-bar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 16px;
+        gap: 8px;
+    }
+
+    /* ── Badges de stock ────────────────────────────────────────────── */
+    .badge-stock {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--success-color);
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .stock-low {
+        background: var(--warning-color) !important;
+    }
+
+    .stock-critical {
+        background: var(--danger-color) !important;
+    }
+
+    /* ── Product info card dentro del modal ─────────────────────────── */
+    .product-info {
+        background: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-bottom: 20px;
+    }
+
+        .product-info h5 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+        }
+
+        .product-info table td,
+        .product-info table th {
+            padding: 4px 8px;
+            font-size: 13px;
+        }
+
+        .product-info table th {
+            color: var(--text-light);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+    /* ── Contenedor del formulario de traslado ───────────────────────── */
+    .transfer-section {
+        background: var(--light-blue);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+    }
+
+        .transfer-section .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    /* ── Modal general ──────────────────────────────────────────────── */
+    .modal-content {
+        border-radius: 14px;
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+        border-radius: 13px 13px 0 0;
+        padding: 16px 20px;
+    }
+
+    .modal-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-footer {
+        border-top: 1px solid var(--border-light);
+        padding: 14px 20px;
+        gap: 8px;
+    }
+
+    /* ── TomSelect fix ──────────────────────────────────────────────── */
+    .ts-wrapper .option .title {
+        display: block;
+        color: black;
+        font-size: 13px;
+    }
+
+    .ts-wrapper .option .url {
+        font-size: 11px;
+        display: block;
+        color: var(--accent-blue);
+    }
+
+    /* ── Kepler modal ───────────────────────────────────────────────── */
+    .kepler-empty {
+        text-align: center;
+        padding: 48px 20px;
+        color: var(--text-light);
+    }
+
+        .kepler-empty i {
+            font-size: 2.5rem;
+            opacity: .25;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+    /* ── drag-scroll tabla ──────────────────────────────────────────── */
+    .dt-scroll-body {
+        cursor: grab;
+        user-select: none;
+    }
+
+        .dt-scroll-body:active {
+            cursor: grabbing;
+        }
+
+    /* ── Tabla de sugerencias en Swal ───────────────────────────────── */
+    .sug-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .sug-table th {
+            background: var(--very-light-blue);
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 11px;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+        .sug-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .sug-table tr:hover td {
+            background: var(--light-blue);
+        }
+
+        .sug-table .sug-btn {
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            padding: 3px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+    .sug-btn:hover {
+        opacity: .85;
+    }
+
+    /* ── Panel de seleccionados ─────────────────────────────────────── */
+    .seleccion-panel {
+        background: var(--bg-light);
+        border: 1.5px solid var(--accent-blue);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-top: 16px;
+        box-shadow: var(--shadow);
+        animation: slideDown .22s cubic-bezier(.4,0,.2,1);
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .seleccion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .seleccion-label {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .seleccion-count {
+        background: var(--accent-blue);
+        color: #fff;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 1px 8px;
+        margin-left: 6px;
+    }
+
+    .seleccion-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .seleccion-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 5px 10px 5px 12px;
+        font-size: 12px;
+        color: var(--text-dark);
+        animation: chipIn .18s cubic-bezier(.4,0,.2,1);
+    }
+
+    @@keyframes chipIn {
+        from {
+            opacity: 0;
+            transform: scale(.88);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .seleccion-chip .chip-code {
+        font-weight: 700;
+        color: var(--accent-blue);
+    }
+
+    .seleccion-chip .chip-cant {
+        background: var(--light-blue);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 11px;
+        color: var(--text-light);
+    }
+
+    .seleccion-chip .chip-remove {
+        background: none;
+        border: none;
+        color: var(--text-light);
+        cursor: pointer;
+        padding: 0 2px;
+        line-height: 1;
+        font-size: 13px;
+        border-radius: 4px;
+        transition: color .15s, background .15s;
+    }
+
+        .seleccion-chip .chip-remove:hover {
+            color: var(--danger-color);
+            background: #fee2e2;
+        }
+
+    /* ── Modal resumen ──────────────────────────────────────────────── */
+    .resumen-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .resumen-table th {
+            background: var(--very-light-blue);
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 2px solid var(--border-light);
+            color: var(--text-light);
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .resumen-table td {
+            padding: 9px 10px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+
+        .resumen-table tbody tr:hover td {
+            background: var(--light-blue);
+        }
+
+        .resumen-table .td-code {
+            font-weight: 700;
+            color: var(--accent-blue);
+            white-space: nowrap;
+        }
+
+        .resumen-table .td-remove {
+            text-align: center;
+        }
+
+            .resumen-table .td-remove button {
+                background: none;
+                border: none;
+                color: var(--text-light);
+                cursor: pointer;
+                padding: 2px 6px;
+                border-radius: 5px;
+                font-size: 13px;
+                transition: color .15s, background .15s;
+            }
+
+                .resumen-table .td-remove button:hover {
+                    color: var(--danger-color);
+                    background: #fee2e2;
+                }
+
+    .resumen-almacen-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 5px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 14px;
+    }
+
+        .resumen-almacen-badge i {
+            color: var(--accent-blue);
+        }
+
+    .resumen-stats {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    .resumen-stat {
+        flex: 1;
+        min-width: 110px;
+        background: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 10px 14px;
+        text-align: center;
+    }
+
+        .resumen-stat .stat-num {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            line-height: 1.1;
+        }
+
+        .resumen-stat .stat-label {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+    /* ── Confirmacion step ──────────────────────────────────────────── */
+    .confirm-step {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .confirm-check-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--very-light-blue);
+        border: 1px solid var(--border-light);
+        border-radius: 9px;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: var(--text-dark);
+    }
+
+        .confirm-check-item i.ok {
+            color: var(--success-color);
+            font-size: 15px;
+        }
+</style>
+
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<div class="page-traslados">
+
+    <!-- ── Filtros ──────────────────────────────────────────────────── -->
+    <div class="filters-panel">
+        <div class="panel-label">
+            <i class="fa-solid fa-sliders"></i> Filtros
+        </div>
+        <div class="row align-items-end g-2">
+            <div class="col-md-5 col-sm-12">
+                <label class="form-label mb-1" style="font-size:13px;color:var(--text-light);">Sucursal</label>
+                <select id="filSucursal" placeholder="Selecciona una sucursal..."></select>
+            </div>
+            <div class="col-md-5 col-sm-12">
+                <label class="form-label mb-1" style="font-size:13px;color:var(--text-light);">Almacén</label>
+                <select id="filAlmacen" placeholder="Selecciona un almacén..."></select>
+            </div>
+            <div class="col-md-2 col-sm-12">
+                <button class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros" title="Limpiar filtros">
+                    <i class="fa-solid fa-filter-slash"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Tabla (createTable) ──────────────────────────────────────── -->
+    <div id="tablaTraslados"></div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="~/Scripts/TableBuilder.js"></script>
+
+    <script>
+        /* ================================================================
+            ESTADO GLOBAL
+        ================================================================ */
+        let ubicaciones = {};
+        let inventoryData = [];
+        let currentProduct = null;
+        let keplerProductos = [];
+        let keplerAlmacenSelect;
+        let tableInstance;
+
+        // Mapa de productos seleccionados en la tabla principal: id_producto+ulocation → row
+        const productosBD = new Map();
+
+        /* ================================================================
+            TOM-SELECT: filtros
+        ================================================================ */
+        const filtroAlmacen = new TomSelect('#filAlmacen', {
+            create: false,
+            maxItems: 1,
+            valueField: 'id_almacen',
+            searchField: ['cve_almacen', 'almacen_descripcion', 'cve_sucursal', 'sucursal_descripcion'],
+            render: {
+                option: (d, e) => `<div><span class="title" style="color:black;">${e(d.cve_almacen)}</span><span class="url" style="color:black;">${e(d.cve_sucursal)} – ${e(d.almacen_descripcion)}</span></div>`,
+                item: (d, e) => `<div><span style="color:black;">${e(d.cve_sucursal)} – ${e(d.almacen_descripcion)}</span></div>`
+            }
+        });
+
+        const filtroSucursal = new TomSelect('#filSucursal', {
+            create: false,
+            maxItems: 1,
+            valueField: 'id_sucursal',
+            searchField: ['cve_sucursal', 'descripcion'],
+            render: {
+                option: (d, e) => `<div><span class="title">${e(d.cve_sucursal)}</span><span class="url">${e(d.descripcion)}</span></div>`,
+                item: (d, e) => `<div><span style="color:black;">${e(d.cve_sucursal)} – ${e(d.descripcion)}</span></div>`
+            }
+        });
+
+        /* ================================================================
+            TABLA PRINCIPAL — createTable
+        ================================================================ */
+        function initTabla() {
+            tableInstance = createTable({
+                selector: '#tablaTraslados',
+                path: '/ConsultaInventario/GetTraslados',
+                rowKey: 'id_producto',
+                searchPlaceholder: 'Buscar producto...',
+                data: () => ({
+                    id_sucursal: filtroSucursal.getValue() || '',
+                    id_almacen: filtroAlmacen.getValue() || ''
+                }),
+                columns: [{
+                        title: 'Código',
+                        data: 'codigo',
+                        formatter: v => `<strong>${v}</strong>`
+                    },
+                    {
+                        title: 'Producto',
+                        data: 'descripcion'
+                    },
+                    {
+                        title: 'Ubicación',
+                        data: 'almacendescripcion',
+                        formatter: v => `<span style="color:var(--text-light);font-size:13px;"><i class="fas fa-map-marker-alt me-1"></i>${v}</span>`
+                    },
+                    {
+                        title: 'Stock',
+                        data: null,
+                        sortable: false,
+                        formatter: (_, row) => {
+                            let cls = 'badge-stock';
+                            if (row.cantidad <= 10) cls += ' stock-critical';
+                            else if (row.cantidad <= 50) cls += ' stock-low';
+                            return `<span class="${cls}">${row.cantidad} ${row.unidadproducto}</span>`;
+                        }
+                    },
+                    {
+                        title: 'Ulocation',
+                        data: 'ulocation'
+                    },
+                    {
+                        title: 'Almacén',
+                        data: 'cve_almacen'
+                    },
+                    {
+                        title: 'Tarima',
+                        data: 'tarima'
+                    },
+                    // {
+                    //     title: 'Costo unit.',\\
+                    //     data: 'costo_promedio_unitario',
+                    //     formatter: v => `$${parseFloat(v).toFixed(2)}`
+                    // },
+                    // {
+                    //     title: 'Costo total',
+                    //     data: 'costo_promedio_total',
+                    //     formatter: v => `$${parseFloat(v).toFixed(2)}`
+                    // }
+                ],
+                GlobalEvents: {
+                    onDataLoaded: response => {
+                        inventoryData = response.data ?? response;
+                    }
+                }
+            });
+        }
+
+        /* ================================================================
+            FILTROS — eventos
+        ================================================================ */
+        document.getElementById('filSucursal').addEventListener('change', () => {
+            const idSuc = filtroSucursal.getValue();
+
+            const almsFiltrados = ubicaciones.almacenes?.filter(a => a.id_sucursal == idSuc) ?? [];
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(almsFiltrados);
+            filtroAlmacen.refreshOptions(false);
+            filtroAlmacen.clear(true);
+
+            const tarimasFil = ubicaciones.tarimas?.filter(a => a.id_sucursal == idSuc) ?? [];
+
+            tableInstance?.reload();
+        });
+
+        document.getElementById('filAlmacen').addEventListener('change', () => tableInstance?.reload());
+
+        document.getElementById('btnLimpiarFiltros').addEventListener('click', () => {
+            filtroSucursal.clear(true);
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(ubicaciones.almacenes ?? []);
+            filtroAlmacen.refreshOptions(false);
+            filtroAlmacen.clear(true);
+            tableInstance?.reload();
+        });
+
+        /* ================================================================
+            INIT
+        ================================================================ */
+        document.addEventListener('DOMContentLoaded', async () => {
+            ubicaciones = await GetData({
+                path: '/ConsultaInventario/GetUbicaciones'
+            });
+
+            filtroSucursal.clearOptions();
+            filtroSucursal.addOption(ubicaciones.sucursales ?? []);
+            filtroSucursal.refreshOptions(false);
+            filtroSucursal.setValue('@Context.Session.GetInt32("Sucursal")', true);
+
+            const idSucInicial = parseInt(filtroSucursal.getValue());
+            const almsIniciales = ubicaciones.almacenes?.filter(a => a.id_sucursal == idSucInicial) ?? [];
+            filtroAlmacen.clearOptions();
+            filtroAlmacen.addOption(almsIniciales);
+            filtroAlmacen.refreshOptions(false);
+
+            const tarimasIniciales = ubicaciones.tarimas?.filter(a => a.id_sucursal == idSucInicial) ?? [];
+
+            initTabla();
+        });
+    </script>
+}

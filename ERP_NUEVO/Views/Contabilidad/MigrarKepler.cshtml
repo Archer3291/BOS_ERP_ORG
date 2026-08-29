@@ -1,0 +1,1611 @@
+@{
+    ViewData["Title"] = "Migrar inventario Kepler";
+}
+
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<style>
+    :root {
+        --kepler-panel-w: 360px;
+        --kepler-ease: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Altura del chrome fijo: define dónde se "pega" el panel para no
+           meterse debajo del header. Cada layout tiene su propio alto. */
+        --kepler-top-offset: 92px;
+    }
+
+    body[data-layout="topbar"] {
+        --kepler-top-offset: calc(var(--topbar-height, 58px) + 78px);
+    }
+
+    body[data-layout="hybrid"] {
+        --kepler-top-offset: 102px;
+    }
+
+    /* El panel es una columna más del contenido: nunca se encima al menú
+       ni al header, y la tabla se reparte el ancho restante. */
+    .kepler-layout {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .kepler-main {
+        flex: 1 1 auto;
+        min-width: 0; /* deja que la tabla se encoja en vez de desbordar */
+    }
+
+    .migrar-kepler-card {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .migrar-kepler-card .card-body {
+        padding: 0;
+        background: var(--bg-gray);
+    }
+
+    .migrar-kepler-header {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 1.15rem 1.25rem;
+        border-bottom: 1px solid var(--border-light);
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.01));
+    }
+
+    .migrar-kepler-icon {
+        flex: 0 0 auto;
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        background: var(--very-light-blue);
+        color: var(--accent-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .migrar-kepler-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    .migrar-kepler-subtitle {
+        font-size: 0.84rem;
+        color: var(--text-light);
+        margin: 0.22rem 0 0;
+    }
+
+    .migrar-kepler-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+        margin: 1rem 1.25rem 0;
+        padding: 0.8rem 0.95rem;
+        border-radius: 12px;
+        border: 1px solid rgba(59, 130, 246, 0.16);
+        background: rgba(59, 130, 246, 0.06);
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    .migrar-kepler-filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 0.75rem;
+        margin: 1rem 1.25rem 1rem;
+        padding: 1rem;
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        background: var(--bg-light);
+    }
+
+    .migrar-kepler-filter {
+        min-width: 0;
+    }
+
+    .migrar-kepler-filter .form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.35rem;
+    }
+
+    .migrar-kepler-table-shell {
+        padding: 0 1.25rem 1.25rem;
+        min-width: 0;
+    }
+
+    .migrar-kepler-table-shell > div {
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--bg-light);
+    }
+
+    .migrar-kepler-modal .modal-content {
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+    }
+
+    .migrar-kepler-modal .modal-header {
+        border-bottom: 1px solid var(--border-light);
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.01));
+    }
+
+    .migrar-kepler-modal .modal-footer {
+        border-top: 1px solid var(--border-light);
+    }
+
+    /* ─── Origen de los datos de Kepler ──────────────────────────────────── */
+    .kepler-origen {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        background: var(--bg-gray);
+    }
+
+    /* .prod-field/.prod-label viven en productos.css, que esta vista no carga. */
+    .kepler-origen .prod-field {
+        min-width: 0;
+    }
+
+    .kepler-origen .prod-label {
+        display: block;
+        margin-bottom: 0.35rem;
+        color: var(--text-dark);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .kepler-origen-aviso {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        padding: 2rem 1rem;
+        border: 1px dashed var(--border-light);
+        border-radius: 12px;
+        color: var(--text-light);
+        font-size: 0.88rem;
+        text-align: center;
+    }
+
+    .kepler-origen-aviso i {
+        font-size: 1.1rem;
+        opacity: 0.6;
+    }
+
+    .kepler-panel-origen {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem 1rem;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+        color: var(--text-light);
+        font-size: 0.76rem;
+    }
+
+    .kepler-panel-origen strong {
+        color: var(--text-dark);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* ─── Panel lateral ──────────────────────────────────────────────────── */
+    .kepler-panel {
+        flex: 0 0 var(--kepler-panel-w);
+        width: var(--kepler-panel-w);
+        position: sticky;
+        top: var(--kepler-top-offset);
+        max-height: calc(100vh - var(--kepler-top-offset) - 1.5rem);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+    }
+
+    /* Mientras el modal de Kepler está abierto el panel se eleva sobre el
+       backdrop (1050) para poder revisar la selección sin cerrarlo. */
+    body.kepler-modal-abierto .kepler-panel {
+        z-index: 1056;
+    }
+
+    @@media (min-width: 992px) {
+        body.kepler-modal-abierto .migrar-kepler-modal {
+            padding-right: calc(var(--kepler-panel-w) + 3rem) !important;
+        }
+
+        body.kepler-modal-abierto .migrar-kepler-modal .modal-dialog {
+            max-width: min(1140px, calc(100vw - var(--kepler-panel-w) - 5rem));
+        }
+    }
+
+    .kepler-layout.is-collapsed .kepler-panel {
+        display: none;
+    }
+
+    .kepler-rail {
+        display: none;
+        flex: 0 0 46px;
+        position: sticky;
+        top: var(--kepler-top-offset);
+        flex-direction: column;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.8rem 0.25rem;
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        background: var(--bg-light);
+        color: var(--accent-blue);
+        box-shadow: var(--shadow);
+    }
+
+    .kepler-layout.is-collapsed .kepler-rail {
+        display: flex;
+    }
+
+    .kepler-rail-text {
+        writing-mode: vertical-rl;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: var(--text-light);
+    }
+
+    .kepler-panel .btn {
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .kepler-panel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid var(--border-light);
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.01));
+    }
+
+    .kepler-panel-header h6 {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .kepler-panel-header small {
+        color: var(--text-light);
+        font-size: 0.78rem;
+    }
+
+    .kepler-panel-hide {
+        flex: 0 0 auto;
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        background: var(--bg-light);
+        color: var(--text-light);
+        line-height: 1;
+        transition: color 0.15s, border-color 0.15s;
+    }
+
+    .kepler-panel-hide:hover {
+        color: var(--accent-blue);
+        border-color: var(--accent-blue);
+    }
+
+    .kepler-panel-actions {
+        display: grid;
+        gap: 0.5rem;
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .kepler-panel-destino {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.55rem 1rem;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-gray);
+        color: var(--text-light);
+        font-size: 0.76rem;
+    }
+
+    .kepler-panel-destino strong {
+        color: var(--text-dark);
+    }
+
+    .kepler-panel-list {
+        flex: 1 1 auto;
+        min-height: 0; /* sin esto el overflow del hijo flex no scrollea */
+        overflow-y: auto;
+        list-style: none;
+        margin: 0;
+        padding: 0.8rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+
+    .kepler-panel-empty {
+        text-align: center;
+        color: var(--text-light);
+        font-size: 0.84rem;
+        padding: 2.2rem 1rem;
+    }
+
+    .kepler-panel-empty i {
+        display: block;
+        font-size: 1.8rem;
+        margin-bottom: 0.6rem;
+        opacity: 0.45;
+    }
+
+    .kepler-item {
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 0.6rem 0.7rem;
+        background: var(--bg-gray);
+    }
+
+    .kepler-item-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .kepler-item-code {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: var(--text-dark);
+        word-break: break-all;
+    }
+
+    .kepler-item-remove {
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--text-light);
+        line-height: 1;
+        transition: background 0.15s, color 0.15s;
+    }
+
+    .kepler-item-remove:hover {
+        background: var(--danger-color, #dc2626);
+        color: #fff;
+    }
+
+    .kepler-item-desc {
+        margin: 0.2rem 0 0.45rem;
+        font-size: 0.78rem;
+        color: var(--text-light);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .kepler-item-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-size: 0.78rem;
+        color: var(--text-dark);
+    }
+
+    .kepler-item-cost {
+        font-weight: 600;
+    }
+
+    .kepler-item-cost.is-edited {
+        color: var(--accent-blue);
+    }
+
+    .kepler-item-total {
+        margin-top: 0.3rem;
+        font-size: 0.74rem;
+        color: var(--text-light);
+    }
+
+    .kepler-item-tarima {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.45rem;
+        padding-top: 0.45rem;
+        border-top: 1px dashed var(--border-light);
+    }
+
+    .kepler-tarima-btn {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        min-width: 0;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid var(--border-light);
+        border-radius: 999px;
+        background: var(--bg-light);
+        color: var(--text-light);
+        font-size: 0.72rem;
+        transition: border-color 0.15s, color 0.15s;
+    }
+
+    .kepler-tarima-btn:hover {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue);
+    }
+
+    .kepler-tarima-btn.is-set {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue);
+        font-weight: 600;
+    }
+
+    .kepler-tarima-btn span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .kepler-tarima-reset {
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--text-light);
+        line-height: 1;
+    }
+
+    .kepler-tarima-reset:hover {
+        color: var(--danger-color, #dc2626);
+    }
+
+    .kepler-panel-footer {
+        border-top: 1px solid var(--border-light);
+        padding: 0.8rem 1rem 0.9rem;
+        background: var(--bg-light);
+    }
+
+    .kepler-panel-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.7rem;
+        font-size: 0.85rem;
+        color: var(--text-light);
+    }
+
+    .kepler-panel-total strong {
+        font-size: 1rem;
+        color: var(--text-dark);
+    }
+
+    .kepler-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 0.35rem;
+        border-radius: 999px;
+        background: var(--accent-blue);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .kepler-editar-item {
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 0.5rem 0.65rem;
+        background: var(--bg-gray);
+    }
+
+    /* ─── Diálogo de sugerencias de tarima ───────────────────────────────── */
+    .kepler-tarimas-wrap {
+        max-height: 420px;
+        overflow-y: auto;
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+    }
+
+    .kepler-tarimas-table {
+        width: 100%;
+        font-size: 0.82rem;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .kepler-tarimas-table th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-weight: 600;
+        padding: 0.5rem 0.6rem;
+        border-bottom: 1px solid var(--border-light);
+        white-space: nowrap;
+    }
+
+    .kepler-tarimas-table td {
+        padding: 0.45rem 0.6rem;
+        border-bottom: 1px solid var(--border-light);
+        color: var(--text-dark);
+        vertical-align: middle;
+    }
+
+    .kepler-tarimas-table tr:hover td {
+        background: var(--very-light-blue);
+    }
+
+    .kepler-tag {
+        display: inline-block;
+        padding: 0.1rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .kepler-tag-mismo {
+        background: rgba(5, 150, 105, 0.12);
+        color: var(--success-color, #059669);
+    }
+
+    .kepler-tag-vacia {
+        background: rgba(59, 130, 246, 0.12);
+        color: var(--accent-blue);
+    }
+
+    .kepler-tag-ocupada {
+        background: rgba(217, 119, 6, 0.14);
+        color: var(--warning-color, #d97706);
+    }
+
+    @@media (max-width: 991.98px) {
+        .kepler-layout {
+            flex-direction: column;
+        }
+
+        .kepler-panel,
+        .kepler-rail {
+            position: static;
+            width: 100%;
+            flex: 1 1 auto;
+            max-height: none;
+        }
+
+        .kepler-rail {
+            flex-direction: row;
+            justify-content: center;
+        }
+
+        .kepler-rail-text {
+            writing-mode: horizontal-tb;
+        }
+
+        .kepler-panel-list {
+            max-height: 320px;
+        }
+    }
+</style>
+
+<div class="kepler-layout" id="keplerLayout">
+    <div class="kepler-main">
+        <div class="card border-0 migrar-kepler-card">
+            <div class="card-body">
+                <div class="migrar-kepler-header">
+                    <div class="migrar-kepler-icon">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <div>
+                        <h4 class="migrar-kepler-title">Migración de inventario Kepler</h4>
+                        <p class="migrar-kepler-subtitle">Se muestran los productos actuales con costo tomado desde órdenes de compra; los productos Kepler son los que se trasladan.</p>
+                    </div>
+                </div>
+
+                <div class="migrar-kepler-note">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    <span>La tabla de productos actuales es de solo lectura. Las acciones de migración están en el panel derecho, donde además puedes elegir la tarima destino de cada producto.</span>
+                </div>
+
+                <div class="migrar-kepler-filters">
+                    <div class="migrar-kepler-filter">
+                        <label class="form-label" for="filtroSucursal">Sucursal</label>
+                        <select id="filtroSucursal" class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="migrar-kepler-filter">
+                        <label class="form-label" for="filtroAlmacen">Almacén</label>
+                        <select id="filtroAlmacen" class="form-select form-select-sm"></select>
+                    </div>
+                </div>
+
+                <div class="migrar-kepler-table-shell">
+                    <div id="tablaProductosActuales"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="btnMostrarPanel" type="button" class="kepler-rail" title="Mostrar panel de migración">
+        <i class="fa-solid fa-cart-flatbed"></i>
+        <span id="badgeSeleccionRail" class="kepler-count-badge">0</span>
+        <span class="kepler-rail-text">Panel de migración</span>
+    </button>
+
+    <aside id="panelSeleccion" class="kepler-panel" aria-label="Panel de migración Kepler">
+        <div class="kepler-panel-header">
+            <div>
+                <h6>
+                    Selección Kepler
+                    <span id="contadorSeleccion" class="kepler-count-badge">0</span>
+                </h6>
+                <small id="resumenSeleccion">Sin productos seleccionados</small>
+            </div>
+            <button id="btnOcultarPanel" type="button" class="kepler-panel-hide" title="Ocultar panel" aria-label="Ocultar panel">
+                <i class="fa-solid fa-angles-right"></i>
+            </button>
+        </div>
+
+        <div class="kepler-panel-actions">
+            <button id="btnAbrirModalKepler" type="button" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-list-check me-1"></i> Ver productos Kepler
+            </button>
+            <button id="btnSubirMasivo" type="button" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-file-csv me-1"></i> Subir masivo
+            </button>
+        </div>
+
+        <div class="kepler-panel-origen">
+            <i class="fa-solid fa-database"></i>
+            <span>Origen: <strong id="origenSeleccion">Sin definir</strong></span>
+        </div>
+
+        <div class="kepler-panel-destino">
+            <span><i class="fa-solid fa-warehouse me-1"></i> Destino: <strong id="destinoSeleccion">—</strong></span>
+            <button id="btnTarimaTodos" type="button" class="btn btn-link btn-sm p-0 text-decoration-none" disabled>Tarima para todos</button>
+        </div>
+
+        <ul id="listaSeleccion" class="kepler-panel-list"></ul>
+
+        <div class="kepler-panel-footer">
+            <div class="kepler-panel-total">
+                <span>Valor total</span>
+                <strong id="totalSeleccion">$0.00</strong>
+            </div>
+            <div class="d-grid gap-2">
+                <button id="btnProcesarSeleccion" type="button" class="btn btn-success btn-sm" disabled>
+                    <i class="fa-solid fa-right-left me-1"></i> Procesar selección
+                </button>
+                <div class="d-flex gap-2">
+                    <button id="btnEditarSeleccion" type="button" class="btn btn-outline-primary btn-sm flex-fill" disabled>Editar costos</button>
+                    <button id="btnVaciarSeleccion" type="button" class="btn btn-outline-danger btn-sm flex-fill" disabled>Vaciar</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<div class="modal fade migrar-kepler-modal" id="modalProductosKepler" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Productos Kepler</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="kepler-origen">
+                    <div class="prod-field mb-0">
+                        <label class="prod-label" for="selectEmpresa">Base de datos de la que se importa</label>
+                        <select id="selectEmpresa" class="form-select">
+                            <option value="">Selecciona una base de datos</option>
+                            <option value="SRS">Sellos y Retenes</option>
+                            <option value="AHN">Artículos Hidráulicos</option>
+                            <option value="ITF">Interfijo</option>
+                            <option value="SRV">Sellos y Retenes Veracruz</option>
+                        </select>
+                    </div>
+
+                    <div class="prod-field mb-0">
+                        <label class="prod-label" for="selectSucursal">Sucursal de kepler</label>
+                        <select id="selectSucursal" class="form-select" disabled>
+                            <option value="">Selecciona una sucursal</option>
+                        </select>
+                    </div>
+
+                    <div class="prod-field mb-0">
+                        <label class="prod-label" for="selectAlmacen">Almacen de kepler</label>
+                        <select id="selectAlmacen" class="form-select" disabled>
+                            <option value="">Selecciona un almacen</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="avisoOrigenKepler" class="kepler-origen-aviso">
+                    <i class="fa-solid fa-database"></i>
+                    <span>Elige base de datos, sucursal y almacén para cargar los productos de Kepler.</span>
+                </div>
+
+                <div id="tablaProductosKepler" hidden></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade migrar-kepler-modal" id="modalEditarCostos" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar costo unitario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light border small py-2">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Los productos a los que les cambies el costo generan un <b>registro de compra</b> con ese costo; los que dejes igual solo aumentan el stock.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="costoGeneral">Costo unitario general</label>
+                    <div class="input-group input-group-sm">
+                        <input id="costoGeneral" class="form-control" type="number" step="0.01" min="0" placeholder="Aplicar el mismo costo a todos" />
+                        <button id="btnAplicarCostoGeneral" class="btn btn-outline-primary" type="button">Aplicar a todos</button>
+                    </div>
+                </div>
+                <div id="listaProductosEditar" class="d-grid gap-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button id="btnGuardarCostos" type="button" class="btn btn-primary">Aplicar costos</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade migrar-kepler-modal" id="modalSubirMasivo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Subir CSV masivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input id="archivoCsv" class="form-control" type="file" accept=".csv,text/csv" />
+                <div class="form-text">
+                    Columnas esperadas: código, cantidad, costo, descripción, unidad. Solo el código es obligatorio.
+                    Los renglones con costo generan <b>registro de compra</b>; los que vengan sin costo solo aumentan el stock.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button id="btnEnviarCsv" type="button" class="btn btn-success">Procesar CSV</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script>
+    // Llave de identidad de un producto Kepler. La comparten createTable (rowKey) y
+    // el panel lateral: sin una llave común el panel no puede pedirle a la tabla
+    // que deseleccione una fila.
+    const keplerRowKey = row => `${row.clave}|${row.pedimento}`;
+
+    const PANEL_STORAGE_KEY = 'migrarKepler.panelAbierto';
+
+    const iconoAdvertencia = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: auto;">
+            <style>
+                .flip {
+                    animation: spinY 2s linear infinite;
+                    transform-origin: center;
+                }
+                @@keyframes spinY {
+                    0%   { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                }
+            </style>
+            <g class="flip">
+                <polygon points="32,4 4,60 60,60" fill="#ffc107" stroke="#ff9800" stroke-width="2"/>
+                <line x1="32" y1="20" x2="32" y2="38" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="32" cy="48" r="3" fill="#000"/>
+            </g>
+        </svg>`;
+
+    let allAlmacenes = [];
+    let selectedKeplerProducts = [];
+    let tablaActual = null;
+    let tablaKepler = null;
+    let modalKepler = null;
+
+    // llave -> costo capturado a mano. Manda sobre ultimo_costo tanto en el panel
+    // como en lo que se envía al servidor.
+    const costosPersonalizados = new Map();
+
+    // llave -> { id_tarima, tarima, ulocation }. Si un producto no tiene entrada,
+    // el servidor usa la tarima por defecto de la sucursal/almacén.
+    const tarimasSeleccionadas = new Map();
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+    }
+
+    function toNumber(value) {
+        const num = parseFloat(value);
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    function money(value) {
+        return Currency.format(toNumber(value));
+    }
+
+    function numero(value) {
+        return toNumber(value).toLocaleString('es-MX');
+    }
+
+    function costoDe(row) {
+        const custom = costosPersonalizados.get(keplerRowKey(row));
+        return custom !== undefined ? custom : toNumber(row.ultimo_costo);
+    }
+
+    function buildSelectOptions(select, data, valueKey, textKey, selectedValue, textoVacio = 'Todos') {
+        select.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = textoVacio;
+        select.appendChild(option);
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item[valueKey];
+            opt.textContent = item[textKey];
+            if (selectedValue !== undefined && String(item[valueKey]) === String(selectedValue)) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        });
+    }
+
+    function initTomSelect(selectId, placeholder) {
+        const select = document.getElementById(selectId);
+        if (!select) return null;
+        if (select.tomselect) {
+            select.tomselect.destroy();
+        }
+        return new TomSelect(`#${selectId}`, {
+            create: false,
+            sortField: { field: 'text', direction: 'asc' },
+            plugins: ['dropdown_input'],
+            placeholder: placeholder
+        });
+    }
+
+    // TomSelect guarda el innerHTML original del <select> y lo restaura al destruirse,
+    // así que las opciones nuevas se construyen SIEMPRE con el control ya destruido.
+    function setAlmacenOptions(sucursalId) {
+        const select = document.getElementById('filtroAlmacen');
+        if (select.tomselect) select.tomselect.destroy();
+
+        const almacenes = allAlmacenes.filter(item => String(item.id_sucursal) === String(sucursalId));
+        buildSelectOptions(select, almacenes, 'id_almacen', 'almacen_descripcion');
+        initTomSelect('filtroAlmacen', 'Selecciona almacén');
+    }
+
+    function almacenSeleccionado() {
+        return document.getElementById('filtroAlmacen').value || '';
+    }
+
+    // =========================================================================
+    // ORIGEN KEPLER (base de datos + sucursal + almacén del modal)
+    // =========================================================================
+    function origenKepler() {
+        return {
+            esquema: document.getElementById('selectEmpresa').value || '',
+            sucursal: document.getElementById('selectSucursal').value || '',
+            almacen: document.getElementById('selectAlmacen').value || ''
+        };
+    }
+
+    function origenCompleto() {
+        const origen = origenKepler();
+        return !!(origen.esquema && origen.sucursal && origen.almacen);
+    }
+
+    function textoOrigen() {
+        if (!origenCompleto()) return 'Sin definir';
+        return ['selectEmpresa', 'selectSucursal', 'selectAlmacen']
+            .map(id => {
+                const select = document.getElementById(id);
+                return select.options[select.selectedIndex]?.textContent.trim() ?? '';
+            })
+            .join(' · ');
+    }
+
+    // Los productos pertenecen al origen con el que se cargaron: si cambia,
+    // arrastrar la selección anterior migraría datos de otra base o almacén.
+    function descartarSeleccionPorCambioDeOrigen() {
+        if (!selectedKeplerProducts.length) return;
+        limpiarSeleccion();
+        toastMixin.fire({ icon: 'info', title: 'Se limpió la selección al cambiar el origen' });
+    }
+
+    async function cargarSucursalesKepler() {
+        const esquema = document.getElementById('selectEmpresa').value;
+        const selectSucursal = document.getElementById('selectSucursal');
+        const selectAlmacen = document.getElementById('selectAlmacen');
+
+        buildSelectOptions(selectSucursal, [], 'clave', 'display', undefined, 'Selecciona una sucursal');
+        buildSelectOptions(selectAlmacen, [], 'cve_almacen', 'display', undefined, 'Selecciona un almacen');
+        selectSucursal.disabled = true;
+        selectAlmacen.disabled = true;
+        actualizarTablaKepler();
+
+        if (!esquema) return;
+
+        const data = await GetData({
+            path: '/MigrarInventarioKepler/GetSucursalesKepler',
+            data: { esquema }
+        });
+
+        const sucursales = (data ?? []).map(x => ({ ...x, display: `${x.clave} · ${x.descripcion ?? ''}`.trim() }));
+        buildSelectOptions(selectSucursal, sucursales, 'clave', 'display', undefined, 'Selecciona una sucursal');
+        selectSucursal.disabled = sucursales.length === 0;
+    }
+
+    async function cargarAlmacenesKepler() {
+        const { esquema, sucursal } = origenKepler();
+        const selectAlmacen = document.getElementById('selectAlmacen');
+
+        buildSelectOptions(selectAlmacen, [], 'cve_almacen', 'display', undefined, 'Selecciona un almacen');
+        selectAlmacen.disabled = true;
+        actualizarTablaKepler();
+
+        if (!esquema || !sucursal) return;
+
+        const data = await GetData({
+            path: '/MigrarInventarioKepler/GetAmacenesKepler',
+            data: { esquema, sucursal }
+        });
+
+        const almacenes = (data ?? []).map(x => ({ ...x, display: `${x.cve_almacen} · ${x.descripcion_almacem ?? ''}`.trim() }));
+        buildSelectOptions(selectAlmacen, almacenes, 'cve_almacen', 'display', undefined, 'Selecciona un almacen');
+        selectAlmacen.disabled = almacenes.length === 0;
+    }
+
+    function crearTablaKepler() {
+        tablaKepler = createTable({
+            selector: '#tablaProductosKepler',
+            path: '/MigrarInventarioKepler/GetProductosKepler',
+            rowKey: keplerRowKey,
+            searchable: true,
+            // Cada petición (búsqueda, orden, paginado) lleva el origen elegido.
+            data: () => origenKepler(),
+            selectable: {
+                enabled: true,
+                onChange: rows => {
+                    selectedKeplerProducts = rows;
+
+                    // Descartar costos y tarimas de productos que ya no están seleccionados.
+                    const vigentes = new Set(rows.map(keplerRowKey));
+                    [costosPersonalizados, tarimasSeleccionadas].forEach(mapa => {
+                        mapa.forEach((_, key) => {
+                            if (!vigentes.has(key)) mapa.delete(key);
+                        });
+                    });
+
+                    renderPanelSeleccion();
+                }
+            },
+            columns: [
+                { title: 'Clave', data: 'clave' },
+                { title: 'Descripción', data: 'descripcion' },
+                { title: 'Unidad', data: 'unidad' },
+                { title: 'Existencia', data: 'existencia' },
+                { title: 'Último costo', data: 'ultimo_costo', formatter: v => money(v) },
+                { title: 'Valor inventario', data: 'valor_inventario', formatter: v => money(v) },
+                { title: 'Pedimento', data: 'pedimento' }
+            ]
+        });
+    }
+
+    // La tabla no existe hasta que hay origen completo; después solo se recarga.
+    function actualizarTablaKepler() {
+        const listo = origenCompleto();
+
+        document.getElementById('avisoOrigenKepler').hidden = listo;
+        document.getElementById('tablaProductosKepler').hidden = !listo;
+        renderPanelSeleccion();
+
+        if (!listo) return;
+
+        if (!tablaKepler) {
+            crearTablaKepler();
+            return;
+        }
+
+        const buscador = document.querySelector('#tablaProductosKepler .search-input');
+        if (buscador) buscador.value = '';
+        tablaKepler.reload();
+    }
+
+    function nombreAlmacenDestino() {
+        const select = document.getElementById('filtroAlmacen');
+        if (!select.value) return 'Primer almacén de Stock de la sucursal';
+        return select.options[select.selectedIndex]?.textContent ?? '—';
+    }
+
+    function getProductPayload(row) {
+        const key = keplerRowKey(row);
+        const tarima = tarimasSeleccionadas.get(key);
+        return {
+            id_producto: row.id_producto || null,
+            codigo: row.clave || row.codigo || '',
+            descripcion: row.descripcion || '',
+            cantidad: toNumber(row.existencia ?? row.cantidad),
+            unidad: row.unidad || row.unidadproducto || '',
+            costo: costoDe(row),
+            pedimento: row.pedimento ?? 'NOPEDIMENTO',
+            id_tarima: tarima?.id_tarima ?? '',
+            // Con costo capturado a mano el servidor genera registro de compra;
+            // sin él solo aumenta el stock.
+            costo_actualizado: costosPersonalizados.has(key)
+        };
+    }
+
+    // OJO: las llaves deben ser el nombre EXACTO de las propiedades de ProductoMigracion.
+    // El model binding de ASP.NET compara sin distinguir mayúsculas, pero NO ignora los
+    // guiones bajos: "costo_actualizado" jamás llega a CostoActualizado y la propiedad
+    // se queda en su valor por defecto sin ningún error visible.
+    function flattenProducts(productos, prefix) {
+        return productos.reduce((data, producto, index) => {
+            const base = `${prefix}[${index}]`;
+            data[`${base}.IdProducto`] = producto.id_producto ?? '';
+            data[`${base}.Codigo`] = producto.codigo ?? '';
+            data[`${base}.Descripcion`] = producto.descripcion ?? '';
+            data[`${base}.Cantidad`] = producto.cantidad ?? 0;
+            data[`${base}.Unidad`] = producto.unidad ?? '';
+            data[`${base}.Costo`] = producto.costo ?? '';
+            data[`${base}.Pedimento`] = producto.pedimento ?? 'NOPEDIMENTO';
+            data[`${base}.IdTarima`] = producto.id_tarima ?? '';
+            data[`${base}.CostoActualizado`] = producto.costo_actualizado === true;
+            return data;
+        }, {});
+    }
+
+    // =========================================================================
+    // PANEL LATERAL
+    // =========================================================================
+    function togglePanel(abrir) {
+        const layout = document.getElementById('keplerLayout');
+        const visible = abrir ?? layout.classList.contains('is-collapsed');
+
+        layout.classList.toggle('is-collapsed', !visible);
+        localStorage.setItem(PANEL_STORAGE_KEY, visible ? '1' : '0');
+    }
+
+    function renderPanelSeleccion() {
+        const lista = document.getElementById('listaSeleccion');
+        const cantidad = selectedKeplerProducts.length;
+        const total = selectedKeplerProducts.reduce(
+            (acc, row) => acc + toNumber(row.existencia) * costoDe(row), 0);
+
+        document.getElementById('contadorSeleccion').textContent = cantidad;
+        document.getElementById('badgeSeleccionRail').textContent = cantidad;
+        document.getElementById('resumenSeleccion').textContent = cantidad
+            ? `${cantidad} producto${cantidad === 1 ? '' : 's'} seleccionado${cantidad === 1 ? '' : 's'}`
+            : 'Sin productos seleccionados';
+        document.getElementById('totalSeleccion').textContent = money(total);
+        document.getElementById('destinoSeleccion').textContent = nombreAlmacenDestino();
+        document.getElementById('origenSeleccion').textContent = textoOrigen();
+
+        ['btnProcesarSeleccion', 'btnEditarSeleccion', 'btnVaciarSeleccion', 'btnTarimaTodos']
+            .forEach(id => { document.getElementById(id).disabled = cantidad === 0; });
+
+        if (!cantidad) {
+            lista.innerHTML = `
+                <li class="kepler-panel-empty">
+                    <i class="fa-solid fa-inbox"></i>
+                    Abre <strong>Ver productos Kepler</strong> y marca los productos que quieras migrar.
+                </li>`;
+            return;
+        }
+
+        lista.innerHTML = selectedKeplerProducts.map(row => {
+            const key = keplerRowKey(row);
+            const costo = costoDe(row);
+            const existencia = toNumber(row.existencia);
+            const editado = costosPersonalizados.has(key);
+            const tarima = tarimasSeleccionadas.get(key);
+
+            return `
+                <li class="kepler-item">
+                    <div class="kepler-item-top">
+                        <span class="kepler-item-code">${escapeHtml(row.clave)}</span>
+                        <button type="button" class="kepler-item-remove" data-key="${escapeHtml(key)}"
+                                title="Quitar de la selección" aria-label="Quitar ${escapeHtml(row.clave)}">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <p class="kepler-item-desc" title="${escapeHtml(row.descripcion)}">${escapeHtml(row.descripcion)}</p>
+                    <div class="kepler-item-meta">
+                        <span>${numero(existencia)} ${escapeHtml(row.unidad ?? '')}</span>
+                        <span class="kepler-item-cost ${editado ? 'is-edited' : ''}" title="${editado ? 'Costo nuevo: se registrará como compra' : 'Último costo de compra: solo aumenta stock'}">
+                            ${money(costo)}${editado ? ' <i class="fa-solid fa-pen-to-square"></i>' : ''}
+                        </span>
+                    </div>
+                    <div class="kepler-item-total">Valor: <strong>${money(existencia * costo)}</strong></div>
+                    <div class="kepler-item-tarima">
+                        <button type="button" class="kepler-tarima-btn ${tarima ? 'is-set' : ''}" data-key="${escapeHtml(key)}"
+                                title="Elegir tarima destino">
+                            <i class="fa-solid fa-pallet"></i>
+                            <span>${tarima ? escapeHtml(`${tarima.tarima}${tarima.ulocation ? ' · ' + tarima.ulocation : ''}`) : 'Tarima automática'}</span>
+                        </button>
+                        ${tarima ? `<button type="button" class="kepler-tarima-reset" data-reset="${escapeHtml(key)}" title="Volver a tarima automática"><i class="fa-solid fa-rotate-left"></i></button>` : ''}
+                    </div>
+                </li>`;
+        }).join('');
+    }
+
+    function limpiarSeleccion() {
+        costosPersonalizados.clear();
+        tarimasSeleccionadas.clear();
+        selectedKeplerProducts = [];
+        // clearSelection() de TableBuilder no dispara onChange: el estado local se limpia aquí.
+        if (tablaKepler) tablaKepler.clearSelection();
+        renderPanelSeleccion();
+    }
+
+    // =========================================================================
+    // SUGERENCIAS DE TARIMA
+    // =========================================================================
+    function claseEtiquetaTarima(item) {
+        if (item.tiene_producto) return ['kepler-tag-mismo', 'Mismo producto'];
+        if (toNumber(item.productos_distintos) === 0) return ['kepler-tag-vacia', 'Vacía'];
+        return ['kepler-tag-ocupada', `${numero(item.productos_distintos)} productos`];
+    }
+
+    function filaTarima(item) {
+        const [clase, etiqueta] = claseEtiquetaTarima(item);
+        const detalle = item.tiene_producto
+            ? `${numero(item.cantidad_producto)} de este producto`
+            : (toNumber(item.productos_distintos) === 0 ? 'Sin productos' : `${numero(item.cantidad_total)} en total`);
+
+        return `
+            <tr data-buscar="${escapeHtml(`${item.tarima} ${item.ulocation ?? ''} ${item.almacen ?? ''}`.toLowerCase())}">
+                <td><strong>${escapeHtml(item.tarima)}</strong></td>
+                <td>${escapeHtml(item.ulocation ?? '')}</td>
+                <td>${escapeHtml(item.almacen ?? '')}</td>
+                <td><span class="kepler-tag ${clase}">${escapeHtml(etiqueta)}</span></td>
+                <td>${escapeHtml(detalle)}</td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-primary kepler-elegir-tarima"
+                            data-id="${escapeHtml(item.id_tarima)}"
+                            data-tarima="${escapeHtml(item.tarima)}"
+                            data-ulocation="${escapeHtml(item.ulocation ?? '')}">Elegir</button>
+                </td>
+            </tr>`;
+    }
+
+    // key = null -> la tarima elegida se aplica a todos los productos seleccionados.
+    async function abrirSugerenciasTarima(key) {
+        const row = key ? selectedKeplerProducts.find(r => keplerRowKey(r) === key) : null;
+        const codigo = row ? row.clave : '';
+
+        Swal.fire({ title: 'Buscando tarimas...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        const res = await GetData({
+            path: '/MigrarInventarioKepler/GetTarimasSugeridas',
+            data: { codigo, id_almacen: almacenSeleccionado() }
+        });
+
+        // No se cierra el "Buscando..." antes de tiempo: el siguiente fire() lo reemplaza.
+        const tarimas = res?.data ?? [];
+
+        if (!tarimas.length) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Sin tarimas disponibles',
+                text: 'No se encontraron tarimas de almacenes tipo Stock en esta sucursal.'
+            });
+            return;
+        }
+
+        const encabezado = row
+            ? `Tarima destino para <b>${escapeHtml(row.clave)}</b>`
+            : 'Tarima destino para todos los productos seleccionados';
+
+        _Swal.fire({
+            width: '54rem',
+            title: 'Sugerencias de tarima',
+            showConfirmButton: false,
+            cancelButtonText: 'Cerrar',
+            html: `
+                <p class="text-start small text-muted mb-2">
+                    ${encabezado}. Se listan primero las tarimas que ya tienen este producto,
+                    después las vacías y al final las más ocupadas.
+                </p>
+                <input id="buscarTarima" class="form-control form-control-sm mb-2" placeholder="Filtrar por tarima, ubicación o almacén..." />
+                <div class="kepler-tarimas-wrap">
+                    <table class="kepler-tarimas-table">
+                        <thead>
+                            <tr>
+                                <th>Tarima</th>
+                                <th>Ubicación</th>
+                                <th>Almacén</th>
+                                <th>Estado</th>
+                                <th>Contenido</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTarimas">${tarimas.map(filaTarima).join('')}</tbody>
+                    </table>
+                </div>`,
+            didOpen: () => {
+                const cuerpo = document.getElementById('cuerpoTarimas');
+
+                document.getElementById('buscarTarima').addEventListener('input', e => {
+                    const texto = e.target.value.trim().toLowerCase();
+                    cuerpo.querySelectorAll('tr').forEach(tr => {
+                        tr.hidden = texto !== '' && !tr.dataset.buscar.includes(texto);
+                    });
+                });
+
+                cuerpo.addEventListener('click', e => {
+                    const boton = e.target.closest('.kepler-elegir-tarima');
+                    if (!boton) return;
+
+                    const destino = {
+                        id_tarima: parseInt(boton.dataset.id, 10),
+                        tarima: boton.dataset.tarima,
+                        ulocation: boton.dataset.ulocation
+                    };
+
+                    if (key) tarimasSeleccionadas.set(key, destino);
+                    else selectedKeplerProducts.forEach(r => tarimasSeleccionadas.set(keplerRowKey(r), destino));
+
+                    renderPanelSeleccion();
+                    Swal.close();
+                });
+            }
+        });
+    }
+
+    // =========================================================================
+    // MIGRACIÓN
+    // =========================================================================
+    function confirmarMigracion(cantidad) {
+        const conTarima = selectedKeplerProducts.filter(r => tarimasSeleccionadas.has(keplerRowKey(r))).length;
+        const detalleTarimas = conTarima === cantidad
+            ? 'Todos con tarima elegida.'
+            : `${conTarima} con tarima elegida y ${cantidad - conTarima} con tarima automática.`;
+
+        const conCosto = selectedKeplerProducts.filter(r => costosPersonalizados.has(keplerRowKey(r))).length;
+        const detalleCostos = conCosto
+            ? `${conCosto} con costo nuevo: genera${conCosto === 1 ? '' : 'n'} registro de compra.`
+            : 'Ninguno con costo nuevo: solo aumenta el stock.';
+
+        return _Swal.fire({
+            iconHtml: iconoAdvertencia,
+            title: 'Confirmar transferencia',
+            html: `Se migrarán <b>${cantidad}</b> producto${cantidad === 1 ? '' : 's'} de Kepler hacia <b>${escapeHtml(nombreAlmacenDestino())}</b>.<br><span class="small text-muted">${detalleTarimas}<br>${detalleCostos}</span>`,
+            footer: "<b style='color: red;'>ADVERTENCIA - Este cambio no se puede revertir</b>",
+            customClass: {
+                icon: 'p-0 bg-transparent border-0 shadow-none'
+            }
+        });
+    }
+
+    function mostrarResultado(res, tituloOk) {
+        const ok = !!res && (res.success === true || res.icon === 'success');
+        Swal.fire({
+            icon: ok ? 'success' : 'error',
+            title: ok ? (res.title ?? tituloOk) : (res?.title ?? 'No se pudo completar la operación'),
+            html: (res && (res.message ?? res.html)) || (res ? '' : 'El servidor no devolvió una respuesta.')
+        });
+        return ok;
+    }
+
+    function enviarMigracion(path, datos, tituloOk) {
+        Swal.fire({
+            title: 'Procesando...',
+            text: 'Esto puede tardar unos segundos',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        return GetData({ path, data: datos }).then(res => {
+            if (mostrarResultado(res, tituloOk)) {
+                limpiarSeleccion(); // clearSelection() ya recarga la tabla Kepler
+                if (tablaActual) tablaActual.refreshPage();
+            }
+        });
+    }
+
+    function procesarSeleccion() {
+        const productos = selectedKeplerProducts.map(getProductPayload).filter(p => p.codigo);
+        if (!productos.length) {
+            Swal.fire({ icon: 'warning', title: 'Selecciona productos', text: 'Debes elegir al menos un producto Kepler.' });
+            return;
+        }
+
+        confirmarMigracion(productos.length).then(result => {
+            if (!result.isConfirmed) return;
+            enviarMigracion(
+                '/MigrarInventarioKepler/ProcesarProductosSeleccionados',
+                { ...flattenProducts(productos, 'productos'), id_almacen: almacenSeleccionado() },
+                'Migración ejecutada');
+        });
+    }
+
+    function abrirModalEdicion() {
+        if (!selectedKeplerProducts.length) {
+            Swal.fire({ icon: 'warning', title: 'Selecciona productos', text: 'Debes elegir al menos un producto Kepler.' });
+            return;
+        }
+
+        const lista = document.getElementById('listaProductosEditar');
+        lista.innerHTML = selectedKeplerProducts.map(row => {
+            const key = keplerRowKey(row);
+            return `
+                <div class="kepler-editar-item">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <div class="overflow-hidden">
+                            <strong>${escapeHtml(row.clave)}</strong>
+                            <div class="text-muted small text-truncate">${escapeHtml(row.descripcion)}</div>
+                            <div class="text-muted small">${numero(row.existencia)} ${escapeHtml(row.unidad ?? '')}</div>
+                        </div>
+                        <input class="form-control form-control-sm costo-producto" style="max-width:140px;"
+                               type="number" step="0.01" min="0"
+                               value="${costoDe(row)}" data-key="${escapeHtml(key)}" />
+                    </div>
+                </div>`;
+        }).join('');
+
+        document.getElementById('costoGeneral').value = '';
+        new bootstrap.Modal(document.getElementById('modalEditarCostos')).show();
+    }
+
+    function aplicarCostosEditados() {
+        document.querySelectorAll('#listaProductosEditar .costo-producto').forEach(input => {
+            const key = input.dataset.key;
+            const row = selectedKeplerProducts.find(r => keplerRowKey(r) === key);
+            if (!row) return;
+
+            const costo = toNumber(input.value);
+            // Solo se guarda como "personalizado" lo que difiere del último costo de compra.
+            if (input.value === '' || costo === toNumber(row.ultimo_costo)) costosPersonalizados.delete(key);
+            else costosPersonalizados.set(key, costo);
+        });
+
+        renderPanelSeleccion();
+        bootstrap.Modal.getInstance(document.getElementById('modalEditarCostos'))?.hide();
+        togglePanel(true);
+        toastMixin.fire({ title: 'Costos aplicados a la selección' });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const filtroSucursal = document.getElementById('filtroSucursal');
+        const filtroAlmacen = document.getElementById('filtroAlmacen');
+
+        renderPanelSeleccion();
+
+        // Deja el modal en su estado inicial (aviso visible, tabla oculta) y cubre el
+        // caso de que el navegador restaure el valor de selectEmpresa al recargar.
+        cargarSucursalesKepler();
+
+        GetData({ path: '/MigrarInventarioKepler/GetUbicaciones' }).then(data => {
+            if (!data) return;
+
+            allAlmacenes = data.almacenes || [];
+
+            buildSelectOptions(
+                filtroSucursal,
+                data.sucursales || [],
+                'id_sucursal',
+                'descripcion',
+                data.currentSucursal
+            );
+            initTomSelect('filtroSucursal', 'Selecciona sucursal');
+
+            setAlmacenOptions(data.currentSucursal || filtroSucursal.value);
+            renderPanelSeleccion();
+        });
+
+        tablaActual = createTable({
+            selector: '#tablaProductosActuales',
+            path: '/MigrarInventarioKepler/GetProductosActuales',
+            searchable: true,
+            rowKey: row => `${row.codigo}|${row.ulocation}|${row.id_almacen}`,
+            selectable: { enabled: false },
+            columns: [
+                { title: 'Código', data: 'codigo' },
+                { title: 'Descripción', data: 'descripcion' },
+                { title: 'Sucursal', data: 'descripcionsucursal' },
+                { title: 'Almacén', data: 'almacendescripcion' },
+                { title: 'Ubicación', data: 'ulocation' },
+                { title: 'Cantidad', data: 'cantidad' },
+                { title: 'Costo prom. unitario', data: 'costo_promedio_unitario', formatter: v => money(v) },
+                { title: 'Costo prom. total', data: 'costo_promedio_total', formatter: v => money(v) }
+            ],
+            data: () => ({
+                id_sucursal: filtroSucursal.value || 0,
+                id_almacen: filtroAlmacen.value || 0
+            })
+        });
+
+        const recargarActuales = () => tablaActual.reload(
+            document.querySelector('#tablaProductosActuales .search-input')?.value ?? '');
+
+        // Las tarimas elegidas pertenecen al almacén filtrado: si cambia el filtro
+        // dejan de ser válidas y el servidor las descartaría de todos modos.
+        const olvidarTarimas = () => {
+            if (!tarimasSeleccionadas.size) return;
+            tarimasSeleccionadas.clear();
+            toastMixin.fire({ icon: 'info', title: 'Se reiniciaron las tarimas elegidas' });
+        };
+
+        filtroSucursal.addEventListener('change', () => {
+            setAlmacenOptions(filtroSucursal.value);
+            olvidarTarimas();
+            renderPanelSeleccion();
+            recargarActuales();
+        });
+
+        filtroAlmacen.addEventListener('change', () => {
+            olvidarTarimas();
+            renderPanelSeleccion();
+            recargarActuales();
+        });
+
+        // ── Origen de los datos de Kepler ────────────────────────────────────
+        // Primero el cargador (que vacía de forma síncrona los selects dependientes)
+        // y después el descarte: así el refetch de clearSelection() sale con el origen
+        // ya incompleto y el servidor lo corta sin ir a la base de Kepler.
+        document.getElementById('selectEmpresa').addEventListener('change', () => {
+            cargarSucursalesKepler();
+            descartarSeleccionPorCambioDeOrigen();
+        });
+
+        document.getElementById('selectSucursal').addEventListener('change', () => {
+            cargarAlmacenesKepler();
+            descartarSeleccionPorCambioDeOrigen();
+        });
+
+        document.getElementById('selectAlmacen').addEventListener('change', () => {
+            descartarSeleccionPorCambioDeOrigen();
+            actualizarTablaKepler();
+        });
+
+        // ── Mostrar / ocultar el panel ───────────────────────────────────────
+        togglePanel(localStorage.getItem(PANEL_STORAGE_KEY) !== '0');
+
+        document.getElementById('btnMostrarPanel').addEventListener('click', () => togglePanel(true));
+        document.getElementById('btnOcultarPanel').addEventListener('click', () => togglePanel(false));
+
+        document.getElementById('listaSeleccion').addEventListener('click', e => {
+            const quitar = e.target.closest('.kepler-item-remove');
+            if (quitar) {
+                const key = quitar.dataset.key;
+                costosPersonalizados.delete(key);
+                tarimasSeleccionadas.delete(key);
+                if (tablaKepler) {
+                    tablaKepler.removeSelectedRow(key); // dispara onChange -> repinta el panel
+                } else {
+                    selectedKeplerProducts = selectedKeplerProducts.filter(row => keplerRowKey(row) !== key);
+                    renderPanelSeleccion();
+                }
+                return;
+            }
+
+            const reset = e.target.closest('.kepler-tarima-reset');
+            if (reset) {
+                tarimasSeleccionadas.delete(reset.dataset.reset);
+                renderPanelSeleccion();
+                return;
+            }
+
+            const elegir = e.target.closest('.kepler-tarima-btn');
+            if (elegir) abrirSugerenciasTarima(elegir.dataset.key);
+        });
+
+        document.getElementById('btnTarimaTodos').addEventListener('click', () => abrirSugerenciasTarima(null));
+
+        document.getElementById('btnVaciarSeleccion').addEventListener('click', () => {
+            _Swal.fire({
+                icon: 'question',
+                title: '¿Vaciar la selección?',
+                text: 'Se quitarán todos los productos, los costos editados y las tarimas elegidas.'
+            }).then(result => {
+                if (result.isConfirmed) limpiarSeleccion();
+            });
+        });
+
+        // ── Acciones principales ─────────────────────────────────────────────
+        const modalKeplerEl = document.getElementById('modalProductosKepler');
+
+        // El panel vive dentro del contenido, así que mientras el modal está
+        // abierto necesita elevarse por encima del backdrop (ver CSS).
+        modalKeplerEl.addEventListener('show.bs.modal', () => document.body.classList.add('kepler-modal-abierto'));
+        modalKeplerEl.addEventListener('hidden.bs.modal', () => document.body.classList.remove('kepler-modal-abierto'));
+
+        document.getElementById('btnAbrirModalKepler').addEventListener('click', function () {
+            // focus: false deja usar el panel lateral mientras el modal está abierto.
+            modalKepler = modalKepler ?? new bootstrap.Modal(modalKeplerEl, { focus: false });
+            togglePanel(true);
+            modalKepler.show();
+        });
+
+        document.getElementById('btnProcesarSeleccion').addEventListener('click', procesarSeleccion);
+        document.getElementById('btnEditarSeleccion').addEventListener('click', abrirModalEdicion);
+
+        document.getElementById('btnAplicarCostoGeneral').addEventListener('click', function () {
+            const valor = document.getElementById('costoGeneral').value;
+            if (valor === '') {
+                Swal.fire({ icon: 'warning', title: 'Captura un costo', text: 'Escribe el costo unitario general que quieres aplicar.' });
+                return;
+            }
+            document.querySelectorAll('#listaProductosEditar .costo-producto').forEach(input => { input.value = valor; });
+        });
+
+        document.getElementById('btnGuardarCostos').addEventListener('click', aplicarCostosEditados);
+
+        // ── CSV masivo ───────────────────────────────────────────────────────
+        document.getElementById('btnSubirMasivo').addEventListener('click', function () {
+            document.getElementById('archivoCsv').value = '';
+            new bootstrap.Modal(document.getElementById('modalSubirMasivo')).show();
+        });
+
+        document.getElementById('btnEnviarCsv').addEventListener('click', function () {
+            const fileInput = document.getElementById('archivoCsv');
+            if (!fileInput.files || !fileInput.files.length) {
+                Swal.fire({ icon: 'warning', title: 'Selecciona un archivo', text: 'Debes elegir un archivo CSV.' });
+                return;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalSubirMasivo'))?.hide();
+            enviarMigracion(
+                '/MigrarInventarioKepler/SubirMasivo',
+                { file: fileInput.files[0], id_almacen: almacenSeleccionado() },
+                'Archivo procesado');
+        });
+    });
+</script>

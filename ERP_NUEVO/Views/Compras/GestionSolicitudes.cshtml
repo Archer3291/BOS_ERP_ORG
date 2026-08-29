@@ -1,0 +1,51 @@
+﻿@using BOS_ERP.Controllers
+
+@{
+    ViewBag.Title = "Gestion de solicitudes";
+    ViewBag.PageTitle = "Gestion de solicitudes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var role = Utilities.GetUserRole(User.Identity.Name, "ERP_SRS");
+    var area = Utilities.GetAreaName(User.Identity.Name);
+
+    // Compras trabaja la requisicion en dos momentos: opciones de proveedor (estatus 2)
+    // y metodo de pago (estatus 5). Direccion aprueba la cotizacion (estatus 6).
+    // Presupuesto vive en su propia vista: Compras/GestionSolicitudesFinanzas.
+    var esCompras = area == "Compras Nacionales";
+    var esDireccion = role == "Director" || area == "Direccion";
+    var esAdmin = role == "Super Administrador" || area == "Sistemas";
+}
+
+<link href="~/content/Site.css" rel="stylesheet" />
+
+@if (esAdmin)
+{
+    <div class="alert alert-info">
+        <i class="fa-solid fa-circle-info me-2"></i>
+        Vista de administrador: se muestran los dos procesos que viven en esta pantalla.
+    </div>
+
+    <h5 class="mt-4 mb-3">Proceso de Compras &mdash; opciones de proveedor y metodo de pago</h5>
+    @await Html.PartialAsync("OpPartials/_RequisicionMaterialCompras")
+
+    <hr class="my-5" />
+
+    <h5 class="mb-3">Proceso de Direccion &mdash; aprobacion de la cotizacion</h5>
+    @await Html.PartialAsync("OpPartials/_RequisicionMaterialDirector")
+}
+else if (esDireccion)
+{
+    @await Html.PartialAsync("OpPartials/_RequisicionMaterialDirector")
+}
+else if (esCompras)
+{
+    @await Html.PartialAsync("OpPartials/_RequisicionMaterialCompras")
+}
+else
+{
+    ViewBag.PageTitle = "Acceso denegado";
+    <div class="d-flex flex-column align-items-center justify-content-center gap-3">
+        <img src="https://http.cat/403" alt="Acceso denegado" />
+        <p class="text-muted">Esta pantalla es para las areas de Compras Nacionales y Direccion.</p>
+    </div>
+}

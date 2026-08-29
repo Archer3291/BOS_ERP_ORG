@@ -1,0 +1,601 @@
+﻿@using BOS_ERP.Controllers;
+
+@{
+    ViewBag.Title = "Requisision de Material";
+}
+
+<link href="~/content/sidebar.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<form>
+    @Html.AntiForgeryToken()
+</form>
+<div class="accordion modern-accordion fade-in-up" id="acordeonTablas">
+    <!-- Creadas -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingCreadas">
+            <button class="accordion-button modern-accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCreadas" aria-expanded="true" aria-controls="collapseCreadas">
+                🟡 Solicitudes pendientes por aprobar
+            </button>
+        </h2>
+        <div id="collapseCreadas" class="accordion-collapse collapse show" aria-labelledby="headingCreadas" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaPendientesGerente" class="table modern-table" style="width:100%">
+                        <thead class="table-warning">
+                            <tr>
+                                <th><i class="fas fa-file-invoice"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-receipt"></i> Solicitante</th>
+                                <th><i class="fas fa-dollar-sign"></i> Importe</th>
+                                <th><i class="fas fa-comment-alt"></i> Observaciones</th>
+                                <th><i class="fas fa-tools"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aceptadas -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingAceptadas">
+            <button class="accordion-button modern-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAceptadas" aria-expanded="false" aria-controls="collapseAceptadas">
+                🟢 Documentos creados
+            </button>
+        </h2>
+        <div id="collapseAceptadas" class="accordion-collapse collapse" aria-labelledby="headingAceptadas" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaCreadasGerente" class="table modern-table" style="width:100%">
+                        <thead class="table-success">
+                            <tr>
+                                <th><i class="fas fa-file-invoice"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-receipt"></i> Solicitante</th>
+                                <th><i class="fas fa-dollar-sign"></i> Importe</th>
+                                <th><i class="fas fa-comment-alt"></i> Observaciones</th>
+                                <th><i class="fas fa-tools"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Opciones para Cotización -->
+    <div class="accordion-item modern-accordion-item">
+        <h2 class="accordion-header modern-accordion-header" id="headingOpcionesCotizacion">
+            <button class="accordion-button modern-accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOpcionesCotizacion" aria-expanded="false" aria-controls="collapseOpcionesCotizacion">
+                📝 Opciones para cotización
+            </button>
+        </h2>
+        <div id="collapseOpcionesCotizacion" class="accordion-collapse collapse" aria-labelledby="headingOpcionesCotizacion" data-bs-parent="#acordeonTablas">
+            <div class="accordion-body modern-accordion-body">
+                <div class="table-responsive">
+                    <table id="tablaOpcionesCotizacionGerente" class="table modern-table" style="width:100%">
+                        <thead class="table-info">
+                            <tr>
+                                <th><i class="fas fa-file-invoice"></i> Folio</th>
+                                <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                                <th><i class="fas fa-receipt"></i> Solicitante</th>
+                                <th><i class="fas fa-dollar-sign"></i> Importe</th>
+                                <th><i class="fas fa-comment-alt"></i> Observaciones</th>
+                                <th><i class="fas fa-tools"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAgregarOpciones" tabindex="-1" aria-labelledby="modalOpcionesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesLabel"><i class="bi bi-pencil-square"></i> Editar Requisición</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <div id="docs_content"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btn-actualizar" class="btn btn-success"><i class="bi bi-save-fill"></i> Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="~/lib/jspdf/jspdf.umd.min.js"></script>
+<script src="~/lib/jspdf-autotable/jspdf.plugin.autotable.min.js"></script>
+<script src="~/Scripts/GenerarPDF.js"></script>
+<script src="~/lib/signature_pad/dist/signature_pad.umd.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        cargarTabla("#tablaPendientesGerente", "/Requisicion/GetRequisicionesGerente");
+        cargarTabla("#tablaCreadasGerente", "/Requisicion/GetRequisicionesAceptadasGerente");
+        cargarTabla("#tablaOpcionesCotizacionGerente", "/Requisicion/GetRequisicionesConOpcionesGerente");
+    });
+
+    function cargarTabla(selector, url) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        const tabla = $(selector).DataTable({
+            destroy: true,
+            responsive: true,
+            autoWidth: false,
+            ajax: {
+                url: url,
+                data: { id: id },
+                dataSrc: "data"
+            },
+            columns: [
+                { data: "nuevo_codigo" },
+                {
+                    data: "fch",
+                    render: function (data, type, row) {
+                        if (data && data.startsWith("/Date(")) {
+                            const timestamp = parseInt(data.match(/\d+/)[0]);
+                            const date = new Date(timestamp);
+                            return date.toLocaleDateString('es-MX');
+                        }
+                        return "";
+                    }
+                },
+                { data: "responsable" },
+                { data: "imp", render: data => `$${parseFloat(data).toFixed(2)}` },
+                { data: "coment_aut" },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function (data, type, row, meta) {
+                        let botones = `
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm blue-500" style="color: var(--icon-color)" onclick="GetInfoGeneral(${data.id_encabezado})">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                </button>`;
+                        if (meta.settings.nTable.id === "tablaOpcionesCotizacionGerente") {
+                            botones += `` +
+                                `<button class="btn btn-sm btn-success" title="Seleccionar Producto" data-encabezado="${data.id_encabezado}" data-nvocodigo="${data.nuevo_codigo}"  onclick="aceptarProducto(this)">` +
+                                `    <i class="fa-solid fa-circle-check"></i>` +
+                                `</button>` +
+                                `<button class="btn btn-sm blue-500" title="Descargar Solicitud" onclick="GenerarPDFGeneral(${data.id_encabezado})">` +
+                                `      <i class="fa-solid fa-download"></i > ` +
+                                `</button>`;
+                        } else if (meta.settings.nTable.id === "tablaCreadasGerente") {
+                            botones += `` +
+                                `<button class="btn btn-sm green-500" title="Descargar Solicitud" onclick="GenerarPDFGeneral(${row.id_encabezado})">` +
+                                `      <i class="fa-solid fa-download"></i > ` +
+                                `</button>`;
+                        } else {
+                            botones += `` +
+                                `   <button class="btn btn-sm green-500" style="color: var(--icon-color)" onclick="aceptarRemision('${data.id_encabezado}', '${row.nuevo_codigo}')">` +
+                                `       <i class="fa-solid fa-badge-check"></i>` +
+                                `   </button>` +
+                                `   <button class="btn btn-sm red-500" style="color: var(--icon-color)" onclick="rechazarRemision('${data.id_encabezado}', '${row.nuevo_codigo}')">` +
+                                `       <i class="fa-solid fa-circle-xmark"></i>` +
+                                `   </button>` +
+                                `   <button class="btn btn-sm green-500" style = "color: var(--icon-color)" title="Descargar Requisicion" onclick="GenerarPDFGeneral(${row.id_encabezado})"> ` +
+                                `      <i class="fa-solid fa-download"></i > ` +
+                                `   </button >` +
+                                `</div>`;
+                        }
+                        return botones
+                    },
+
+                },
+                { data: "id_encabezado", visible: false, searchable: true }
+            ],
+        });
+
+        if (id) {
+            $(selector).on('xhr.dt', function () {
+                tabla.search(id).draw();
+            });
+        }
+    }
+
+    function aceptarRemision(id_encabezado, fol_doc) {
+        Swal.fire({
+            title: `¿Aceptar solicitud de cotizacion ${fol_doc}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, aceptar',
+            cancelButtonText: 'Cancelar'
+        }).then(result => {
+            if (result.isConfirmed) {
+                GetData({
+                    path: '/Requisicion/AceptarRequisicion',
+                    data: {
+                        id_encabezado: id_encabezado
+                    }
+                }).then((data) => {
+                    if (data.success) {
+                        Swal.fire('Aceptada', `La solicitud de cotizacion ${fol_doc} fue aceptada correctamente.`, 'success');
+                        $('#tablaPendientesGerente').DataTable().ajax.reload();
+                    } else {
+                        Swal.fire('Error', data.error || 'No se pudo aceptar la solicitud de cotizacion.', 'error');
+                    }
+                })
+            }
+        });
+    }
+
+    function rechazarRemision(id_encabezado, fol_doc) {
+        Swal.fire({
+            title: `¿Rechazar solicitud de cotizacion ${fol_doc}?`,
+            input: 'textarea',
+            inputLabel: 'Motivo del rechazo',
+            inputPlaceholder: 'Escribe el motivo...',
+            inputAttributes: {
+                'aria-label': 'Motivo del rechazo'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Sí, rechazar',
+            cancelButtonText: 'Cancelar',
+            preConfirm: (comentario) => {
+                if (!comentario) {
+                    Swal.showValidationMessage('Debes ingresar un motivo');
+                }
+                return comentario;
+            }
+        }).then(result => {
+            if (result.isConfirmed) {
+                GetData({
+                    path: '/Requisicion/RechazarRequisicion',
+                    data: {
+                        id_encabezado: id_encabezado,
+                        comentario: result.value
+                    }
+                }).then((data) => {
+                    if (data.success) {
+                        Swal.fire('Rechazada', `La solicitud de cotizacion ${fol_doc} fue rechazada correctamente.`, 'success');
+                        $('#tablaPendientesGerente').DataTable().ajax.reload();
+                    } else {
+                        Swal.fire('Error', data.error || 'No se pudo rechazar la solicitud de cotizacion.', 'error');
+                    }
+                })
+            }
+        });
+    }
+
+    function aceptarProducto(e) {
+        const id = $(e).data('encabezado');
+        const nuevo_codigo = $(e).data('nvocodigo');
+
+        GetData({
+            path: '/Requisicion/GetRequisicionDataAndOptions',
+            data: { id: id }
+        }).then((_res) => {
+            const body = document.getElementById('docs_content');
+            body.innerHTML = '';
+            const tipoProducto = _res.requisicion.tipo_producto;
+
+            const cardUsuario = document.createElement('div');
+            cardUsuario.className = 'card shadow-sm border-0 mb-4';
+            cardUsuario.style.backgroundColor = 'var(--bg-gray)';
+            cardUsuario.style.borderRadius = '1rem';
+            cardUsuario.style.padding = '1.5rem';
+
+            cardUsuario.innerHTML = `
+            <div class="mb-3">
+                <label for="usuarioFinanzas" class="form-label fw-semibold">Usuario de Finanzas</label>
+                <select class="form-select" id="usuarioFinanzas">
+                    <option selected disabled value="">Seleccione un usuario</option>
+                </select>
+                Comentario
+                <div class="form-floating">
+                    <textarea class="form-control" id="Comentario" name="Comentario"></textarea>
+                    <label for="Comentario">Comentario</label>
+                </div>
+            </div>`;
+
+            body.appendChild(cardUsuario);
+
+            const selectFinanzas = document.getElementById('usuarioFinanzas');
+            _res.finanzas.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.usuarioid;
+                opt.textContent = u.nombre_completo;
+                selectFinanzas.appendChild(opt);
+            });
+
+            Object.entries(_res.partidas).forEach(([k, v]) => {
+                const div = document.createElement('div');
+                div.id = `card-partida-${v.id_partidas}`;
+                const tablaId = `tabla-materiales_${v.id_partidas}`;
+
+                let html = `
+                <div class="card shadow-sm border-0 mb-4" style="background-color: var(--bg-gray); border-radius: 1rem; padding: 1.5rem;">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="mb-1 text-light" style="font-size: 0.9rem;">Clave:</p>
+                            <p class="mb-1 fw-bold">${v.cve_prod}</p>
+                            <p class="mb-1 text-light" style="font-size: 0.9rem;">Descripción:</p>
+                            <p class="fw-bold">${v.descr_prod}</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped-columns align-middle" id="${tablaId}">
+                            <thead class="text-center" style="background-color: var(--very-light-blue); border-bottom: 1px solid var(--border-light);">
+                                <tr class="text-dark">
+                                    <th class="text-start"><i class="bi bi-check-square"></i></th>
+                                    <th class="text-start">Proveedor *</th>
+                                    <th class="text-start">Producto *</th>
+                                    <th class="text-start">Descripción</th>
+                                    <th class="text-start">Unidad</th>
+                                    <th class="text-start">Costo Unitario</th>
+                                    <th class="text-start">Cantidad</th>
+                                    <th class="text-start">Descuento</th>
+                                    ${tipoProducto === 'directo' ? `<th class="text-start">Precio de venta</th>` : ''}
+                                    <th class="text-start">Total</th>
+                                    <th class="text-start">Adjunto</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>`;
+
+                div.innerHTML = html;
+                body.appendChild(div);
+
+                const opciones = _res.opciones.filter(op => op.partidas_id == v.id_partidas);
+                const tbody = document.querySelector(`#${tablaId} tbody`);
+
+                opciones.forEach(op => {
+                    const fila = document.createElement('tr');
+                    const precio = parseFloat(op.precio);
+                    const cantidad = parseFloat(op.cant_ud) || 0;
+                    const descuento = parseFloat(op.descuento) || 0;
+                    const subtotal = precio * cantidad;
+                    const total = Math.max(0, subtotal - descuento);
+                    const precioVenta = parseFloat(op.precio_venta) || 0;
+                    const ext = getFileIcon(op.extencion);
+
+                    // Agrega condicionalmente la celda de precio de venta
+                    const celdaPrecioVenta = tipoProducto === 'directo'
+                        ? `<td class="precio-venta">$${precioVenta.toFixed(2)}</td>`
+                        : '';
+
+                    // Luego arma el innerHTML completo:
+                    fila.innerHTML = `
+                        <td class="text-center">
+                            <input type="checkbox"
+                                class="form-check-input opcion-checkbox"
+                                data-partida="${op.partidas_id}"
+                                data-proveedor="${op.prov_id}"
+                                data-producto="${op.catproductos_id}"
+                                data-descripcion="${op.descripcion || ''}"
+                                data-costo="${op.precio}" />
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">${op.proveedor_nombre || op.prov_id}</span>
+                        </td>
+                        <td>
+                            <span class="text-primary fw-semibold">${op.producto || op.catproductos_id}</span>
+                        </td>
+                        <td>${op.descripcion || '-'}</td>
+                        <td>${op.unidad || '-'}</td>
+                        <td>$${precio.toFixed(2)}</td>
+                        <td>${cantidad}</td>
+                        <td>$${descuento.toFixed(2)}</td>
+                        ${celdaPrecioVenta}
+                        <td>$${total.toFixed(2)}</td>
+                        <td class="text-center">
+                            ${typeof op.ruta === 'string' && op.ruta.trim().length > 0
+                            ? `<a href="/${op.ruta}" download="${op.nombre_original}" class="text-success" title="Descargar adjunto" style="font-size:20px">
+                                        <i class="fa fa-file-${ext}" style="font-size:20px"></i>
+                                   </a>`
+                            : `<i class="fa fa-file-xmark text-muted" title="Sin adjunto" style="font-size:20px"></i>`
+                        }
+                        </td>`;
+
+                    const checkbox = fila.querySelector('.opcion-checkbox');
+                    checkbox.addEventListener('change', function () {
+                        if (this.checked) {
+                            const tbody = this.closest('tbody');
+                            tbody.querySelectorAll('.opcion-checkbox').forEach(cb => {
+                                if (cb !== this) cb.checked = false;
+                            });
+                        }
+                    });
+
+                    tbody.appendChild(fila);
+                });
+            });
+
+            $('#modalAgregarOpciones').data('encabezado', id);
+            $('#modalOpcionesLabel').text(`Requisición No.${_res.requisicion.nuevo_codigo} `);
+            $('#modalAgregarOpciones').modal('show');
+        });
+    }
+
+
+    document.getElementById('btn-actualizar').addEventListener('click', function () {
+        const idEncabezado = $('#modalAgregarOpciones').data('encabezado');
+        const formData = new FormData();
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        formData.append('id_encabezado', idEncabezado);
+
+        const partidas = [];
+        let subtotal = 0;
+
+        //Validar que en cada tabla haya al menos un checkbox marcado
+        const tablas = document.querySelectorAll('table[id^="tabla-materiales_"]');
+        for (let tabla of tablas) {
+            const checkboxes = tabla.querySelectorAll('.opcion-checkbox:checked');
+            if (checkboxes.length === 0) {
+                Swal.fire('Advertencia', 'Debes seleccionar una opción por cada partida antes de continuar.', 'warning');
+                return;
+            }
+        }
+
+        document.querySelectorAll('.opcion-checkbox:checked').forEach(checkbox => {
+            const partidaId = checkbox.dataset.partida;
+            const proveedorId = checkbox.dataset.proveedor;
+            const productoId = checkbox.dataset.producto;
+            //const descripcion = checkbox.dataset.descripcion;
+            //const costo = parseFloat(checkbox.dataset.costo || 0);
+
+            const fila = checkbox.closest('tr');
+            const celdas = fila.querySelectorAll('td');
+
+            const proveedorNombre = celdas[1]?.innerText.trim();
+            const productoNombre = celdas[2]?.innerText.trim();
+            const descripcion = celdas[3]?.innerText.trim();
+            const unidad = celdas[4]?.innerText.trim();
+            const costo = parseFloat(celdas[5]?.innerText.trim().replace('$', '').replace(',', '') || 0);
+            const cantidad = parseFloat(celdas[6]?.innerText.trim().replace('$', '').replace(',', '') || 0);
+            const descuento = parseFloat(celdas[7]?.innerText.trim().replace('$', '').replace(',', '') || 0);
+            const total = parseFloat(celdas[8]?.innerText.replace('$', '').trim().replace(',', '') || 0);
+
+            subtotal += total;
+
+            partidas.push({
+                partida_id: partidaId,
+                proveedor_id: proveedorId,
+                proveedor_nombre: proveedorNombre,
+                producto_id: productoId,
+                producto_nombre: productoNombre,
+                descripcion: descripcion,
+                unidad: unidad,
+                costo_unitario: costo,
+                cantidad: cantidad,
+                descuento: descuento,
+                total: total
+            });
+        });
+
+        formData.append('partidas', JSON.stringify(partidas));
+        formData.append('total', subtotal.toFixed(2));
+
+        const usuarioFinanzasId = document.getElementById('usuarioFinanzas')?.value;
+
+        if (!usuarioFinanzasId) {
+            Swal.fire('Advertencia', 'Debes seleccionar un usuario de Finanzas.', 'warning');
+            return;
+        }
+
+        formData.append('usuario_finanzas_id', usuarioFinanzasId);
+        formData.append('comentario', $('#Comentario').val());
+
+        let signaturePad;
+        let canvas;
+
+        _Swal.fire({
+            title: 'Firma el documento antes de continuar',
+            html: '' +
+                '<div class="border-1">' +
+                '    <p>Firma del usuario</p>' +
+                '    <canvas id="signature" width="400" height="200" style="border:1px solid #ccc;"></canvas>' +
+                '    <button type="button" class="btn green-500" id="limpiar_firma">Limpiar</button>' +
+                '</div>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                canvas = document.getElementById("signature");
+                signaturePad = new SignaturePad(canvas, {
+                    penColor: "rgb(0, 0, 0)",
+                    minWidth: 0.5,
+                    maxWidth: 1.0,
+                    throttle: 16,
+                    minDistance: 3
+                });
+
+                document.getElementById('limpiar_firma').addEventListener('click', () => {
+                    signaturePad.clear();
+                });
+            },
+            preConfirm: () => {
+                if (!signaturePad || signaturePad.isEmpty()) {
+                    Swal.showValidationMessage('Debes firmar antes de continuar.');
+                    return false;
+                }
+
+                const trimmed = getTrimmedCanvas(canvas);
+                const dataUrl = trimmed.toDataURL("image/png", 0.5);
+                formData.append('firma1', dataUrl);
+
+                //const reducedDataURL = signaturePad.toDataURL("image/png", 0.5);
+                //formData.append('firma1', reducedDataURL);
+
+                return fetch('/Requisicion/GenerarCotizacion', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            throw new Error(data.message || 'No se pudo guardar.');
+                        }
+                        return data;
+                    })
+                    .catch(err => {
+                        Swal.showValidationMessage(`Error: ${err.message}`);
+                    });
+            }
+        }).then(result => {
+            if (result.isConfirmed && result.value) {
+                Swal.fire(
+                    'Guardado',
+                    `La selección fue actualizada correctamente.<br> <strong>Nuevo folio:</strong> ${result.value.folio_generado}`,
+                    'success'
+                );
+                $('#modalAgregarOpciones').modal('hide');
+                $('#tablaOpcionesCotizacionGerente').DataTable().ajax.reload();
+            }
+        });
+    });
+
+    function getFileIcon(ext) {
+        const extensionesValidas = [
+            'pdf', 'word', 'excel', 'image', 'archive', 'alt', 'video', 'audio', 'code', 'powerpoint', 'text'
+        ];
+
+        // Mapear algunas extensiones comunes
+        const map = {
+            'doc': 'word',
+            'docx': 'word',
+            'xls': 'excel',
+            'xlsx': 'excel',
+            'ppt': 'powerpoint',
+            'pptx': 'powerpoint',
+            'jpg': 'image',
+            'jpeg': 'image',
+            'png': 'image',
+            'gif': 'image',
+            'bmp': 'image',
+            'zip': 'archive',
+            'rar': 'archive',
+            '7z': 'archive',
+            'mp4': 'video',
+            'mp3': 'audio',
+            'txt': 'text',
+            'html': 'code',
+            'js': 'code',
+            'css': 'code',
+            'json': 'code',
+            'pdf': 'pdf'
+        };
+
+        const cleaned = (ext || '').replace('.', '').toLowerCase();
+        const icon = map[cleaned] || cleaned;
+
+        return extensionesValidas.includes(icon) ? icon : 'alt'; // 'alt' es genérico
+    }
+</script>

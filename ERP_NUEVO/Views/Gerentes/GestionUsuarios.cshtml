@@ -1,0 +1,137 @@
+﻿
+
+@{
+    ViewBag.Title = "GestionUsuarios";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+
+<div class="alert-info mb-4">
+    <p class="mb-1">
+        <i class="fas fa-info-circle me-2"></i>
+        Para agregar o quitar permisos a algún usuario, por favor contacta a Sistemas.
+    </p>
+    <p class="mb-1">
+        <i class="fas fa-info-circle me-2"></i>
+        Este módulo es únicamente para dar acceso de usuarios al ERP.
+    </p>
+</div>
+
+<div class="contenedor-tabla">
+    <div class="table-responsive">
+        <table id="tablaUsuarios" class="table modern-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Nombre de usuario</th>
+                    <th>Activo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script>
+    function activarUsuario(e) {
+        const usuarioId = $(e).data('id');
+
+        _Swal.fire({
+            title: 'Activar el usuario?',
+            html: 'Esta accion permitira al usuario acceder al ERP',
+            preConfirm: () => {
+                GetData({
+                    path: '/Gerentes/ActivarUsuario',
+                    data: {
+                        usuarioid: usuarioId,
+                    },
+                    swalResponse: true,
+                    swalType: 'modal',
+                    swalPath: '/Gerentes/GestionUsuarios'
+                })
+            }
+        })
+    }
+
+    function desactivarUsuario(e) {
+        const usuarioId = $(e).data('id');
+
+        _Swal.fire({
+            title: 'Desactivar el usuario?',
+            html: 'Esta accion negara al usuario acceder al ERP',
+            preConfirm: () => {
+                GetData({
+                    path: '/Gerentes/DesactivarUsuario',
+                    data: {
+                        usuarioid: usuarioId,
+                    },
+                    swalResponse: true,
+                    swalType: 'modal',
+                    swalPath: '/Gerentes/GestionUsuarios'
+                })
+            }
+        })
+    }
+
+    function getQueryParam(param) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(param);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const usuarioFiltro = getQueryParam('usuario');
+        const table = $('#tablaUsuarios').DataTable({
+            ajax: {
+                url: '/Gerentes/GetUsuarios',
+                type: 'POST',
+                dataSrc: ''
+            },
+            columns: [
+                { data: 'nombre' },
+                { data: 'apellido' },
+                { data: 'email' },
+                { data: 'telefono' },
+                { data: 'nombreusuario' },
+                {
+                    data: 'activo',
+                    render: function (data) {
+                        return data ? 'Activo' : 'Inactivo';
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function (data) {
+                        return `` +
+                            `<button class="btn btn-sm ${data.activo ? 'green-500' : 'red-500'}" data-id="${data.usuarioid}" title="Ver detalle" ${data.activo ? 'onclick="desactivarUsuario(this)"' : 'onclick="activarUsuario(this)"'}>` +
+                            `   <i class="fa fa-power-off"></i>` +
+                            `</button>`;
+                    }
+                }
+            ],
+            language: {
+                search: "Buscar usuario:",
+                emptyTable: "No hay usuarios",
+                lengthMenu: "Mostrar _MENU_",
+                info: "Mostrando _START_ a _END_ de _TOTAL_",
+                paginate: {
+                    next: "→",
+                    previous: "←"
+                }
+            },
+            initComplete: function () {
+                if (usuarioFiltro) {
+                    this.api()
+                        .column(4)                // Nombre de usuario
+                        .search(usuarioFiltro)    // filtrar
+                        .draw();
+                }
+            },
+            order: [[5, 'asc']]
+        });
+    });
+</script>

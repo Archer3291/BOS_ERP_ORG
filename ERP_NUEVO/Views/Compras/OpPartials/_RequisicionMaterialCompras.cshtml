@@ -1,0 +1,268 @@
+﻿@{
+    ViewBag.Title = "Requisision de Material";
+}
+
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<style>
+    /* Bendto grid */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        /*margin-top: 1rem;*/
+    }
+
+    .bento-item {
+        background: var(--bg-gray);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+    }
+
+        .bento-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .bento-item.large {
+            grid-column: span 2;
+        }
+
+    .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        transition: background-color 0.2s;
+    }
+
+        .checkbox-item:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+    .section-title {
+        font-weight: 600;
+        color: var(--secondary-color);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .department-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .department-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+        .department-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+    /* Clases personalizadas para prioridades - Tema claro */
+    .priority-success {
+        background-color: #dcfce7 !important; /* Verde menta claro */
+        border-left: 4px solid #22c55e !important; /* Verde vibrante */
+        color: var(--text-dark) !important;
+    }
+
+    .priority-warning {
+        background-color: #fef08a !important; /* Amarillo más pronunciado */
+        border-left: 4px solid #f97316 !important; /* Naranja vibrante */
+        color: var(--text-dark) !important;
+    }
+
+    .priority-danger {
+        background-color: #fecaca !important; /* Rojo más pronunciado */
+        border-left: 4px solid #dc2626 !important; /* Rojo intenso */
+        color: var(--text-dark) !important;
+    }
+
+    /* Hover effects para mejor UX */
+    .priority-success:hover {
+        background-color: #bbf7d0 !important; /* Verde más intenso */
+    }
+
+    .priority-warning:hover {
+        background-color: #fed7aa !important; /* Naranja más intenso */
+    }
+
+    .priority-danger:hover {
+        background-color: #fca5a5 !important; /* Rojo más intenso */
+    }
+
+    /* Tema oscuro */
+    [data-theme="dark"] .priority-success {
+        background-color: rgba(34, 197, 94, 0.25) !important; /* Verde más visible */
+        border-left: 4px solid #4ade80 !important; /* Verde brillante */
+        color: var(--text-dark) !important;
+    }
+
+    [data-theme="dark"] .priority-warning {
+        background-color: rgba(249, 115, 22, 0.25) !important; /* Naranja más visible */
+        border-left: 4px solid #fb923c !important; /* Naranja brillante */
+        color: var(--text-dark) !important;
+    }
+
+    [data-theme="dark"] .priority-danger {
+        background-color: rgba(220, 38, 38, 0.25) !important; /* Rojo más visible */
+        border-left: 4px solid #f87171 !important; /* Rojo brillante */
+        color: var(--text-dark) !important;
+    }
+
+    [data-theme="dark"] .priority-success:hover {
+        background-color: rgba(34, 197, 94, 0.35) !important;
+    }
+
+    [data-theme="dark"] .priority-warning:hover {
+        background-color: rgba(249, 115, 22, 0.35) !important;
+    }
+
+    [data-theme="dark"] .priority-danger:hover {
+        background-color: rgba(220, 38, 38, 0.35) !important;
+    }
+
+    /* Estilos para el contenedor de tablas */
+    .contenedor-tabla {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+        .contenedor-tabla:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+
+        /* Efecto de gradiente sutil en la parte superior */
+        .contenedor-tabla::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--accent-blue), var(--secondary-blue));
+            border-radius: 8px 8px 0 0;
+        }
+
+        /* Mejora para el table-responsive dentro del contenedor */
+        .contenedor-tabla .table-responsive {
+            border-radius: 5px;
+            box-shadow: var(--shadow);
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+        }
+
+        /* Estilo adicional para cuando la tabla está vacía o cargando */
+        .contenedor-tabla.loading {
+            background: linear-gradient(45deg, var(--very-light-blue), var(--light-blue));
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .contenedor-tabla.empty {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-light);
+        }
+
+            .contenedor-tabla.empty::after {
+                content: '📊 No hay datos disponibles';
+                font-size: 1.1rem;
+                display: block;
+                margin-top: 1rem;
+            }
+
+    /* Animación para el estado de carga */
+    @@keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.8;
+        }
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .contenedor-tabla {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 5px;
+        }
+
+            .contenedor-tabla:hover {
+                transform: none; /* Desactivar hover en móviles */
+            }
+    }
+</style>
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+@await Html.PartialAsync("OpPartials/_PartialRequisicionCompras/_SelectorTablas")
+@await Html.PartialAsync("OpPartials/_PartialRequisicionCompras/_ModalAgregarOpciones")
+@await Html.PartialAsync("OpPartials/_PartialRequisicionCompras/_ModalAceptarCotizacion")
+@await Html.PartialAsync("OpPartials/_PartialRequisicionCompras/_ModalGestionarOC")
+
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script>
+    // Validar que solo se seleccione un tipo de proceso
+    document.querySelectorAll('input[name="tipo_proceso"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+            if (this.checked) {
+                document.querySelectorAll('input[name="tipo_proceso"]').forEach(other => {
+                    if (other !== this) other.checked = false;
+                });
+            }
+        });
+    });
+
+    // Agregar nombre del archivo
+    document.addEventListener("change", function (e) {
+        if (e.target.matches("input.archivo")) {
+            const input = e.target;
+            const label = input.closest("td").querySelector("label.archivo-label");
+
+            if (input.files.length > 0) {
+                const fileName = input.files[0].name;
+                label.innerHTML = fileName; // 🔁 Reemplaza el ícono con el nombre
+            } else {
+                label.innerHTML = `<i class="fa-solid fa-file-arrow-up"></i>`; // 🔁 Reestablece el ícono si no hay archivo
+            }
+        }
+    });
+</script>

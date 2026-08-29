@@ -1,0 +1,411 @@
+﻿@model BOS_ERP.Models.Factura
+@using System.Data
+@using System.Linq
+@using BOS_ERP.Models;
+@using System;
+@using System.Collections.Generic;
+@using System.Collections.Specialized;
+@using System.Configuration;
+@using System.Data;
+@using System.Data.SqlClient;
+@using System.IO;
+@using System.Linq;
+@using System.Net;
+@using System.Net.Mail;
+@using System.Threading.Tasks;
+@using Microsoft.AspNetCore.Mvc;
+@using System.Windows;
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Factura de Arrendamiento @Model.UUID</title>
+    <style>
+        @@page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        thead {
+            display: table-header-group;
+            background-color: #e0e0e0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            color: #d32f2f;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th {
+            background-color: #1976d2;
+            color: white;
+            padding: 6px 8px;
+            text-align: left;
+            font-size: 10px;
+        }
+
+        td {
+            padding: 4px 8px;
+            vertical-align: top;
+        }
+
+        .section-title {
+            font-size: 13px;
+            color: #d32f2f;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .productos th, .productos td {
+            border: 1px solid #bbb;
+            font-size: 10px;
+            padding: 5px 6px;
+        }
+
+        .productos tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+
+        .productos td.descripcion {
+            font-weight: 500;
+        }
+
+        .productos td.numero {
+            text-align: center;
+            width: 8%;
+        }
+
+        .productos td.cantidad,
+        .productos td.precio,
+        .productos td.importe {
+            text-align: right;
+        }
+
+        .totales {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 12px;
+        }
+
+            .totales span {
+                font-weight: bold;
+                color: #1976d2;
+            }
+
+        .sello {
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            background-color: #f9f9f9;
+            border: 1px dashed #aaa;
+            padding: 6px;
+            margin-bottom: 8px;
+        }
+
+        .qr {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+            .qr img {
+                width: 150px;
+                height: 150px;
+            }
+
+        .info-box {
+            border: 1px solid #ccc;
+            padding: 6px;
+            margin-top: 3px;
+            background-color: #fafafa;
+        }
+
+            .info-box strong {
+                color: #333;
+            }
+
+        .productos thead {
+            margin-top: 15px;
+        }
+
+        .productos {
+            page-break-inside: auto;
+        }
+
+            .productos thead {
+                display: table-header-group;
+            }
+
+            .productos tfoot {
+                display: table-footer-group;
+            }
+
+            .productos tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+        /* Información adicional compacta */
+        .cuenta-predial {
+            font-size: 9px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .observaciones-box {
+            background-color: #fff8e1;
+            border-left: 3px solid #ffc107;
+            padding: 6px;
+            margin: 12px 0;
+            font-size: 10px;
+        }
+
+        /* Estilos para totales mejorados */
+        .totales-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+            .totales-table td {
+                vertical-align: top;
+            }
+
+        .total-letra {
+            width: 60%;
+            padding-right: 20px;
+            font-size: 11px;
+        }
+
+        .total-numeros {
+            width: 40%;
+        }
+
+            .total-numeros table {
+                width: 100%;
+                border: 1px solid #ccc;
+                background-color: #fafafa;
+            }
+
+            .total-numeros td {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .total-numeros .final-row {
+                border-top: 2px solid #1976d2;
+                background-color: #e3f2fd;
+            }
+
+                .total-numeros .final-row td {
+                    font-weight: bold;
+                    color: #d32f2f;
+                    font-size: 13px;
+                }
+    </style>
+</head>
+<body>
+    <!-- DATOS COMPROBANTE -->
+    <div class="section-title">Datos del Comprobante</div>
+    <table>
+        <tr>
+            <td style="width: 18%;"><strong>Serie y Folio:</strong></td>
+            <td style="width: 32%;">@Model.Serie - @Model.Folio</td>
+            <td style="width: 18%;"><strong>UUID:</strong></td>
+            <td style="width: 32%;">@Model.UUID</td>
+        </tr>
+        <tr>
+            <td><strong>Lugar de Expedición:</strong></td>
+            <td>@Model.LugarExpedicion</td>
+            <td><strong>Método de Pago:</strong></td>
+            <td>@Model.metodoPagoTexto -- @Model.MdpFactura</td>
+        </tr>
+        <tr>
+            <td><strong>Forma de Pago:</strong></td>
+            <td>@Model.IdTipoPago -- @Model.formaPagoTexto</td>
+            <td><strong>Moneda:</strong></td>
+            <td>@Model.Moneda</td>
+        </tr>
+        <tr>
+            <td><strong>Tipo de Cambio:</strong></td>
+            <td>@Model.TipoCambio</td>
+            <td><strong>Fecha:</strong></td>
+            <td>@DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")</td>
+        </tr>
+    </table>
+
+    <!-- RECEPTOR -->
+    <div class="section-title">Receptor (Arrendatario)</div>
+    <div class="info-box">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 18%;"><strong>RFC:</strong></td>
+                <td style="width: 32%;">@Model.RfcCliente</td>
+                <td style="width: 18%;"><strong>Régimen Fiscal:</strong></td>
+                <td style="width: 32%;">@Model.Regc</td>
+            </tr>
+            <tr>
+                <td><strong>Razón Social:</strong></td>
+                <td colspan="3">@Model.RsoCliente</td>
+            </tr>
+            <tr>
+                <td><strong>Dirección Fiscal:</strong></td>
+                <td>@Model.CpE</td>
+                <td><strong>Uso CFDI:</strong></td>
+                <td>@Model.IdUsoCFDI -- @Model.CFDIText</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- CONCEPTOS -->
+    <div class="section-title">Conceptos del Arrendamiento</div>
+    <table class="productos">
+        <thead class="table-light">
+            <tr>
+                <th style="width: 55%;">Descripción del Inmueble</th>
+                <th style="width: 12%;">Cantidad</th>
+                <th style="width: 15%;">Precio Unitario</th>
+                <th style="width: 18%;">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (System.Data.DataRow row in Model.Tproductos.Rows)
+            {
+                <tr>
+                    <td class="descripcion">
+                        <strong>@row["descripcion"]</strong>
+                        @if (!string.IsNullOrEmpty(row["cuentaPredial"]?.ToString()))
+                        {
+                            <br><span class="cuenta-predial">Cuenta Predial: @row["cuentaPredial"]</span>
+                        }
+                        <br><small style="color: #888;">Clave: @row["claveProdServ"] | Unidad: @row["claveUnidad"] | Obj. Imp: @row["objetoImp"]</small>
+                    </td>
+                    <td class="cantidad">@string.Format("{0:N2}", row["cantidad"])</td>
+                    <td class="precio">@string.Format("{0:C2}", row["precioUnit"])</td>
+                    <td class="importe">@string.Format("{0:C2}", row["importe"])</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- OBSERVACIONES -->
+    <!--@if (!string.IsNullOrEmpty(Model.Observaciones))
+    {
+        <div class="observaciones-box">
+            <strong>Observaciones del Contrato:</strong> @Model.Observaciones
+        </div>
+    }-->
+    <!-- TOTALES MEJORADOS -->
+    <table class="totales-table">
+        <tr>
+            <td class="total-letra">
+                <strong>Total con Letra:</strong><br>
+                @Model.TotalTexto @Model.Moneda
+            </td>
+            <td class="total-numeros">
+                <table>
+                    <tr>
+                        <td style="text-align: right;"><strong>Subtotal:</strong></td>
+                        <td style="text-align: right; width: 40%;">@string.Format("{0:C2}", Model.Subtotal)</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: right;"><strong>IVA (16%):</strong></td>
+                        <td style="text-align: right;">@string.Format("{0:C2}", Model.IVA)</td>
+                    </tr>
+                    <tr class="final-row">
+                        <td style="text-align: right;"><strong>TOTAL:</strong></td>
+                        <td style="text-align: right;">@string.Format("{0:C2}", Model.Total)</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    <!-- PAGARÉ -->
+    @{
+    string perfil = HttpContextAccessor.HttpContext.Session.GetString("EmpresaFactura");
+    string razonSocial = Configuration[$"Emisores:{perfil}:RazonSocial"] ?? "";
+
+        <div style="margin-top: 20px;">
+            <p style="font-size: 9px; color: #666; font-style: italic; margin-bottom: 10px;">
+                Las diferencias de centavos que se puedan presentar, son producto del redondeo en los importes.
+            </p>
+
+            <div style="border: 2px solid #333; padding: 15px; background-color: #fafafa; margin-top: 10px;">
+                <p style="font-size: 10px; line-height: 1.6; text-align: justify; margin: 0;">
+                    Debo(emos) y pagaremos en forma incondicional a la orden de <strong>@razonSocial</strong>
+                    en la ciudad de San Luis Potosí, San Luis Potosí, el importe que ampara el total de esta factura recibida a nuestra
+                    satisfacción el día _______ de _________ de _______. En caso de demora en el pago, causara un interés del
+                    _____%, este pagare es mercantil y esta regido por la Ley General de Títulos y operaciones en su articulo 170.
+                </p>
+
+                <div style="margin-top: 30px; text-align: center;">
+                    <div style="border-top: 1px solid #333; width: 200px; margin: 0 auto;"></div>
+                    <p style="margin: 5px 0 0 0; font-size: 10px;"><strong>ACEPTO</strong></p>
+                </div>
+            </div>
+        </div>
+    }
+    <!-- SELLOS Y QR EN COLUMNAS -->
+    <div class="section-title" style="margin-top: 25px;">Sellos y Cadena Original</div>
+    <table>
+        <tr>
+            <!-- Columna Sellos -->
+            <td style="width: 75%; vertical-align: top;">
+                <p style="margin: 5px 0 3px 0;"><strong>No. de Serie del Certificado del SAT:</strong></p>
+                <div class="sello">@Model.NoCertificadoSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>No de Serie del CSD del Emisor:</strong></p>
+                <div class="sello">@Model.NoCertificado</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Sello CFDI:</strong></p>
+                <div class="sello">@Model.SelloCFDI</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Sello SAT:</strong></p>
+                <div class="sello">@Model.SelloSAT</div>
+
+                <p style="margin: 8px 0 3px 0;"><strong>Cadena Original:</strong></p>
+                <div class="sello">@Model.CadenaOriginal</div>
+            </td>
+
+            <!-- Columna QR -->
+            @if (!string.IsNullOrEmpty(Model.RutaQr))
+            {
+                <td style="width: 25%; text-align: center; vertical-align: top; padding-left: 10px;">
+                    <strong style="display: block; margin-bottom: 8px;">Código QR</strong>
+                    <img src="@Url.Content(Model.RutaQr)" alt="QR CFDI" style="width: 150px; height: 150px; border: 1px solid #ccc; padding: 5px; background: white;" />
+                    <br><small style="color: #666;">Verificación SAT</small>
+                </td>
+            }
+        </tr>
+    </table>
+
+    <!-- Footer simple -->
+    <div style="text-align: center; margin-top: 25px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 10px; color: #666;">
+        <strong>Este documento es una representación impresa de un CFDI</strong><br>
+        Generado el @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
+    </div>
+
+</body>
+</html>

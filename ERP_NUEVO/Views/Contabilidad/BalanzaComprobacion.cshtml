@@ -1,0 +1,891 @@
+﻿@{
+    ViewBag.Title = "BalanzaComprobacion";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.PageTitle = "Balanza de comprobacion";
+}
+
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+<link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+<style>
+    .bk-wrap {
+        padding: 1rem 0;
+    }
+
+    /* ── Filter Bar ─────────────────────────────────────────── */
+    .filter-bar {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+        box-shadow: var(--shadow);
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        min-width: 140px;
+        flex: 1;
+    }
+
+        .filter-group label {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-light);
+        }
+
+        .filter-group input,
+        .filter-group select {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--row-radius);
+            background: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 13px;
+            outline: none;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+            .filter-group input:focus,
+            .filter-group select:focus {
+                border-color: var(--accent-blue);
+                background: var(--bg-light);
+                box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+            }
+
+    /* ── Toggle dentro del filter-bar ──────────────────────── */
+    /*
+     * El problema: .filter-group tiene flex:1 y el .bootstrap-toggle
+     * tiene margin-bottom:1rem por defecto, lo que lo empuja hacia arriba
+     * y lo desalinea con los botones y divisores.
+     *
+     * Solución: clase dedicada .filter-toggle-group con flex:0 0 auto
+     * para que no crezca, y se neutraliza el margin-bottom del toggle.
+     */
+    .filter-toggle-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        flex: 0 0 auto;
+    }
+
+        .filter-toggle-group > span {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-light);
+        }
+
+        .filter-toggle-group .bootstrap-toggle {
+            margin-bottom: 0; /* neutraliza el margin del componente */
+        }
+
+    .filter-divider {
+        width: 1px;
+        background: var(--border-light);
+        align-self: stretch;
+        margin: 0 4px;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    .btn {
+        height: 34px;
+        padding: 0 16px;
+        border-radius: var(--row-radius);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        white-space: nowrap;
+        border: 1px solid var(--border-light);
+        /*background: var(--bg-light);*/
+        color: var(--text-dark);
+    }
+
+        .btn:hover {
+            background: var(--bg-gray);
+            border-color: var(--secondary-blue);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+    .btn-primary {
+        background: var(--primary-blue);
+        color: #fff;
+        border-color: var(--primary-blue);
+    }
+
+        .btn-primary:hover {
+            background: var(--primary-blue-dark);
+            border-color: var(--primary-blue-dark);
+        }
+
+    /* ── Column Header ──────────────────────────────────────── */
+    .bk-header {
+        display: grid;
+        grid-template-columns: 1fr repeat(4, 120px);
+        gap: 8px;
+        padding: 6px 12px 6px 32px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-light);
+        border-bottom: 1px solid var(--border-light);
+        margin-bottom: 4px;
+    }
+
+        .bk-header span {
+            text-align: right;
+        }
+
+            .bk-header span:first-child {
+                text-align: left;
+            }
+
+    /* ── Card Wrapper ───────────────────────────────────────── */
+    .card-wrap {
+        background: var(--bg-light);
+        border: 1px solid var(--border-light);
+        border-radius: var(--table-radius);
+        padding: 8px;
+        box-shadow: var(--shadow);
+    }
+
+    /* ── Tree Nodes ─────────────────────────────────────────── */
+    .node {
+        border-radius: var(--row-radius);
+        margin-bottom: 2px;
+        overflow: hidden;
+    }
+
+    .node-row {
+        display: grid;
+        grid-template-columns: 1fr repeat(4, 120px);
+        gap: 8px;
+        align-items: center;
+        padding: 7px 12px;
+        cursor: pointer;
+        border-radius: var(--row-radius);
+        transition: background var(--transition-fast);
+        border: 0.5px solid transparent;
+    }
+
+        .node-row:hover {
+            background: var(--bg-gray);
+            border-color: var(--border-light);
+        }
+
+        .node-row.leaf {
+            cursor: default;
+        }
+
+            .node-row.leaf:hover {
+                background: transparent;
+                border-color: transparent;
+            }
+
+    .node-name {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-dark);
+        overflow: hidden;
+    }
+
+        .node-name .code {
+            font-size: 11px;
+            color: var(--text-light);
+            font-family: monospace;
+            flex-shrink: 0;
+        }
+
+        .node-name .label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+    .chevron {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+        color: var(--text-light);
+        transition: transform var(--transition-med);
+    }
+
+        .chevron.open {
+            transform: rotate(90deg);
+        }
+
+    .chevron-ph {
+        width: 14px;
+        flex-shrink: 0;
+    }
+
+    .node-amt {
+        font-size: 13px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-light);
+    }
+
+    .node-saldo {
+        font-size: 13px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+    }
+
+    .saldo-pos {
+        color: var(--success-color);
+    }
+
+    .saldo-neg {
+        color: var(--danger-color);
+    }
+
+    .children {
+        padding-left: 16px;
+        overflow: hidden;
+    }
+
+    /* ── Depth Levels ───────────────────────────────────────── */
+    .depth-0 > .node-row {
+        background: var(--primary-blue);
+        border-radius: var(--row-radius);
+    }
+
+        .depth-0 > .node-row .node-name .code,
+        .depth-0 > .node-row .node-name .label,
+        .depth-0 > .node-row .node-amt,
+        .depth-0 > .node-row .node-saldo {
+            color: #ffffff !important;
+        }
+
+        .depth-0 > .node-row .chevron {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .depth-0 > .node-row:hover {
+            background: var(--primary-blue-dark);
+            border-color: transparent;
+        }
+
+    .depth-1 > .node-row {
+        background: var(--light-blue);
+        border-radius: var(--row-radius);
+    }
+
+        .depth-1 > .node-row .node-name .label {
+            font-weight: 500;
+        }
+
+    .depth-2 > .node-row {
+        background: var(--bg-gray);
+        border-radius: var(--row-radius);
+    }
+
+        .depth-2 > .node-row .node-name .label {
+            font-weight: 500;
+        }
+
+    .depth-3 > .node-row {
+        background: transparent;
+    }
+
+        .depth-3 > .node-row .node-name .label {
+            font-weight: 500;
+            font-size: 12.5px;
+        }
+
+    .leaf-row .node-name .label {
+        color: var(--text-light);
+        font-weight: 400;
+        font-size: 12px;
+    }
+
+    .leaf-row .node-amt {
+        font-size: 12px;
+    }
+
+    .leaf-row .node-saldo {
+        font-size: 12px;
+    }
+
+    .spacer {
+        height: 8px;
+    }
+
+    /* ── Validación de campos obligatorios ─────────────────────── */
+    .field-error input,
+    .field-error select {
+        border-color: var(--danger-color) !important;
+        background: color-mix(in srgb, var(--danger-color) 6%, var(--bg-light)) !important;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-color) 15%, transparent) !important;
+    }
+
+    .field-error label {
+        color: var(--danger-color) !important;
+    }
+
+    .error-msg {
+        font-size: 10px;
+        color: var(--danger-color);
+        font-weight: 500;
+        margin-top: 2px;
+        display: none;
+    }
+
+    .field-error .error-msg {
+        display: block;
+    }
+</style>
+
+<div class="bk-wrap">
+    <!-- Filtros -->
+    <div class="filter-bar">
+        <div class="filter-group" id="group-fecha-inicio">
+            <label>Fecha inicio</label>
+            <input type="date" id="fecha-inicio">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+        <div class="filter-group" id="group-fecha-fin">
+            <label>Fecha fin</label>
+            <input type="date" id="fecha-fin">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-group" id="group-cuenta-ini">
+            <label>Cuenta inicial</label>
+            <input type="text" id="cuenta-ini" value="1" placeholder="ej. 1-01" style="font-family:monospace;font-size:12px">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+        <div class="filter-group" id="group-cuenta-fin">
+            <label>Cuenta final</label>
+            <input type="text" id="cuenta-fin" value="1-2" placeholder="ej. 9-99" style="font-family:monospace;font-size:12px">
+            <span class="error-msg">Campo obligatorio</span>
+        </div>
+        <div class="filter-divider"></div>
+        <!-- Toggle: usar .filter-toggle-group para alineación correcta -->
+        <div class="filter-toggle-group">
+            <span>Cuentas en cero</span>
+            <div class="bootstrap-toggle toggle-success">
+                <input type="checkbox" id="quitarCero" checked>
+                <label for="quitarCero" class="toggle-group">
+                    <span class="toggle-on">Ocultar</span>
+                    <span class="toggle-handle"></span>
+                    <span class="toggle-off">Mostrar</span>
+                </label>
+            </div>
+        </div>
+        <div class="filter-divider"></div>
+        <!-- Toggle: usar .filter-toggle-group para alineación correcta -->
+        <div class="filter-toggle-group">
+            <span>Tipo reporte</span>
+            <div class="bootstrap-toggle toggle-success">
+                <input type="checkbox" id="tipoReporte" checked>
+                <label for="tipoReporte" class="toggle-group">
+                    <span class="toggle-on">Por mes</span>
+                    <span class="toggle-handle"></span>
+                    <span class="toggle-off">Por año</span>
+                </label>
+            </div>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-actions">
+            <button class="btn" onclick="clearFilters()">Limpiar</button>
+            <button class="btn btn-primary" onclick="applyFilters()">Consultar</button>
+        </div>
+    </div>
+
+    <button class="btn red-500" onclick="exportarPDF()">Exportar a PDF <i class="fa-solid fa-file-pdf"></i></button>
+    <button class="btn green-500" onclick="exportarExcel()">Exportar a Excel <i class="fa-solid fa-file-excel"></i></button>
+
+    <!-- Encabezado de columnas -->
+    <div class="bk-header">
+        <span>Cuenta</span>
+        <span>Saldo Inicial</span>
+        <span>Cargos</span>
+        <span>Abonos</span>
+        <span>Saldo Final</span>
+    </div>
+
+    <!-- Árbol -->
+    <div class="card-wrap">
+        <div id="tree">
+            <div class="w-100 d-grid justify-content-center text-center p-4">
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 14 14">
+                        <path fill="#999999" fill-rule="evenodd" d="M5.5 0a1 1 0 0 0-1 1v.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1zM2.75 1h.5v.5A2.25 2.25 0 0 0 5.5 3.75h3a2.25 2.25 0 0 0 2.25-2.25V1h.5a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5h-8.5a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 2.75 1" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="mt-2 text-center">
+                    Da click en "Consultar", para ver los resultados
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/TableBuilder.js"></script>
+<script src="~/Scripts/Switch.js"></script>
+<script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+<script>
+    let _EXPORT_DATA = [];
+    let _CUENTAS = [];
+    let _ENTERPRISE_DATA = [];
+    let tomManager;
+    // ── Helpers ────────────────────────────────────────────────
+
+    function buildTree(nodes) {
+        const map = {}, roots = [];
+        nodes.forEach(n => { map[n.codigo] = { ...n, children: [] }; });
+        nodes.forEach(n => {
+            const parts = n.codigo.split('-');
+            if (parts.length === 1) { roots.push(map[n.codigo]); return; }
+            let parentCode = null;
+            for (let i = parts.length - 1; i >= 1; i--) {
+                const c = parts.slice(0, i).join('-');
+                if (map[c] && c !== n.codigo) { parentCode = c; break; }
+            }
+            if (parentCode) map[parentCode].children.push(map[n.codigo]);
+            else roots.push(map[n.codigo]);
+        });
+        return roots;
+    }
+
+    function toggleNode(uid) {
+        const ch = document.getElementById('ch-' + uid);
+        const row = document.querySelector('#' + uid + '>.node-row');
+        const chev = row ? row.querySelector('.chevron') : null;
+        if (!ch) return;
+        const isOpen = ch.style.display !== 'none';
+        ch.style.display = isOpen ? 'none' : 'block';
+        if (chev) chev.classList.toggle('open', !isOpen);
+    }
+
+    function renderNode(node, depth) {
+        const hasChildren = node.children && node.children.length > 0;
+        const isLeaf = !node.es_padre || !hasChildren;
+        const uid = 'n-' + node.codigo.replace(/[^a-z0-9]/gi, '_');
+        const depthClass = 'depth-' + Math.min(depth, 4);
+        const saldoClass = node.saldo_final >= 0 ? 'saldo-pos' : 'saldo-neg';
+        const saldoIniClass = node.saldo_inicial >= 0 ? 'saldo-pos' : 'saldo-neg';
+
+        const chevron = hasChildren
+            ? `<svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 4 10 8 6 12"/></svg>`
+            : `<span class="chevron-ph"></span>`;
+
+        const childrenHtml = hasChildren
+            ? `<div class="children" id="ch-${uid}" style="display:none">${node.children.map(c => renderNode(c, depth + 1)).join('')}</div>`
+            : '';
+
+        return `<div class="node ${depthClass}" id="${uid}">` +
+            `<div class="node-row${isLeaf ? ' leaf leaf-row' : ''}" onclick="${hasChildren ? `toggleNode('${uid}')` : ''}">` +
+            `  <div class="node-name">${chevron}<span class="code">${node.codigo}</span><span class="label">${node.nombre}</span></div>` +
+            `  <span class="node-saldo ${saldoIniClass}">${Currency.format(node.saldo_inicial)}</span>` +
+            `  <span class="node-amt">${Currency.format(node.debe)}</span>` +
+            `  <span class="node-amt">${Currency.format(node.haber)}</span>` +
+            `  <span class="node-saldo ${saldoClass}">${Currency.format(node.saldo_final)}</span>` +
+            `</div>${childrenHtml}</div>`;
+    }
+
+    function renderTree(data) {
+        const tree = buildTree(data);
+        document.getElementById('tree').innerHTML =`
+            <button class="btn blue-500" onclick="expandAll()">Expandir todo <i class="fa-solid fa-chevrons-down"></i></button>
+            <button class="btn" onclick="collapseAll()">Colapsar todo <i class="fa-solid fa-chevrons-up"></i></button><br><br>
+            ${tree.map(n => renderNode(n, 0)).join('<div class="spacer"></div>')}`;
+    }
+
+    // ── Inicializar fechas con el mes actual ───────────────────
+
+    function initDates() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const last = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
+        document.getElementById('fecha-inicio').value = `${year}-${month}-01`;
+        document.getElementById('fecha-fin').value = `${year}-${month}-${last}`;
+    }
+
+    function fechaAnio() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const last = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
+        document.getElementById('fecha-inicio').value = `${year}-01-01`;
+        document.getElementById('fecha-fin').value = `${year}-12-31`;
+    }
+
+    // ── Consultar ──────────────────────────────────────────────
+
+    function applyFilters() {
+        // ── Validar fechas obligatorias ──────────────────────────
+        const fechaIni = document.getElementById('fecha-inicio');
+        const fechaFin = document.getElementById('fecha-fin');
+        const groupIni = document.getElementById('group-fecha-inicio');
+        const groupFin = document.getElementById('group-fecha-fin');
+        const cuentaIni = document.getElementById('cuenta-ini');
+        const groupCtaIni = document.getElementById('group-cuenta-ini');
+        const cuentaFin = document.getElementById('cuenta-fin');
+        const groupCtaFin = document.getElementById('group-cuenta-fin');
+
+        let isValid = true;
+
+        if (!fechaIni.value) {
+            groupIni.classList.add('field-error');
+            isValid = false;
+        } else {
+            groupIni.classList.remove('field-error');
+        }
+
+        if (!fechaFin.value) {
+            groupFin.classList.add('field-error');
+            isValid = false;
+        } else {
+            groupFin.classList.remove('field-error');
+        }
+
+        if (!cuentaIni.value.trim()) {
+            groupCtaIni.classList.add('field-error');
+            isValid = false;
+        } else {
+            groupCtaIni.classList.remove('field-error');
+        }
+
+        //if (!cuentaFin.value.trim()) {
+        //    groupCtaFin.classList.add('field-error');
+        //    isValid = false;
+        //} else {
+        //    groupCtaFin.classList.remove('field-error');
+        //}
+
+        if (!isValid) return;
+
+        // ── Limpiar errores y consultar ──────────────────────────
+        GetData({
+            path: '/Contabilidad/GetBalanzaComprobacion',
+            data: {
+                fechaInicio: fechaIni.value,
+                fechaFin: fechaFin.value,
+                cuentaIni: document.getElementById('cuenta-ini').value.trim(),
+                cuentaFin: document.getElementById('cuenta-fin').value.trim(),
+                quitarCero: document.getElementById('quitarCero').checked,
+                tipoReporte: document.getElementById('tipoReporte').checked
+            }
+        }).then(data => {
+            _EXPORT_DATA = data.balanza ?? data; // compatibilidad si el backend devuelve array directo
+            _ENTERPRISE_DATA = data.datos_empresa ?? {};
+            renderTree(_EXPORT_DATA);
+        });
+    }
+
+    function expandAll() {
+        // Expande todos los nodos del árbol (hijos)
+        document.querySelectorAll('[id^="ch-"]').forEach(el => {
+            el.style.display = 'block';
+        });
+
+        // Expande todos los acordeones de movimientos
+        document.querySelectorAll('[id^="det-"]').forEach(el => {
+            el.style.display = 'block';
+        });
+
+        // Rota todos los chevrons del árbol para que apunten abajo
+        document.querySelectorAll('.chevron').forEach(el => {
+            el.classList.add('open');
+        });
+    }
+
+    function collapseAll() {
+        document.querySelectorAll('[id^="ch-"]').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        document.querySelectorAll('[id^="det-"]').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        document.querySelectorAll('.chevron').forEach(el => {
+            el.classList.remove('open');
+        });
+    }
+
+    function clearFilters() {
+        initDates();
+        document.getElementById('cuenta-ini').value = '';
+        document.getElementById('cuenta-fin').value = '';
+        document.getElementById('quitarCero').checked = false;
+        document.getElementById('tipoReporte').checked = true;
+
+        tomManager.instances.get('cuenta-inicial').setValue('1')
+        tomManager.instances.get('cuenta-fin').setValue('')
+
+        if (typeof initNormalToggles === 'function') initNormalToggles();
+
+        document.getElementById('fecha-inicio').removeAttribute('disabled');
+        document.getElementById('fecha-fin').removeAttribute('disabled');
+        applyFilters();
+    }
+
+    function exportarExcel() {
+        if (_EXPORT_DATA.length === 0) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'Primero filtra los resultados para exportar'
+            })
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        let columns = [
+            { title: 'Cuenta', data: 'codigo' },
+            { title: 'Nombre', data: 'nombre' },
+            { title: 'Saldo Inicial', data: 'saldo_inicial' },
+            { title: 'Cargos', data: 'debe' },
+            { title: 'Abonos', data: 'haber' },
+            { title: 'Saldo Final', data: 'saldo_final' },
+        ];
+
+        const matrix = buildExportMatrix(_EXPORT_DATA, columns);
+        const ws = XLSX.utils.aoa_to_sheet(matrix);
+        XLSX.utils.book_append_sheet(wb, ws, 'Balanza de comprobacion');
+        XLSX.writeFile(wb, 'Balanza_Comprobacion.xlsx');
+    }
+
+    // ─── Tipos de fila ───────────────────────────────────────────────────────────
+    const RT_BAL = {
+        PADRE: 'padre',
+        HOJA: 'hoja',
+    };
+
+    // ─── Paleta ──────────────────────────────────────────────────────────────────
+    const C_BAL = {
+        padre: [21, 43, 95],
+        padreText: [255, 255, 255],
+        hoja: [255, 255, 255],
+        hojaAlt: [245, 248, 252],
+    };
+
+    // ─── Construcción del body ───────────────────────────────────────────────────
+    function buildBodyBalanza(data) {
+        const rows = [];
+
+        data.forEach((cuenta) => {
+            rows.push({
+                _type: RT_BAL.HOJA,
+                data: [
+                    cuenta.codigo,
+                    cuenta.nombre,
+                    Currency.format(cuenta.saldo_final),
+                    Currency.format(cuenta.debe),
+                    Currency.format(cuenta.haber),
+                    Currency.format(cuenta.saldo_inicial),
+                ],
+            });
+        });
+
+        return rows;
+    }
+
+    // ─── Función principal ───────────────────────────────────────────────────────
+    async function exportarPDF() {
+        if (_EXPORT_DATA.length === 0) {
+            toastMixin.fire({
+                icon: 'warning',
+                title: 'Primero filtra los resultados para exportar'
+            })
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const fechaIni = document.getElementById('fecha-inicio').value;
+        const fechaFin = document.getElementById('fecha-fin').value;
+        const fechaStr = fechaIni && fechaFin
+            ? `${fechaIni.split('-').reverse().join('/')} — ${fechaFin.split('-').reverse().join('/')}`
+            : new Date().toLocaleDateString('es-MX');
+
+        const logoBase64 = await convertToBase64(`/Content/img/${empresa}/logo.png`);
+        agregarEncabezadoPDF(doc, logoBase64, 'BALANZA DE COMPROBACIÓN', _ENTERPRISE_DATA, fechaStr);
+        agregarFolioFecha(doc, 'N/A', 'Balanza de Comprobación');
+
+        const bodyRows = buildBodyBalanza(_EXPORT_DATA);
+        const tableBody = bodyRows.map(r => r.data);
+
+        doc.autoTable({
+            startY: 55,
+            margin: { left: 10, right: 10, top: 55 },
+
+            head: [['Cuenta', 'Nombre', 'Saldo Inicial', 'Cargos', 'Abonos', 'Saldo Final']],
+            body: tableBody,
+
+            styles: {
+                fontSize: 8,
+                font: 'helvetica',
+                lineColor: [210, 210, 210],
+                lineWidth: 0.1,
+                textColor: [40, 40, 40],
+                cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 },
+                overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: PDF_THEME.primary,
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                halign: 'center',
+                fontSize: 8,
+            },
+            columnStyles: {
+                0: { cellWidth: 28 },
+                1: { cellWidth: 'auto' },
+                2: { halign: 'right', cellWidth: 30 },
+                3: { halign: 'right', cellWidth: 26 },
+                4: { halign: 'right', cellWidth: 26 },
+                5: { halign: 'right', cellWidth: 30 },
+            },
+
+            didParseCell: ({ section, row, cell, column }) => {
+                if (section !== 'body') return;
+                const meta = bodyRows[row.index];
+                if (!meta) return;
+
+                if (meta._type === RT_BAL.PADRE) {
+                    cell.styles.fillColor = C_BAL.padre;
+                    cell.styles.textColor = C_BAL.padreText;
+                    cell.styles.fontStyle = 'bold';
+                    cell.styles.lineWidth = 0;
+                } else {
+                    // Alternado suave solo en cuentas hoja
+                    cell.styles.fillColor = row.index % 2 === 0 ? C_BAL.hoja : C_BAL.hojaAlt;
+                }
+
+                // Alineación derecha en columnas numéricas
+                if (column.index >= 2) cell.styles.halign = 'right';
+            },
+
+            didDrawPage: (data) => {
+                agregarEncabezadoPDF(doc, logoBase64, 'BALANZA DE COMPROBACIÓN', _ENTERPRISE_DATA, fechaStr);
+                agregarFolioFecha(doc, 'N/A', 'Balanza de Comprobación');
+
+                const W = doc.internal.pageSize.getWidth();
+                const H = doc.internal.pageSize.getHeight();
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.setTextColor(...PDF_THEME.textLight);
+                doc.text(
+                    `Página ${data.pageNumber} de ${doc.internal.getNumberOfPages()}`,
+                    W - 10, H - 6, { align: 'right' }
+                );
+                doc.text(
+                    `Documento generado automáticamente el ${new Date().toLocaleDateString()}`,
+                    10, H - 6
+                );
+            },
+        });
+
+        window.open(URL.createObjectURL(doc.output('blob')), '_blank');
+    }
+
+    function buildExportMatrix(data, sheetColumns = null) {
+        if (!data || !data.length) return [[]];
+
+        // ── Con columnas definidas por hoja ──────────────────────────
+        const header = sheetColumns.map(c => c.title);
+        const body = data.map(row =>
+            sheetColumns.map(col => {
+                const raw = col.data ? row[col.data] : row;
+                if (col.formatter) return stripHtml(col.formatter(raw, row));
+                return raw ?? '';
+            })
+        );
+        return [header, ...body];
+    }
+
+    // ── Carga inicial ──────────────────────────────────────────
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        initDates();
+        initNormalToggles();
+
+        ['fecha-inicio', 'fecha-fin'].forEach(id => {
+            document.getElementById(id).addEventListener('change', function () {
+                const group = this.closest('.filter-group');
+                if (this.value) group.classList.remove('field-error');
+            });
+        });
+
+        document.getElementById('tipoReporte').addEventListener('click', (e) => {
+            if (!e.target.checked) {
+                fechaAnio();
+                document.getElementById('fecha-inicio').setAttribute('disabled', true);
+                document.getElementById('fecha-fin').setAttribute('disabled', true);
+            } else {
+                initDates();
+                document.getElementById('fecha-inicio').removeAttribute('disabled');
+                document.getElementById('fecha-fin').removeAttribute('disabled');
+            }
+        })
+
+        tomManager = new TomSelectManager();
+        _CUENTAS = await GetData({ path: '/Contabilidad/GetCuentasFinanzas' });
+
+        tomManager.create('cuenta-inicial', {
+            selector: '#cuenta-ini',
+            options: _CUENTAS,
+            valueField: 'codigo',
+            searchField: ['codigo', 'descripcion', 'nombre'],
+            placeholder: 'Selecciona una cuenta...',
+            maxItems: 1,
+            create: false,
+            render: {
+                option: (data, escape) =>
+                    `<div style="color:dark;font-size:11px;">${escape(data.codigo)} - ${escape(data.nombre)}</div>`,
+                item: (data, escape) =>
+                    `<div><span style="color:dark;font-size:11px;">${escape(data.codigo)} - ${escape(data.nombre)}</span></div>`
+            },
+        });
+
+        tomManager.create('cuenta-fin', {
+            selector: '#cuenta-fin',
+            options: _CUENTAS,
+            valueField: 'codigo',
+            searchField: ['codigo', 'descripcion', 'nombre'],
+            placeholder: 'Selecciona una cuenta...',
+            maxItems: 1,
+            create: false,
+            render: {
+                option: (data, escape) =>
+                    `<div style="color:dark;font-size:11px;">${escape(data.codigo)} - ${escape(data.nombre)}</div>`,
+                item: (data, escape) =>
+                    `<div><span style="color:dark;font-size:11px;">${escape(data.codigo)} - ${escape(data.nombre)}</span></div>`
+            },
+        });
+
+        tomManager.instances.get('cuenta-inicial').setValue('1');
+        tomManager.instances.get('cuenta-fin').setValue('');
+
+        //applyFilters();
+    });
+
+</script>

@@ -1,0 +1,319 @@
+@{
+    ViewBag.Title = "Pendientes de Entrega";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section styles {
+    <style>
+        .pend-header {
+            background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);
+            color: #fff;
+            padding: 28px 32px;
+            border-radius: 14px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 4px 24px rgba(124, 58, 237, .25);
+        }
+        .pend-header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .pend-header p { margin: 4px 0 0; opacity: .85; font-size: .95rem; }
+
+        .kpi-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+        .kpi {
+            flex: 1 1 170px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+        .kpi .lbl { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; font-weight: 600; }
+        .kpi .val { font-size: 1.5rem; font-weight: 700; color: #111827; margin-top: 4px; }
+        .kpi.ok .val { color: #059669; }
+        .kpi.warn .val { color: #b45309; }
+
+        .filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+        .filtros input[type=search] {
+            flex: 1 1 260px; padding: .55rem .85rem; border: 1px solid #d1d5db;
+            border-radius: 8px; font-size: .92rem;
+        }
+        .chip {
+            border: 1px solid #d1d5db; background: #fff; border-radius: 50px;
+            padding: .45rem 1rem; font-size: .85rem; cursor: pointer; font-weight: 600; color: #374151;
+        }
+        .chip.activo { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+
+        .doc {
+            background: #fff; border: 1px solid #e5e7eb; border-left-width: 5px;
+            border-radius: 12px; margin-bottom: 16px; overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+        .doc.listo      { border-left-color: #059669; }
+        .doc.parcial    { border-left-color: #b45309; }
+        .doc.sin-stock  { border-left-color: #dc2626; }
+
+        .doc-head {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 16px; padding: 16px 20px; flex-wrap: wrap;
+        }
+        .doc-folio { font-weight: 700; color: #7c3aed; font-size: 1.02rem; }
+        .doc-meta  { color: #6b7280; font-size: .87rem; margin-top: 3px; }
+        .doc-total { text-align: right; }
+        .doc-total .imp { font-weight: 700; font-size: 1.15rem; color: #111827; }
+
+        .tag {
+            display: inline-block; border-radius: 50px; padding: .18rem .6rem;
+            font-size: .74rem; font-weight: 700; margin-left: 6px; vertical-align: middle;
+        }
+        .tag.pagado    { background: #d1fae5; color: #065f46; }
+        .tag.por-cobrar{ background: #fef3c7; color: #92400e; }
+        .tag.viejo     { background: #fee2e2; color: #991b1b; }
+
+        .doc table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+        .doc thead th {
+            background: #f9fafb; text-align: left; padding: .5rem .75rem;
+            border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;
+            font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; color: #6b7280;
+        }
+        .doc tbody td { padding: .5rem .75rem; border-bottom: 1px solid #f3f4f6; }
+        .doc tbody tr:last-child td { border-bottom: 0; }
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .falta { color: #dc2626; font-weight: 600; }
+        .cubre { color: #059669; font-weight: 600; }
+
+        .vacio { text-align: center; padding: 60px 20px; color: #6b7280; }
+        .vacio i { font-size: 3rem; color: #d1d5db; margin-bottom: 12px; }
+    </style>
+}
+
+<div class="pend-header">
+    <div>
+        <h1><i class="fas fa-clock"></i> Pendientes de Entrega</h1>
+        <p>Mercancía vendida que aún no se entrega al cliente, en esta sucursal.</p>
+    </div>
+    <button class="btn btn-light" onclick="cargarPendientes()">
+        <i class="fas fa-sync-alt"></i> Actualizar
+    </button>
+</div>
+
+<div class="kpi-row" id="kpis"></div>
+
+<div class="filtros">
+    <input type="search" id="buscador" placeholder="Buscar por folio, cliente o producto..."
+           oninput="render()" autocomplete="off">
+    <button class="chip activo" data-filtro="todos"       onclick="setFiltro(this)">Todos</button>
+    <button class="chip"        data-filtro="listos"      onclick="setFiltro(this)">Listos para entregar</button>
+    <button class="chip"        data-filtro="por-cobrar"  onclick="setFiltro(this)">Falta cobrar</button>
+</div>
+
+<div id="lista"></div>
+
+@section scripts {
+    <script>
+        let documentos = [];
+        let filtro = 'todos';
+
+        const money = n => `$${(parseFloat(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const num = n => (parseFloat(n) || 0).toLocaleString('es-MX', { maximumFractionDigits: 4 });
+
+        function setFiltro(btn) {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('activo'));
+            btn.classList.add('activo');
+            filtro = btn.dataset.filtro;
+            render();
+        }
+
+        async function cargarPendientes() {
+            try {
+                const r = await fetch('/PuntoDeVenta/ObtenerPendientesSucursal');
+
+                if (r.status === 401) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Sesión expirada',
+                        text: 'Vuelve a iniciar sesión para continuar.'
+                    });
+                    window.location.href = '/Account/Login';
+                    return;
+                }
+
+                const data = await r.json();
+                if (!data.success) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudieron cargar los pendientes.' });
+                    return;
+                }
+
+                documentos = data.documentos || [];
+                pintarKpis(data.resumen || {});
+                render();
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error inesperado', text: String(e) });
+            }
+        }
+
+        function pintarKpis(r) {
+            document.getElementById('kpis').innerHTML = `
+                <div class="kpi">
+                    <div class="lbl">Documentos</div>
+                    <div class="val">${r.documentos || 0}</div>
+                </div>
+                <div class="kpi">
+                    <div class="lbl">Artículos pendientes</div>
+                    <div class="val">${r.articulos || 0}</div>
+                </div>
+                <div class="kpi ok">
+                    <div class="lbl">Listos para entregar</div>
+                    <div class="val">${r.listosParaEntregar || 0}</div>
+                </div>
+                <div class="kpi warn">
+                    <div class="lbl">Falta cobrar</div>
+                    <div class="val">${r.porCobrar || 0}</div>
+                </div>
+                <div class="kpi">
+                    <div class="lbl">Importe pendiente</div>
+                    <div class="val">${money(r.importe)}</div>
+                </div>`;
+        }
+
+        function pasaFiltro(d) {
+            if (filtro === 'listos' && !d.surtibleCompleto) return false;
+            if (filtro === 'por-cobrar' && !d.porCobrar) return false;
+
+            const q = (document.getElementById('buscador').value || '').trim().toLowerCase();
+            if (!q) return true;
+
+            return [d.folioCotizacion, d.folioVenta, d.cliente, d.vendedor]
+                       .some(v => (v || '').toLowerCase().includes(q))
+                || d.articulos.some(a =>
+                       (a.code || '').toLowerCase().includes(q) ||
+                       (a.description || '').toLowerCase().includes(q));
+        }
+
+        function render() {
+            const visibles = documentos.filter(pasaFiltro);
+            const cont = document.getElementById('lista');
+
+            if (visibles.length === 0) {
+                cont.innerHTML = `
+                    <div class="vacio">
+                        <div><i class="fas fa-check-circle"></i></div>
+                        <h4>${documentos.length === 0 ? 'No hay entregas pendientes' : 'Ningún documento coincide con el filtro'}</h4>
+                        <p>${documentos.length === 0 ? 'Toda la mercancía vendida ya fue entregada.' : 'Prueba con otro texto o quita el filtro.'}</p>
+                    </div>`;
+                return;
+            }
+
+            cont.innerHTML = visibles.map(d => {
+                const algoSurtible = d.articulos.some(a => a.surtible > 0);
+                const clase = d.surtibleCompleto ? 'listo' : (algoSurtible ? 'parcial' : 'sin-stock');
+
+                const filas = d.articulos.map(a => {
+                    const cubre = a.surtible >= a.cantidadPendiente - 0.0001;
+                    return `
+                    <tr>
+                        <td><b>${a.code || ''}</b></td>
+                        <td>${a.description || ''}</td>
+                        <td class="num">${num(a.cantidadOriginal)}</td>
+                        <td class="num">${num(a.cantidadEntregada)}</td>
+                        <td class="num"><b>${num(a.cantidadPendiente)}</b> ${a.unidad || ''}</td>
+                        <td class="num ${cubre ? 'cubre' : 'falta'}">${num(a.existencia)}</td>
+                        <td class="num">${cubre
+                            ? '<span class="cubre">Se puede entregar</span>'
+                            : (a.surtible > 0
+                                ? `<span class="falta">Sólo ${num(a.surtible)}</span>`
+                                : '<span class="falta">Sin existencia</span>')}</td>
+                        <td class="num">${money(a.importePendiente)}</td>
+                    </tr>`;
+                }).join('');
+
+                return `
+                <div class="doc ${clase}">
+                    <div class="doc-head">
+                        <div>
+                            <div class="doc-folio">
+                                ${d.folioCotizacion || '(sin folio)'}
+                                ${d.porCobrar
+                                    ? '<span class="tag por-cobrar">Falta cobrar</span>'
+                                    : '<span class="tag pagado">Ya pagado</span>'}
+                                ${d.dias >= 30 ? `<span class="tag viejo">${d.dias} días</span>` : ''}
+                            </div>
+                            <div class="doc-meta">
+                                ${d.cliente || 'Sin cliente'}
+                                &nbsp;·&nbsp; Venta ${d.folioVenta || '—'}
+                                ${d.vendedor ? `&nbsp;·&nbsp; Vendedor ${d.vendedor}` : ''}
+                                &nbsp;·&nbsp; hace ${d.dias} día(s)
+                            </div>
+                        </div>
+                        <div class="doc-total">
+                            <div class="imp">${money(d.totalPendiente)}</div>
+                            <div class="doc-meta">${d.porCobrar ? 'por cobrar' : 'ya cobrado'}</div>
+                            <button class="btn btn-sm btn-primary mt-2"
+                                    onclick="irAEntregar('${(d.folioCotizacion || '').replace(/'/g, "\\'")}')">
+                                <i class="fas fa-truck"></i> Entregar
+                            </button>
+                            ${d.encabezadoVentaId ? `
+                            <button class="btn btn-sm btn-light mt-2"
+                                    title="Reimprimir el ticket de la venta"
+                                    onclick="reimprimirTicket(${d.encabezadoVentaId})">
+                                <i class="fas fa-receipt"></i> Ticket
+                            </button>` : ''}
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th class="num">Pedido</th>
+                                <th class="num">Entregado</th>
+                                <th class="num">Pendiente</th>
+                                <th class="num">Existencia</th>
+                                <th class="num">Estado</th>
+                                <th class="num">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filas}</tbody>
+                    </table>
+                </div>`;
+            }).join('');
+        }
+
+        // Abre el punto de venta con el folio ya cargado: es ahí donde se registra la entrega.
+        function irAEntregar(folio) {
+            if (!folio) {
+                Swal.fire({ icon: 'warning', title: 'Sin folio', text: 'Este pendiente no tiene folio de cotización.' });
+                return;
+            }
+            window.location.href = `/Ventas/PuntoDeVenta?folio=${encodeURIComponent(folio)}`;
+        }
+
+        // Reimpresión del ticket de mostrador. Se abre en ventana aparte con ?print=1 para
+        // que dispare el diálogo de impresión sin pasos extra.
+        function reimprimirTicket(ventaId) {
+            if (!ventaId) return;
+
+            const v = window.open(`/PuntoDeVenta/Ticket/${ventaId}?print=1`,
+                `ticket_${ventaId}`, 'width=420,height=760');
+
+            if (!v) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Ventana bloqueada',
+                    text: 'Permite las ventanas emergentes de este sitio para reimprimir el ticket.'
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', cargarPendientes);
+    </script>
+}

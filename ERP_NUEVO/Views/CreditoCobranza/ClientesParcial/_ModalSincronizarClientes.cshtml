@@ -1,0 +1,476 @@
+@*
+    Modal de importación de clientes desde el sistema externo.
+    Sigue el lenguaje visual de la pantalla (ver content/clientes.css)
+    pero conserva el morado como color propio de "sincronización".
+*@
+<style>
+    #modalSincronizarClientes {
+        --sync-primary: #7c3aed;
+        --sync-primary-dark: #6d28d9;
+        --sync-soft: rgba(124, 58, 237, .09);
+        --sync-line: rgba(124, 58, 237, .18);
+    }
+
+    /* ── Cabecera ─────────────────────────────────────────────────────── */
+    .sync-header {
+        background: linear-gradient(135deg, var(--sync-soft), rgba(124, 58, 237, .01));
+    }
+
+    .sync-header .cli-icon {
+        background: var(--sync-soft);
+        color: var(--sync-primary);
+    }
+
+    @@keyframes syncRotate {
+        from {
+            transform: rotate(0deg)
+        }
+
+        to {
+            transform: rotate(360deg)
+        }
+    }
+
+    .sync-spin-active {
+        animation: syncRotate 1s linear infinite;
+    }
+
+    /* ── Barra de estado ──────────────────────────────────────────────── */
+    .sync-info-bar {
+        padding: .55rem 1.35rem;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--sync-soft);
+        color: var(--sync-primary);
+        font-size: .82rem;
+        font-weight: 500;
+    }
+
+    /* ── Selector de empresa ──────────────────────────────────────────── */
+    .sync-empresa-bar {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .85rem 1.35rem;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-light);
+    }
+
+    .sync-empresa-label {
+        margin: 0;
+        color: var(--text-dark);
+        font-size: .8rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .sync-empresa-label i {
+        color: var(--sync-primary);
+    }
+
+    #modalSincronizarClientes .sync-empresa-select {
+        max-width: 300px;
+    }
+
+    #modalSincronizarClientes .sync-empresa-select:focus {
+        border-color: var(--sync-primary);
+        box-shadow: 0 0 0 3px var(--sync-soft);
+    }
+
+    /* ── Tabla ────────────────────────────────────────────────────────── */
+    .sync-table-shell {
+        padding: 1.1rem 1.35rem;
+        min-height: 280px;
+    }
+
+    .sync-table-shell > div {
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--bg-light);
+    }
+
+    /* ── Seleccionados ────────────────────────────────────────────────── */
+    .sync-selected-section {
+        margin: 0 1.35rem 1.1rem;
+        border: 1px dashed var(--sync-line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--sync-soft);
+        animation: fadeSlideIn .25s ease;
+    }
+
+    @@keyframes fadeSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .sync-selected-header {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .55rem .9rem;
+        border-bottom: 1px solid var(--sync-line);
+        color: var(--sync-primary);
+        font-size: .78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .sync-badge {
+        margin-left: auto;
+        padding: .1rem .5rem;
+        border-radius: 999px;
+        background: var(--sync-primary);
+        color: #fff;
+        font-size: .72rem;
+        letter-spacing: 0;
+    }
+
+    .sync-chips-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .45rem;
+        padding: .75rem .9rem;
+    }
+
+    .sync-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .25rem .7rem;
+        border: 1px solid var(--sync-line);
+        border-radius: 999px;
+        background: var(--bg-light);
+        color: var(--text-dark);
+        font-size: .78rem;
+        font-weight: 600;
+        transition: border-color .15s ease;
+    }
+
+    .sync-chip:hover {
+        border-color: var(--sync-primary);
+    }
+
+    .sync-chip .chip-remove {
+        display: flex;
+        align-items: center;
+        padding: 0;
+        border: none;
+        background: none;
+        color: var(--text-light);
+        font-size: .7rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: color .15s;
+    }
+
+    .sync-chip .chip-remove:hover {
+        color: var(--danger-color);
+    }
+
+    /* ── Pie ──────────────────────────────────────────────────────────── */
+    .sync-footer {
+        justify-content: space-between;
+    }
+
+    .sync-footer-count {
+        color: var(--text-light);
+        font-size: .82rem;
+        font-weight: 600;
+        transition: color .2s;
+    }
+
+    .sync-footer-count.has-items {
+        color: var(--sync-primary);
+    }
+
+    .sync-btn-primary {
+        background: var(--sync-primary);
+        color: #fff;
+    }
+
+    .sync-btn-primary:hover:not(:disabled) {
+        background: var(--sync-primary-dark);
+        color: #fff;
+    }
+
+    .sync-btn-primary:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+        transform: none;
+    }
+</style>
+
+<div class="modal fade cli-modal" id="modalSincronizarClientes" tabindex="-1" aria-labelledby="modalSincronizarClientesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header sync-header">
+                <div class="cli-icon">
+                    <i class="fa-solid fa-rotate sync-spin-icon"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title" id="modalSincronizarClientesLabel">Sincronizar clientes</h5>
+                    <span class="modal-subtitle">Importa clientes desde la base de datos externa.</span>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body p-0">
+
+                <!-- Barra de estado / info -->
+                <div class="sync-info-bar" id="syncInfoBar">
+                    <span id="syncInfoText">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        Carga la tabla para buscar clientes disponibles en el sistema externo.
+                    </span>
+                </div>
+
+                <div class="sync-empresa-bar">
+                    <label class="sync-empresa-label" for="syncEmpresaSelect">
+                        <i class="fa-solid fa-building me-1"></i> Empresa
+                    </label>
+                    <select id="syncEmpresaSelect" class="form-select sync-empresa-select">
+                        <option value="SRS">Sellos y Retenes</option>
+                        <option value="AHN">Artículos Hidráulicos</option>
+                        <option value="ITF">Interfijo</option>
+                        <option value="SRV">Sellos y Retenes Veracruz</option>
+                    </select>
+                </div>
+
+                <!-- Tabla de clientes externos -->
+                <div class="sync-table-shell">
+                    <div id="tablaClientesExternos"></div>
+                </div>
+
+                <!-- Seleccionados -->
+                <div class="sync-selected-section" id="syncSelectedSection" style="display:none;">
+                    <div class="sync-selected-header">
+                        <i class="fa-solid fa-circle-check me-1"></i>
+                        Clientes seleccionados
+                        <span class="sync-badge" id="syncSelectedCount">0</span>
+                    </div>
+                    <div class="sync-chips-container" id="syncChips"></div>
+                </div>
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="modal-footer sync-footer">
+                <span class="sync-footer-count" id="syncFooterCount">
+                    <i class="fa-solid fa-users me-1"></i>
+                    <span id="syncFooterCountNum">0</span> clientes listos para sincronizar
+                </span>
+                <div class="d-flex gap-2">
+                    <button type="button" class="cli-btn cli-btn-ghost" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark"></i>Cancelar
+                    </button>
+                    <button type="button" class="cli-btn sync-btn-primary" id="btnSincronizar"
+                            onclick="ejecutarSincronizacion()" disabled>
+                        <i class="fa-solid fa-rotate"></i>Sincronizar
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    /* ── Estado ────────────────────────────────────────────────────────── */
+    let _modalSync       = null;
+    let _tablaSync       = null;
+    let _selectedClients = new Map(); // key: id_cliente, value: objeto fila
+
+    /* ── Bootstrap modal lazy-init ─────────────────────────────────────── */
+    function getModal() {
+        if (!_modalSync) {
+            _modalSync = new bootstrap.Modal(document.getElementById('modalSincronizarClientes'));
+        }
+        return _modalSync;
+    }
+
+    // ARREGLA LA FUNCION PARA BORRAR CLIENTES DE LA LISTA Y FALTA HACER TODA LA SINCRONIZACION xD
+
+    /* ── Abre el modal y crea (o recarga) la tabla ─────────────────────── */
+    window.abrirModalSincronizar = function () {
+        _selectedClients.clear();
+        actualizarUI();
+        getModal().show();
+
+        // Crear tabla solo la primera vez; luego solo recargar
+        renderizarTabla();
+    };
+
+    // La empresa se lee del select en cada petición (ver data() de la tabla),
+    // así que cambiarla sólo requiere recargar.
+    window.document.getElementById('syncEmpresaSelect').addEventListener('change', () => {
+        renderizarTabla();
+    });
+
+    function renderizarTabla() {
+        if (!_tablaSync) {
+            _tablaSync = createTable({
+                selector: '#tablaClientesExternos',
+                path: '/Clientes/GetClientesSync',
+                searchPlaceholder: 'Buscar cliente externo...',
+                defaultPageSize: 10,
+                columns: [
+                    { title: 'Código', data: 'cve_cli' },
+                    { title: 'Nombre', data: 'n_cli', formatter: v => `<span title="${v}">${v}</span>` },
+                    { title: 'RFC', data: 'rfc' },
+                    {
+                        title: 'Tipo',
+                        data: 'cve_cli',
+                        formatter: v => v.startsWith('02')
+                            ? `<span class="cli-tag" style="background:rgba(124,58,237,.12);color:#7c3aed"><i class="fa-solid fa-globe me-1"></i>Internacional</span>`
+                            : `<span class="cli-tag cli-tag--accent"><i class="fa-solid fa-flag me-1"></i>Nacional</span>`
+                    },
+                    {
+                        title: 'Estado',
+                        data: 'ya_sincronizado',
+                        formatter: v => v
+                            ? `<span class="cli-tag cli-tag--success"><i class="fa-solid fa-check me-1"></i>Ya importado</span>`
+                            : `<span class="cli-tag" style="background:rgba(217,119,6,.14);color:#d97706"><i class="fa-solid fa-clock me-1"></i>Pendiente</span>`
+                    },
+                ],
+                data: () => ({
+                    empresa: document.getElementById('syncEmpresaSelect').value,
+                }),
+                selectable: {
+                    enabled: true,
+                    condition: row => !row.ya_sincronizado,   // no seleccionable si ya existe
+                    onChange: rows => onSelectionChange(rows),
+                },
+                rowKey: 'cve_cli',
+                actions: [],
+                GlobalEvents: {
+                    onLoading: loading => {
+                        const icon = document.querySelector('.sync-spin-icon');
+                        if (icon) icon.classList.toggle('sync-spin-active', loading);
+                        setInfoText(loading
+                            ? '<i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando clientes externos...'
+                            : '<i class="fa-solid fa-circle-check me-1"></i> Clientes cargados. Selecciona los que deseas importar.');
+                    }
+                }
+            });
+
+            window._tablaSync = _tablaSync;
+        } else {
+            _tablaSync.reload();
+        }
+    }
+
+    /* ── Callback cuando cambia la selección en createTable ────────────── */
+    function onSelectionChange(rows) {
+        // rows = array completo de seleccionados que devuelve createTable.
+        // Se indexa por cve_cli porque es el rowKey de la tabla: el sistema
+        // externo no devuelve id_cliente.
+        _selectedClients.clear();
+        rows.forEach(r => _selectedClients.set(r.cve_cli, r));
+        actualizarUI();
+    }
+
+    /* ── Refresca chips, contadores y botón ────────────────────────────── */
+    function actualizarUI() {
+        const count   = _selectedClients.size;
+        const section = document.getElementById('syncSelectedSection');
+        const chips   = document.getElementById('syncChips');
+        const badge   = document.getElementById('syncSelectedCount');
+        const numEl   = document.getElementById('syncFooterCountNum');
+        const counter = document.querySelector('.sync-footer-count');
+        const btn     = document.getElementById('btnSincronizar');
+
+        // Sección de chips
+        if (count === 0) {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+            badge.textContent = count;
+
+            chips.innerHTML = '';
+            _selectedClients.forEach((row, cveCli) => {
+                // La serie 02- identifica a los clientes internacionales
+                const esInternacional = String(row.cve_cli || '').startsWith('02');
+
+                const chip = document.createElement('span');
+                chip.className = 'sync-chip';
+                chip.innerHTML = `
+                    <i class="fa-solid ${esInternacional ? 'fa-globe' : 'fa-flag'}" style="color:var(--sync-primary);font-size:.7rem"></i>
+                    ${row.cve_cli} — ${row.n_cli}
+                    <button class="chip-remove" title="Quitar" onclick="quitarChip('${cveCli}')">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>`;
+                chips.appendChild(chip);
+            });
+        }
+
+        // Footer
+        numEl.textContent = count;
+        counter.classList.toggle('has-items', count > 0);
+        btn.disabled = count === 0;
+    }
+
+    /* ── Quitar desde el chip (deselecciona también en la tabla) ───────── */
+    window.quitarChip = function (cveCli) {
+        // rowKey de la tabla es cve_cli: se pasa tal cual, es una clave
+        // con guion ("01-0001") que no admite conversión numérica.
+        _tablaSync.removeSelectedRow(cveCli);
+    };
+
+    /* ── Envía los seleccionados al backend ────────────────────────────── */
+    window.ejecutarSincronizacion = function () {
+        if (_selectedClients.size === 0) return;
+
+        const clientesIds = Array.from(_tablaSync.getSelectedRows()).map(x => x.cve_cli)
+
+        _Swal.fire({
+            icon: 'question',
+            title: '¿Confirmar sincronización?',
+            html: `Se importarán <strong>${clientesIds.length}</strong> cliente(s) al sistema.`,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa-solid fa-rotate me-1"></i>Sincronizar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#7c3aed',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            // Mostrar spinner en botón
+            const btn = document.getElementById('btnSincronizar');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="fa fa-spinner fa-spin me-1"></span>Sincronizando...';
+
+            // ids va como arreglo, no como JSON: GetData hace un append por
+            // elemento y así enlaza con el List<string> del controlador.
+            GetData({
+                path: '/Clientes/SincronizarClientes',
+                data: {
+                    ids: clientesIds,
+                    empresa: document.getElementById('syncEmpresaSelect').value
+                },
+                swalResponse: true,
+                swalType: 'modal'
+            })
+        });
+    };
+
+    /* ── Helper: actualiza el texto informativo del banner ─────────────── */
+    function setInfoText(html) {
+        const el = document.getElementById('syncInfoText');
+        if (el) el.innerHTML = html;
+    }
+
+})();
+</script>

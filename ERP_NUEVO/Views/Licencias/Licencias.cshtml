@@ -1,0 +1,138 @@
+@model IEnumerable<BOS_ERP.Models.Licencia>
+
+@{
+    ViewBag.Title = "Gestión de Licencias";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Formulario oculto para el token anti-falsificación -->
+@using (Html.BeginForm(null, null, FormMethod.Post, new { id = "__AjaxAntiForgeryForm" }))
+{
+    @Html.AntiForgeryToken()
+}
+
+<script>window.document.title = 'Licencias'</script>
+
+<div class="card">
+    <div class="card-header text-bg-primary">
+        <h2>Listado de Licencias</h2>
+    </div>
+
+    <div class="card-body">
+        <div class="row">
+            <div class="col-sm-6 mb-3">
+                <div class="btn-group btn-group-toggle mb-3" data-toggle="buttons">
+                    <label class="btn btn-outline-info active">
+                        <input type="radio" name="estadoLicenciaFilter" value="" checked> Todas
+                    </label>
+                    <label class="btn btn-outline-success">
+                        <input type="radio" name="estadoLicenciaFilter" value="true"> Activas
+                    </label>
+                    <label class="btn btn-outline-danger">
+                        <input type="radio" name="estadoLicenciaFilter" value="false"> Inactivas
+                    </label>
+                </div>
+            </div>
+            <div class="col-sm-6 mb-3 d-grid gap-2 d-md-flex justify-content-md-end">
+                @Html.ActionLink("Nueva Licencia", "Create", "Licencias", null, new
+                {
+                    @class = "btn btn-outline-primary mb-3",
+                    @style = "display: inline-flex; align-items: center;",
+                    @role = "button"
+                })
+            </div>
+
+        </div>
+        <div class="table-responsive-sm">
+            <table id="tablaLicencias" class="table table-striped table-bordered table-hover" style="width:100%">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Licencia</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Expiración</th>
+                        <th>Activa</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+        $(document).ready(function () {
+            var tablaLicencias = $('#tablaLicencias').DataTable({
+                ajax: {
+                    url: '@Url.Action("GetLicencias", "Licencias")',
+                    type: 'GET',
+                    dataType: 'json',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'Empresa.RFC' },
+                    { data: 'LicenciaCodigo' },
+                    {
+                        data: 'FechaInicio',
+                        render: function (data) {
+                            if (!data) return '';
+                            const fecha = new Date(data);
+                            if (isNaN(fecha)) return '';
+                            return `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
+                        }
+                    },
+                    {
+                        data: 'FechaExpiracion',
+                        render: function (data) {
+                            if (!data) return '';
+                            const fecha = new Date(data);
+                            if (isNaN(fecha)) return '';
+                            return `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
+                        }
+                    },
+                    {
+                        data: 'Activa',
+                        render: function (data) {
+                            return data ? '<span class="badge1 badge-success">Sí</span>' :
+                                          '<span class="badge1 badge-danger">No</span>';
+                        }
+                    },
+                    {
+                        data: 'LicenciaId',
+                        render: function (data, type, row) {
+                            let esActiva = row.Activa;
+                            let textoCambio = esActiva ? 'Desactivar' : 'Activar';
+                            let colorCambio = esActiva ? 'danger' : 'success';
+                            return `
+                                <a href="/Licencias/Edit/${data}" class="btn btn-sm btn-warning me-1" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="/Licencias/CambiarEstado/${data}" class="btn btn-sm btn-${colorCambio}" title="${textoCambio}">
+                                    <i class="fas fa-power-off"></i>
+                                </a>
+                            `;
+                        },
+
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
+                responsive: true
+            });
+
+            // Filtrado por estado activa/inactiva
+            $('input[name="estadoLicenciaFilter"]').change(function () {
+                const valor = $(this).val();
+                if (valor === "") {
+                    tablaLicencias.column(4).search('').draw(); // Todas
+                } else if (valor === "true") {
+                    tablaLicencias.column(4).search('Sí').draw(); // Solo activas
+                } else if (valor === "false") {
+                    tablaLicencias.column(4).search('No').draw(); // Solo inactivas
+                }
+            });
+        });
+    </script>
+}

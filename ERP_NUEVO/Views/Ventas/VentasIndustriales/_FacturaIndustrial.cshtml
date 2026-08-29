@@ -1,0 +1,2220 @@
+﻿@using BOS_ERP.Controllers
+@model BOS_ERP.Models.FolioInfo
+
+<style>
+    /* ===== ADENDAS — set completo ===== */
+    .adendas-radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: .65rem;
+        padding: 1rem;
+        background: var(--vi-gray-50);
+        border-radius: var(--vi-radius);
+        border: 1px solid var(--vi-gray-200);
+        max-height: 480px;
+        overflow-y: auto;
+    }
+
+    .adenda-option {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        padding: .9rem 1rem;
+        background: var(--bg-light, #fff);
+        border-radius: 10px;
+        border: 1.5px solid var(--vi-gray-200);
+        cursor: pointer;
+        transition: border-color .2s, transform .15s, box-shadow .2s;
+    }
+
+        .adenda-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 4px;
+            border-radius: 10px 0 0 10px;
+            background: #3b82f6;
+            opacity: 0;
+            transition: opacity .2s;
+        }
+
+        .adenda-option:hover {
+            border-color: #3b82f6;
+            transform: translateX(3px);
+            box-shadow: var(--vi-shadow);
+        }
+
+        .adenda-option.selected {
+            border-color: #3b82f6;
+            background: var(--vi-blue-50);
+            box-shadow: 0 2px 10px rgba(59,130,246,.15);
+        }
+
+            .adenda-option.selected::before {
+                opacity: 1;
+            }
+
+        .adenda-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            margin-right: .85rem;
+            margin-top: .15rem;
+            accent-color: #3b82f6;
+            flex-shrink: 0;
+        }
+
+    .adenda-label {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+        cursor: pointer;
+        min-width: 0; /* permite que el contenido se encoja en vez de desbordar */
+    }
+
+    /* ---- Header: nombre + badges ---- */
+    .adenda-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    .adenda-nombre {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        font-weight: 700;
+        color: var(--vi-blue-600);
+        font-size: .92rem;
+    }
+
+    .adenda-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+    }
+
+    .adenda-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: .68rem;
+        font-weight: 700;
+        padding: .15rem .55rem;
+        border-radius: 99px;
+        background: var(--vi-gray-100);
+        color: var(--vi-gray-600);
+        white-space: nowrap;
+    }
+
+    .badge-version {
+        background: var(--vi-blue-50);
+        color: var(--vi-blue-600);
+    }
+
+    .badge-prefix {
+        background: var(--vi-gray-100);
+        color: var(--vi-gray-600);
+    }
+
+    .badge-conceptos {
+        background: var(--vi-green-50);
+        color: var(--vi-green-600);
+    }
+
+    /* ---- Detalles (ID, namespace) ---- */
+    .adenda-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding: .5rem .75rem;
+        background: var(--vi-gray-50);
+        border-radius: 8px;
+        border: 1px solid var(--vi-gray-200);
+    }
+
+    .adenda-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+        min-width: 110px;
+    }
+
+    .detail-label {
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        color: var(--vi-gray-400);
+    }
+
+    .detail-value {
+        font-size: .78rem;
+        color: var(--vi-gray-800);
+        font-family: 'Courier New', monospace;
+        word-break: break-all;
+    }
+
+    /* ---- Acordeón JSON Template ---- */
+    .adenda-template-accordion {
+        border: 1px solid var(--vi-gray-200);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .adenda-template-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .5rem .75rem;
+        background: var(--vi-gray-50);
+        border: none;
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--vi-gray-600);
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .adenda-template-toggle:hover {
+            background: var(--vi-blue-50);
+            color: var(--vi-blue-600);
+        }
+
+        .adenda-template-toggle i.fa-chevron-down {
+            transition: transform .2s;
+            font-size: .7rem;
+        }
+
+        .adenda-template-toggle.expanded i.fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+    .adenda-template-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height .25s ease;
+        background: var(--vi-gray-900, #1e293b);
+    }
+
+        .adenda-template-content.show {
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+    .template-content {
+        margin: 0;
+        padding: .75rem .9rem;
+        font-family: 'Courier New', monospace;
+        font-size: .72rem;
+        line-height: 1.5;
+        color: #d4d4d4;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    /* ---- Timestamp ---- */
+    .adenda-timestamp {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .5rem;
+        font-size: .7rem;
+        color: var(--vi-gray-400);
+        padding-top: .4rem;
+        border-top: 1px dashed var(--vi-gray-200);
+    }
+
+    /* ---- Mensaje sin adendas ---- */
+    .no-adendas-message {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: var(--vi-gray-400);
+    }
+
+        .no-adendas-message i {
+            font-size: 2.2rem;
+            display: block;
+            margin-bottom: .6rem;
+            opacity: .35;
+        }
+</style>
+@*<style>
+    /* ===== LAYOUT ===== */
+    .vi-page {
+        background: var(--vi-gray-100);
+        min-height: 100vh;
+        padding: 2rem 0 4rem;
+    }
+
+    /* ===== TARJETA PRINCIPAL ===== */
+    .vi-card {
+        background: var(--bg-light, #fff);
+        border-radius: var(--vi-radius-lg);
+        border: 1px solid var(--vi-gray-200);
+        box-shadow: var(--vi-shadow-md);
+        overflow: hidden;
+    }
+
+    /* ===== CABECERA DE SECCIÓN ===== */
+    .vi-section-header {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding-bottom: .75rem;
+        border-bottom: 2px solid var(--vi-blue-50);
+        margin-bottom: 1.25rem;
+    }
+
+    .vi-section-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 10px;
+        background: var(--vi-blue-600);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .vi-section-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--vi-gray-800);
+        margin: 0;
+    }
+
+    /* ===== CAMPOS ===== */
+    .vi-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--vi-gray-600);
+        margin-bottom: .3rem;
+        display: block;
+    }
+
+        .vi-label i {
+            color: #3b82f6;
+            margin-right: .3rem;
+        }
+
+    .vi-control {
+        border: 1.5px solid var(--vi-gray-200);
+        border-radius: var(--vi-radius);
+        padding: .65rem 1rem;
+        font-size: .9rem;
+        background: var(--vi-gray-50);
+        color: var(--vi-gray-800);
+        width: 100%;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .vi-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            outline: none;
+            background: var(--bg-light, #fff);
+        }
+
+        .vi-control[readonly] {
+            background: var(--vi-gray-100);
+            cursor: default;
+        }
+
+        .vi-control.disabled-field {
+            background: #C2C2C2 !important;
+            cursor: not-allowed !important;
+            opacity: .7;
+            color: #333;
+        }
+
+    /* ===== TOGGLE TIPO PAGO (3 estados) ===== */
+    .vi-pay-toggle {
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        background: var(--vi-gray-100);
+        border: 1px solid var(--vi-gray-200);
+        border-radius: var(--vi-radius);
+        padding: 4px;
+    }
+
+    .vi-pay-btn {
+        position: relative;
+        border: none;
+        border-radius: 7px;
+        padding: .55rem 1rem;
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--vi-gray-600);
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+        white-space: nowrap;
+        transition: color .18s;
+    }
+
+        .vi-pay-btn .vi-pay-pill {
+            position: absolute;
+            inset: 0;
+            border-radius: 7px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .22s, background .22s;
+        }
+
+        .vi-pay-btn.active {
+            color: var(--vi-blue-600);
+        }
+
+            .vi-pay-btn.active .vi-pay-pill {
+                opacity: 1;
+                background: var(--vi-blue-50);
+            }
+
+        .vi-pay-btn[data-val="credito"].active {
+            color: var(--vi-green-700);
+        }
+
+            .vi-pay-btn[data-val="credito"].active .vi-pay-pill {
+                background: var(--vi-green-50);
+            }
+
+        .vi-pay-btn[data-val="anticipo"].active {
+            color: var(--vi-amber-600);
+        }
+
+            .vi-pay-btn[data-val="anticipo"].active .vi-pay-pill {
+                background: var(--vi-amber-50);
+            }
+
+        .vi-pay-btn i, .vi-pay-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+    /* ===== TABLA PRODUCTOS ===== */
+    .vi-table-wrap {
+        border-radius: var(--vi-radius);
+        border: 1px solid var(--vi-gray-200);
+        overflow: hidden;
+        overflow-x: auto;
+        max-height: 420px;
+        overflow-y: auto;
+    }
+
+    .vi-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1100px;
+        font-size: .82rem;
+    }
+
+        .vi-table thead {
+            background: var(--vi-blue-600);
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .vi-table th {
+            padding: .65rem .6rem;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .vi-table td {
+            padding: .65rem .6rem;
+            border-bottom: 1px solid var(--vi-gray-200);
+            vertical-align: middle;
+            color: var(--vi-gray-800);
+        }
+
+        .vi-table tbody tr:hover {
+            background: var(--vi-blue-50);
+        }
+
+    .vi-table-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--vi-gray-400);
+    }
+
+        .vi-table-empty i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: .75rem;
+            opacity: .35;
+        }
+
+    /* ===== BOTONES ===== */
+    .vi-btn {
+        border: none;
+        border-radius: var(--vi-radius);
+        padding: .6rem 1.25rem;
+        font-weight: 600;
+        font-size: .85rem;
+        cursor: pointer;
+        transition: transform .2s, box-shadow .2s, background .2s;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+    }
+
+        .vi-btn:hover {
+            transform: translateY(-1px);
+        }
+
+    .vi-btn-primary {
+        background: var(--vi-blue-600);
+        color: #fff;
+    }
+
+        .vi-btn-primary:hover {
+            background: var(--vi-blue-700);
+            box-shadow: 0 4px 14px rgba(30,58,95,.3);
+        }
+
+    .vi-btn-success {
+        background: var(--vi-green-600);
+        color: #fff;
+    }
+
+        .vi-btn-success:hover {
+            background: var(--vi-green-700);
+            box-shadow: 0 4px 14px rgba(5,150,105,.3);
+        }
+
+    .vi-btn-danger {
+        background: var(--vi-red-600);
+        color: #fff;
+        padding: .35rem .75rem;
+        font-size: .8rem;
+    }
+
+        .vi-btn-danger:hover {
+            background: #b91c1c;
+        }
+
+    .vi-btn-outline {
+        background: transparent;
+        color: #3b82f6;
+        border: 1.5px solid #3b82f6;
+    }
+
+        .vi-btn-outline:hover {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+    .vi-btn-ghost {
+        background: transparent;
+        color: var(--vi-red-600);
+        border: 1.5px solid var(--vi-red-600);
+    }
+
+        .vi-btn-ghost:hover {
+            background: var(--vi-red-600);
+            color: #fff;
+        }
+
+    .vi-btn-amber {
+        background: var(--vi-amber-600);
+        color: #fff;
+    }
+
+        .vi-btn-amber:hover {
+            background: #b45309;
+            box-shadow: 0 4px 14px rgba(217,119,6,.3);
+        }
+
+    /* ===== TICKET / RESUMEN ===== */
+    .vi-ticket {
+        border: 1px solid var(--vi-gray-200);
+        border-radius: var(--vi-radius-lg);
+        overflow: hidden;
+        box-shadow: var(--vi-shadow);
+    }
+
+    .vi-ticket-head {
+        background: var(--vi-blue-600);
+        color: #fff;
+        padding: 1.1rem 1.4rem;
+        text-align: center;
+    }
+
+    .vi-ticket-head-icon {
+        font-size: 1.5rem;
+        opacity: .9;
+        display: block;
+        margin-bottom: .2rem;
+    }
+
+    .vi-ticket-head-label {
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+    }
+
+    .vi-ticket-body {
+        padding: 1.1rem 1.4rem;
+        background: var(--bg-light, #fff);
+    }
+
+    .vi-ticket-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: .55rem 0;
+        border-bottom: 1px dashed var(--vi-gray-200);
+        font-size: .85rem;
+        color: var(--vi-gray-800);
+    }
+
+        .vi-ticket-row:last-child {
+            border-bottom: none;
+        }
+
+    .vi-ticket-row-label {
+        color: var(--vi-gray-600);
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vi-ticket-row-val {
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+        color: var(--vi-gray-800);
+    }
+
+        .vi-ticket-row-val.vi-negative {
+            color: var(--vi-red-600);
+        }
+
+        .vi-ticket-row-val.vi-positive {
+            color: var(--vi-green-600);
+        }
+
+    .vi-ticket-footer {
+        background: var(--vi-blue-50);
+        border-top: 2px dashed var(--vi-blue-100);
+        padding: 1.1rem 1.4rem;
+    }
+
+    .vi-ticket-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .vi-ticket-total-label {
+        font-size: .85rem;
+        color: var(--vi-blue-600);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .vi-ticket-total-val {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--vi-blue-600);
+        font-family: 'Courier New', monospace;
+    }
+
+    /* ===== SWITCH ===== */
+    .vi-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+
+    .vi-switch-track {
+        position: relative;
+        width: 52px;
+        height: 28px;
+        border-radius: 99px;
+        background: var(--vi-gray-200);
+        transition: background .3s;
+        flex-shrink: 0;
+    }
+
+        .vi-switch-track::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.2);
+            transition: transform .3s;
+        }
+
+    .vi-switch input {
+        display: none;
+    }
+
+        .vi-switch input:checked ~ .vi-switch-track {
+            background: var(--vi-green-600);
+        }
+
+            .vi-switch input:checked ~ .vi-switch-track::after {
+                transform: translateX(24px);
+            }
+
+    .vi-switch-label {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--vi-gray-600);
+        user-select: none;
+    }
+
+    /* ===== SEPARADOR ===== */
+    .vi-sep {
+        border: none;
+        border-top: 1px dashed var(--vi-gray-200);
+        margin: 1.25rem 0;
+    }
+
+    /* ===== MODAL ===== */
+    .vi-modal-header {
+        background: var(--vi-blue-600);
+        color: #fff;
+        border-radius: .5rem .5rem 0 0;
+    }
+
+        .vi-modal-header .btn-close {
+            filter: invert(1);
+        }
+
+    /* ===== SEARCH ITEM ===== */
+    .vi-search-item {
+        padding: .7rem 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--vi-gray-200);
+        margin-bottom: .5rem;
+        cursor: pointer;
+        transition: border-color .2s, background .2s, transform .15s;
+        background: var(--bg-light, #fff);
+        color: var(--vi-gray-800);
+    }
+
+        .vi-search-item:hover {
+            border-color: #3b82f6;
+            background: var(--vi-blue-50);
+            transform: translateX(3px);
+        }
+
+    /* ===== BADGE ===== */
+    .vi-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: .2rem .6rem;
+        border-radius: 99px;
+    }
+
+    .vi-badge-blue {
+        background: var(--vi-blue-50);
+        color: var(--vi-blue-600);
+    }
+
+    .vi-badge-green {
+        background: var(--vi-green-50);
+        color: var(--vi-green-600);
+    }
+
+    .document-badge {
+        display: inline-block;
+        padding: .2rem .7rem;
+        border-radius: 99px;
+        font-size: .7rem;
+        font-weight: 700;
+    }
+
+    .badge-pending {
+        background: var(--vi-amber-50);
+        color: var(--vi-amber-600);
+    }
+
+    .badge-approved {
+        background: var(--vi-green-50);
+        color: var(--vi-green-600);
+    }
+
+    .badge-cancelled {
+        background: var(--vi-red-50);
+        color: var(--vi-red-600);
+    }
+
+    /* ===== BOTÓN FLOTANTE ===== */
+    .vi-floating-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--vi-blue-600);
+        color: #fff;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        box-shadow: 0 8px 25px rgba(30,58,95,.4);
+        transition: transform .3s, box-shadow .3s;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .vi-floating-btn:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 35px rgba(30,58,95,.5);
+        }
+
+    .vi-floating-tooltip {
+        position: fixed;
+        bottom: 38px;
+        right: 96px;
+        background: var(--vi-gray-800);
+        color: #fff;
+        padding: .4rem .9rem;
+        border-radius: 8px;
+        font-size: .8rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .3s;
+        z-index: 999;
+    }
+
+    .vi-floating-btn:hover + .vi-floating-tooltip {
+        opacity: 1;
+    }
+
+    /* ===== ADENDAS ===== */
+    .adendas-radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: .75rem;
+        padding: 1rem;
+        background: var(--vi-gray-50);
+        border-radius: var(--vi-radius);
+        border: 1px solid var(--vi-gray-200);
+        max-height: 380px;
+        overflow-y: auto;
+    }
+
+    .adenda-option {
+        display: flex;
+        align-items: flex-start;
+        padding: .85rem 1rem;
+        background: var(--bg-light, #fff);
+        border-radius: 8px;
+        border: 1.5px solid var(--vi-gray-200);
+        cursor: pointer;
+        transition: border-color .2s, transform .15s;
+    }
+
+        .adenda-option:hover {
+            border-color: #3b82f6;
+            transform: translateX(3px);
+        }
+
+        .adenda-option.selected {
+            border-color: #3b82f6;
+            background: var(--vi-blue-50);
+        }
+
+        .adenda-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            margin-right: .85rem;
+            margin-top: .15rem;
+            accent-color: #3b82f6;
+            flex-shrink: 0;
+        }
+
+    .adenda-label {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+        cursor: pointer;
+    }
+
+    .adenda-nombre {
+        font-weight: 700;
+        color: var(--vi-blue-600);
+        font-size: .9rem;
+    }
+
+    /* ===== ANTICIPOS TABLE ===== */
+    #tabla-anticipo {
+        border-radius: var(--vi-radius-lg);
+        border: 1px solid var(--vi-gray-200);
+        box-shadow: var(--vi-shadow);
+    }
+
+    .vi-fac-btn-delete {
+        background: var(--vi-red-600);
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        padding: .35rem .75rem;
+        font-size: .8rem;
+        cursor: pointer;
+        transition: background .2s, transform .15s;
+    }
+
+        .vi-fac-btn-delete:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+
+        .vi-fac-btn-delete:active {
+            transform: scale(.96);
+        }
+
+        .vi-fac-btn-delete:disabled {
+            background: #bdbdbd;
+            cursor: not-allowed;
+            opacity: .7;
+        }
+</style>*@
+
+
+@{ var role = Utilities.GetUserRole(User.Identity.Name, "ERP_SRS"); }
+
+<div class="vi-page">
+    <div class="container-xl">
+
+        <!-- Encabezado de página -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="vi-section-icon" style="width:2.75rem;height:2.75rem;border-radius:12px;">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div>
+                <h1 class="h4 mb-0 fw-bold" style="color:var(--vi-gray-800)">Nueva Factura</h1>
+                <p class="mb-0 small" style="color:var(--vi-gray-600)">Complete los datos para generar la factura</p>
+            </div>
+            <!-- Botones de acción rápida en el header -->
+            <div class="ms-auto d-flex gap-2">
+                <button type="button" class="vi-btn vi-btn-primary"
+                        data-bs-toggle="modal" data-bs-target="#vi-fac-modalBuscarDocumentos">
+                    <i class="fas fa-file-alt"></i> Buscar Documentos
+                </button>
+                @* Se habilita desde facturacion-remisiones-parciales.js en cuanto
+                   hay un cliente seleccionado: el modal filtra por cliente. *@
+                <button type="button" class="vi-btn vi-btn-success"
+                        id="vi-fac-btnEspeciales" disabled
+                        title="Selecciona primero un cliente">
+                    <i class="fas fa-folder-gear"></i> Especiales
+                </button>
+            </div>
+        </div>
+
+        <form id="vi-fac-formCotizacion" class="vi-fac-formCotizacion" method="post">
+
+            <!-- ===== FILA PRINCIPAL ===== -->
+            <div class="row g-4">
+
+                <!-- ========== COLUMNA IZQUIERDA ========== -->
+                <div class="col-12 col-xl-8">
+
+                    <!-- TARJETA: Tipo de Pago -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                            <h2 class="vi-section-title">Tipo de Factura</h2>
+                        </div>
+
+                        <input type="hidden" name="tipoPago" id="vi-fac-tipo-pago-hidden-state" value="contado">
+                        <div class="vi-pay-toggle" id="vi-fac-toggle-pago" data-state="contado"
+                             style="grid-template-columns: 1fr 1fr;">
+                            <button type="button" class="vi-pay-btn active" data-val="contado"
+                                    onclick="selectTipoPagoFac('contado', event)">
+                                <div class="vi-pay-pill"></div>
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Contado</span>
+                            </button>
+                            <button type="button" class="vi-pay-btn" data-val="credito"
+                                    onclick="selectTipoPagoFac('credito', event)">
+                                <div class="vi-pay-pill"></div>
+                                <i class="fas fa-credit-card"></i>
+                                <span>Crédito</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Información General -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-info-circle"></i></div>
+                            <h2 class="vi-section-title">Información General</h2>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-hashtag"></i>Folio</label>
+                                <input type="text" id="vi-fac-folio" value="@Model.Folio" name="folio"
+                                       class="vi-control" readonly autocomplete="off">
+                            </div>
+                            <div class="col-12 col-sm-4 d-none">
+                                <label class="vi-label"><i class="fas fa-building"></i>Sucursal</label>
+                                <select class="vi-control form-select" id="vi-fac-sucursal" name="sucursal">
+                                    <option selected>CEDIS</option>
+                                    <option>Sucursal Centro</option>
+                                    <option>Sucursal Norte</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4 d-none">
+                                <label class="vi-label"><i class="fas fa-warehouse"></i>Almacén</label>
+                                <select class="vi-control form-select" id="vi-fac-almacen" name="almacen">
+                                    <option selected>ALMACÉN GENERAL</option>
+                                    <option>ALMACÉN A</option>
+                                    <option>ALMACÉN B</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Información del Cliente -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-user"></i></div>
+                            <h2 class="vi-section-title">Información del Cliente</h2>
+                            <button type="button" class="vi-btn vi-btn-primary ms-auto"
+                                    data-bs-toggle="modal" data-bs-target="#vi-fac-modalBuscarAnticipos"
+                                    id="btn-anticipos">
+                                <i class="fas fa-plus"></i> Buscar Anticipos
+                            </button>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Buscador cliente -->
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-search"></i>Cliente</label>
+                                <div class="input-group" style="flex-wrap:nowrap">
+                                    <button class="vi-btn vi-btn-primary" type="button"
+                                            data-bs-toggle="modal" data-bs-target="#vi-fac-modalBuscarCliente">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                    <input type="text" name="cliente" class="vi-control" id="vi-fac-cliente"
+                                           placeholder="Seleccione un cliente…" disabled
+                                           style="border-radius:0 var(--vi-radius) var(--vi-radius) 0; border-left:none;">
+                                </div>
+                            </div>
+
+                            <!-- RFC -->
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-id-card"></i>RFC</label>
+                                <input type="text" name="rfc" id="vi-fac-rfc" class="vi-control" autocomplete="off">
+                            </div>
+
+                            <!-- Banner crédito (solo se muestra en ventas a crédito) -->
+                            <div class="col-12">
+                                <div id="vi-fac-credit-banner" style="display:none;" class="vi-credit-banner">
+                                    <div id="vi-fac-credit-icon" style="font-size:18px;flex-shrink:0;margin-top:2px;"></div>
+                                    <div style="flex:1">
+                                        <div id="vi-fac-credit-title" style="font-weight:600;font-size:.8rem;margin-bottom:2px;"></div>
+                                        <div id="vi-fac-credit-sub" style="font-size:.75rem;opacity:.85;"></div>
+                                        <div class="vi-banner-bar-wrap" id="vi-fac-credit-bar-wrap">
+                                            <div class="vi-banner-bar-fill" id="vi-fac-credit-bar" style="width:0%;"></div>
+                                        </div>
+                                    </div>
+                                    <div id="vi-fac-credit-pct" style="font-size:.8rem;font-weight:600;flex-shrink:0;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Info adicional -->
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-info-circle"></i>Información del Cliente</label>
+                                <textarea class="vi-control" id="vi-fac-info-proveedor" rows="3" readonly autocomplete="off"></textarea>
+                            </div>
+
+                            <!-- Vendedor + Moneda + Paridad -->
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-user-tie"></i>Vendedor</label>
+                                <select class="vi-control form-select" name="vendedor" id="vi-fac-vendedor">
+                                    <option selected disabled>Seleccionar vendedor</option>
+                                    <option value="1">Carlos Mendoza</option>
+                                    <option value="2">Ana García</option>
+                                    <option value="3">Luis Fernández</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-dollar-sign"></i>Moneda</label>
+                                <select class="vi-control form-select" name="moneda" id="vi-fac-moneda">
+                                    <option selected disabled>Seleccione una moneda</option>
+                                    <option>PESOS</option>
+                                    <option>DOLARES</option>
+                                    <option>EUROS</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <label class="vi-label"><i class="fas fa-exchange-alt"></i>Paridad</label>
+                                <input type="text" id="vi-fac-paridad" name="paridad" class="vi-control" value="1" autocomplete="off">
+                            </div>
+
+                            <!-- Referencia -->
+                            <div class="col-12 col-sm-8">
+                                <label class="vi-label"><i class="fas fa-comment"></i>Referencia</label>
+                                <input type="text" id="vi-fac-concepto" name="concepto" class="vi-control" autocomplete="off">
+                            </div>
+
+                            <!-- Incoterm (oculto) -->
+                            <div class="col-12 d-none">
+                                <label class="vi-label"><i class="fas fa-shipping-fast"></i>Incoterm</label>
+                                <select class="vi-control form-select" name="incoterm" id="vi-fac-incoterm">
+                                    <option selected disabled>Seleccionar Incoterm</option>
+                                    <option value="EXW">EXW – En fábrica</option>
+                                    <option value="FOB">FOB – Libre a bordo</option>
+                                    <option value="CFR">CFR – Costo y flete</option>
+                                    <option value="CIF">CIF – Costo, seguro y flete</option>
+                                    <option value="DAP">DAP – Entregado en lugar</option>
+                                    <option value="DDP">DDP – Entregado con derechos pagados</option>
+                                </select>
+                            </div>
+
+                            <!-- Adendas (oculto por defecto) -->
+                            <div class="col-12" id="vi-fac-seccion-adendas" style="display:none;">
+                                <label class="vi-label"><i class="fas fa-file-contract"></i>Seleccionar Adenda</label>
+                                <div id="vi-fac-adendas-container" class="adendas-radio-group">
+                                    <!-- Se llenará dinámicamente -->
+                                </div>
+                                <input type="hidden" id="vi-fac-adenda-seleccionada" name="adenda-seleccionada">
+                            </div>
+                        </div>
+                    </div><!-- /tarjeta cliente -->
+                    <!-- TARJETA: Artículos -->
+                    <div class="vi-card p-4 mb-4" id="vi-fac-seccion-productos">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-box-open"></i></div>
+                            <h2 class="vi-section-title">Artículos y Productos</h2>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="vi-badge vi-badge-blue">
+                                <i class="fas fa-list"></i> Lista de productos
+                            </span>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="vi-btn vi-btn-success"
+                                        data-bs-toggle="modal" data-bs-target="#vi-fac-modalBuscarProducto">
+                                    <i class="fas fa-plus"></i> Agregar
+                                </button>
+                                <button type="button" id="vi-fac-btn-validar-sat"
+                                        class="vi-btn vi-btn-amber" onclick="validarPartidasSAT()">
+                                    <i class="fas fa-shield-check"></i> Validar SAT
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="vi-table-wrap">
+                            <table class="vi-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Artículo</th>
+                                        <th>Descripción</th>
+                                        <th>Existencia</th>
+                                        <th>Cantidad</th>
+                                        <th>Unidad</th>
+                                        <th>Precio</th>
+                                        @if (role == "Gerente")
+                                        {
+                                            <th>Desc %</th>
+                                        }
+                                        <th>Importe</th>
+                                        <th>Comentario</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vi-fac-productosTable">
+                                    <tr>
+                                        <td colspan="11" class="vi-table-empty">
+                                            <i class="fas fa-box-open"></i>
+                                            <div class="fw-semibold mb-1">Sin productos</div>
+                                            <small style="color:var(--vi-gray-400)">Haz clic en "Agregar" para comenzar</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr class="vi-sep">
+
+                        <!-- Flete -->
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <label class="vi-switch" for="vi-fac-flete">
+                                <input type="checkbox" id="vi-fac-flete">
+                                <span class="vi-switch-track"></span>
+                                <span class="vi-switch-label"><i class="fas fa-truck me-1"></i>Con Flete</span>
+                            </label>
+                            <input type="number" class="vi-control d-none" name="flete"
+                                   id="vi-fac-flete-val" placeholder="Costo de flete" style="max-width:180px;">
+                        </div>
+
+                        <!-- Orden de compra -->
+                        <div class="d-flex align-items-center gap-3">
+                            <label class="vi-switch" for="vi-fac-orden-compra-check">
+                                <input type="checkbox" id="vi-fac-orden-compra-check">
+                                <span class="vi-switch-track"></span>
+                                <span class="vi-switch-label"><i class="fas fa-file-alt me-1"></i>Con Orden de Compra</span>
+                            </label>
+                            <input type="text" class="vi-control d-none" name="ordenCompra"
+                                   id="vi-fac-orden-compra-val" placeholder="Número de orden de compra"
+                                   autocomplete="off" style="max-width:220px;">
+                        </div>
+                    </div><!-- /tarjeta artículos -->
+                    <!-- TARJETA: Anticipos aplicados -->
+                    <div class="vi-card p-4 mb-4" id="tabla-anticipo">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-wallet"></i></div>
+                            <h2 class="vi-section-title">Anticipos Aplicados</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead style="background:var(--vi-blue-50);">
+                                    <tr>
+                                        <th>Folio</th>
+                                        <th>Cliente</th>
+                                        <th>Fecha</th>
+                                        <th>Monto</th>
+                                        <th></th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vi-fac-anticiposTable">
+                                    <tr class="vi-fac-empty-state-anticipos">
+                                        <td colspan="6" class="text-center py-3">
+                                            <small style="color:var(--vi-gray-400)">No hay anticipos agregados</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TARJETA: Condiciones de Pago -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-credit-card"></i></div>
+                            <h2 class="vi-section-title">Condiciones de Pago</h2>
+                        </div>
+
+                        <!-- Campos crédito -->
+                        <div id="vi-fac-campos-credito" style="display:none;">
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-credit-card"></i>Límite de Crédito</label>
+                                    <input type="number" id="vi-fac-limite-credito" name="limite-credito"
+                                           value="0.00" readonly class="vi-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-credit-card"></i>Crédito Disponible</label>
+                                    <input type="number" id="vi-fac-limite-disponible" name="limite-disponible"
+                                           value="0.00" readonly class="vi-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-calendar-day"></i>Plazo (días)</label>
+                                    <input type="number" id="vi-fac-plazo" name="plazo" class="vi-control" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-calendar"></i>Fecha de Pago</label>
+                                    <input type="date" id="vi-fac-fecha-pago" name="fecha-pago" class="vi-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos anticipo -->
+                        <div id="vi-fac-campos-anticipo" style="display:none;">
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-6" hidden>
+                                    <label class="vi-label"><i class="fas fa-percent"></i>Porcentaje de Anticipo (%)</label>
+                                    <input type="number" id="vi-fac-porcentaje-anticipo" name="porcentaje-anticipo"
+                                           class="vi-control" placeholder="Ej: 50" min="0" max="100"
+                                           oninput="calcularAnticipoFactura()" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-dollar-sign"></i>Monto Anticipo</label>
+                                    <input type="number" id="vi-fac-monto-anticipo" name="monto-anticipo"
+                                           class="vi-control" placeholder="0.00" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6" hidden>
+                                    <label class="vi-label"><i class="fas fa-dollar-sign"></i>Saldo Pendiente</label>
+                                    <input type="number" id="vi-fac-saldo-pendiente" name="saldo-pendiente"
+                                           class="vi-control" placeholder="0.00" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="vi-label"><i class="fas fa-calendar"></i>Fecha de Anticipo</label>
+                                    <input type="date" id="vi-fac-fecha-anticipo" name="fecha-anticipo" class="vi-control">
+                                </div>
+                                <div class="col-12 col-sm-6" hidden>
+                                    <label class="vi-label"><i class="fas fa-calendar-alt"></i>Fecha Pago Final</label>
+                                    <input type="date" id="vi-fac-fecha-pago-final" name="fecha-pago-final" class="vi-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-money-bill"></i>Método de Pago</label>
+                                <select class="vi-control form-select disabled-field"
+                                        id="vi-fac-metodo-pago"
+                                        name="metodo-pago"
+                                        data-no-toggle="true">
+                                    <option value="PUE">PUE - Pago en una sola exhibición</option>
+                                    <option value="PPD">PPD - Pago en parcialidades o diferido</option>
+                                </select>
+                                <input type="hidden" id="vi-fac-metodo-pago-hidden" name="metodo-pago-hidden" value="PUE">
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="vi-label"><i class="fas fa-money-bill"></i>Forma de Pago</label>
+                                <select class="vi-control form-select" id="vi-fac-forma-pago" name="forma-pago">
+                                    <option selected>Efectivo</option>
+                                    <option value="01">01 - Efectivo</option>
+                                    <option value="02">02 - Cheque nominativo</option>
+                                    <option value="03">03 - Transferencia electrónica</option>
+                                    <option value="04">04 - Tarjeta de crédito</option>
+                                    <option value="28">28 - Tarjeta de débito</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="vi-label"><i class="fas fa-file-invoice"></i>Uso CFDI</label>
+                                <select class="vi-control form-select" id="vi-fac-uso-cfdi" name="uso-cfdi">
+                                    <option selected>G03 - Gastos en general</option>
+                                    <option value="D01">D01 - Honorarios médicos</option>
+                                    <option value="D02">D02 - Gastos médicos por incapacidad</option>
+                                    <option value="P01">P01 - Por definir</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div><!-- /tarjeta condiciones pago -->
+                    <!-- TARJETA: Comentarios -->
+                    <div class="vi-card p-4 mb-4">
+                        <div class="vi-section-header">
+                            <div class="vi-section-icon"><i class="fas fa-comment-dots"></i></div>
+                            <h2 class="vi-section-title">Comentarios Adicionales</h2>
+                        </div>
+                        <textarea class="vi-control" id="vi-fac-comentarios" name="comentarios" rows="4"
+                                  placeholder="Observaciones, condiciones especiales, etc."></textarea>
+                    </div>
+
+                </div><!-- /col izquierda -->
+                <!-- ========== COLUMNA DERECHA: RESUMEN ========== -->
+                <div class="col-12 col-xl-4">
+                    <div class="sticky-top" style="top:5rem; z-index:0;">
+
+                        <!-- Ticket resumen -->
+                        <div class="vi-ticket mb-3">
+                            <div class="vi-ticket-head">
+                                <i class="fas fa-calculator vi-ticket-head-icon"></i>
+                                <div class="vi-ticket-head-label">Resumen de Factura</div>
+                            </div>
+                            <div class="vi-ticket-body">
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">Subtotal 1</span>
+                                    <span class="vi-ticket-row-val" id="vi-fac-total-subtotal1-display">$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">Descuento</span>
+                                    <span class="vi-ticket-row-val vi-negative" id="vi-fac-total-descuento-display">-$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">Flete</span>
+                                    <span class="vi-ticket-row-val" id="vi-fac-total-flete-display">$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row" style="margin-top:.5rem;padding-top:.75rem;border-top:1px solid var(--vi-gray-200);border-bottom:none;">
+                                    <span class="vi-ticket-row-label">Subtotal 2</span>
+                                    <span class="vi-ticket-row-val" id="vi-fac-total-subtotal2-display">$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row">
+                                    <span class="vi-ticket-row-label">IVA (16%)</span>
+                                    <span class="vi-ticket-row-val" id="vi-fac-iva-display">$0.00</span>
+                                </div>
+                                <div class="vi-ticket-row" style="margin-top:.5rem;padding-top:.75rem;border-top:1px solid var(--vi-gray-200);border-bottom:none;">
+                                    <span class="vi-ticket-row-label"><i class="fas fa-coins me-1"></i>Total</span>
+                                    <strong class="vi-ticket-row-val" id="vi-fac-importe-display">$0.00</strong>
+                                </div>
+                                <div class="vi-ticket-row" id="total-anticipo">
+                                    <span class="vi-ticket-row-label">Anticipos</span>
+                                    <span class="vi-ticket-row-val vi-positive" id="vi-fac-total-anticipos-display">-$0.00</span>
+                                </div>
+                            </div>
+                            <div class="vi-ticket-footer">
+                                <div class="vi-ticket-total-row">
+                                    <span class="vi-ticket-total-label"><i class="fas fa-money-bill-wave me-1"></i>Total</span>
+                                    <strong class="vi-ticket-total-val" id="vi-fac-total-final-display">$0.00</strong>
+                                </div>
+                            </div>
+
+                            <!-- Hidden inputs -->
+                            <input type="hidden" id="vi-fac-total-subtotal1" name="total-subtotal1" value="0.00">
+                            <input type="hidden" id="vi-fac-total-descuento" name="total-descuento" value="0.00">
+                            <input type="hidden" id="vi-fac-total-flete" name="total-flete" value="0.00">
+                            <input type="hidden" id="vi-fac-total-subtotal2" name="total-subtotal2" value="0.00">
+                            <input type="hidden" id="vi-fac-iva" name="iva" value="0.00">
+                            <input type="hidden" id="vi-fac-importe" name="importe" value="0.00">
+                            <input type="hidden" id="vi-fac-total-anticipos" name="total-anticipos" value="0.00">
+                            <input type="hidden" id="vi-fac-total-final" name="total-final" value="0.00">
+                            <input type="hidden" id="vi-fac-documentid" name="documentid">
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="d-grid gap-2">
+                            <button type="button" class="vi-btn vi-btn-outline d-none"
+                                    data-bs-toggle="modal" data-bs-target="#vi-fac-modalVistaPrevia"
+                                    onclick="actualizarVistaPreviaFactura()"
+                                    style="width:100%;justify-content:center;">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                            <button type="button" class="vi-btn vi-btn-success vi-fac-btn-submit"
+                                    style="width:100%;justify-content:center;padding:.85rem;">
+                                <i class="fas fa-paper-plane"></i> Generar Factura
+                            </button>
+                            <a href="#" class="vi-btn vi-btn-ghost"
+                               style="width:100%;justify-content:center;text-decoration:none;">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+
+                    </div>
+                </div><!-- /col derecha -->
+
+            </div><!-- /row -->
+        </form>
+    </div><!-- /container -->
+</div><!-- /vi-page -->
+<!-- ===== BOTÓN FLOTANTE ===== -->
+<button type="button" class="vi-floating-btn"
+        data-bs-toggle="modal" data-bs-target="#vi-fac-modalBuscarDocumentos">
+    <i class="fas fa-file-alt"></i>
+</button>
+<div class="vi-floating-tooltip">Buscar Documentos</div>
+
+<!-- ===== MODAL: BUSCAR ANTICIPOS ===== -->
+<div class="modal fade" id="vi-fac-modalBuscarAnticipos" tabindex="-1"
+     aria-labelledby="vi-fac-modalBuscarAnticiposLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title" id="vi-fac-modalBuscarAnticiposLabel">
+                    <i class="fas fa-wallet me-2"></i> Buscar Anticipos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="vi-fac-inputBuscarAnticipo" class="form-control" placeholder="Folio o Cliente">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-warning w-100" id="vi-fac-btnLimpiarAnticipos">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+                <ul class="list-unstyled" id="vi-fac-listaResultadosAnticipos" style="max-height:500px;overflow-y:auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vi-fac-recordsFromAnticipos">0</strong> a
+                        <strong id="vi-fac-recordsToAnticipos">0</strong> de
+                        <strong id="vi-fac-totalRecordsAnticipos">0</strong> registros
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vi-fac-pageSizeAnticipos" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25 / pág</option>
+                            <option value="50" selected>50 / pág</option>
+                            <option value="100">100 / pág</option>
+                        </select>
+                        <div id="vi-fac-spinnerAnticipos" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vi-fac-paginationAnticipos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: BUSCAR DOCUMENTOS ===== -->
+<div class="modal fade" id="vi-fac-modalBuscarDocumentos" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-alt me-2"></i> Buscar Documentos Previos
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <input type="text" id="vi-fac-inputBuscarDocumento" class="form-control" placeholder="Folio o Cliente…">
+                            <button type="button" class="btn btn-outline-secondary" id="vi-fac-btnLimpiarDocumentos">
+                                <i class="fas fa-eraser"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <ul class="list-unstyled" id="vi-fac-listaResultadosDocumentos" style="max-height:400px;overflow-y:auto;">
+                    <li>
+                        <div class="vi-search-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-semibold mb-1"><i class="fas fa-file-invoice text-primary me-1"></i>FAC-2024-001</div>
+                                    <div class="small" style="color:var(--vi-gray-600)"><i class="fas fa-user me-1"></i>Empresa Demo S.A. de C.V.</div>
+                                    <div class="d-flex gap-3 mt-1" style="font-size:.75rem;color:var(--vi-gray-400)">
+                                        <span><i class="fas fa-calendar me-1"></i>15/09/2024</span>
+                                        <span><i class="fas fa-money-bill-wave me-1"></i>$125,450.00</span>
+                                        <span><i class="fas fa-user-tie me-1"></i>Carlos Mendoza</span>
+                                    </div>
+                                </div>
+                                <span class="document-badge badge-cancelled">Cancelado</span>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vi-fac-recordsFromDocumentos">1</strong> a
+                        <strong id="vi-fac-recordsToDocumentos">1</strong> de
+                        <strong id="vi-fac-totalRecordsDocumentos">1</strong> registros
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vi-fac-pageSizeDocumentos" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25 / pág</option>
+                            <option value="50" selected>50 / pág</option>
+                            <option value="100">100 / pág</option>
+                        </select>
+                        <div id="vi-fac-spinnerDocumentos" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vi-fac-paginationDocumentos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: BUSCAR CLIENTE ===== -->
+<div class="modal fade" id="vi-fac-modalBuscarCliente" tabindex="-1"
+     aria-labelledby="vi-fac-modalBuscarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title" id="vi-fac-modalBuscarClienteLabel">
+                    <i class="fas fa-search me-2"></i> Buscar Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vi-fac-inputBuscarCliente" class="form-control" placeholder="Nombre o RFC…">
+                    <button type="button" class="btn btn-outline-secondary" id="vi-fac-btnLimpiarClientes">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-unstyled" id="vi-fac-listaResultadosClientes" style="max-height:400px;overflow-y:auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vi-fac-recordsFromClientes">0</strong> a
+                        <strong id="vi-fac-recordsToClientes">0</strong> de
+                        <strong id="vi-fac-totalRecordsClientes">0</strong> registros
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vi-fac-pageSizeClientes" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25 / pág</option>
+                            <option value="50" selected>50 / pág</option>
+                            <option value="100">100 / pág</option>
+                        </select>
+                        <div id="vi-fac-spinnerClientes" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vi-fac-paginationClientes"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: BUSCAR PRODUCTO ===== -->
+<div class="modal fade" id="vi-fac-modalBuscarProducto" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title"><i class="fas fa-box-open me-2"></i>Buscar Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="vi-fac-inputBuscarProducto" class="form-control" placeholder="Código o descripción…">
+                    <button type="button" class="btn btn-outline-secondary" id="vi-fac-btnLimpiarProductos">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </button>
+                </div>
+                <ul class="list-unstyled" id="vi-fac-listaResultadosProductos" style="max-height:380px;overflow-y:auto;"></ul>
+            </div>
+            <div class="modal-footer flex-column gap-2">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap">
+                    <small class="text-muted">
+                        Mostrando <strong id="vi-fac-recordsFromProductos">0</strong> a
+                        <strong id="vi-fac-recordsToProductos">0</strong> de
+                        <strong id="vi-fac-totalRecordsProductos">0</strong>
+                    </small>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="vi-fac-pageSizeProductos" class="form-select form-select-sm" style="width:auto;">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <div id="vi-fac-spinnerProductos" class="spinner-border spinner-border-sm text-primary d-none"></div>
+                    </div>
+                </div>
+                <nav class="w-100">
+                    <ul class="pagination justify-content-center mb-0" id="vi-fac-paginationProductos"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: VISTA PREVIA ===== -->
+<div class="modal fade" id="vi-fac-modalVistaPrevia" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header vi-modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-pdf me-2"></i>Vista Previa de Factura</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="vi-fac-previewPDF" style="background:#525659;padding:2rem;min-height:600px;max-height:80vh;overflow-y:auto;">
+                    <div class="vista-previa-factura" id="vista-previa-factura"
+                         style="background:white;max-width:850px;margin:0 auto;padding:3rem;box-shadow:0 0 20px rgba(0,0,0,.3);font-family:Arial,sans-serif;">
+
+                        <div style="border-bottom:3px solid #0066cc;padding-bottom:1rem;margin-bottom:2rem;">
+                            <div style="display:flex;justify-content:space-between;align-items:start;">
+                                <div>
+                                    <h1 style="color:#0066cc;margin:0;font-size:2rem;">FACTURA</h1>
+                                    <p style="margin:.5rem 0 0;color:#666;">Folio: <strong id="vi-fac-preview-folio">-</strong></p>
+                                </div>
+                                <div style="text-align:right;color:#333;">
+                                    <p style="margin:0;font-size:.9rem;"><strong>Fecha:</strong> <span id="vi-fac-preview-fecha">-</span></p>
+                                    <p style="margin:.3rem 0 0;font-size:.9rem;"><strong>Sucursal:</strong> <span id="vi-fac-preview-sucursal">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:2rem;">
+                            <h3 style="color:#0066cc;border-bottom:2px solid #e0e0e0;padding-bottom:.5rem;font-size:1.1rem;">INFORMACIÓN DEL CLIENTE</h3>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;color:#333;">
+                                <div>
+                                    <p style="margin:.3rem 0;"><strong>Cliente:</strong> <span id="vi-fac-preview-cliente">-</span></p>
+                                    <p style="margin:.3rem 0;"><strong>RFC:</strong> <span id="vi-fac-preview-rfc">-</span></p>
+                                    <p style="margin:.3rem 0;"><strong>Vendedor:</strong> <span id="vi-fac-preview-vendedor">-</span></p>
+                                </div>
+                                <div>
+                                    <p style="margin:.3rem 0;"><strong>Moneda:</strong> <span id="vi-fac-preview-moneda">-</span></p>
+                                    <p style="margin:.3rem 0;"><strong>Incoterm:</strong> <span id="vi-fac-preview-incoterm">-</span></p>
+                                </div>
+                            </div>
+                            <p style="margin:.3rem 0;color:#333;"><strong>Concepto:</strong> <span id="vi-fac-preview-concepto">-</span></p>
+                        </div>
+
+                        <div style="margin-bottom:2rem;">
+                            <h3 style="color:#0066cc;border-bottom:2px solid #e0e0e0;padding-bottom:.5rem;font-size:1.1rem;">PRODUCTOS</h3>
+                            <table style="width:100%;border-collapse:collapse;margin-top:1rem;font-size:.85rem;">
+                                <thead>
+                                    <tr style="background:#0066cc;color:white;">
+                                        <th style="padding:.5rem;text-align:left;border:1px solid #ddd;">Artículo</th>
+                                        <th style="padding:.5rem;text-align:left;border:1px solid #ddd;">Descripción</th>
+                                        <th style="padding:.5rem;text-align:center;border:1px solid #ddd;">Cant.</th>
+                                        <th style="padding:.5rem;text-align:center;border:1px solid #ddd;">Unidad</th>
+                                        <th style="padding:.5rem;text-align:right;border:1px solid #ddd;">Precio</th>
+                                        <th style="padding:.5rem;text-align:right;border:1px solid #ddd;">Desc %</th>
+                                        <th style="padding:.5rem;text-align:right;border:1px solid #ddd;">Importe</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vi-fac-preview-productos" style="color:#333;">
+                                    <tr>
+                                        <td colspan="7" style="padding:2rem;text-align:center;color:#999;border:1px solid #ddd;">No hay productos agregados</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="display:flex;justify-content:flex-end;margin-bottom:2rem;">
+                            <div style="width:300px;border:2px solid #0066cc;padding:1rem;border-radius:8px;color:#333;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;"><span>Subtotal 1:</span><strong id="vi-fac-preview-subtotal1">$0.00</strong></div>
+                                <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;color:#dc2626;"><span>Descuento:</span><strong id="vi-fac-preview-descuento">-$0.00</strong></div>
+                                <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;"><span>Flete:</span><strong id="vi-fac-preview-flete">$0.00</strong></div>
+                                <hr style="margin:.5rem 0;border:none;border-top:1px solid #ddd;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;"><span>Subtotal 2:</span><strong id="vi-fac-preview-subtotal2">$0.00</strong></div>
+                                <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;"><span>IVA (16%):</span><strong id="vi-fac-preview-iva">$0.00</strong></div>
+                                <hr style="margin:.5rem 0;border:none;border-top:2px solid #0066cc;">
+                                <div style="display:flex;justify-content:space-between;font-size:1.2rem;color:#0066cc;"><span>TOTAL:</span><strong id="vi-fac-preview-total">$0.00</strong></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:2rem;">
+                            <h3 style="color:#0066cc;border-bottom:2px solid #e0e0e0;padding-bottom:.5rem;font-size:1.1rem;">CONDICIONES DE PAGO</h3>
+                            <div style="margin-top:1rem;color:#333;">
+                                <p style="margin:.3rem 0;"><strong>Forma de Pago:</strong> <span id="vi-fac-preview-forma-pago">-</span></p>
+                                <p style="margin:.3rem 0;"><strong>Método de Pago:</strong> <span id="vi-fac-preview-metodo-pago">-</span></p>
+                                <p style="margin:.3rem 0;"><strong>Plazo:</strong> <span id="vi-fac-preview-plazo">-</span> días</p>
+                                <p style="margin:.3rem 0;"><strong>Fecha de Pago:</strong> <span id="vi-fac-preview-fecha-pago">-</span></p>
+                                <p style="margin:.3rem 0;"><strong>Uso CFDI:</strong> <span id="vi-fac-preview-uso-cfdi">-</span></p>
+                            </div>
+                        </div>
+
+                        <div id="vi-fac-preview-comentarios-section" style="margin-bottom:2rem;display:none;">
+                            <h3 style="color:#0066cc;border-bottom:2px solid #e0e0e0;padding-bottom:.5rem;font-size:1.1rem;">COMENTARIOS</h3>
+                            <p id="vi-fac-preview-comentarios" style="margin-top:1rem;color:#666;white-space:pre-wrap;"></p>
+                        </div>
+
+                        <div style="margin-top:3rem;padding-top:1rem;border-top:1px solid #e0e0e0;text-align:center;color:#999;font-size:.8rem;">
+                            <p style="margin:0;">Este documento es una factura y constituye un comprobante fiscal digital por internet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="vi-btn vi-btn-ghost" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+                <button type="button" class="vi-btn vi-btn-primary" onclick="descargarVistaPreviaFacturaPDF()">
+                    <i class="fas fa-file-pdf"></i> Descargar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SCRIPTS (lógica original sin cambios) ===== -->
+<script src="~/Scripts/Facturas/manejo-respuestas.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.7.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+    /* ===== TOGGLE TIPO PAGO — reemplaza la lógica del toggle original ===== */
+    function selectTipoPagoFac(val, event) {
+        event?.preventDefault();
+        event?.stopPropagation();
+
+        document.querySelectorAll('#vi-fac-toggle-pago .vi-pay-btn')
+            .forEach(b => b.classList.toggle('active', b.dataset.val === val));
+
+        document.getElementById('vi-fac-toggle-pago').setAttribute('data-state', val);
+        document.getElementById('vi-fac-tipo-pago-hidden-state').value = val;
+
+        const camposCredito = document.getElementById('vi-fac-campos-credito');
+        const camposAnticipo = document.getElementById('vi-fac-campos-anticipo');
+        const secProductos = document.getElementById('vi-fac-seccion-productos');
+        const tAnticipo = document.getElementById('tabla-anticipo');
+        const btnAnticipo = document.getElementById('btn-anticipos');
+        const totalAnticipo = document.getElementById('total-anticipo');
+
+        camposCredito.style.display = 'none';
+        camposAnticipo.style.display = 'none';
+
+        if (val === 'contado') {
+            limpiarCamposFactura();
+            secProductos.style.display = '';
+            tAnticipo.style.display = '';
+            btnAnticipo.style.display = '';
+            totalAnticipo.style.display = '';
+        } else if (val === 'credito') {
+            camposCredito.style.display = 'block';
+            tAnticipo.style.display = 'none';
+            btnAnticipo.style.display = 'none';
+            totalAnticipo.style.display = 'none';
+            limpiarCamposAnticipoFactura();
+            secProductos.style.display = '';
+        }
+
+        setMetodoPagoSegunTipoView(val);
+
+        // El crédito solo se valida en ventas a crédito.
+        window.CreditoVentas?.evaluar('vi-fac');
+    }
+
+    /* Compatibilidad con toggleCreditoContadoFactura() que puede llamar código externo */
+    // Compatibilidad — solo 2 estados ahora
+    let paymentStates2Factura = ['contado', 'credito'];
+    let currentStateIndex2Factura = 0;
+    function toggleCreditoContadoFactura() {
+        currentStateIndex2Factura = (currentStateIndex2Factura + 1) % paymentStates2Factura.length;
+        selectTipoPagoFac(paymentStates2Factura[currentStateIndex2Factura]);
+    }
+
+    function setMetodoPagoSegunTipoView(estado) {
+        const hidden = document.getElementById('vi-fac-metodo-pago-hidden');
+        const select = document.getElementById('vi-fac-metodo-pago');
+        const mapa = { contado: 'PUE', credito: 'PPD', anticipo: 'PUE' };
+        const valor = mapa[estado] || 'PUE';
+
+        if (hidden) hidden.value = valor;
+
+        if (select) {
+            // Quitar disabled temporalmente para poder cambiar el valor
+            select.removeAttribute('disabled');
+            // Seleccionar la opción correcta iterando (más confiable que .value en selects disabled)
+            Array.from(select.options).forEach(opt => {
+                opt.selected = opt.value === valor;
+            });
+            // Volver a deshabilitar
+            select.setAttribute('disabled', 'disabled');
+        }
+    }
+    function limpiarCamposFactura() { limpiarCamposCreditoFactura(); limpiarCamposAnticipoFactura(); }
+    function limpiarCamposCreditoFactura() {
+        document.getElementById('vi-fac-limite-credito').value = '0.00';
+        document.getElementById('vi-fac-plazo').value = '';
+        document.getElementById('vi-fac-fecha-pago').value = '';
+    }
+    function limpiarCamposAnticipoFactura() {
+        document.getElementById('vi-fac-porcentaje-anticipo').value = '';
+        document.getElementById('vi-fac-monto-anticipo').value = '';
+        document.getElementById('vi-fac-saldo-pendiente').value = '';
+        document.getElementById('vi-fac-fecha-anticipo').value = '';
+        document.getElementById('vi-fac-fecha-pago-final').value = '';
+    }
+
+    function calcularAnticipoFactura() {
+        const porcentaje = parseFloat(document.getElementById('vi-fac-porcentaje-anticipo').value) || 0;
+        const totalVenta = parseFloat(document.getElementById('vi-fac-importe').value) || 0;
+        const montoAnticipo = (totalVenta * porcentaje) / 100;
+        document.getElementById('vi-fac-monto-anticipo').value = montoAnticipo.toFixed(2);
+        document.getElementById('vi-fac-saldo-pendiente').value = (totalVenta - montoAnticipo).toFixed(2);
+    }
+
+    /* ===== FLETE ===== */
+    document.getElementById('vi-fac-flete').addEventListener('change', function () {
+        const inp = document.getElementById('vi-fac-flete-val');
+        inp.classList.toggle('d-none', !this.checked);
+        if (!this.checked) inp.value = '';
+    });
+
+    /* ===== ORDEN DE COMPRA ===== */
+    document.getElementById('vi-fac-orden-compra-check').addEventListener('change', function () {
+        const inp = document.getElementById('vi-fac-orden-compra-val');
+        inp.classList.toggle('d-none', !this.checked);
+        if (!this.checked) inp.value = '';
+    });
+</script>
+
+<!-- ===== SCRIPTS PDF / VISTA PREVIA / SAT (sin cambios de lógica) ===== -->
+<script>
+    /* --- actualizarVistaPreviaFactura, descargarVistaPreviaFacturaPDF,
+           validarPartidasSAT, enviarAlertaSAT, escapeHtml
+           → mantener exactamente igual que en el archivo original --- */
+
+    function actualizarVistaPreviaFactura() {
+        const getValue = (id, d = '-') => document.getElementById(id)?.value?.trim() || d;
+        const getSelectedText = (id, d = '-') => { const e = document.getElementById(id); return e?.options?.[e.selectedIndex]?.text?.trim() || d; };
+        const setText = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+        const getDisplayValue = (id, d = '$0.00') => document.getElementById(id)?.textContent?.trim() || d;
+        const getTomValueText = (key) => { const i = tomManager?.getInstance(key); const v = i?.getValue(); return i?.getItem(v)?.textContent?.trim() || ''; };
+
+        setText('vi-fac-preview-folio', getValue('vi-fac-folio', 'Sin asignar'));
+        setText('vi-fac-preview-sucursal', getSelectedText('vi-fac-sucursal', 'CEDIS'));
+        setText('vi-fac-preview-fecha', new Date().toLocaleDateString('es-MX'));
+        setText('vi-fac-preview-cliente', getValue('vi-fac-cliente'));
+        setText('vi-fac-preview-rfc', getValue('vi-fac-rfc'));
+        setText('vi-fac-preview-vendedor', getTomValueText('vi-fac-vendedor'));
+        setText('vi-fac-preview-moneda', getTomValueText('vi-fac-moneda'));
+        setText('vi-fac-preview-incoterm', getTomValueText('vi-fac-incoterm'));
+        setText('vi-fac-preview-concepto', getValue('vi-fac-concepto'));
+
+        setText('vi-fac-preview-subtotal1', getDisplayValue('vi-fac-total-subtotal1-display'));
+        setText('vi-fac-preview-descuento', getDisplayValue('vi-fac-total-descuento-display'));
+        setText('vi-fac-preview-flete', getDisplayValue('vi-fac-total-flete-display'));
+        setText('vi-fac-preview-subtotal2', getDisplayValue('vi-fac-total-subtotal2-display'));
+        setText('vi-fac-preview-iva', getDisplayValue('vi-fac-iva-display'));
+        setText('vi-fac-preview-total', getDisplayValue('vi-fac-importe-display'));
+
+        setText('vi-fac-preview-forma-pago', getTomValueText('vi-fac-forma-pago'));
+        setText('vi-fac-preview-metodo-pago', getSelectedText('vi-fac-metodo-pago'));
+        setText('vi-fac-preview-plazo', getValue('vi-fac-plazo'));
+        setText('vi-fac-preview-fecha-pago', getValue('vi-fac-fecha-pago'));
+        setText('vi-fac-preview-uso-cfdi', getTomValueText('vi-fac-uso-cfdi'));
+
+        const comentarios = getValue('vi-fac-comentarios', '');
+        const secCom = document.getElementById('vi-fac-preview-comentarios-section');
+        const txtCom = document.getElementById('vi-fac-preview-comentarios');
+        if (secCom) secCom.style.display = comentarios ? 'block' : 'none';
+        if (txtCom && comentarios) txtCom.textContent = comentarios;
+
+        // Productos
+        const tbody = document.getElementById('vi-fac-productosTable');
+        const preview = document.getElementById('vi-fac-preview-productos');
+        if (!preview) return;
+        preview.innerHTML = '';
+        const rows = tbody ? Array.from(tbody.querySelectorAll('tr')).filter(r => !r.classList.contains('vi-fac-empty-state')) : [];
+        if (rows.length === 0) {
+            preview.innerHTML = '<tr><td colspan="7" style="padding:2rem;text-align:center;color:#999;">No hay productos agregados</td></tr>';
+        } else {
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if (cols.length >= 8) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td style="padding:.5rem;border:1px solid #ddd;">${cols[0]?.textContent?.trim()}</td>
+                        <td style="padding:.5rem;border:1px solid #ddd;">${cols[1]?.textContent?.trim()}</td>
+                        <td style="padding:.5rem;text-align:center;border:1px solid #ddd;">${cols[3]?.querySelector('input')?.value || '0'}</td>
+                        <td style="padding:.5rem;text-align:center;border:1px solid #ddd;">${cols[4]?.textContent?.trim()}</td>
+                        <td style="padding:.5rem;text-align:right;border:1px solid #ddd;">$${cols[5]?.querySelector('input')?.value || '0.00'}</td>
+                        <td style="padding:.5rem;text-align:right;border:1px solid #ddd;">${cols[6]?.querySelector('input')?.value || '0'}%</td>
+                        <td style="padding:.5rem;text-align:right;border:1px solid #ddd;">${cols[7]?.textContent?.trim()}</td>`;
+                    preview.appendChild(tr);
+                }
+            });
+        }
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = String(text ?? '');
+        return d.innerHTML;
+    }
+
+    // ============================================
+    // VALIDACIÓN SAT — INDEPENDIENTE DEL FLUJO PRINCIPAL
+    // ============================================
+    async function validarPartidasSAT() {
+        const productos = FacturasApp?.productManagerInstance?.getFacturasProductosData?.() || [];
+
+        if (!productos || productos.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin productos',
+                text: 'Agrega al menos un producto antes de validar.',
+                confirmButtonColor: '#f59e0b'
+            });
+            return;
+        }
+
+        // Botón: estado de carga
+        const btn = document.getElementById('vi-fac-btn-validar-sat');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Validando...';
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            if (token) formData.append('__RequestVerificationToken', token);
+            formData.append('productosJSON', JSON.stringify(productos));
+
+            const response = await fetch('/VIFactura/ValidarPartidsSAT', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const result = await response.json();
+
+            if (!result.success) {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message, confirmButtonColor: '#ef4444' });
+                return;
+            }
+
+            mostrarResultadosValidacionSAT(result);
+
+        } catch (error) {
+            console.error('Error validando SAT:', error);
+            Swal.fire({ icon: 'error', title: 'Error de conexión', text: error.message, confirmButtonColor: '#ef4444' });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+
+    function mostrarResultadosValidacionSAT(result) {
+        const { todoValido, totalProductos, productosValidos, productosInvalidos, resultados } = result;
+
+        // Guardar globalmente para el envío
+        window._satResultadosActuales = resultados;
+
+        const filas = resultados.map(r => {
+            const estadoIcon = r.valido
+                ? '<span style="color:#10b981;font-size:1.1rem;">✅</span>'
+                : '<span style="color:#ef4444;font-size:1.1rem;">❌</span>';
+
+            const faltantes = !r.valido && r.camposFaltantes?.length
+                ? `<div style="color:#ef4444;font-size:0.72rem;margin-top:3px;">
+                 ⚠ ${r.camposFaltantes.join(' · ')}
+               </div>`
+                : '';
+
+            const satInfo = r.valido
+                ? `<span style="font-family:monospace;font-size:0.75rem;color:#6b7280;">
+                 ${escapeHtml(r.prodSat)} / ${escapeHtml(r.udSat)} / ${escapeHtml(r.objImp)}
+               </span>`
+                : '<span style="color:#9ca3af;font-size:0.75rem;">—</span>';
+
+            return `
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:8px 10px;text-align:center;">${estadoIcon}</td>
+              <td style="padding:8px 10px;font-weight:600;font-size:0.82rem;color:#1e293b;">
+                ${escapeHtml(r.productoId)}
+              </td>
+              <td style="padding:8px 10px;font-size:0.82rem;color:#475569;
+                         max-width:180px;overflow:hidden;text-overflow:ellipsis;
+                         white-space:nowrap;"
+                  title="${escapeHtml(r.descripcion)}">
+                ${escapeHtml(r.descripcion)}
+              </td>
+              <td style="padding:8px 10px;">${satInfo}${faltantes}</td>
+            </tr>`;
+        }).join('');
+
+        // Sección correo — solo si hay errores
+        const seccionCorreo = !todoValido ? `
+        <div style="margin-top:16px;padding:14px 16px;background:#f0f9ff;
+                    border:1.5px solid #bae6fd;border-radius:10px;">
+          <div style="font-size:0.82rem;font-weight:700;color:#0369a1;margin-bottom:10px;">
+            📧 Notificar al equipo de catálogos
+          </div>
+
+          <!-- Input de destinatarios -->
+          <div style="margin-bottom:8px;">
+            <input
+              type="text"
+              id="sat-alert-emails"
+              placeholder="correo1@empresa.com, correo2@empresa.com"
+              style="width:100%;box-sizing:border-box;padding:8px 12px;
+                     border:1.5px solid #bae6fd;border-radius:8px;
+                     font-size:0.82rem;color:#1e293b;background:#fff;
+                     outline:none;"/>
+            <div style="font-size:0.7rem;color:#64748b;margin-top:4px;">
+              Separa múltiples correos con coma o punto y coma
+            </div>
+          </div>
+
+          <!-- Botón de envío -->
+          <button
+            type="button"
+            id="sat-alert-send-btn"
+            onclick="enviarAlertaSAT()"
+            style="width:100%;padding:9px 16px;
+                   background:linear-gradient(135deg,#0ea5e9,#0369a1);
+                   color:#fff;border:none;border-radius:8px;
+                   font-size:0.83rem;font-weight:600;
+                   cursor:pointer;transition:opacity .2s;
+                   display:flex;align-items:center;justify-content:center;gap:6px;">
+            <i class="fas fa-paper-plane"></i> Enviar alerta por correo
+          </button>
+
+          <!-- Feedback de envío (oculto inicialmente) -->
+          <div id="sat-alert-feedback" style="display:none;margin-top:8px;
+               padding:8px 12px;border-radius:8px;font-size:0.8rem;
+               font-weight:600;text-align:center;"></div>
+        </div>` : '';
+
+        const headerColor = todoValido ? '#10b981' : '#f59e0b';
+        const headerEmoji = todoValido ? '✅' : '⚠️';
+        const headerTitulo = todoValido ? 'Todos los productos son válidos' : 'Revisión requerida';
+
+        Swal.fire({
+            title: `${headerEmoji} ${headerTitulo}`,
+            html: `
+            <div style="text-align:left;">
+
+              <!-- Tarjetas de resumen -->
+              <div style="display:flex;gap:10px;margin-bottom:16px;">
+                <div style="flex:1;background:#f0fdf4;border:1.5px solid #bbf7d0;
+                            border-radius:10px;padding:10px 14px;text-align:center;">
+                  <div style="font-size:1.4rem;font-weight:700;color:#10b981;">
+                    ${productosValidos}
+                  </div>
+                  <div style="font-size:0.72rem;color:#065f46;font-weight:600;
+                              text-transform:uppercase;letter-spacing:.5px;">Válidos</div>
+                </div>
+                <div style="flex:1;background:#fff7ed;border:1.5px solid #fed7aa;
+                            border-radius:10px;padding:10px 14px;text-align:center;">
+                  <div style="font-size:1.4rem;font-weight:700;color:#f59e0b;">
+                    ${totalProductos}
+                  </div>
+                  <div style="font-size:0.72rem;color:#92400e;font-weight:600;
+                              text-transform:uppercase;letter-spacing:.5px;">Total</div>
+                </div>
+                <div style="flex:1;background:#fef2f2;border:1.5px solid #fecaca;
+                            border-radius:10px;padding:10px 14px;text-align:center;">
+                  <div style="font-size:1.4rem;font-weight:700;color:#ef4444;">
+                    ${productosInvalidos}
+                  </div>
+                  <div style="font-size:0.72rem;color:#991b1b;font-weight:600;
+                              text-transform:uppercase;letter-spacing:.5px;">Con errores</div>
+                </div>
+              </div>
+
+              <!-- Tabla de detalle -->
+              <div style="max-height:260px;overflow-y:auto;
+                          border:1px solid #e2e8f0;border-radius:10px;">
+                <table style="width:100%;border-collapse:collapse;
+                              font-family:system-ui,sans-serif;">
+                  <thead>
+                    <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;
+                               position:sticky;top:0;z-index:1;">
+                      <th style="padding:8px 10px;font-size:0.72rem;color:#64748b;
+                                 font-weight:700;text-transform:uppercase;
+                                 width:40px;text-align:center;">Estado</th>
+                      <th style="padding:8px 10px;font-size:0.72rem;color:#64748b;
+                                 font-weight:700;text-transform:uppercase;
+                                 width:90px;">Clave</th>
+                      <th style="padding:8px 10px;font-size:0.72rem;color:#64748b;
+                                 font-weight:700;text-transform:uppercase;">Descripción</th>
+                      <th style="padding:8px 10px;font-size:0.72rem;color:#64748b;
+                                 font-weight:700;text-transform:uppercase;">
+                        Datos SAT / Faltantes</th>
+                    </tr>
+                  </thead>
+                  <tbody>${filas}</tbody>
+                </table>
+              </div>
+
+              ${seccionCorreo}
+            </div>`,
+            icon: todoValido ? 'success' : 'warning',
+            confirmButtonText: todoValido ? '¡Listo!' : 'Cerrar',
+            confirmButtonColor: headerColor,
+            width: '700px'
+        });
+    }
+
+    // ============================================
+    // ENVÍO DE ALERTA SAT — INDEPENDIENTE
+    // ============================================
+    async function enviarAlertaSAT() {
+        const emailInput = document.getElementById('sat-alert-emails');
+        const sendBtn = document.getElementById('sat-alert-send-btn');
+        const feedback = document.getElementById('sat-alert-feedback');
+        const emails = emailInput?.value?.trim();
+
+        // Validar campo vacío
+        if (!emails) {
+            emailInput.style.borderColor = '#ef4444';
+            emailInput.placeholder = '⚠ Ingresa al menos un correo';
+            setTimeout(() => {
+                emailInput.style.borderColor = '#bae6fd';
+                emailInput.placeholder = 'correo1@empresa.com, correo2@empresa.com';
+            }, 2500);
+            return;
+        }
+
+        const invalidos = (window._satResultadosActuales || []).filter(r => !r.valido);
+        if (invalidos.length === 0) return;
+
+        // Estado de carga
+        const originalHtml = sendBtn.innerHTML;
+        sendBtn.disabled = true;
+        sendBtn.style.opacity = '0.65';
+        sendBtn.innerHTML = `
+        <i class="fas fa-spinner fa-spin"></i> Enviando correo...`;
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const folio = document.getElementById('vi-fac-folio')?.value || 'Sin folio';
+            const cliente = document.getElementById('vi-fac-cliente')?.value || 'Sin cliente';
+
+            const formData = new FormData();
+            if (token) formData.append('__RequestVerificationToken', token);
+            formData.append('emails', emails);
+            formData.append('resultadosJson', JSON.stringify(invalidos));
+            formData.append('folio', folio);
+            formData.append('cliente', cliente);
+
+            const response = await fetch('/VIFactura/EnviarAlertaSAT', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
+
+            const result = await response.json();
+
+            if (result.success) {
+                // ✅ Éxito — feedback inline
+                sendBtn.innerHTML = '<i class="fas fa-check"></i> ¡Correo enviado!';
+                sendBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                sendBtn.style.opacity = '1';
+
+                feedback.style.display = 'block';
+                feedback.style.background = '#f0fdf4';
+                feedback.style.color = '#065f46';
+                feedback.style.border = '1px solid #bbf7d0';
+                feedback.innerHTML = `✅ ${result.message}`;
+
+                // Deshabilitar para evitar reenvíos
+                emailInput.disabled = true;
+                emailInput.style.background = '#f8fafc';
+                emailInput.style.color = '#94a3b8';
+
+            } else {
+                throw new Error(result.message || 'No se pudo enviar el correo');
+            }
+
+        } catch (error) {
+            console.error('Error enviando alerta SAT:', error);
+
+            // ❌ Error — restaurar botón y mostrar feedback
+            sendBtn.disabled = false;
+            sendBtn.style.opacity = '1';
+            sendBtn.innerHTML = originalHtml;
+
+            feedback.style.display = 'block';
+            feedback.style.background = '#fef2f2';
+            feedback.style.color = '#991b1b';
+            feedback.style.border = '1px solid #fecaca';
+            feedback.innerHTML = `❌ ${error.message}`;
+
+            // Auto-ocultar el error después de 4 segundos
+            setTimeout(() => { feedback.style.display = 'none'; }, 4000);
+        }
+    }
+
+    // Helper HTML escape
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = String(text ?? '');
+        return div.innerHTML;
+    }
+</script>
+

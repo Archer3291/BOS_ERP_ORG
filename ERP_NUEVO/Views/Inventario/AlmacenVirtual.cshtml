@@ -1,0 +1,502 @@
+@{
+    ViewBag.Title = "Almacén Virtual";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+
+    var sucursales = ViewBag.Sucursales as List<Dictionary<string, object>> ?? new List<Dictionary<string, object>>();
+
+}
+
+@section Styles {
+    <link href="~/content/Inventario/almacen-virtual.css" rel="stylesheet" />
+    <link href="~/content/Inventario/almacen-virtual-3d.css" rel="stylesheet" />
+}
+
+<div id="av-wrapper">
+
+    <!-- ═══════════════════════════════════════
+         SIDEBAR IZQUIERDO
+    ════════════════════════════════════════ -->
+    <aside id="av-sidebar">
+        <div id="av-sidebar-header">
+            <i class="fas fa-layer-group" style="color:var(--av-accent);font-size:13px;flex-shrink:0;"></i>
+            <span class="av-sidebar-title">Inventario</span>
+            <button id="av-sidebar-toggle" title="Colapsar panel">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+
+        <!-- Selector de sucursal (visible expandido) -->
+        <div id="av-sidebar-sucursal">
+            <span class="av-sucursal-label">Sucursal</span>
+            <select id="av-sucursal-sel" class="av-select">
+                <option value="">— Seleccionar —</option>
+                @foreach (var s in sucursales)
+                {
+                    <option value="@s["id"]">@s["descripcion"]</option>
+                }
+            </select>
+        </div>
+
+        <!-- Ícono de sucursal en modo colapsado -->
+        <div id="av-sidebar-icon-area">
+            <button class="av-icon-btn" id="av-sidebar-expand-btn" title="Expandir para seleccionar sucursal">
+                <i class="fas fa-building"></i>
+            </button>
+        </div>
+
+        <!-- Árbol dinámico -->
+        <div id="av-sidebar-body">
+            <div style="text-align:center;padding:32px 12px;color:var(--av-text-muted);">
+                <i class="fas fa-warehouse" style="font-size:24px;opacity:.2;display:block;margin-bottom:8px;"></i>
+                <span style="font-size:10px;">Selecciona una sucursal</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════
+         CANVAS CENTRAL
+    ════════════════════════════════════════ -->
+    <main id="av-canvas-area">
+
+        <!-- Barra de herramientas superior -->
+        <div id="av-toolbar">
+            <!-- Selector de vista 3D / 2D -->
+            <div class="av-viewswitch" role="group" aria-label="Tipo de vista">
+                <button class="av-vs-btn active" id="av-vista-3d" title="Vista 3D del almacén">
+                    <i class="fas fa-cube"></i> <span>3D</span>
+                </button>
+                <button class="av-vs-btn" id="av-vista-2d" title="Plano 2D (edición)">
+                    <i class="fas fa-border-all"></i> <span>2D</span>
+                </button>
+            </div>
+
+            <div class="av-toolbar-sep"></div>
+
+            <!-- Modos (solo plano 2D) -->
+            <button class="av-tool-btn active av-solo-2d av-off" id="av-mode-view" title="Modo vista">
+                <i class="fas fa-eye"></i> Ver
+            </button>
+            <button class="av-tool-btn av-solo-2d av-off" id="av-mode-edit" title="Modo edición (mover elementos)">
+                <i class="fas fa-arrows-alt"></i> Editar
+            </button>
+
+            <div class="av-toolbar-sep av-solo-2d av-off"></div>
+
+            <!-- Snap -->
+            <button class="av-tool-btn active av-solo-2d av-off" id="av-snap-btn" title="Snap a cuadrícula">
+                <i class="fas fa-magnet"></i> Snap
+            </button>
+
+            <!-- Encuadres de cámara (solo 3D) -->
+            <div class="av-camgroup av-solo-3d" role="group" aria-label="Encuadre de cámara">
+                <button class="av-cam-btn active" data-preset="perspectiva" title="Vista en perspectiva">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="av-cam-btn" data-preset="isometrica" title="Vista isométrica">
+                    <i class="fas fa-cube"></i>
+                </button>
+                <button class="av-cam-btn" data-preset="cenital" title="Vista cenital (planta)">
+                    <i class="fas fa-map"></i>
+                </button>
+                <button class="av-cam-btn" data-preset="piso" title="A nivel de piso">
+                    <i class="fas fa-street-view"></i>
+                </button>
+            </div>
+
+            <!-- Etiquetas 3D -->
+            <button class="av-tool-btn active av-solo-3d icon-only" id="av-3d-labels-btn"
+                    title="Mostrar / ocultar etiquetas">
+                <i class="fas fa-tag"></i>
+            </button>
+
+            <div class="av-toolbar-sep"></div>
+
+            <!-- Zoom / encuadre -->
+            <button class="av-tool-btn" id="av-zoom-fit" title="Ajustar vista">
+                <i class="fas fa-expand-arrows-alt"></i>
+            </button>
+
+            <div class="av-toolbar-sep"></div>
+
+            <!-- Buscador -->
+            <div id="av-search-wrap">
+                <button class="av-tool-btn icon-only" id="av-search-toggle" title="Buscar producto o ubicación">
+                    <i class="fas fa-search"></i>
+                </button>
+                <input type="text" id="av-search-input" autocomplete="off"
+                       placeholder="Producto, clave, código de barras, rack, ubicación…" />
+                <button id="av-search-clear" title="Limpiar"><i class="fas fa-times"></i></button>
+                <div id="av-search-results"></div>
+            </div>
+
+            <!-- Lector de código de barras -->
+            <button class="av-tool-btn icon-only active" id="av-scan-btn"
+                    title="Lector de código de barras activo">
+                <i class="fas fa-barcode"></i>
+            </button>
+
+            <div class="av-toolbar-sep"></div>
+
+            <!-- Config del plano (2D) -->
+            <button class="av-tool-btn av-solo-2d av-off" id="av-config-btn" title="Configuración del plano">
+                <i class="fas fa-cog"></i>
+            </button>
+
+            <!-- Config de la escena 3D -->
+            <button class="av-tool-btn av-solo-3d" id="av-3d-config-btn" title="Configuración de la vista 3D">
+                <i class="fas fa-sliders-h"></i>
+            </button>
+
+            <!-- Guardar (solo en modo editar) -->
+            <button class="av-tool-btn d-none" id="av-save-btn"
+                    style="background:var(--av-accent);color:#000;font-weight:700;"
+                    title="Guardar posiciones">
+                <i class="fas fa-save"></i> Guardar
+            </button>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             VISTA 3D (Three.js)
+        ══════════════════════════════════════════ -->
+        <div id="av-3d-container">
+            <div id="av-3d-fallback">
+                <i class="fas fa-cube"></i>
+                <p>
+                    No se pudo iniciar la vista 3D (WebGL no disponible o
+                    sin acceso a la librería). Se muestra el plano 2D.
+                </p>
+            </div>
+        </div>
+
+        <!-- El monito: se arrastra al plano para bajar a ese punto -->
+        <div id="av-monito" class="av-solo-3d" role="button" tabindex="0"
+             title="Arrástrame al plano para bajar a ese punto"
+             aria-label="Arrastra el monito sobre el plano para ver el almacén desde el piso">
+            <svg viewBox="0 0 40 64" aria-hidden="true">
+                <g class="av-monito-fig">
+                    <circle cx="20" cy="13" r="8" />
+                    <path d="M20 21 V40" />
+                    <path d="M8 32 L20 25 L32 32" />
+                    <path d="M11 56 L20 40 L29 56" />
+                </g>
+            </svg>
+            <span class="av-monito-base"></span>
+        </div>
+        <div id="av-monito-pista"></div>
+
+        <!-- Tooltip flotante del rack -->
+        <div id="av-3d-tooltip"></div>
+
+        <!-- Aviso de lectura de código de barras -->
+        <div id="av-scan-overlay"></div>
+
+        <!-- Leyenda de ocupación -->
+        <div id="av-3d-legend">
+            <h6>Ocupación</h6>
+            <div class="av3d-lg-row">
+                <span class="av3d-lg-dot" style="color:var(--av-danger)"></span> Lleno (≥ 90%)
+            </div>
+            <div class="av3d-lg-row">
+                <span class="av3d-lg-dot" style="color:var(--av-warn)"></span> Parcial (50-89%)
+            </div>
+            <div class="av3d-lg-row">
+                <span class="av3d-lg-dot" style="color:var(--av-success)"></span> Bajo (1-49%)
+            </div>
+            <div class="av3d-lg-row">
+                <span class="av3d-lg-dot" style="color:var(--av-accent2)"></span> Vacío
+            </div>
+            <div class="av3d-lg-sep"></div>
+            <div class="av3d-lg-meta" id="av-3d-stats">—</div>
+        </div>
+
+        <!-- Ayuda de navegación -->
+        <div id="av-3d-hint">
+            <span><kbd>Arrastrar</kbd> orbitar</span>
+            <span><kbd>Rueda</kbd> zoom</span>
+            <span><kbd>Clic der.</kbd> desplazar</span>
+            <span><kbd>Clic</kbd> rack o tarima</span>
+        </div>
+
+        <!-- Panel de configuración 3D -->
+        <div id="av-3d-config">
+            <div class="av3d-cfg-header">
+                <span>Vista 3D</span>
+                <i class="fas fa-cube" style="opacity:.5"></i>
+            </div>
+            <div class="av3d-cfg-body">
+                <div class="av3d-cfg-range">
+                    <label>Altura de nivel <b id="av-3d-nivelh-val">1.5 m</b></label>
+                    <input type="range" id="av-3d-nivelh" min="0.8" max="3" step="0.1" value="1.5" />
+                </div>
+                <div class="av3d-cfg-range">
+                    <label>Altura de muros <b id="av-3d-muroh-val">8 m</b></label>
+                    <input type="range" id="av-3d-muroh" min="3" max="16" step="0.5" value="8" />
+                </div>
+                <div class="av3d-cfg-grid">
+                    <label class="av3d-cfg-check">
+                        <input type="checkbox" id="av-3d-chk-muros" checked /> Muros
+                    </label>
+                    <label class="av3d-cfg-check">
+                        <input type="checkbox" id="av-3d-chk-zonas" checked /> Zonas
+                    </label>
+                    <label class="av3d-cfg-check">
+                        <input type="checkbox" id="av-3d-chk-tarimas" checked /> Tarimas
+                    </label>
+                    <label class="av3d-cfg-check">
+                        <input type="checkbox" id="av-3d-chk-sombras" checked /> Sombras
+                    </label>
+                    <label class="av3d-cfg-check" title="Etiquetas de ubicación sobre las vigas (visibles de cerca)">
+                        <input type="checkbox" id="av-3d-chk-uloc" checked /> Ubicaciones
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Konva (plano 2D) -->
+        <div id="av-konva-container" class="av-hidden"></div>
+
+        <!-- Coordenadas -->
+        <div id="av-coords" class="av-solo-2d av-off">X: 0  Y: 0</div>
+
+        <!-- Controles de zoom -->
+        <div id="av-zoom-controls" class="av-solo-2d av-off">
+            <button class="av-zoom-btn" id="av-zoom-in" title="Acercar">+</button>
+            <div id="av-zoom-label">100%</div>
+            <button class="av-zoom-btn" id="av-zoom-out" title="Alejar">−</button>
+        </div>
+
+        <!-- Minimap -->
+        <div id="av-minimap" class="av-solo-2d av-off">
+            <span id="av-minimap-label">MAPA</span>
+            <div id="av-minimap-viewport"></div>
+        </div>
+
+        <!-- Config panel flotante -->
+        <div id="av-config-panel">
+            <div class="av-config-header">Configuración del Plano</div>
+            <div class="av-config-body">
+                <div class="av-form-group">
+                    <label>Ancho real (metros)</label>
+                    <input type="number" id="av-cfg-ancho" class="av-form-control" value="100" min="10" max="5000" step="5" />
+                </div>
+                <div class="av-form-group">
+                    <label>Largo real (metros)</label>
+                    <input type="number" id="av-cfg-alto" class="av-form-control" value="60" min="10" max="5000" step="5" />
+                </div>
+                <div class="av-form-group">
+                    <label>Escala (px / metro)</label>
+                    <input type="number" id="av-cfg-escala" class="av-form-control" value="8" min="1" max="50" step="0.5" />
+                </div>
+                <div class="av-form-group">
+                    <label>Color de fondo</label>
+                    <input type="color" id="av-cfg-fondo" class="av-form-control" value="#111827" style="height:36px;padding:2px;" />
+                </div>
+                <button class="av-btn av-btn-primary" id="av-config-save">
+                    <i class="fas fa-save"></i> Aplicar
+                </button>
+            </div>
+        </div>
+
+        <!-- Spotlight para resaltar resultado de búsqueda -->
+        <div id="av-spotlight-overlay"></div>
+
+        <!-- Banner indicando qué se encontró -->
+        <div id="av-search-banner">
+            <i class="fas fa-map-marker-alt av-search-banner-icon"></i>
+            <span class="av-search-banner-text" id="av-search-banner-text"></span>
+            <button class="av-search-banner-close" id="av-search-banner-close" title="Cerrar">&times;</button>
+        </div>
+
+        <!-- Loading overlay -->
+        <div id="av-loading">
+            <div class="av-spinner">
+                <div class="av-spinner-ring"></div>
+                <span>Cargando plano…</span>
+            </div>
+        </div>
+
+    </main>
+
+
+</div>
+
+<!-- Toast global -->
+<div id="av-toast"></div>
+<!-- Modal Inspector de Rack -->
+<div id="av-inspector-modal-overlay">
+    <div id="av-inspector-modal">
+        <div id="av-inspector-modal-header">
+            <div class="av-im-header-top">
+                <div class="av-im-header-icon"><i class="fas fa-cube"></i></div>
+                <div class="av-im-header-text">
+                    <h5 id="av-inspector-modal-title">Inspector de Rack</h5>
+                    <div id="av-inspector-modal-subtitle">Cargando…</div>
+                </div>
+                <button id="av-inspector-modal-close" title="Cerrar">&times;</button>
+            </div>
+            <div class="av-im-tabs">
+                @*<button class="av-im-tab active" data-tab="resumen">
+                        <i class="fas fa-chart-pie"></i> Resumen
+                    </button>*@
+                <button class="av-im-tab" data-tab="niveles">
+                    <i class="fas fa-layer-group"></i> Niveles
+                </button>
+                <button class="av-im-tab" data-tab="tarimas">
+                    <i class="fas fa-pallet"></i> Tarimas
+                    <span class="av-im-tab-badge" id="av-im-tab-tarimas-count">0</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="av-inspector-modal-body">
+            @*<div id="av-inspector-modal-loading">
+                    <div class="av-spinner">
+                        <div class="av-spinner-ring"></div>
+                        <span>Localizando…</span>
+                    </div>
+                </div>*@
+
+            <!-- Panel: Resumen -->
+            <!--<div class="av-im-panel active" id="av-im-panel-resumen"></div>-->
+            <!-- Panel: Niveles (rack 3D navegable + detalle) -->
+            <div class="av-im-panel" id="av-im-panel-niveles">
+                <div id="av-rack-3d-wrap">
+                    <div id="av-rack-3d-container"></div>
+                    <div id="av-rack3d-tooltip" class="av3d-tip"></div>
+
+                    <div id="av-rack-3d-placeholder">
+                        <i class="fas fa-cube"></i>
+                        <span>Selecciona un rack</span>
+                    </div>
+
+                    <div id="av-rack-3d-bar">
+                        <span class="av-r3d-hint">
+                            <i class="fas fa-hand-pointer"></i>
+                            Clic en un nivel o en una tarima
+                        </span>
+                        <button class="av-r3d-btn" id="av-rack-3d-fit" title="Reencuadrar">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="av-nivel-detail"></div>
+            </div>
+
+            <!-- Panel: Tarimas (todas, sin necesidad de clicar niveles) -->
+            <div class="av-im-panel" id="av-im-panel-tarimas"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Detalle de Tarima (3D + productos) -->
+<div id="av-tarima-modal-overlay">
+    <div id="av-tarima-modal">
+        <div id="av-tarima-modal-header">
+            <div class="av-tm-icon"><i class="fas fa-pallet"></i></div>
+            <div class="av-tm-header-text">
+                <h5 id="av-tarima-modal-title">Tarima</h5>
+                <div id="av-tarima-modal-subtitle">—</div>
+            </div>
+            <button id="av-tarima-modal-close" title="Cerrar"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div id="av-tarima-modal-body">
+            <div id="av-tarima-3d-wrap">
+                <div id="av-tarima-3d-container"></div>
+                <div id="av-tarima3d-tooltip" class="av3d-tip"></div>
+
+                <!-- Disposición de los productos (se llena desde Tarima3D.MODOS) -->
+                <div id="av-tarima-3d-modos" class="av-tm-modos"></div>
+
+                <div class="av-tm-3d-hint">
+                    <i class="fas fa-hand-pointer"></i>
+                    Cada caja es un producto · clic para ver su ficha
+                </div>
+            </div>
+            <div id="av-tarima-modal-side"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Sub-modal: Detalle de Producto -->
+<div id="av-product-modal-overlay">
+    <div id="av-product-modal">
+        <div id="av-product-modal-header">
+            <div class="av-pm-icon"><i class="fas fa-box"></i></div>
+            <div class="av-pm-header-text">
+                <h6 id="av-product-modal-title">Producto</h6>
+                <div id="av-product-modal-subtitle"></div>
+            </div>
+            <button id="av-product-modal-close" title="Cerrar"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="av-product-modal-body"></div>
+    </div>
+</div>
+
+<!-- Modal Historial de Producto -->
+<div id="av-historial-modal-overlay">
+    <div id="av-historial-modal">
+        <div id="av-historial-modal-header">
+            <div class="av-hm-icon"><i class="fas fa-history"></i></div>
+            <div class="av-hm-header-text">
+                <h5 id="av-historial-modal-title">Historial de movimientos</h5>
+                <div id="av-historial-modal-subtitle">—</div>
+            </div>
+            <button id="av-historial-modal-close" title="Cerrar"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div id="av-historial-modal-body">
+            <div id="av-historial-table-wrap">
+                <!-- Tabla se inyecta aquí -->
+            </div>
+            <div id="av-historial-row-loader">
+                <div class="av-spinner-ring"></div>
+                <span>Cargando más registros…</span>
+            </div>
+        </div>
+
+        <div id="av-historial-footer">
+            <div id="av-historial-info">—</div>
+            <div class="av-hm-pag-btns" id="av-historial-pag-btns"></div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <!-- Konva.js -->
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Three.js (ESM). El import map debe ir ANTES de cualquier <script type="module"> -->
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+          }
+        }
+    </script>
+
+    <!-- Módulos propios -->
+    <script src="~/Scripts/Inventario/Consulta/rack-inspector.js"></script>
+    <script src="~/Scripts/Inventario/Consulta/almacen-virtual.js"></script>
+    <script type="module" src="~/Scripts/Inventario/Consulta/almacen-virtual-3d.js"></script>
+    <script type="module" src="~/Scripts/Inventario/Consulta/rack-3d-viewer.js"></script>
+    <script>
+        // Pasar datos de servidor a JS si hay sucursal preseleccionada
+        document.addEventListener('DOMContentLoaded', function () {
+            @if (Context.Session.GetInt32("Sucursal") != null)
+            {
+                <text>
+                var selSuc = document.getElementById('av-sucursal-sel');
+                if (selSuc) {
+                    selSuc.value = '@Context.Session.GetInt32("Sucursal")';
+                    if (selSuc.value) AlmacenVirtual.cargarPlano(parseInt(selSuc.value));
+                }
+                </text>
+
+            }
+        });
+    </script>
+}

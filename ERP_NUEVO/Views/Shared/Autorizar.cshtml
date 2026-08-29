@@ -1,0 +1,160 @@
+﻿@model BOS_ERP.Models.SolicitudCreditoVM
+@{
+    Layout = null;
+    string fmt(decimal v) => v.ToString("C", new System.Globalization.CultureInfo("es-MX"));
+    // Si viene accion en la URL la pre-seleccionamos
+    string accionUrl = Context.Request.Query["accion"].ToString() ?? "";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Autorización — Pedido @Model.Folio</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .card {
+            max-width: 560px;
+            margin: 48px auto;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-header {
+            border-radius: 12px 12px 0 0 !important;
+        }
+
+        .btn-aprobar {
+            background: #16a34a;
+            border: none;
+            color: #fff;
+        }
+
+            .btn-aprobar:hover {
+                background: #15803d;
+                color: #fff;
+            }
+
+        .btn-rechazar {
+            background: #dc2626;
+            border: none;
+            color: #fff;
+        }
+
+            .btn-rechazar:hover {
+                background: #b91c1c;
+                color: #fff;
+            }
+
+        .badge-exc {
+            font-size: .95rem;
+            padding: .4em .7em;
+        }
+    </style>
+</head>
+<body>
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white py-3">
+            <h6 class="mb-0">🔐 Autorización de crédito — Pedido <strong>@Model.Folio</strong></h6>
+        </div>
+        <div class="card-body px-4 py-4">
+
+            <!-- Info del pedido -->
+            <table class="table table-sm table-borderless mb-3">
+                <tr>
+                    <th class="text-muted" style="width:40%">Cliente</th>
+                    <td><strong>@Model.NombreCliente</strong></td>
+                </tr>
+                <tr>
+                    <th class="text-muted">Límite de crédito</th>
+                    <td>@fmt(Model.CreditoLimite)</td>
+                </tr>
+                <tr>
+                    <th class="text-muted">Crédito usado</th>
+                    <td>@fmt(Model.CreditoUsado)</td>
+                </tr>
+                <tr>
+                    <th class="text-muted">Total del pedido</th>
+                    <td><strong>@fmt(Model.MontoPedido)</strong></td>
+                </tr>
+                <tr>
+                    <th class="text-muted">Excedente</th>
+                    <td>
+                        <span class="badge badge-danger badge-exc">
+                            @fmt(Model.Excedente)
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="text-muted">Fecha solicitud</th>
+                    <td>@Model.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</td>
+                </tr>
+            </table>
+
+            <!-- Alerta resultado -->
+            <div id="resultado" class="alert d-none mb-3"></div>
+
+            <!-- Botones -->
+            <div id="botonesAccion" class="d-flex" style="gap:10px;">
+                <button class="btn btn-aprobar btn-block py-2 font-weight-bold"
+                        onclick="responder('aprobar')">
+                    ✅ Aprobar pedido
+                </button>
+                <button class="btn btn-rechazar btn-block py-2 font-weight-bold"
+                        onclick="responder('rechazar')">
+                    ❌ Rechazar pedido
+                </button>
+            </div>
+
+        </div>
+        <div class="card-footer text-muted" style="font-size:11px;border-radius:0 0 12px 12px;">
+            Acceso seguro mediante enlace único. Este link es de un solo uso.
+        </div>
+    </div>
+
+    <script>
+    const TOKEN = '@Model.Token';
+
+    // Si viene acción desde el link del correo, ejecutar automáticamente
+    const accionUrl = '@accionUrl';
+    if (accionUrl === 'aprobar' || accionUrl === 'rechazar') {
+        window.addEventListener('DOMContentLoaded', () => responder(accionUrl));
+    }
+
+    async function responder(accion) {
+        const label = accion === 'aprobar' ? 'APROBAR' : 'RECHAZAR';
+        if (!confirm(`¿Confirma ${label} el pedido @Model.Folio?`)) return;
+
+        try {
+            const res = await fetch('@Model.UrlConfirmacion', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body:    `token=${encodeURIComponent(TOKEN)}&accion=${accion}`
+            });
+            const data = await res.json();
+
+            const div = document.getElementById('resultado');
+            div.className = `alert ${data.success ? 'alert-success' : 'alert-danger'}`;
+            div.textContent = data.success
+                ? (accion === 'aprobar'
+                    ? '✅ Pedido aprobado correctamente.'
+                    : '❌ Pedido rechazado correctamente.')
+                : data.message;
+            div.classList.remove('d-none');
+
+            if (data.success)
+                document.getElementById('botonesAccion').classList.add('d-none');
+
+        } catch {
+            alert('Error de conexión. Intente de nuevo.');
+        }
+    }
+    </script>
+</body>
+</html>

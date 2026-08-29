@@ -1,0 +1,913 @@
+﻿@{
+    var result = ViewBag.Result as Dictionary<string, List<Dictionary<string, object>>>;
+    var ticket = result?["Ticket"]?.FirstOrDefault(); // Dictionary<string, object>
+    var respuestas = result?["Respuestas"];
+    @* PostgreSQL devuelve los alias sin comillas en minúsculas ("totalseguimientos"),
+       y el diccionario distingue mayúsculas: buscando "TotalSeguimientos" nunca había
+       coincidencia y el contador mostraba 0 siempre. Se resuelve contra la lista de
+       respuestas, que ya viene cargada, en vez de depender del alias. *@
+    var totalRespuestas = respuestas?.Count ?? 0;
+    var adjuntosRespuesta = result?["AdjuntosRespuesta"] ?? new List<Dictionary<string, object>>();
+    var adjuntos = result?["Adjuntos"] ?? new List<Dictionary<string, object>>();
+    var usuarioActivo = result["usuarioActivoResult"]?.FirstOrDefault();
+
+    int idUsuarioActivo = usuarioActivo != null && usuarioActivo["usuarioid"] != null
+        ? Convert.ToInt32(usuarioActivo["usuarioid"])
+        : 0;
+
+    int idEstado = Convert.ToInt32(ticket["id_stat_tkt"]);
+    bool resuelto = idEstado == 4;
+
+    var estilo = EstiloEstado(idEstado);
+    string colorPrioridad = ticket["color"]?.ToString();
+    string iconoCategoria = string.IsNullOrWhiteSpace(ticket["icon_class"]?.ToString())
+        ? "fa-regular fa-circle-question"
+        : ticket["icon_class"].ToString();
+
+    string folioDocumento = ticket["folio_doc"]?.ToString();
+    DateTime fechaCreacion = (DateTime)ticket["fch_crea"];
+
+    string estiloEstadoChip = $"--c:{estilo.Color};--c-soft:{estilo.Soft}";
+    string estiloPrioridadChip =
+        $"--c:{(string.IsNullOrWhiteSpace(colorPrioridad) ? "#6c757d" : colorPrioridad)};" +
+        $"--c-soft:{Rgba(colorPrioridad, ".14")}";
+}
+
+@functions {
+    /// Color, tinte y icono de cada estado. Los ids son los del catalogo stat_tkt que ya
+    /// usa el resto del modulo: 1 = Abierto, 4 = Resuelto.
+    static (string Color, string Soft, string Icono) EstiloEstado(int idEstado) => idEstado switch
+    {
+        1 => ("#22c55e", "rgba(34,197,94,.14)", "fa-solid fa-folder-open"),
+        4 => ("#4f6bf6", "rgba(79,107,246,.14)", "fa-solid fa-circle-check"),
+        _ => ("#f59e0b", "rgba(245,158,11,.14)", "fa-solid fa-hourglass-half")
+    };
+
+    /// prio.color llega como hex; el fondo translucido de la pastilla se calcula aqui
+    /// para no depender de color-mix() en el navegador.
+    static string Rgba(string hex, string alpha)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return "rgba(148,163,184,.14)";
+
+        var limpio = hex.Trim().TrimStart('#');
+        if (limpio.Length == 3)
+        {
+            limpio = string.Concat(limpio[0], limpio[0], limpio[1], limpio[1], limpio[2], limpio[2]);
+        }
+
+        if (limpio.Length != 6 ||
+            !int.TryParse(limpio.Substring(0, 2), System.Globalization.NumberStyles.HexNumber, null, out int r) ||
+            !int.TryParse(limpio.Substring(2, 2), System.Globalization.NumberStyles.HexNumber, null, out int g) ||
+            !int.TryParse(limpio.Substring(4, 2), System.Globalization.NumberStyles.HexNumber, null, out int b))
+        {
+            return "rgba(148,163,184,.14)";
+        }
+
+        return $"rgba({r},{g},{b},{alpha})";
+    }
+
+    /// Iniciales para el avatar del hilo.
+    static string Iniciales(string nombre)
+    {
+        if (string.IsNullOrWhiteSpace(nombre)) return "?";
+
+        var partes = nombre.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (partes.Length == 1) return partes[0].Substring(0, 1).ToUpperInvariant();
+
+        return (partes[0].Substring(0, 1) + partes[1].Substring(0, 1)).ToUpperInvariant();
+    }
+
+    /// Color estable del avatar: la misma persona siempre sale del mismo color.
+    static string ColorAvatar(string nombre)
+    {
+        var paleta = new[] { "#4f6bf6", "#22c55e", "#7c5cfc", "#f59e0b", "#ec4899", "#14b8a6" };
+
+        int suma = 0;
+        foreach (var c in nombre ?? "")
+        {
+            suma = (suma * 31 + c) % 100000;
+        }
+
+        return paleta[Math.Abs(suma) % paleta.Length];
+    }
+
+    /// Los saltos de linea del texto que escribio el usuario se conservan, pero el
+    /// contenido se codifica antes: nunca se inserta marcado ajeno.
+    static Microsoft.AspNetCore.Html.IHtmlContent TextoConSaltos(
+        Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper html, string texto)
+    {
+        var codificado = html.Encode(texto ?? "")
+            .Replace("\r\n", "<br />")
+            .Replace("\n", "<br />")
+            .Replace("\r", "<br />");
+
+        return new Microsoft.AspNetCore.Html.HtmlString(codificado);
+    }
+}
+
+@section styles {
+    <link href="~/css/soporte-ticket.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="tkd-wrap" style="--estado:@estilo.Color;--estado-soft:@estilo.Soft">
+    <form>
+        @Html.AntiForgeryToken()
+    </form>
+
+    <a class="tkd-back" href="@Url.Action("VerTicket", "Soporte")">
+        <i class="fa-solid fa-chevron-left"></i> Mis tickets
+    </a>
+
+    <div class="tkd-hero">
+        <span class="tkd-hero__icono"><i class="@iconoCategoria"></i></span>
+
+        <div class="tkd-hero__cuerpo">
+            <div class="tkd-hero__folio">Ticket @ticket["folio_tkt"]</div>
+            <h2 class="tkd-hero__titulo">@ticket["tit"]</h2>
+
+            <div class="tkd-chips">
+                <span class="tkd-chip tkd-chip--color" style="@estiloEstadoChip">
+                    <i class="@estilo.Icono"></i> @ticket["estado"]
+                </span>
+                <span class="tkd-chip tkd-chip--color" style="@estiloPrioridadChip">
+                    <span class="tkd-chip__punto"></span> Prioridad @ticket["prioridad"]
+                </span>
+                <span class="tkd-chip"><i class="fa-regular fa-folder"></i> @ticket["categoria"]</span>
+                <span class="tkd-chip"><i class="fa-regular fa-clock"></i> @fechaCreacion.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+        </div>
+
+        <div class="tkd-hero__acciones">
+            @if (!resuelto)
+            {
+                <a href="#" class="tkd-btn tkd-btn--estado mark-resolved" data-id="@ticket["id_tkts"]">
+                    <i class="fa-solid fa-circle-check"></i> Marcar como resuelto
+                </a>
+                @* El boton de editar sigue oculto (d-none) igual que antes: la edicion del
+                   ticket vive en la vista de gestion. *@
+                <button class="tkd-btn tkd-btn--ghost btn-editar-ticket d-none"
+                        data-id="@ticket["id_tkts"]"
+                        data-tit="@ticket["tit"]"
+                        data-descr="@ticket["descr"]">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+            }
+            else
+            {
+                <a href="#" class="tkd-btn tkd-btn--estado reopen-ticket" data-id="@ticket["id_tkts"]">
+                    <i class="fa-solid fa-rotate-left"></i> Reabrir ticket
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="tkd-layout">
+        <div class="tkd-main">
+            <div class="tkd-panel">
+                <h3 class="tkd-panel__titulo">
+                    <i class="fa-regular fa-comments"></i> Conversación
+                    <span class="tkd-cuenta">@(totalRespuestas + 1)</span>
+                </h3>
+
+                <ol class="tkd-hilo">
+                    @{
+                        string autorOriginal = ticket["nombrecompleto"]?.ToString();
+                    }
+                    <li class="tkd-msg tkd-msg--origen">
+                        <span class="tkd-avatar" style="--avatar:@ColorAvatar(autorOriginal)">@Iniciales(autorOriginal)</span>
+                        <div class="tkd-burbuja">
+                            <div class="tkd-msg__head">
+                                <span class="tkd-msg__autor">@autorOriginal</span>
+                                <span class="tkd-msg__etiqueta">Reporte inicial</span>
+                                <span class="tkd-msg__fecha">@fechaCreacion.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+                            <div class="tkd-msg__cuerpo">
+                                @TextoConSaltos(Html, (string)ticket["descr"])
+                            </div>
+
+                            @* Diagnóstico técnico del error, sólo cuando el ticket lo
+                               generó la captura automática. El controlador únicamente
+                               llena estas claves si quien mira es staff: el creador es
+                               el usuario al que le falló y no debe ver stack traces. *@
+                            @{
+                                var diagnostico = result.ContainsKey("Diagnostico") ? result["Diagnostico"] : null;
+                            }
+                            @if (diagnostico != null && diagnostico.Count > 0)
+                            {
+                                var h = diagnostico[0];
+                                var ocurrencias = result.ContainsKey("DiagnosticoOcurrencias")
+                                    ? result["DiagnosticoOcurrencias"]
+                                    : new List<Dictionary<string, object>>();
+
+                                <details class="tkd-diag">
+                                    <summary class="tkd-diag__cab">
+                                        <i class="fa-solid fa-bug"></i>
+                                        <span class="tkd-diag__titulo">Diagnóstico técnico</span>
+                                        <span class="tkd-diag__chip">@h["ocurrencias"] ocurrencias</span>
+                                        <span class="tkd-diag__chip">@h["afectados"] usuarios</span>
+                                        @if (Convert.ToBoolean(h["silenciada"]))
+                                        {
+                                            <span class="tkd-diag__chip tkd-diag__chip--off">silenciada</span>
+                                        }
+                                    </summary>
+
+                                    <dl class="tkd-diag__datos">
+                                        <dt>Excepción</dt><dd><code>@h["tipo_exc"]</code></dd>
+                                        <dt>Mensaje</dt><dd><code>@h["mensaje_norm"]</code></dd>
+                                        <dt>Origen</dt><dd><code>@h["origen"]</code></dd>
+                                        <dt>Primera vez</dt><dd>@(((DateTime)h["primera_vez"]).ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</dd>
+                                        <dt>Última vez</dt><dd>@(((DateTime)h["ultima_vez"]).ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</dd>
+                                    </dl>
+
+                                    @if (ocurrencias.Count > 0)
+                                    {
+                                        <h4 class="tkd-diag__sub">Últimas @ocurrencias.Count ocurrencias</h4>
+                                        <div class="tkd-diag__scroll">
+                                            <table class="tkd-diag__tabla">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Fecha</th><th>Capa</th><th>Usuario</th><th>Ruta</th><th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var oc in ocurrencias)
+                                                    {
+                                                        <tr>
+                                                            <td>@(((DateTime)oc["fch"]).ToLocalTime().ToString("dd/MM HH:mm:ss"))</td>
+                                                            <td><span class="tkd-diag__capa">@oc["capa"]</span></td>
+                                                            <td>@oc["usuario"]</td>
+                                                            <td class="tkd-diag__ruta" title="@oc["ruta"]">@oc["metodo"] @oc["ruta"]</td>
+                                                            <td>
+                                                                <button type="button" class="tkd-diag__ver"
+                                                                        data-payload="@oc["payload"]">
+                                                                    ver payload
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+
+                                    <a class="tkd-diag__link" href="@Url.Action("Index", "Errores")">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                        Ver todos los errores del sistema
+                                    </a>
+                                </details>
+                            }
+
+                            @* Los adjuntos del alta pertenecen a este mensaje: antes vivian
+                               en una tarjeta aparte, lejos del texto que describen. *@
+                            @if (adjuntos.Count > 0)
+                            {
+                                <div class="tkd-msg__adjuntos">
+                                    @foreach (var adj in adjuntos)
+                                    {
+                                        <a class="tkd-archivo"
+                                           href="@Url.Action("DescargarAdjunto", "Soporte", new { id = adj["id_tkts_adj"] })"
+                                           title="Cargado el @(((DateTime)adj["fechacarga"]).ToString("dd/MM/yyyy HH:mm"))">
+                                            <i class="fa-solid fa-paperclip"></i>
+                                            <span>@adj["n_arch_orig"]</span>
+                                            <i class="fa-solid fa-download"></i>
+                                        </a>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </li>
+
+                    @if (respuestas != null && respuestas.Count > 0)
+                    {
+                        foreach (var r in respuestas)
+                        {
+                            var id = r["id_seg_tkts"];
+                            var comentario = (string)r["coment"];
+                            string autor = r["nombrecompleto"]?.ToString();
+                            bool esMio = r["id_usr"] != null && Convert.ToInt32(r["id_usr"]) == idUsuarioActivo;
+
+                            var adjuntosDeEsta = adjuntosRespuesta
+                                .Where(a => a["id_seg_tkts"] != null
+                                         && Convert.ToInt32(a["id_seg_tkts"]) == Convert.ToInt32(id))
+                                .ToList();
+
+                            <li class="tkd-msg @(esMio ? "tkd-msg--propio" : "")">
+                                <span class="tkd-avatar" style="--avatar:@ColorAvatar(autor)">@Iniciales(autor)</span>
+                                <div class="tkd-burbuja">
+                                    <div class="tkd-msg__head">
+                                        <span class="tkd-msg__autor">@autor</span>
+                                        @if (esMio)
+                                        {
+                                            <span class="tkd-msg__etiqueta">Tú</span>
+                                        }
+                                        <span class="tkd-msg__fecha">@(((DateTime)r["fch"]).ToString("dd/MM/yyyy HH:mm"))</span>
+                                        @if (!resuelto)
+                                        {
+                                            <button type="button"
+                                                    class="tkd-btn tkd-btn--ghost btn-editar-respuesta d-none"
+                                                    title="Editar respuesta"
+                                                    data-id="@id"
+                                                    data-coment="@comentario">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                    <div class="tkd-msg__cuerpo">
+                                        @TextoConSaltos(Html, comentario)
+                                    </div>
+
+                                    @if (adjuntosDeEsta.Any())
+                                    {
+                                        <div class="tkd-msg__adjuntos">
+                                            @foreach (var adjR in adjuntosDeEsta)
+                                            {
+                                                <a class="tkd-archivo"
+                                                   href="@Url.Action("DescargarAdjunto", "Soporte", new { id = adjR["id_tkts_adj"] })">
+                                                    <i class="fa-solid fa-paperclip"></i>
+                                                    <span>@adjR["n_arch_orig"]</span>
+                                                    <i class="fa-solid fa-download"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    }
+                </ol>
+
+                @if (totalRespuestas == 0)
+                {
+                    <div class="tkd-vacio mt-4">
+                        <i class="fa-regular fa-comment-dots d-block mb-2 fa-lg"></i>
+                        Todavía no hay respuestas. Soporte te contestará por aquí.
+                    </div>
+                }
+            </div>
+
+            @if (!resuelto)
+            {
+                <div class="tkd-panel" id="panelRespuesta">
+                    <h3 class="tkd-panel__titulo">
+                        <i class="fa-regular fa-pen-to-square"></i> Añadir respuesta
+                    </h3>
+
+                    <textarea class="form-control" id="mensaje" name="mensaje" rows="5"
+                              placeholder="Escribe tu respuesta, agrega lo que haya cambiado o adjunta una captura."
+                              required></textarea>
+
+                    @* El input conserva id y name: el envio sigue leyendo #archivo.files. *@
+                    <div id="zonaDropRespuesta" class="tkd-drop">
+                        <i class="fa-duotone fa-solid fa-cloud-arrow-up"></i>
+                        <p class="tkd-drop__texto"><strong>Arrastra tus archivos</strong> o haz clic para elegirlos</p>
+                        <span class="tkd-drop__hint">
+                            Máx. @BOS_ERP.Helpers.SoporteAdjuntos.MaximoArchivos archivos de
+                            @(BOS_ERP.Helpers.SoporteAdjuntos.TamanoMaximoBytes / (1024 * 1024)) MB cada uno
+                        </span>
+                        <input type="file" class="d-none" id="archivo" multiple
+                               accept="@BOS_ERP.Helpers.SoporteAdjuntos.AcceptHtml">
+                    </div>
+                    <div id="listaArchivosRespuesta" class="tkd-files"></div>
+
+                    <div class="tkd-responder__pie">
+                        <span class="tkd-contador"><span id="mensajeCount">0</span> caracteres</span>
+                        <button type="button" id="btnEnviarRespuesta" class="tkd-btn tkd-btn--primario">
+                            <i class="fa-duotone fa-solid fa-paper-plane"></i> Enviar respuesta
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="tkd-panel">
+                    <div class="tkd-vacio">
+                        <i class="fa-solid fa-circle-check d-block mb-2 fa-lg" style="color:@estilo.Color"></i>
+                        Este ticket está resuelto. Si el problema sigue, reábrelo desde el botón de arriba.
+                    </div>
+                </div>
+            }
+        </div>
+
+        <aside class="tkd-aside">
+            <div class="tkd-panel">
+                <h3 class="tkd-panel__titulo"><i class="fa-regular fa-circle-info"></i> Detalles</h3>
+
+                <div class="tkd-dato">
+                    <span class="tkd-dato__label">ID de seguimiento</span>
+                    <span class="tkd-dato__valor">@ticket["folio_tkt"]</span>
+                </div>
+                <div class="tkd-dato">
+                    <span class="tkd-dato__label">Ticket número</span>
+                    <span class="tkd-dato__valor">@ticket["id_tkts"]</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(folioDocumento))
+                {
+                    <div class="tkd-dato">
+                        <span class="tkd-dato__label">Documento</span>
+                        <span class="tkd-dato__valor">@folioDocumento</span>
+                    </div>
+                }
+                <div class="tkd-dato">
+                    <span class="tkd-dato__label">Categoría</span>
+                    <span class="tkd-dato__valor">@ticket["categoria"]</span>
+                </div>
+                <div class="tkd-dato">
+                    <span class="tkd-dato__label">Área</span>
+                    <span class="tkd-dato__valor">@ticket["nombrearea"]</span>
+                </div>
+                <div class="tkd-dato">
+                    <span class="tkd-dato__label">Atiende</span>
+                    <span class="tkd-dato__valor">@ticket["asignadocompleto"]</span>
+                </div>
+                <div class="tkd-dato">
+                    <span class="tkd-dato__label">Creado</span>
+                    <span class="tkd-dato__valor">@fechaCreacion.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+                @if (ticket["fch_crr"] != null)
+                {
+                    <div class="tkd-dato">
+                        <span class="tkd-dato__label">Cierre</span>
+                        <span class="tkd-dato__valor">@(((DateTime)ticket["fch_crr"]).ToString("dd/MM/yyyy HH:mm"))</span>
+                    </div>
+                }
+                <div class="tkd-dato">
+                    <span class="tkd-dato__label">Última respuesta</span>
+                    <span class="tkd-dato__valor">@ticket["nombreusuarioseguimiento"]</span>
+                </div>
+                <div class="tkd-dato">
+                    <span class="tkd-dato__label">Respuestas</span>
+                    <span class="tkd-dato__valor">@totalRespuestas</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Envío de la respuesta ────────────────────────────────────────────
+        // El botón se busca por id: antes se localizaba con
+        // document.querySelector('.card-body.message-card') y dependía de que el
+        // maquetado conservara esas dos clases juntas.
+        document.addEventListener('DOMContentLoaded', function () {
+            const boton = document.getElementById('btnEnviarRespuesta');
+            if (!boton) return; // Ticket resuelto: no hay formulario
+
+            const archivoInput = document.getElementById('archivo');
+            const zonaDrop = document.getElementById('zonaDropRespuesta');
+            const listaArchivos = document.getElementById('listaArchivosRespuesta');
+            const mensaje = document.getElementById('mensaje');
+            const mensajeCount = document.getElementById('mensajeCount');
+
+            // Espejo de SoporteAdjuntos.MaximoArchivos / TamanoMaximoBytes.
+            const MAX_ARCHIVOS = @BOS_ERP.Helpers.SoporteAdjuntos.MaximoArchivos;
+            const MAX_BYTES = @BOS_ERP.Helpers.SoporteAdjuntos.TamanoMaximoBytes;
+
+            let archivosSeleccionados = [];
+
+            mensaje.addEventListener('input', () => {
+                mensajeCount.textContent = mensaje.value.length;
+            });
+
+            // ── Adjuntos ─────────────────────────────────────────────────────
+            zonaDrop.addEventListener('click', (e) => {
+                if (e.target !== archivoInput) archivoInput.click();
+            });
+
+            zonaDrop.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zonaDrop.classList.add('is-drag');
+            });
+
+            zonaDrop.addEventListener('dragleave', () => zonaDrop.classList.remove('is-drag'));
+
+            zonaDrop.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zonaDrop.classList.remove('is-drag');
+                agregarArchivos(Array.from(e.dataTransfer.files));
+            });
+
+            archivoInput.addEventListener('change', () => {
+                agregarArchivos(Array.from(archivoInput.files));
+            });
+
+            function agregarArchivos(nuevos) {
+                nuevos.forEach(archivo => {
+                    if (!archivosSeleccionados.some(f => f.name === archivo.name)) {
+                        archivosSeleccionados.push(archivo);
+                    }
+                });
+
+                if (archivosSeleccionados.length > MAX_ARCHIVOS) {
+                    toastr.error(`Solo puedes subir hasta ${MAX_ARCHIVOS} archivos.`);
+                    archivosSeleccionados = archivosSeleccionados.slice(0, MAX_ARCHIVOS);
+                }
+
+                for (const archivo of [...archivosSeleccionados]) {
+                    if (archivo.size > MAX_BYTES) {
+                        toastr.error(`${archivo.name} excede el límite de ${MAX_BYTES / (1024 * 1024)}MB.`);
+                        archivosSeleccionados = archivosSeleccionados.filter(f => f !== archivo);
+                    }
+                }
+
+                sincronizarInput();
+                mostrarLista();
+            }
+
+            // El input file no se puede modificar a mano: se reconstruye con DataTransfer
+            // para que lo que se envía coincida con la lista que ve el usuario.
+            function sincronizarInput() {
+                const dt = new DataTransfer();
+                archivosSeleccionados.forEach(f => dt.items.add(f));
+                archivoInput.files = dt.files;
+            }
+
+            function formatearTamano(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            }
+
+            function mostrarLista() {
+                listaArchivos.innerHTML = '';
+
+                archivosSeleccionados.forEach((archivo, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'tkd-file';
+
+                    const icono = document.createElement('i');
+                    icono.className = 'fa-regular fa-file-lines';
+
+                    // textContent y no innerHTML: el nombre del archivo lo pone el usuario.
+                    const nombre = document.createElement('span');
+                    nombre.className = 'tkd-file__name';
+                    nombre.textContent = archivo.name;
+                    nombre.title = archivo.name;
+
+                    const tamano = document.createElement('span');
+                    tamano.className = 'tkd-file__size';
+                    tamano.textContent = formatearTamano(archivo.size);
+
+                    const quitar = document.createElement('button');
+                    quitar.type = 'button';
+                    quitar.className = 'tkd-file__x';
+                    quitar.dataset.index = index;
+                    quitar.setAttribute('aria-label', 'Quitar ' + archivo.name);
+                    quitar.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+
+                    item.append(icono, nombre, tamano, quitar);
+                    listaArchivos.appendChild(item);
+                });
+            }
+
+            listaArchivos.addEventListener('click', (e) => {
+                const boton = e.target.closest('.tkd-file__x');
+                if (!boton) return;
+
+                archivosSeleccionados.splice(Number(boton.dataset.index), 1);
+                sincronizarInput();
+                mostrarLista();
+            });
+
+            // ── Envío ────────────────────────────────────────────────────────
+            boton.addEventListener('click', async function (e) {
+                e.preventDefault();
+
+                const texto = mensaje.value.trim();
+                const idTkt = @Html.Raw(ticket["id_tkts"]);
+                const idUsr = @Html.Raw(idUsuarioActivo);
+
+                if (!texto) {
+                    toastr.warning('Por favor, escribe un mensaje antes de enviar.');
+                    mensaje.focus();
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("IdTkt", idTkt);
+                formData.append("IdUsr", idUsr);
+                formData.append("Coment", texto);
+
+                for (let i = 0; i < archivoInput.files.length; i++) {
+                    formData.append("Archivos", archivoInput.files[i]);
+                }
+
+                const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (token) {
+                    formData.append("__RequestVerificationToken", token.value);
+                }
+
+                // Estado de envío: sin esto un doble clic duplicaba la respuesta.
+                const contenido = boton.innerHTML;
+                boton.disabled = true;
+                boton.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
+
+                try {
+                    const response = await fetch('@Url.Action("CrearRespuesta", "Respuesta")', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+
+                    if (result.success || result === 0) {
+                        toastr.success('Respuesta enviada correctamente.');
+                        setTimeout(() => location.reload(), 1200);
+                    } else {
+                        toastr.error(result.message || 'Error al enviar la respuesta.');
+                        boton.disabled = false;
+                        boton.innerHTML = contenido;
+                    }
+                } catch (error) {
+                    console.error('Error en la solicitud:', error);
+                    toastr.error('Ocurrió un error al enviar la respuesta.');
+                    boton.disabled = false;
+                    boton.innerHTML = contenido;
+                }
+            });
+        });
+    </script>
+
+    <script>
+     function editarRespuesta(id, comentarioActual) {
+         const currentTheme = localStorage.getItem('theme') || 'light';
+         Swal.fire({
+             title: 'Editar respuesta',
+             theme: currentTheme,
+             input: 'textarea',
+             inputLabel: 'Comentario',
+             inputValue: comentarioActual,
+             inputAttributes: {
+                 'aria-label': 'Escribe tu comentario aquí'
+             },
+             showCancelButton: true,
+             confirmButtonText: 'Actualizar',
+             cancelButtonText: 'Cancelar',
+             showLoaderOnConfirm: true,
+             preConfirm: async (nuevoComentario) => {
+                 if (!nuevoComentario.trim()) {
+                     Swal.showValidationMessage('El comentario no puede estar vacío');
+                     return false;
+                 }
+                 const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                 const formData = new FormData();
+                 formData.append("IdSegTkts", id);
+                 formData.append("Coment", nuevoComentario);
+                 if (token) formData.append("__RequestVerificationToken", token);
+                 try {
+                     const response = await fetch('@Url.Action("EditarRespuesta", "Respuesta")', {
+                         method: 'POST',
+                         body: formData
+                     });
+                     const result = await response.json();
+                     if (!result.success) {
+                         throw new Error(result.message || 'Error al actualizar.');
+                     }
+                     return result;
+                 } catch (error) {
+                     Swal.showValidationMessage(`Error: ${error.message}`);
+                     return false;
+                 }
+             },
+             allowOutsideClick: () => !Swal.isLoading()
+         }).then((result) => {
+             if (result.isConfirmed) {
+                 Swal.fire({
+                     icon: 'success',
+                     title: '¡Respuesta actualizada!',
+                     theme: currentTheme,
+                     text: 'Tu comentario ha sido modificado correctamente.',
+                     timer: 2000,
+                     showConfirmButton: false
+                 }).then(() => location.reload());
+             }
+         });
+     }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // currentTarget y no target: el botón lleva un icono dentro y con target el
+            // data-id salía nulo cuando el clic caía sobre el <i>.
+            document.querySelector('.mark-resolved')?.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                const idTkt = e.currentTarget.getAttribute('data-id');
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (!idTkt || !token) {
+                    Swal.fire('Error', 'No se pudo obtener el ID o token CSRF.', 'error');
+                    return;
+                }
+                const confirm = await Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: "El ticket se marcará como resuelto.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    theme: currentTheme,
+                    confirmButtonText: 'Sí, marcar',
+                    cancelButtonText: 'Cancelar'
+                });
+                if (!confirm.isConfirmed) return;
+                const formData = new FormData();
+                formData.append("idTkt", idTkt);
+                formData.append("__RequestVerificationToken", token);
+                try {
+                    const response = await fetch('@Url.Action("CambiarEstadoTicket", "Estatus")', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            theme: currentTheme,
+                            title: '¡Ticket resuelto!',
+                            text: result.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', result.message || 'No se pudo actualizar el estado.', 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('Error', 'Error en la solicitud: ' + error.message, 'error');
+                }
+            });
+        });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('.reopen-ticket')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const idTkt = e.currentTarget.getAttribute('data-id');
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            if (!idTkt || !token) {
+                Swal.fire('Error', 'No se pudo obtener el ID o token CSRF.', 'error');
+                return;
+            }
+
+            const confirm = await Swal.fire({
+                title: '¿Reabrir ticket?',
+                text: "El ticket volverá a quedar Abierto para su seguimiento.",
+                icon: 'warning',
+                showCancelButton: true,
+                theme: currentTheme,
+                confirmButtonText: 'Sí, reabrir',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            const formData = new FormData();
+            formData.append("idTkt", idTkt);
+            formData.append("__RequestVerificationToken", token);
+
+            try {
+                const response = await fetch('@Url.Action("ReabrirTicket", "Estatus")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        theme: currentTheme,
+                        title: '¡Ticket reabierto!',
+                        text: result.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire('Error', result.message || 'No se pudo reabrir el ticket.', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error en la solicitud: ' + error.message, 'error');
+            }
+        });
+    });
+    </script>
+
+    <script>
+ function editarTicket(id, tituloActual, descripcionActual) {
+     const currentTheme = localStorage.getItem('theme') || 'light';
+     Swal.fire({
+         title: 'Editar Ticket',
+         theme: currentTheme,
+         html:
+             `<form id="swal-edit-form">
+                 <div class="mb-3 text-start">
+                     <label class="form-label">Asunto</label>
+                     <input id="swal-input-titulo" class="form-control" value="" />
+                 </div>
+                 <div class="text-start">
+                     <label class="form-label">Mensaje</label>
+                     <textarea id="swal-input-desc" class="form-control" style="background-color: var(--bs-tertiary-bg);color: var(--bs-body-color);" rows="5"></textarea>
+                 </div>
+             </form>`,
+         didOpen: () => {
+             // Asignar por propiedad y no dentro del HTML: así el navegador trata
+             // el contenido como texto y no como marcado.
+             document.getElementById('swal-input-titulo').value = tituloActual ?? '';
+             document.getElementById('swal-input-desc').value = descripcionActual ?? '';
+         },
+         showCancelButton: true,
+         confirmButtonText: 'Guardar',
+         cancelButtonText: 'Cancelar',
+         focusConfirm: false,
+         preConfirm: () => {
+             const titulo = document.getElementById('swal-input-titulo').value.trim();
+             const descripcion = document.getElementById('swal-input-desc').value.trim();
+
+             if (!titulo || !descripcion) {
+                 Swal.showValidationMessage('Ambos campos son obligatorios');
+                 return false;
+             }
+
+             const formData = new FormData();
+             formData.append("idTkt", id);
+             formData.append("nuevoTitulo", titulo);
+             formData.append("nuevaDescripcion", descripcion);
+             formData.append("__RequestVerificationToken", document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+             return fetch('@Url.Action("ActualizarDatosTicket", "Ticket")', {
+                 method: 'POST',
+                 body: formData
+             })
+             .then(response => response.json())
+             .then(data => {
+                 if (!data.success) {
+                     throw new Error(data.message || 'Error al actualizar');
+                 }
+                 return data;
+             })
+             .catch(error => {
+                 Swal.showValidationMessage(`Error: ${error.message}`);
+             });
+         }
+     }).then((result) => {
+         if (result.isConfirmed) {
+             Swal.fire({
+                 icon: 'success',
+                 title: 'Actualizado',
+                 text: 'El ticket ha sido actualizado correctamente.',
+                 timer: 1500,
+                 showConfirmButton: false
+             }).then(() => location.reload());
+         }
+     });
+ }
+    </script>
+
+    <script>
+        // Los botones de editar ya no llevan onclick con los datos interpolados: se leen
+        // de data-* (que Razor codifica como atributo) y se pasan a las funciones tal cual.
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.btn-editar-ticket').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    editarTicket(b.dataset.id, b.dataset.tit, b.dataset.descr);
+                });
+            });
+
+            document.querySelectorAll('.btn-editar-respuesta').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    editarRespuesta(b.dataset.id, b.dataset.coment);
+                });
+            });
+        });
+    </script>
+    <script>
+        // "ver payload" del panel de diagnóstico. El JSON se pinta indentado dentro
+        // de un Swal en vez de en la tabla: son varios miles de caracteres y
+        // volverían ilegible el hilo del ticket.
+        document.querySelectorAll('.tkd-diag__ver').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var crudo = btn.dataset.payload || '';
+                var texto;
+
+                try {
+                    texto = JSON.stringify(JSON.parse(crudo), null, 2);
+                } catch (e) {
+                    // Un payload que no parsea igual se muestra: es diagnóstico, y
+                    // verlo crudo vale más que un mensaje de error encima del error.
+                    texto = crudo;
+                }
+
+                var pre = document.createElement('pre');
+                pre.className = 'tkd-diag__payload';
+                pre.textContent = texto;   // textContent, no innerHTML: el payload
+                                           // lleva texto que escribió el usuario.
+
+                _Swal.fire({
+                    title: 'Detalle del error',
+                    html: pre.outerHTML,
+                    width: '52rem',
+                    confirmButtonText: 'Cerrar'
+                });
+            });
+        });
+    </script>
+}

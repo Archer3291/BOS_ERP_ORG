@@ -1,0 +1,613 @@
+@*
+    Tablero de errores del sistema.
+
+    Es una pantalla que se OPERA, no que se lee: la cabecera responde "¿está el
+    sistema bien?" antes de que nadie mire una fila, y la tabla responde "¿qué se
+    rompe más?". Por eso las cifras van arriba y el orden por defecto es por
+    ocurrencias.
+
+    Sólo para staff: el controlador lleva [SoporteStaffAuthorize], porque aquí se
+    ven stack traces y parámetros de peticiones de otras personas.
+*@
+@{
+    ViewData["Title"] = "Errores del sistema";
+}
+
+@section styles {
+    <link href="~/css/soporte-ticket.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        /* Los colores salen de los tokens de tema que declara _Layout -las mismas
+           que usa soporte-ticket.css-, para que la pantalla siga el tema de cada
+           usuario. NO se usan las variables --bs-* de Bootstrap: Bootstrap 5.3
+           conmuta con data-bs-theme y este ERP marca el tema con data-theme, así
+           que un --bs-body-bg se queda en claro sobre una página oscura y todo
+           acaba pareciendo transparente.
+
+           Sólo los semánticos -crítico, aviso, calma- se fijan, en tonos que
+           aguantan fondo claro y oscuro. */
+        .err {
+            --crit: #d2402c;
+            --warn: #c07a12;
+            --calma: #4a9d6e;
+            --acento: #2f7d8a;
+        }
+
+        /* ---------- cabecera ---------- */
+        .err__top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: .35rem;
+        }
+
+        .err__titulo {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .err__titulo i { color: var(--crit); }
+
+        .err__sub {
+            color: var(--text-light);
+            font-size: .875rem;
+            max-width: 44rem;
+            margin: 0 0 1.1rem;
+        }
+
+        /* Estado del cortacircuitos: lo primero que hay que saber, porque si
+           está abierto la tabla NO refleja todo lo que está ocurriendo. */
+        .err__breaker {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .45rem .8rem;
+            border: 1px solid var(--border-light);
+            border-radius: 999px;
+            font-size: .8rem;
+            background: var(--bg-gray);
+            white-space: nowrap;
+        }
+        .err__punto {
+            width: .55rem; height: .55rem;
+            border-radius: 50%;
+            background: var(--calma);
+            flex-shrink: 0;
+        }
+        .err__breaker--abierto { border-color: var(--crit); color: var(--crit); }
+        .err__breaker--abierto .err__punto {
+            background: var(--crit);
+            animation: err-latido 1.6s ease-in-out infinite;
+        }
+        @@keyframes err-latido { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+        @@media (prefers-reduced-motion: reduce) {
+            .err__breaker--abierto .err__punto { animation: none }
+        }
+        .err__breaker b { font-variant-numeric: tabular-nums; }
+
+        /* ---------- cifras ---------- */
+        .err__kpis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+            gap: 1px;
+            background: var(--border-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1.25rem;
+        }
+        .err__kpi {
+            background: var(--bg-light);
+            padding: .85rem 1rem .9rem;
+            display: flex;
+            flex-direction: column;
+            gap: .1rem;
+        }
+        .err__kpi .n {
+            font-size: 1.6rem;
+            font-weight: 600;
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -.02em;
+        }
+        .err__kpi .k {
+            font-size: .76rem;
+            color: var(--text-light);
+            line-height: 1.35;
+        }
+        .err__kpi--crit .n { color: var(--crit); }
+        .err__kpi--warn .n { color: var(--warn); }
+        .err__kpi--ok   .n { color: var(--calma); }
+
+        /* ---------- filtros ---------- */
+        .err__filtros {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            flex-wrap: wrap;
+            margin-bottom: .9rem;
+        }
+        /* Fondo propio, no transparente: sobre el fondo de la página estos botones
+           se leían como texto suelto y no como controles pulsables. */
+        .err__chip {
+            border: 1px solid var(--border-light);
+            background: var(--bg-light);
+            color: var(--text-dark);
+            border-radius: 999px;
+            padding: .3rem .8rem;
+            font-size: .78rem;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,.04);
+            transition: background .12s, border-color .12s;
+        }
+        .err__chip:hover {
+            background: var(--bg-gray);
+            border-color: var(--text-light);
+        }
+        .err__chip[aria-pressed="true"] {
+            background: var(--acento);
+            border-color: var(--acento);
+            color: #fff;
+        }
+        .err__chip:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+        .err__sep { width: 1px; height: 1.4rem; background: var(--border-light); margin: 0 .35rem; }
+
+        /* ---------- celdas de la tabla ---------- */
+        /* Rail de severidad: el conteo también se lee como forma, no sólo como
+           número, para que la fila que urge salte sin tener que compararla. */
+        .err-sev {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+        .err-sev::before {
+            content: '';
+            width: 3px; height: 1.1rem;
+            border-radius: 2px;
+            background: var(--calma);
+        }
+        .err-sev--media::before { background: var(--warn); }
+        .err-sev--alta::before  { background: var(--crit); }
+        .err-sev--alta          { color: var(--crit); }
+
+        .err-msg {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: .78rem;
+            display: block;
+            max-width: 34rem;
+            overflow-wrap: anywhere;
+        }
+        .err-origen {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: .72rem;
+            color: var(--text-light);
+        }
+        .err-exc {
+            font-size: .72rem;
+            padding: .1rem .45rem;
+            border-radius: 4px;
+            background: var(--bg-gray);
+            white-space: nowrap;
+        }
+        .err-capa {
+            font-size: .66rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            padding: .08rem .4rem;
+            border-radius: 3px;
+            border: 1px solid var(--border-light);
+            color: var(--text-light);
+        }
+        .err-cuando { font-size: .78rem; white-space: nowrap; }
+        .err-cuando small { display: block; color: var(--text-light); font-size: .68rem; }
+
+        .err-tkt { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; }
+        .err-sin { font-size: .72rem; color: var(--text-light); font-style: italic; }
+        .err-off {
+            font-size: .66rem;
+            background: #64748b; color: #fff;
+            padding: .08rem .4rem; border-radius: 3px;
+        }
+
+        /* ---------- la tabla ----------
+
+           TableBuilder emite <table class="modern-table w-100">, SIN la clase "table"
+           de Bootstrap, y .modern-table no está definida en ninguna hoja global: cada
+           vista que usa createTable trae su propio bloque. Sin esto la tabla sale sin
+           fondo, sin bordes y sin encabezado -que es justo lo que se veía aquí-.
+
+           Todo sale de variables de Bootstrap para que siga el tema del usuario. */
+        .err__tabla {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: .9rem 1rem 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        }
+
+        .err__tabla .modern-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: .84rem;
+            background: var(--bg-light);
+        }
+
+        .err__tabla .modern-table thead th {
+            background: var(--bg-gray);
+            color: var(--text-light);
+            font-size: .72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            text-align: left;
+            padding: .6rem .7rem;
+            border-bottom: 1px solid var(--border-light);
+            /* El encabezado se queda a la vista al recorrer una lista larga, que es
+               lo normal en esta pantalla. */
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .err__tabla .modern-table thead th:first-child { border-top-left-radius: 6px; }
+        .err__tabla .modern-table thead th:last-child  { border-top-right-radius: 6px; }
+
+        .err__tabla .modern-table tbody td {
+            padding: .55rem .7rem;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+        .err__tabla .modern-table tbody tr:last-child td { border-bottom: 0; }
+        .err__tabla .modern-table tbody tr:hover td { background: var(--bg-gray); }
+
+        .err__tabla .ct-sortable:hover { color: var(--text-dark); }
+        .err__tabla .ct-sort-icon { opacity: .45; margin-left: .25rem; }
+
+        /* Controles que TableBuilder pone encima y debajo de la tabla: buscador,
+           tamaño de página, exportar y paginación. Sin fondo propio flotaban igual
+           que la tabla. */
+        .err__tabla .form-control,
+        .err__tabla .page-size-selector,
+        .err__tabla .search-input {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            color: var(--text-dark);
+            font-size: .82rem;
+        }
+        .err__tabla .pagination-btn { font-size: .8rem; }
+        .err__tabla .pagination-dots { color: var(--text-light); padding: 0 .25rem; }
+
+        /* La tabla lleva mensajes y stacks largos: que desborde ella y no la página. */
+        .err__tabla .table-responsive { overflow-x: auto; }
+    </style>
+}
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="container-fluid py-3 err">
+
+    <div class="err__top">
+        <div>
+            <h2 class="err__titulo">
+                <i class="fa-solid fa-bug"></i> Errores del sistema
+            </h2>
+        </div>
+        <div id="breaker"></div>
+    </div>
+
+    <p class="err__sub">
+        Cada fila es un <strong>tipo</strong> de error, no una ocurrencia suelta. Se agrupan
+        por huella, así que una consulta rota que le pega a 40 personas aparece una vez con
+        su contador. Ordenado por lo que más se repite.
+    </p>
+
+    <div class="err__kpis" id="kpis"></div>
+
+    <div class="err__filtros">
+        <button type="button" class="err__chip" data-capa="" aria-pressed="true">Todas</button>
+        <button type="button" class="err__chip" data-capa="datos" aria-pressed="false">SQL</button>
+        <button type="button" class="err__chip" data-capa="middleware" aria-pressed="false">No capturado</button>
+        <button type="button" class="err__chip" data-capa="controlador" aria-pressed="false">Controlador</button>
+        <button type="button" class="err__chip" data-capa="pac" aria-pressed="false">PAC</button>
+        <button type="button" class="err__chip" data-capa="navegador" aria-pressed="false">Navegador</button>
+        <button type="button" class="err__chip" data-capa="job" aria-pressed="false">Jobs</button>
+
+        <span class="err__sep"></span>
+
+        <button type="button" class="err__chip" id="chipSilenciadas" aria-pressed="false">
+            <i class="fa-solid fa-bell-slash me-1"></i>Ver silenciadas
+        </button>
+    </div>
+
+    <div class="err__tabla">
+        <div id="tablaErrores"></div>
+    </div>
+</div>
+
+@section Scripts {
+    @* createTable NO viene en _Layout: cada vista que lo usa carga TableBuilder.js
+       por su cuenta (ConsultarAlmacen, Productos, CarteraClientes... todas lo hacen).
+       Sin esto la tabla reventaba con "createTable is not defined". *@
+    <script src="~/Scripts/TableBuilder.js?v=@DateTime.Now.Ticks"></script>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var capaActual = '';
+            var verSilenciadas = false;
+
+            /* ---------- utilidades de pintado ---------- */
+
+            /* textContent y no innerHTML en todo lo que venga de la base: el mensaje
+               de una excepción puede arrastrar texto que escribió un usuario. */
+            function texto(v, clase, tag) {
+                var el = document.createElement(tag || 'span');
+                if (clase) el.className = clase;
+                el.textContent = v == null ? '' : String(v);
+                return el.outerHTML;
+            }
+
+            function cuando(v) {
+                if (!v) return '';
+                var d = new Date(v), min = (Date.now() - d) / 60000;
+                if (min < 1)    return 'hace un momento';
+                if (min < 60)   return 'hace ' + Math.floor(min) + ' min';
+                if (min < 1440) return 'hace ' + Math.floor(min / 60) + ' h';
+                return 'hace ' + Math.floor(min / 1440) + ' d';
+            }
+
+            function fechaLarga(v) {
+                if (!v) return '';
+                var d = new Date(v);
+                return d.toLocaleDateString() + ' ' +
+                       d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function pintarPayload(crudo) {
+                var t;
+                try { t = JSON.stringify(JSON.parse(crudo), null, 2); }
+                catch (e) { t = crudo; }
+
+                var pre = document.createElement('pre');
+                pre.className = 'tkd-diag__payload';
+                pre.textContent = t;
+
+                _Swal.fire({
+                    title: 'Detalle del error',
+                    html: pre.outerHTML,
+                    width: '52rem',
+                    confirmButtonText: 'Cerrar'
+                });
+            }
+
+            /* ---------- cabecera ---------- */
+
+            function cargarResumen() {
+                $.post('@Url.Action("Resumen", "Errores")')
+                    .done(function (r) {
+                        if (!r.success || !r.resumen) return;
+
+                        var s = r.resumen, cb = r.cortacircuitos;
+
+                        /* Ojo con los nombres: PostgreSQL devuelve los alias sin
+                           comillas en MINÚSCULAS, así que el alias ticketsAbiertos
+                           llega como ticketsabiertos. Es el mismo tropiezo que ya
+                           documenta la vista del ticket. */
+                        document.getElementById('kpis').innerHTML = [
+                            kpi(s.tipos,            'tipos de error activos', s.tipos > 0 ? 'warn' : 'ok'),
+                            kpi(s.nuevas24h,        'nuevos en 24 h',         s.nuevas24h > 5 ? 'crit' : ''),
+                            kpi(s.ocurrencias24h,   'ocurrencias en 24 h',    ''),
+                            kpi(s.ticketsabiertos,  'tickets sin resolver',   ''),
+                            kpi(s.silenciadas,      'silenciados',            '')
+                        ].join('');
+
+                        /* El cortacircuitos abierto significa que la pantalla NO
+                           enseña todo lo que está pasando: hay que decirlo. */
+                        var b = document.getElementById('breaker');
+                        b.innerHTML =
+                            '<span class="err__breaker' + (cb.abierto ? ' err__breaker--abierto' : '') + '">' +
+                            '<span class="err__punto"></span>' +
+                            (cb.abierto
+                                ? 'Cortacircuitos <b>ABIERTO</b> &mdash; no se están creando tickets'
+                                : 'Cortacircuitos cerrado &mdash; <b>' + cb.usados + '</b>/' + cb.tope + ' tickets esta hora') +
+                            '</span>';
+                    });
+            }
+
+            function kpi(n, etiqueta, tono) {
+                return '<div class="err__kpi' + (tono ? ' err__kpi--' + tono : '') + '">' +
+                       texto(n == null ? 0 : n, 'n') +
+                       texto(etiqueta, 'k') +
+                       '</div>';
+            }
+
+            /* ---------- tabla ---------- */
+
+            var tabla = createTable({
+                selector: '#tablaErrores',
+                path: '@Url.Action("Listado", "Errores")',
+                defaultPageSize: 25,
+                searchPlaceholder: 'Buscar por excepción, mensaje, origen o folio...',
+                @* createTable no acepta columna inicial de orden -sortColumn arranca en
+                   null-, así que el orden por ocurrencias lo pone el servidor. *@
+                sortDir: 'desc',
+                rowKey: 'id_huella',
+                data: function () {
+                    return { capa: capaActual, silenciadas: verSilenciadas ? '1' : '0' };
+                },
+                columns: [
+                    {
+                        data: 'ocurrencias', title: 'Veces', sortable: true,
+                        render: function (v) {
+                            var clase = 'err-sev';
+                            if (v >= 50) clase += ' err-sev--alta';
+                            else if (v >= 10) clase += ' err-sev--media';
+                            return texto(v, clase);
+                        }
+                    },
+                    {
+                        data: 'afectados', title: 'Usuarios', sortable: true,
+                        render: function (v) { return texto(v, 'err-sev'); }
+                    },
+                    {
+                        data: 'tipo_exc', title: 'Excepción', sortable: true,
+                        render: function (v) {
+                            /* Sólo la última parte: "System.InvalidOperationException"
+                               ocupa media columna y no distingue nada. */
+                            return texto(String(v || '').split('.').pop(), 'err-exc');
+                        }
+                    },
+                    {
+                        data: 'mensaje', title: 'Mensaje y origen', sortable: true,
+                        render: function (v, fila) {
+                            return texto(v, 'err-msg') + texto(fila.origen, 'err-origen');
+                        }
+                    },
+                    {
+                        data: 'folio_tkt', title: 'Ticket', sortable: true,
+                        render: function (v, fila) {
+                            if (!v) return texto('sin ticket', 'err-sin');
+                            var a = document.createElement('a');
+                            a.href = '@Url.Action("Ticket", "Soporte")/' + encodeURIComponent(v);
+                            a.className = 'err-tkt';
+                            a.textContent = v;
+                            return a.outerHTML + ' ' + texto(fila.estado, 'err-capa');
+                        }
+                    },
+                    {
+                        data: 'ultima_vez', title: 'Última vez', sortable: true,
+                        render: function (v, fila) {
+                            var d = document.createElement('div');
+                            d.className = 'err-cuando';
+                            d.textContent = cuando(v);
+                            var s = document.createElement('small');
+                            s.textContent = fechaLarga(v);
+                            d.appendChild(s);
+                            return d.outerHTML +
+                                   (fila.silenciada ? ' ' + texto('silenciada', 'err-off') : '');
+                        }
+                    }
+                ],
+                actions: [
+                    {
+                        title: 'Ver ocurrencias',
+                        icon: 'fa-list-ul',
+                        color: 'btn-outline-secondary',
+                        onClick: function (fila) {
+                            $.post('@Url.Action("Ocurrencias", "Errores")', { idHuella: fila.id_huella })
+                                .done(function (r) {
+                                    if (!r.success) { _Swal.fire('Error', r.message || 'No se pudo cargar', 'error'); return; }
+                                    if (!r.data.length) { _Swal.fire('Sin detalle', 'No quedan ocurrencias registradas.', 'info'); return; }
+
+                                    var cont = document.createElement('div');
+                                    cont.className = 'tkd-diag__scroll';
+
+                                    var tab = document.createElement('table');
+                                    tab.className = 'tkd-diag__tabla';
+                                    tab.innerHTML = '<thead><tr><th>Fecha</th><th>Capa</th><th>Usuario</th><th>Ruta</th><th></th></tr></thead>';
+
+                                    var tb = document.createElement('tbody');
+                                    r.data.forEach(function (o) {
+                                        var tr = document.createElement('tr');
+
+                                        [fechaLarga(o.fch), o.capa, o.usuario,
+                                         (o.metodo || '') + ' ' + (o.ruta || '')].forEach(function (val) {
+                                            var td = document.createElement('td');
+                                            td.textContent = val;
+                                            tr.appendChild(td);
+                                        });
+
+                                        var td = document.createElement('td');
+                                        var btn = document.createElement('button');
+                                        btn.type = 'button';
+                                        btn.className = 'tkd-diag__ver';
+                                        btn.textContent = 'payload';
+                                        btn.addEventListener('click', function () { pintarPayload(o.payload); });
+                                        td.appendChild(btn);
+                                        tr.appendChild(td);
+
+                                        tb.appendChild(tr);
+                                    });
+
+                                    tab.appendChild(tb);
+                                    cont.appendChild(tab);
+
+                                    _Swal.fire({
+                                        title: 'Ocurrencias',
+                                        html: cont,
+                                        width: '58rem',
+                                        confirmButtonText: 'Cerrar'
+                                    });
+                                });
+                        }
+                    },
+                    {
+                        title: function (fila) { return fila.silenciada ? 'Reactivar' : 'Silenciar'; },
+                        icon: function (fila) { return fila.silenciada ? 'fa-bell' : 'fa-bell-slash'; },
+                        color: 'btn-outline-secondary',
+                        onClick: function (fila) {
+                            var silenciar = !fila.silenciada;
+
+                            _Swal.fire({
+                                icon: 'question',
+                                title: silenciar ? '¿Silenciar esta huella?' : '¿Reactivarla?',
+                                text: silenciar
+                                    ? 'Se seguirá registrando cada ocurrencia, pero dejará de generar y actualizar tickets.'
+                                    : 'Volverá a generar tickets cuando el error ocurra.',
+                                showCancelButton: true,
+                                confirmButtonText: silenciar ? 'Silenciar' : 'Reactivar',
+                                cancelButtonText: 'Cancelar'
+                            }).then(function (res) {
+                                if (!res.isConfirmed) return;
+
+                                $.post('@Url.Action("Silenciar", "Errores")',
+                                       { idHuella: fila.id_huella, silenciar: silenciar })
+                                    .done(function (r) {
+                                        _Swal.fire(r.success ? 'Listo' : 'Error',
+                                                   r.message || '',
+                                                   r.success ? 'success' : 'error');
+                                        if (r.success) { recargar(); }
+                                    });
+                            });
+                        }
+                    }
+                ]
+            });
+
+            function recargar() {
+                if (tabla && tabla.reload) tabla.reload();
+                cargarResumen();
+            }
+
+            /* ---------- filtros ---------- */
+
+            document.querySelectorAll('.err__chip[data-capa]').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    document.querySelectorAll('.err__chip[data-capa]').forEach(function (c) {
+                        c.setAttribute('aria-pressed', c === chip ? 'true' : 'false');
+                    });
+                    capaActual = chip.dataset.capa;
+                    if (tabla && tabla.reload) tabla.reload();
+                });
+            });
+
+            var chipSil = document.getElementById('chipSilenciadas');
+            chipSil.addEventListener('click', function () {
+                verSilenciadas = !verSilenciadas;
+                chipSil.setAttribute('aria-pressed', verSilenciadas ? 'true' : 'false');
+                if (tabla && tabla.reload) tabla.reload();
+            });
+
+            cargarResumen();
+        })();
+    </script>
+}

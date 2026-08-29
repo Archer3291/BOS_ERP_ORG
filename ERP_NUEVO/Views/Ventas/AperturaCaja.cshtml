@@ -1,0 +1,1110 @@
+﻿@using BOS_ERP.Controllers
+@{
+    ViewBag.Title = "Apertura de Caja";
+    ViewBag.PageTitle = "Apertura de Caja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section styles {
+    <link href="~/content/compras-nacionales.css" rel="stylesheet" />
+    <style>
+        .header-section {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .step-container {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 2px solid #e0e0e0;
+        }
+
+            .step-container.disabled {
+                opacity: 0.5;
+                pointer-events: none;
+            }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-blue) 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+            .step-number.completed {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            }
+
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin: 0;
+        }
+
+        .initial-amount-input {
+            width: 100%;
+            max-width: 300px;
+            padding: 15px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+            .initial-amount-input:focus {
+                outline: none;
+                border-color: var(--accent-blue);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+        .denomination-input {
+            width: 100%;
+            max-width: 120px;
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+            .denomination-input:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+            }
+
+        .subtotal {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 1rem;
+            min-width: 100px;
+        }
+
+        .validation-box {
+            background: var(--very-light-blue);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+            .validation-box.success {
+                background: #d1fae5;
+                border-left-color: #10b981;
+            }
+
+            .validation-box.error {
+                background: #fee2e2;
+                border-left-color: #ef4444;
+            }
+
+        .amount-display {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+            .amount-display.match {
+                color: #10b981;
+            }
+
+            .amount-display.mismatch {
+                color: #ef4444;
+            }
+
+        .btn-custom {
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-success-custom {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+            .btn-success-custom:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+            }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-blue) 100%);
+            color: white;
+        }
+
+            .btn-primary-custom:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+            }
+
+        .btn-secondary-custom {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+        }
+
+            .btn-secondary-custom:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(107, 114, 128, 0.4);
+            }
+
+        tbody tr td:first-child {
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        tbody tr:not(.table-active) td:first-child::before {
+            content: '💵';
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+
+        tbody tr:nth-child(n+9):not(.table-active) td:first-child::before {
+            content: '🪙';
+        }
+
+        .info-card {
+            background: var(--very-light-blue);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+            .info-card label {
+                font-weight: 600;
+                color: var(--primary-blue);
+                margin-bottom: 5px;
+                display: block;
+            }
+
+            .info-card .value {
+                font-size: 1.1rem;
+                color: var(--text-dark);
+            }
+
+        @@media (max-width: 768px) {
+            .step-container {
+                padding: 20px;
+            }
+
+            .initial-amount-input {
+                max-width: 100%;
+                font-size: 1.2rem;
+            }
+
+            .amount-display {
+                font-size: 1.5rem;
+            }
+
+            .denomination-input {
+                max-width: 80px;
+                padding: 6px 8px;
+            }
+        }
+
+        #step3 {
+            display: none;
+        }
+    </style>
+}
+<form>
+    @Html.AntiForgeryToken()
+</form>
+<div class="header-section">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1><i class="fas fa-cash-register"></i> Apertura de Caja</h1>
+            <p class="mb-0">Registra el monto inicial y verifica el efectivo</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="info-card" style="background: rgba(255,255,255,0.2); border: none;">
+                <label style="color: white;"><i class="fas fa-calendar-day"></i> Fecha:</label>
+                <div class="value" style="color: white;" id="currentDate"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información del Usuario y Caja -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="info-card">
+            <label><i class="fas fa-user"></i> Usuario</label>
+            <div class="value" id="cashier">@User.Identity.Name</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="info-card">
+            <label><i class="fas fa-store"></i> Sucursal</label>
+            <div class="value" id="posName">@Utilities.GetSucursalName(User.Identity.Name)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Paso 1: Monto Inicial -->
+<div class="step-container" id="step1">
+    <div class="step-header">
+        <div class="step-number" id="step1Number">1</div>
+        <h3 class="step-title">Ingrese el Monto Inicial</h3>
+    </div>
+    <div class="text-center">
+        <label class="form-label mb-3">¿Con cuánto efectivo abrirá la caja?</label>
+        <div class="d-flex justify-content-center align-items-center gap-3">
+            <span style="font-size: 1.5rem; font-weight: bold;">$</span>
+            <input type="number"
+                   class="initial-amount-input"
+                   id="initialAmount"
+                   placeholder="0.00"
+                   step="0.01"
+                   min="0">
+        </div>
+        <button class="btn btn-primary-custom btn-custom mt-4" onclick="confirmarMontoInicial()">
+            <i class="fas fa-arrow-right"></i> Continuar
+        </button>
+    </div>
+</div>
+
+<!-- Paso 2: Arqueo de Efectivo -->
+<div class="step-container disabled" id="step2">
+    <div class="step-header">
+        <div class="step-number" id="step2Number">2</div>
+        <h3 class="step-title">Conteo de Efectivo</h3>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        Ingrese la cantidad de billetes y monedas que tiene en caja
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Denominación</th>
+                    <th>Cantidad</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody id="denominationTable">
+                <tr class="table-active">
+                    <td colspan="3"><strong>Billetes</strong></td>
+                </tr>
+                <tr>
+                    <td>$1,000</td>
+                    <td><input type="number" class="denomination-input" data-value="1000" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$500</td>
+                    <td><input type="number" class="denomination-input" data-value="500" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$200</td>
+                    <td><input type="number" class="denomination-input" data-value="200" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$100</td>
+                    <td><input type="number" class="denomination-input" data-value="100" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$50</td>
+                    <td><input type="number" class="denomination-input" data-value="50" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$20</td>
+                    <td><input type="number" class="denomination-input" data-value="20" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr class="table-active">
+                    <td colspan="3"><strong>Monedas</strong></td>
+                </tr>
+                <tr>
+                    <td>$10</td>
+                    <td><input type="number" class="denomination-input" data-value="10" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$5</td>
+                    <td><input type="number" class="denomination-input" data-value="5" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$2</td>
+                    <td><input type="number" class="denomination-input" data-value="2" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$1</td>
+                    <td><input type="number" class="denomination-input" data-value="1" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+                <tr>
+                    <td>$0.50</td>
+                    <td><input type="number" class="denomination-input" data-value="0.5" value="0" min="0"></td>
+                    <td class="subtotal">$0.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Validación -->
+    <div class="validation-box" id="validationBox">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <label>Monto Declarado:</label>
+                <div class="amount-display" id="declaredAmount">$0.00</div>
+            </div>
+            <div class="col-md-4">
+                <label>Monto Contado:</label>
+                <div class="amount-display" id="countedAmount">$0.00</div>
+            </div>
+            <div class="col-md-4">
+                <label>Diferencia:</label>
+                <div class="amount-display" id="difference">$0.00</div>
+            </div>
+        </div>
+        <div class="mt-3" id="validationMessage"></div>
+    </div>
+
+    <div class="text-center mt-4">
+        <button class="btn btn-secondary-custom btn-custom me-2" onclick="volverPaso1()">
+            <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <button class="btn btn-success-custom btn-custom" id="btnConfirmarApertura" onclick="confirmarApertura()" disabled>
+            <i class="fas fa-check"></i> Confirmar Apertura
+        </button>
+    </div>
+</div>
+
+<!-- Paso 3: Confirmación -->
+<div class="step-container disabled" id="step3">
+    <div class="step-header">
+        <div class="step-number step-number completed">3</div>
+        <h3 class="step-title">Apertura Confirmada</h3>
+    </div>
+    <div class="text-center">
+        <div style="font-size: 4rem; color: #10b981;">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <h4 class="mt-3">¡Apertura de Caja Exitosa!</h4>
+        <p class="text-muted">Los datos han sido registrados correctamente</p>
+        <button class="btn btn-primary-custom btn-custom mt-3" onclick="window.location.reload()">
+            <i class="fas fa-redo"></i> Nueva Apertura
+        </button>
+    </div>
+</div>
+<script>
+    let montoInicial = 0;
+    let montoContado = 0;
+    let aperturaExistente = null;
+    let totalAperturas = 0;
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function () {
+        updateDateTime();
+        initializeDenominationInputs();
+        verificarAperturaExistente();
+    });
+
+    function updateDateTime() {
+        const now = new Date();
+        document.getElementById('currentDate').textContent = now.toLocaleDateString('es-MX', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function initializeDenominationInputs() {
+        document.querySelectorAll('.denomination-input').forEach(input => {
+            input.addEventListener('input', function () {
+                updateDenominationSubtotal(this);
+                calcularMontoContado();
+                validarMontos();
+            });
+        });
+    }
+
+    async function verificarAperturaExistente() {
+        try {
+            const response = await fetch('/PuntoVentaAdministracion/VerificarAperturaDelDia', {
+                method: 'GET', headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            totalAperturas = result.totalAperturas || 0;
+
+            if (totalAperturas >= 3) {
+                // ✅ Primero mostrar el detalle de las 3 aperturas
+                if (result.aperturas && result.aperturas.length > 0) {
+                    mostrarBannerAperturaExistente(result.aperturas, totalAperturas);
+                }
+                // Luego mostrar el bloqueo
+                mostrarLimitAlcanzado();
+
+            } else if (result.existe) {
+                aperturaExistente = result.apertura;
+                mostrarBannerAperturaExistente(result.aperturas, totalAperturas);
+            }
+        } catch (error) {
+            console.error('Error al verificar apertura:', error);
+        }
+    }
+
+    function buildFilasDenoHTML(denominaciones) {
+        if (!denominaciones || denominaciones.length === 0)
+            return `<tr><td colspan="3" class="text-center text-muted">Sin detalle</td></tr>`;
+
+        const billetes = denominaciones.filter(d => parseFloat(d.valor) >= 20);
+        const monedas = denominaciones.filter(d => parseFloat(d.valor) < 20);
+        let html = '';
+
+        const buildFilas = (items) => items.map(d => `
+        <tr>
+            <td>$${parseFloat(d.valor).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+            <td class="text-center">${d.cantidad}</td>
+            <td class="text-end">$${parseFloat(d.subtotal).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+        </tr>`).join('');
+
+        if (billetes.length > 0) html += `<tr class="table-active"><td colspan="3"><strong>💵 Billetes</strong></td></tr>` + buildFilas(billetes);
+        if (monedas.length > 0) html += `<tr class="table-active"><td colspan="3"><strong>🪙 Monedas</strong></td></tr>` + buildFilas(monedas);
+        return html;
+    }
+
+    function mostrarBannerAperturaExistente(aperturas, totalAperturas) {
+        // Construir un acordeón con una tarjeta por apertura
+        let acordeonItems = aperturas.map((apertura, idx) => {
+            const filasHTML = buildFilasDenoHTML(apertura.denominaciones);
+            const hora = apertura.hora
+                ? new Date(apertura.hora).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+                : 'N/A';
+            const esUltima = false; 
+
+            return `
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-ap-${idx}">
+                <button class="accordion-button ${esUltima ? '' : 'collapsed'} py-2"
+                        type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse-ap-${idx}">
+                    <span class="me-3">
+                        <span class="badge bg-secondary me-1">${totalAperturas - idx}ª</span>
+                        <strong>${apertura.folio || 'N/A'}</strong>
+                    </span>
+                    <span class="text-muted small me-auto">${hora}</span>
+                    <span class="text-success fw-bold ms-3">
+                        $${parseFloat(apertura.montoInicial || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                </button>
+            </h2>
+            <div id="collapse-ap-${idx}" class="accordion-collapse collapse ${esUltima ? 'show' : ''}"
+                 data-bs-parent="#acordeonAperturas">
+                <div class="accordion-body p-2">
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Sucursal</small>
+                            <strong>${apertura.cajero || 'N/A'}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Hora</small>
+                            <strong>${hora}</strong>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Denominación</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>${filasHTML}</tbody>
+                            <tfoot>
+                                <tr class="table-success">
+                                    <td colspan="2"><strong>Total</strong></td>
+                                    <td class="text-end">
+                                        <strong>$${parseFloat(apertura.montoInicial || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        }).join('');
+
+        // Línea donde construyes alertaExtra, reemplázala por:
+        const alertaExtra = totalAperturas >= 3
+            ? `<div class="alert alert-danger mt-3 mb-0">
+           <i class="fas fa-ban me-2"></i>
+           Se alcanzó el <strong>límite máximo de 3 aperturas</strong> por día.
+       </div>`
+            : totalAperturas === 2
+                ? `<div class="alert alert-danger mt-3 mb-0">
+           <i class="fas fa-shield-alt me-2"></i>
+           La siguiente será la <strong>3ª y última</strong> apertura del día.
+           Requerirá <strong>autorización del gerente</strong>.
+       </div>`
+                : `<div class="alert alert-info mt-3 mb-0">
+           <i class="fas fa-info-circle me-2"></i>
+           Puedes registrar una apertura adicional hoy.
+       </div>`;
+
+        const banner = document.createElement('div');
+        banner.className = 'card border-warning mb-4';
+        banner.innerHTML = `
+        <div class="card-header bg-warning text-dark">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>${totalAperturas} apertura(s) registrada(s) hoy</strong>
+        </div>
+        <div class="card-body p-2">
+            <div class="accordion" id="acordeonAperturas">
+                ${acordeonItems}
+            </div>
+            ${alertaExtra}
+        </div>`;
+
+        document.getElementById('step1').insertAdjacentElement('beforebegin', banner);
+    }
+    function mostrarLimitAlcanzado() {
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'none';
+        const step3 = document.getElementById('step3');
+        step3.classList.remove('disabled');
+        step3.style.display = 'block';
+        step3.innerHTML = `
+        <div class="step-header">
+            <div class="step-number" style="background: #ef4444;">!</div>
+            <h3 class="step-title">Límite de Aperturas Alcanzado</h3>
+        </div>
+        <div class="text-center">
+            <div style="font-size: 4rem; color: #ef4444;">
+                <i class="fas fa-ban"></i>
+            </div>
+            <h4 class="mt-3">No se permiten más aperturas hoy</h4>
+            <p class="text-muted">Ya se registraron 3 aperturas de caja para el día de hoy.</p>
+            <button class="btn btn-primary-custom btn-custom mt-3" onclick="irAPuntoVenta()">
+                <i class="fas fa-cash-register"></i> Ir a Punto de Venta
+            </button>
+        </div>`;
+    }
+
+    function mostrarAperturaExistente(apertura) {
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'none';
+
+        const step3 = document.getElementById('step3');
+        step3.classList.remove('disabled');
+        step3.style.display = 'block';
+
+        // ── Construir filas de denominaciones ────────────────────────────────
+        let filasDenoHTML = '';
+        if (apertura.denominaciones && apertura.denominaciones.length > 0) {
+            // Separar billetes ($20+) de monedas (< $20)
+            const billetes = apertura.denominaciones.filter(d => parseFloat(d.valor) >= 20);
+            const monedas = apertura.denominaciones.filter(d => parseFloat(d.valor) < 20);
+
+            const buildFilas = (items) => items.map(d => `
+            <tr>
+                <td>$${parseFloat(d.valor).toFixed(2)}</td>
+                <td class="text-center">${d.cantidad}</td>
+                <td class="text-end">$${parseFloat(d.subtotal).toFixed(2)}</td>
+            </tr>`).join('');
+
+            if (billetes.length > 0) {
+                filasDenoHTML += `<tr class="table-active"><td colspan="3"><strong>Billetes</strong></td></tr>`;
+                filasDenoHTML += buildFilas(billetes);
+            }
+            if (monedas.length > 0) {
+                filasDenoHTML += `<tr class="table-active"><td colspan="3"><strong>Monedas</strong></td></tr>`;
+                filasDenoHTML += buildFilas(monedas);
+            }
+        } else {
+            filasDenoHTML = `<tr><td colspan="3" class="text-center text-muted">Sin detalle de denominaciones</td></tr>`;
+        }
+
+        step3.innerHTML = `
+        <div class="step-header">
+            <div class="step-number completed">✓</div>
+            <h3 class="step-title">Apertura de Caja Activa</h3>
+        </div>
+        <div class="text-center">
+            <div style="font-size: 4rem; color: #10b981;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h4 class="mt-3">¡Ya existe una apertura de caja para hoy!</h4>
+            <p class="text-muted">La caja ya fue abierta anteriormente</p>
+
+            <div class="info-card mt-4" style="max-width: 600px; margin: 20px auto;">
+                <div class="row">
+                    <div class="col-6 text-start">
+                        <label><i class="fas fa-receipt"></i> Folio:</label>
+                        <div class="value">${apertura.folio || 'N/A'}</div>
+                    </div>
+                    <div class="col-6 text-start">
+                        <label><i class="fas fa-clock"></i> Fecha:</label>
+                        <div class="value">${apertura.hora ? apertura.hora.substring(0, 10) : 'N/A'}</div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-6 text-start">
+                        <label><i class="fas fa-dollar-sign"></i> Monto Inicial:</label>
+                        <div class="value">${Currency.format(apertura.montoInicial || 0)}</div>
+                    </div>
+                    <div class="col-6 text-start">
+                        <label><i class="fas fa-store"></i> Sucursal:</label>
+                        <div class="value">${apertura.cajero || 'N/A'}</div>
+                    </div>
+                </div>
+
+                <!-- ── Tabla de denominaciones ── -->
+                <div class="mt-4">
+                    <label><i class="fas fa-money-bill-wave"></i> Desglose de Efectivo:</label>
+                    <div class="table-responsive mt-2">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Denominación</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${filasDenoHTML}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-success">
+                                    <td colspan="2"><strong>Total</strong></td>
+                                    <td class="text-end">
+                                        <strong>${Currency.format(apertura.montoInicial || 0)}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary-custom btn-custom mt-3" onclick="irAPuntoVenta()">
+                <i class="fas fa-cash-register"></i> Ir a Punto de Venta
+            </button>
+        </div>
+    `;
+    }
+
+    function irAPuntoVenta() {
+        // Redirigir a la página del punto de venta
+        window.location.href = '/PuntoVentaAdministracion/Index'; // Ajusta la ruta según tu aplicación
+    }
+
+    function updateDenominationSubtotal(input) {
+        const quantity = parseFloat(input.value) || 0;
+        const value = parseFloat(input.dataset.value);
+        const subtotal = quantity * value;
+        input.closest('tr').querySelector('.subtotal').textContent = '$' + subtotal.toFixed(2);
+    }
+
+    function confirmarMontoInicial() {
+        const inputAmount = parseFloat(document.getElementById('initialAmount').value);
+        if (!inputAmount || inputAmount <= 0) {
+            toastMixin.fire({ icon: 'error', title: 'Por favor ingrese un monto válido mayor a 0.' });
+            return;
+        }
+
+        if (totalAperturas === 1) {
+            const ok = confirm('⚠️ Esta es la 2ª apertura del día. ¿Desea continuar?');
+            if (!ok) return;
+        }
+
+        montoInicial = inputAmount;
+        document.getElementById('declaredAmount').textContent = '$' + montoInicial.toFixed(2);
+
+        // Marcar paso 1 como completado
+        document.getElementById('step1Number').classList.add('completed');
+        document.getElementById('step1').classList.add('disabled');
+
+        // Activar paso 2
+        document.getElementById('step2').classList.remove('disabled');
+
+        // Scroll al paso 2
+        document.getElementById('step2').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function calcularMontoContado() {
+        let total = 0;
+        document.querySelectorAll('.denomination-input').forEach(input => {
+            const quantity = parseFloat(input.value) || 0;
+            const value = parseFloat(input.dataset.value);
+            total += quantity * value;
+        });
+        montoContado = total;
+        document.getElementById('countedAmount').textContent = '$' + montoContado.toFixed(2);
+        return total;
+    }
+
+    function validarMontos() {
+        const diferencia = montoContado - montoInicial;
+        const differenceElement = document.getElementById('difference');
+        const validationBox = document.getElementById('validationBox');
+        const validationMessage = document.getElementById('validationMessage');
+        const btnConfirmar = document.getElementById('btnConfirmarApertura');
+
+        differenceElement.textContent = '$' + Math.abs(diferencia).toFixed(2);
+
+        if (diferencia === 0) {
+            // Montos coinciden
+            differenceElement.className = 'amount-display match';
+            validationBox.className = 'validation-box success';
+            validationMessage.innerHTML = '<i class="fas fa-check-circle"></i> <strong>¡Perfecto!</strong> Los montos coinciden. Puede confirmar la apertura.';
+            btnConfirmar.disabled = false;
+        } else if (diferencia > 0) {
+            // Hay más efectivo del declarado
+            differenceElement.className = 'amount-display mismatch';
+            differenceElement.textContent = '+$' + diferencia.toFixed(2);
+            validationBox.className = 'validation-box error';
+            validationMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <strong>Hay más efectivo del declarado.</strong> Verifique el conteo.';
+            btnConfirmar.disabled = true;
+        } else {
+            // Falta efectivo
+            differenceElement.className = 'amount-display mismatch';
+            differenceElement.textContent = '-$' + Math.abs(diferencia).toFixed(2);
+            validationBox.className = 'validation-box error';
+            validationMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <strong>Falta efectivo.</strong> Verifique el conteo.';
+            btnConfirmar.disabled = true;
+        }
+    }
+
+    function volverPaso1() {
+        if (confirm('¿Desea modificar el monto inicial? Se perderá el conteo actual.')) {
+            document.getElementById('step1').classList.remove('disabled');
+            document.getElementById('step1Number').classList.remove('completed');
+            document.getElementById('step2').classList.add('disabled');
+
+            // Limpiar conteo
+            document.querySelectorAll('.denomination-input').forEach(input => {
+                input.value = 0;
+            });
+            document.querySelectorAll('.subtotal').forEach(td => {
+                td.textContent = '$0.00';
+            });
+
+            montoContado = 0;
+            document.getElementById('countedAmount').textContent = '$0.00';
+            document.getElementById('difference').textContent = '$0.00';
+
+            document.getElementById('step1').scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    // ── Variable nueva ───────────────────────────────────────────────────────────
+    let solicitudPendienteId = null;
+    let pollingInterval = null;
+
+    // ── confirmarApertura: detecta si es la 3ra ──────────────────────────────────
+    async function confirmarApertura() {
+        if (totalAperturas >= 2) {
+            await solicitarTerceraApertura();
+            return;
+        }
+
+        // Flujo normal (1ra y 2da) — igual que antes
+        const confirmacion = await Swal.fire({
+            title: '¿Confirmar apertura de caja?',
+            text: totalAperturas === 1
+                ? '⚠️ Esta es la 2ª apertura del día.'
+                : 'Se guardarán los datos capturados.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, confirmar',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!confirmacion.isConfirmed) return;
+
+        await enviarAperturaDirecta();
+    }
+
+    // ── Envío normal (1ra / 2da) — igual que tu código actual ───────────────────
+    async function enviarAperturaDirecta() {
+        const formData = buildFormData();
+        try {
+            const response = await fetch('/PuntoVentaAdministracion/DocumentoAperturaCaja', {
+                method: 'POST', body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                mostrarPaso3Exitoso(result.folio);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message });
+            }
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error inesperado', text: error });
+        }
+    }
+
+    // ── Solicitar 3ra apertura → entra en modo espera ───────────────────────────
+    async function solicitarTerceraApertura() {
+        const confirmacion = await Swal.fire({
+            title: '3ª Apertura — Requiere autorización',
+            html: `<p>Esta apertura necesita aprobación del gerente.<br>
+               La caja quedará <strong>bloqueada</strong> hasta que sea resuelta.</p>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Enviar solicitud',
+            cancelButtonText: 'Cancelar'
+        });
+        if (!confirmacion.isConfirmed) return;
+
+        const formData = buildFormData();
+
+        try {
+            const response = await fetch('/PuntoVentaAdministracion/SolicitarTerceraApertura', {
+                method: 'POST', body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                solicitudPendienteId = result.solicitudId;
+                mostrarPantallaEspera();
+                iniciarPollingCajero();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.message });
+            }
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error inesperado', text: String(error) });
+        }
+    }
+
+    // ── Pantalla de espera para el cajero ───────────────────────────────────────
+    function mostrarPantallaEspera() {
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'none';
+
+        const step3 = document.getElementById('step3');
+        step3.classList.remove('disabled');
+        step3.style.display = 'block';
+        step3.innerHTML = `
+        <div class="step-header">
+            <div class="step-number" style="background: #f59e0b;">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <h3 class="step-title">Esperando Aprobación del Gerente</h3>
+        </div>
+        <div class="text-center py-4">
+            <div style="font-size: 4rem; color: #f59e0b;">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h4 class="mt-3">Solicitud enviada</h4>
+            <p class="text-muted">
+                La caja está bloqueada.<br>
+                El gerente recibirá una notificación para aprobar o rechazar.
+            </p>
+            <div class="spinner-border text-warning mt-3" role="status">
+                <span class="visually-hidden">Esperando...</span>
+            </div>
+            <p class="text-muted mt-2" id="esperandoMsg">Verificando cada 5 segundos...</p>
+            <button class="btn btn-secondary-custom btn-custom mt-3"
+                    onclick="cancelarSolicitud()">
+                <i class="fas fa-times"></i> Cancelar solicitud
+            </button>
+        </div>`;
+    }
+
+    // ── Polling: cajero espera resolución ────────────────────────────────────────
+    function iniciarPollingCajero() {
+        pollingInterval = setInterval(async () => {
+            if (!solicitudPendienteId) return;
+            try {
+                const r = await fetch(
+                    `/PuntoVentaAdministracion/EstadoSolicitudApertura?solicitudId=${solicitudPendienteId}`
+                );
+                const data = await r.json();
+                if (!data.success) return;
+
+                if (data.estatus === 'aprobada') {
+                    clearInterval(pollingInterval);
+                    totalAperturas++;
+                    mostrarPaso3Exitoso(null, true);
+                } else if (data.estatus === 'rechazada') {
+                    clearInterval(pollingInterval);
+                    mostrarSolicitudRechazada(data.motivo);
+                }
+            } catch (e) { /* silencioso */ }
+        }, 5000);
+    }
+
+    function mostrarSolicitudRechazada(motivo) {
+        const step3 = document.getElementById('step3');
+        step3.innerHTML = `
+        <div class="step-header">
+            <div class="step-number" style="background: #ef4444;">
+                <i class="fas fa-times"></i>
+            </div>
+            <h3 class="step-title">Solicitud Rechazada</h3>
+        </div>
+        <div class="text-center py-4">
+            <div style="font-size: 4rem; color: #ef4444;">
+                <i class="fas fa-ban"></i>
+            </div>
+            <h4 class="mt-3">El gerente rechazó la 3ª apertura</h4>
+            ${motivo ? `<p class="text-muted">Motivo: <strong>${motivo}</strong></p>` : ''}
+            <button class="btn btn-primary-custom btn-custom mt-3" onclick="irAPuntoVenta()">
+                <i class="fas fa-cash-register"></i> Ir a Punto de Venta
+            </button>
+        </div>`;
+    }
+
+    // ── Cancelar solicitud pendiente ─────────────────────────────────────────────
+    async function cancelarSolicitud() {
+        if (!solicitudPendienteId) return;
+        const ok = await Swal.fire({
+            title: '¿Cancelar solicitud?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cancelar'
+        });
+        if (!ok.isConfirmed) return;
+
+        const formData = new FormData();
+        formData.append('__RequestVerificationToken',
+            document.querySelector('input[name="__RequestVerificationToken"]').value);
+        formData.append('solicitudId', solicitudPendienteId);
+        formData.append('accion', 'rechazar');
+        formData.append('motivo', 'Cancelado por el cajero');
+
+        await fetch('/PuntoVentaAdministracion/ResolverSolicitudApertura',
+            { method: 'POST', body: formData });
+
+        clearInterval(pollingInterval);
+        solicitudPendienteId = null;
+        window.location.reload();
+    }
+
+    // ── Helper: construye el FormData con denominaciones ─────────────────────────
+    function buildFormData() {
+        const formData = new FormData();
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        formData.append('montoInicial', montoInicial);
+        formData.append('montoContado', montoContado);
+        formData.append('cajero', document.getElementById('cashier').textContent);
+        formData.append('caja', document.getElementById('posName').textContent);
+        formData.append('fecha', new Date().toISOString());
+
+        let idx = 0;
+        document.querySelectorAll('.denomination-input').forEach(input => {
+            const cantidad = parseInt(input.value) || 0;
+            if (cantidad > 0) {
+                const valor = parseFloat(input.dataset.value);
+                formData.append(`denominaciones[${idx}].valor`, valor);
+                formData.append(`denominaciones[${idx}].cantidad`, cantidad);
+                formData.append(`denominaciones[${idx}].subtotal`, cantidad * valor);
+                idx++;
+            }
+        });
+        return formData;
+    }
+
+    function mostrarPaso3Exitoso(folio, aprobadaPorGerente = false) {
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'none';
+
+        const step3 = document.getElementById('step3');
+        step3.classList.remove('disabled');
+        step3.style.display = 'block';
+
+        const horaActual = new Date().toLocaleTimeString('es-MX', {
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        step3.innerHTML = `
+        <div class="step-header">
+            <div class="step-number completed">3</div>
+            <h3 class="step-title">Apertura Confirmada</h3>
+        </div>
+        <div class="text-center">
+            <div style="font-size: 4rem; color: #10b981;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h4 class="mt-3">¡Apertura de Caja Exitosa!</h4>
+            ${aprobadaPorGerente
+                ? '<p class="text-muted">La apertura fue <strong>aprobada por el gerente</strong> y registrada correctamente.</p>'
+                : '<p class="text-muted">Los datos han sido registrados correctamente.</p>'
+            }
+
+            <div class="info-card mt-4" style="max-width: 500px; margin: 20px auto;">
+                <div class="row">
+                    ${folio ? `
+                    <div class="col-6 text-start">
+                        <label><i class="fas fa-receipt"></i> Folio:</label>
+                        <div class="value">${folio}</div>
+                    </div>` : ''}
+                    <div class="col-6 text-start">
+                        <label><i class="fas fa-clock"></i> Hora:</label>
+                        <div class="value">${horaActual}</div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-6 text-start">
+                        <label><i class="fas fa-dollar-sign"></i> Monto Inicial:</label>
+                        <div class="value">$${montoInicial.toFixed(2)}</div>
+                    </div>
+                    <div class="col-6 text-start">
+                        <label><i class="fas fa-user"></i> Cajero:</label>
+                        <div class="value">${document.getElementById('cashier').textContent}</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary-custom btn-custom mt-3" onclick="irAPuntoVenta()">
+                <i class="fas fa-cash-register"></i> Ir a Punto de Venta
+            </button>
+        </div>
+    `;
+
+        step3.scrollIntoView({ behavior: 'smooth' });
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Apertura registrada',
+            html: folio
+                ? `Folio generado: <strong>${folio}</strong>`
+                : '✅ Apertura aprobada por el gerente.',
+            confirmButtonText: 'Aceptar'
+        });
+    }
+</script>

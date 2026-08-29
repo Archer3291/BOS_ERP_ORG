@@ -1,0 +1,382 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   layouts.css  —  BOS ERP
+   Variantes de "chrome" (armazón de navegación) seleccionables por el usuario.
+   Se activan con el atributo  body[data-layout="..."]  (lo pinta _Layout.cshtml
+   a partir de usuario_tema.layout_tipo). El MENÚ es el mismo en todas
+   (partial _Menu.cshtml); aquí solo cambia la disposición.
+
+   Valores:
+     sidebar  -> barra lateral vertical (default; usa sidebar.css tal cual)
+     hybrid   -> header superior de ancho completo + lateral por debajo
+     compact  -> lateral tipo "riel" (solo iconos) que se expande al hover
+     topbar   -> barra horizontal superior con menús desplegables (flyouts)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+    --topbar-height: 58px;      /* alto de la barra horizontal (layout topbar) */
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   SIDEBAR (default)
+   No requiere overrides: sidebar.css ya define el comportamiento base.
+   ─────────────────────────────────────────────────────────────────────── */
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HYBRID  —  header de ancho completo arriba + sidebar por debajo
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-layout="hybrid"] .header {
+    left: 0;                     /* el header abarca todo el ancho */
+    z-index: 1001;               /* por encima del sidebar */
+}
+
+body[data-layout="hybrid"] .sidebar {
+    top: 80px;                                   /* arranca debajo del header */
+    height: calc(100vh - 80px);
+    box-shadow: var(--shadow);
+}
+
+/* con el header ocupando la parte superior, el logo del sidebar es redundante */
+body[data-layout="hybrid"] .sidebar .sidebar-header {
+    display: none;
+}
+
+body[data-layout="hybrid"] .main-content {
+    margin-top: 90px;            /* debajo del header */
+}
+
+/* posición derecha: el sidebar híbrido respeta el lado, el header sigue full width */
+body[data-layout="hybrid"].sb-right-mode .header {
+    left: 0 !important;
+    right: 0 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COMPACT  —  riel de iconos que se expande al pasar el mouse
+   NO necesita reglas propias: _ChromeSidebar fuerza data-sb-modo="iconos"
+   cuando layout_tipo="compact", reutilizando el icon-mode ya existente en
+   sidebar.css (ancho --sb-icon-width, tooltips y flyouts vía sidebar.js).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TOPBAR  —  barra horizontal superior con flyouts
+   Estructura (partial _ChromeTopbar): .topbar > .topbar-brand + nav.topbar-nav
+   Conserva id="sidebar" y .sidebar-nav, así que el JS de tema/acordeón sigue vivo.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-layout="topbar"] .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 1rem 0 0;         /* sin padding izq: el brand va pegado al borde */
+    background: var(--bg-light);
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: var(--shadow);
+    z-index: 1001;
+    overflow: visible;           /* deja escapar los flyouts */
+}
+
+/* Contenedor del logo: mismo fondo con color que el .sidebar-header (no blanco),
+   a lo alto completo de la barra y pegado a la izquierda. */
+body[data-layout="topbar"] .topbar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    align-self: stretch;
+    background: linear-gradient(135deg, var(--bg-logo) 0%, var(--primary-blue) 100%);
+    padding: 0 16px;
+    margin-right: 0.5rem;
+}
+
+/* Reset del margin/padding que Bootstrap le pone a .navbar-brand */
+body[data-layout="topbar"] .topbar-brand .navbar-brand {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+body[data-layout="topbar"] .topbar-brand img {
+    height: 38px;
+}
+
+/* El nav pasa a fila horizontal */
+body[data-layout="topbar"] .topbar-nav {
+    flex: 1 1 auto;
+    min-width: 0;                /* permite medir overflow (cabe / no cabe) */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.15rem;
+    overflow: visible;
+    padding: 0;
+}
+
+/* El _Menu envuelve un grupo de dropdowns en un <div> sin clase (heredado del
+   markup original). En vertical no estorba, pero en horizontal es un único hijo
+   flex y hace que sus dropdowns se apilen en columna (y desborden la barra).
+   Lo disolvemos para que esos .nav-item entren directo en la fila. */
+body[data-layout="topbar"] .topbar-nav > div:not(.nav-item) {
+    display: contents;
+}
+
+body[data-layout="topbar"] .topbar-nav {
+    flex-wrap: nowrap;           /* nunca romper a segunda fila */
+}
+
+body[data-layout="topbar"] .topbar-nav .nav-item {
+    margin: 0;
+    opacity: 1;                  /* anula la animación de entrada vertical */
+    animation: none;
+    position: relative;
+    flex: 0 0 auto;              /* cada item conserva su ancho, sin encogerse raro */
+}
+
+body[data-layout="topbar"] .topbar-nav .nav-link {
+    padding: 0.5rem 0.7rem;
+    white-space: nowrap;
+}
+
+/* El chevron de primer nivel apunta hacia abajo (menú que baja) */
+body[data-layout="topbar"] .topbar-nav .dropdown-toggle.collapsed::after,
+body[data-layout="topbar"] .topbar-nav .dropdown-toggle:not(.collapsed)::after {
+    transform: none;
+    margin-left: 0.35rem;
+}
+
+body[data-layout="topbar"] .topbar-nav .nav-link:hover {
+    transform: none;             /* sin el translateX del efecto slide */
+}
+
+body[data-layout="topbar"] .topbar-nav .sb-hover-slide .nav-link::before,
+body[data-layout="topbar"] .topbar-nav .nav-link::before {
+    display: none;              /* la barrita lateral no aplica en horizontal */
+}
+
+/* ── Flyout de primer nivel: se abre hacia abajo al hover ── */
+body[data-layout="topbar"] .topbar-nav .nav-dropdown > .nav-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 240px;
+    max-width: 320px;
+    max-height: none;            /* cancela el acordeón vertical */
+    overflow: visible;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    padding: 0.4rem 0;
+    margin: 0;
+    background: var(--bg-gray);
+    border: 1px solid var(--border-light);
+    border-radius: var(--sb-radius);
+    box-shadow: var(--shadow-lg);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    z-index: 1002;
+}
+
+body[data-layout="topbar"] .topbar-nav .nav-dropdown:hover > .nav-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Los últimos items del menú abren su flyout hacia la izquierda para no salirse */
+body[data-layout="topbar"] .topbar-nav .nav-item:nth-last-child(-n+3) .nav-dropdown-menu {
+    left: auto;
+    right: 0;
+}
+
+/* ── Modo "solo iconos" en topbar (usuario_tema.sidebar_modo == "iconos") ──
+   Oculta las etiquetas de primer nivel; muestra solo el icono + tooltip al hover.
+   El texto sigue visible dentro de los flyouts. */
+body[data-layout="topbar"] .topbar.tb-icons .topbar-nav .nav-link {
+    font-size: 0;                /* oculta el texto del primer nivel */
+    gap: 0;
+    padding: 0.5rem 0.6rem;
+}
+
+body[data-layout="topbar"] .topbar.tb-icons .topbar-nav .nav-link i {
+    font-size: 1.15rem;
+    width: auto;
+    margin: 0;
+}
+
+body[data-layout="topbar"] .topbar.tb-icons .topbar-nav .dropdown-toggle::after {
+    display: none;               /* sin chevron en modo icono */
+}
+
+/* Tooltip debajo del icono (solo items simples; en dropdowns basta el flyout) */
+body[data-layout="topbar"] .topbar.tb-icons .topbar-nav .nav-item > .nav-link:not(.dropdown-toggle)[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--text-dark);
+    color: var(--bg-light);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: var(--shadow-lg);
+    transition: opacity .18s ease, transform .18s ease;
+    z-index: 1100;
+}
+
+body[data-layout="topbar"] .topbar.tb-icons .topbar-nav .nav-item > .nav-link:not(.dropdown-toggle)[data-label]:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Dentro del flyout, los submenús anidados siguen como acordeón (click), tal cual sidebar */
+
+/* Oculta el toggle de colapso del sidebar (no aplica en horizontal) */
+body[data-layout="topbar"] #sidebar-toggle {
+    display: none;
+}
+
+/* Toggle de tema compacto dentro de la topbar */
+body[data-layout="topbar"] .topbar-theme-toggle {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* El header (título + usuario) baja debajo de la topbar, ancho completo */
+body[data-layout="topbar"] .header {
+    left: 0;
+    top: var(--topbar-height);
+    height: 64px;
+}
+
+body[data-layout="topbar"] .main-content {
+    margin-left: 0;
+    margin-top: calc(var(--topbar-height) + 64px + 6px);
+}
+
+body[data-layout="topbar"] .footer {
+    left: 0;
+}
+
+/* Anula el modo "sidebar derecho" heredado si el usuario lo tenía activo */
+body[data-layout="topbar"].sb-right-mode .header,
+body[data-layout="topbar"].sb-right-mode .main-content,
+body[data-layout="topbar"].sb-right-mode .footer {
+    left: 0 !important;
+    right: 0 !important;
+    margin-right: 0 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TOPBAR — navegación "priority+" (botón "Más" para lo que no cabe)
+   Un script en _ChromeTopbar mide qué items caben; los que no, los reubica en
+   este panel desplegable "⋯ Más". Se adapta a cualquier ancho / nº de módulos:
+   siempre se ve lo que cabe y el resto queda a un click de distancia.
+   ═══════════════════════════════════════════════════════════════════════ */
+body[data-layout="topbar"] .topbar-more {
+    position: relative;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+body[data-layout="topbar"] .topbar-more .topbar-more-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+}
+
+/* En modo "solo iconos" el botón Más también queda como icono */
+body[data-layout="topbar"] .topbar.tb-icons .topbar-more .tb-more-label {
+    display: none;
+}
+
+/* Panel desplegable con los items que no caben */
+body[data-layout="topbar"] .topbar-more-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 240px;
+    max-width: min(360px, 92vw);
+    max-height: calc(100vh - var(--topbar-height) - 16px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg-gray);
+    border: 1px solid var(--border-light);
+    border-radius: var(--sb-radius);
+    box-shadow: var(--shadow-lg);
+    padding: 0.4rem;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;        /* cerrado: nada dentro es clickeable (aunque un
+                                    submenú interno quede con visibility:visible) */
+    transform: translateY(6px);
+    transition: opacity .18s ease, transform .18s ease, visibility .18s;
+    z-index: 1003;
+}
+
+body[data-layout="topbar"] .topbar-more.open .topbar-more-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+/* Items reubicados en el panel: verticales, ancho completo y con texto visible */
+body[data-layout="topbar"] .topbar-more-menu .nav-item {
+    width: 100%;
+    margin: 0;
+}
+
+body[data-layout="topbar"] .topbar-more-menu .nav-link {
+    font-size: 0.86rem !important;   /* anula el font-size:0 del modo iconos */
+    gap: 0.6rem;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+body[data-layout="topbar"] .topbar-more-menu .nav-link::before {
+    display: none !important;        /* sin tooltip dentro del panel */
+}
+
+body[data-layout="topbar"] .topbar-more-menu .dropdown-toggle::after {
+    display: inline-block !important;
+    margin-left: auto;
+}
+
+/* Dropdowns anidados dentro del panel -> acordeón (no flyout lateral) */
+body[data-layout="topbar"] .topbar-nav .topbar-more-menu .nav-dropdown > .nav-dropdown-menu {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+    min-width: 0;
+    max-width: none;
+    max-height: 0;                   /* colapsado; el click (.show) lo abre */
+    overflow: hidden;
+    padding: 0 0 0 0.6rem;
+    transition: max-height .3s ease;
+}
+
+body[data-layout="topbar"] .topbar-nav .topbar-more-menu .nav-dropdown > .nav-dropdown-menu.show {
+    max-height: 1500px;
+    padding: 0.2rem 0 0.2rem 0.6rem;
+}

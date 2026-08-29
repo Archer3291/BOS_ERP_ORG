@@ -1,0 +1,681 @@
+﻿@using BOS_ERP.Controllers
+@{
+    ViewBag.Title = "Requisision de Material";
+    ViewBag.PageTitle = "Mis solicitudes";
+}
+
+<link href="~/content/sidebar.css" rel="stylesheet" />
+<link href="~/content/compras-nacionales.css" rel="stylesheet" />
+<link href="~/content/Site.css" rel="stylesheet" />
+<link href="~/content/TableBuilder.css" rel="stylesheet" />
+
+<form>
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="mb-4">
+    <label for="selectorTabla" class="form-label">
+        <i class="fa-solid fa-table"></i> Mostrar tabla
+    </label>
+    <select id="selectorTabla" class="form-select w-auto">
+        <option value="tablaCreadas">Documentos pendientes</option>
+        <option value="tablaAceptadas">Documentos aceptados</option>
+        <option value="tablaRechazadas">Documentos rechazados</option>
+        <option value="tablaCerradas">Documentos cerrados</option>
+        <option value="tablaCanceladas">Documentos cancelados</option>
+    </select>
+</div>
+
+<div>
+    <div class="contenedor-tabla" id="contenedor-tablaCreadas"><div id="tablaCreadas"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaAceptadas"><div id="tablaAceptadas"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaRechazadas"><div id="tablaRechazadas"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaCerradas"><div id="tablaCerradas"></div></div>
+    <div class="contenedor-tabla" id="contenedor-tablaCanceladas"><div id="tablaCanceladas"></div></div>
+</div>
+
+<!-- Modal para editar solicitud UNIFICADO -->
+<div class="modal fade" id="modalEditarRequisicion" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarLabel"><i class="bi bi-pencil-square"></i> Editar Solicitud</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-end gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-primary" onclick="abrirModalBuscarProducto()">
+                        <i class="fa-duotone fa-solid fa-search fa-beat"></i> Consultar Productos
+                    </button>
+                    <button id="agregar-fila" type="button" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-lg"></i> Agregar fila
+                    </button>
+                    <button id="eliminar-fila" type="button" class="btn btn-outline-danger">
+                        <i class="bi bi-trash3"></i> Eliminar seleccionadas
+                    </button>
+                </div>
+
+                <div class="table-responsive mb-4">
+                    <p class="text-danger mb-1">Si no conoces el precio del producto puedes dejarlo en 0</p>
+                    <p class="text-danger mb-2">El * significa que el campo es obligatorio</p>
+                    <table class="table table-hover table-bordered align-middle" id="tabla-materiales">
+                        <thead class="table-primary text-center">
+                            <tr>
+                                <th style="width: 40px;"><i class="bi bi-check-square"></i></th>
+                                <th style="width: 50px;">#</th>
+                                <th>Cantidad *</th>
+                                <th>Código *</th>
+                                <th>Descripción</th>
+                                <th>Unidad</th>
+                                <th>Costo Unitario</th>
+                                <th>Descuento %</th>
+                                <th>Subtotal</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Sección de Impuestos (solo para OCD) -->
+                <div id="seccion-impuestos" style="display: none;">
+                    <hr class="my-4" />
+                    <div class="card border-0 mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-receipt-cutoff text-primary"></i>
+                                    <strong>Impuestos Aplicables</strong>
+                                </h5>
+                                <button type="button" class="btn btn-success btn-sm" onclick="agregarFilaImpuesto()">
+                                    <i class="bi bi-plus-circle-fill"></i> Agregar Impuesto
+                                </button>
+                            </div>
+
+                            <div id="contenedor-impuestos" class="mb-3"></div>
+                            <div id="desglose-impuestos" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="form-floating mb-4">
+                    <textarea class="form-control" id="observaciones" rows="3"></textarea>
+                    <label class="form-label" for="observaciones"><i class="bi bi-journal-text"></i> Observaciones</label>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="subtotal" class="form-control" readonly />
+                            <label class="form-label" for="subtotal"><i class="bi bi-cash-stack me-1"></i>Subtotal</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="descuento" class="form-control text-danger fw-semibold" readonly />
+                            <label class="form-label" for="descuento"><i class="bi bi-tag me-1"></i>Descuento</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="total-impuestos" class="form-control" readonly />
+                            <label class="form-label" for="total-impuestos"><i class="bi bi-receipt me-1"></i>Total Impuestos</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-floating mb-3">
+                            <input type="text" id="total" class="form-control fw-bold" readonly />
+                            <label class="form-label" for="total"><i class="bi bi-calculator me-1"></i>Total</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btn-guardar-cambios" class="btn btn-success">
+                    <i class="bi bi-save-fill"></i> Guardar cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.Partial("RequisitionPartials/_ModalBuscarProducto")
+
+<script src="~/scripts/TableBuilder.js"></script>
+<script src="~/scripts/compras-nacionales.js?v=@DateTime.Now.Ticks"></script>
+<script>
+    // ========================================================================================
+    // CONFIGURACIÓN
+    // ========================================================================================
+    const MAX_IMPUESTOS = 4;
+    const PUEDE_EDITAR = @(Utilities.DoesUserHasRight(User.Identity.Name, "editar-requisiciones") ? "true" : "false");
+    const NATS_EDITABLES = ['OCD', 'SCTZ', 'RM', 'OC'];
+
+    let impuestosDisponibles = [];
+    const tablas = {};
+
+    const CONFIG_TABLAS = {
+        tablaCreadas: { url: '/Requisicion/GetRequisicionesUsuario', textoObservaciones: 'coment_aut' },
+        tablaAceptadas: { url: '/Requisicion/GetRequisicionesAceptadasGerente', textoObservaciones: 'coment_aut' },
+        tablaRechazadas: { url: '/Requisicion/GetRequisicionesRechazadasGerente', textoObservaciones: 'motivo_rechazo' },
+        tablaCerradas: { url: '/Requisicion/GetRequisicionesCerradas', textoObservaciones: 'coment_aut' },
+        tablaCanceladas: { url: '/Requisicion/GetRequisicionesCanceladas', textoObservaciones: 'coment_aut' }
+    };
+
+    let contextoEdicion = {
+        id_encabezado: null,
+        folio: null,
+        nat: null,
+        impuestosSeleccionados: []
+    };
+
+    // ========================================================================================
+    // INICIALIZACIÓN
+    // ========================================================================================
+    document.addEventListener('DOMContentLoaded', async function () {
+        const selector = document.getElementById('selectorTabla');
+
+        await cargarCatalogoImpuestos();
+
+        mostrarTabla(selector.value);
+        selector.addEventListener('change', () => mostrarTabla(selector.value));
+
+        construirTablas();
+
+        document.getElementById('agregar-fila').addEventListener('click', () => agregarFila());
+        document.getElementById('eliminar-fila').addEventListener('click', eliminarFilasSeleccionadas);
+        document.getElementById('btn-guardar-cambios').addEventListener('click', guardarCambiosDocumento);
+    });
+
+    async function cargarCatalogoImpuestos() {
+        const resultado = await GetData({ path: '/Requisicion/GetCatImpuestos' });
+        impuestosDisponibles = resultado || [];
+    }
+
+    // ========================================================================================
+    // TABLAS (wwwroot/scripts/TableBuilder.js)
+    // ========================================================================================
+    function mostrarTabla(tablaId) {
+        document.querySelectorAll('.contenedor-tabla').forEach(contenedor => {
+            contenedor.style.display = contenedor.id === `contenedor-${tablaId}` ? 'block' : 'none';
+        });
+    }
+
+    function construirTablas() {
+        const folio = folioDeLaUrl();
+
+        Object.entries(CONFIG_TABLAS).forEach(([id, config]) => {
+            tablas[id] = createTable({
+                selector: `#${id}`,
+                path: config.url,
+                rowKey: 'id_encabezado',
+                searchPlaceholder: 'Buscar por folio, responsable u observaciones...',
+                sortDir: 'desc',
+                data: () => ({ folio }),
+                columns: columnasDocumento({ textoObservaciones: config.textoObservaciones }),
+                actions: accionesDocumento(id),
+                exports: ['excel'],
+            });
+        });
+    }
+
+    function accionesDocumento(tablaId) {
+        const acciones = [
+            {
+                icon: 'fa-circle-info', color: 'sky-500', title: 'Ver detalles',
+                onClick: row => GetInfoGeneral(row.id_encabezado)
+            }
+        ];
+
+        if (['tablaAceptadas', 'tablaCerradas'].includes(tablaId)) {
+            acciones.push({
+                icon: 'fa-download', color: 'green-500', title: 'Descargar solicitud',
+                onClick: row => GenerarPDFGeneral(row.id_encabezado)
+            });
+        }
+
+        if (PUEDE_EDITAR && tablaId !== 'tablaCanceladas') {
+            acciones.push({
+                icon: 'fa-money-check-pen', color: 'btn-primary', title: 'Editar documento',
+                visible: row => NATS_EDITABLES.includes(row.nat),
+                onClick: row => abrirEdicionUnificada(row.id_encabezado, row.nuevo_codigo, row.nat)
+            });
+        }
+
+        return acciones;
+    }
+
+    // ========================================================================================
+    // EDICIÓN
+    // ========================================================================================
+    async function abrirEdicionUnificada(id_encabezado, folio, nat) {
+        try {
+            contextoEdicion = { id_encabezado, folio, nat, impuestosSeleccionados: [] };
+
+            const resultado = await GetData({
+                path: '/Requisicion/Obtener',
+                data: { id_encabezado }
+            });
+
+            const tbody = document.querySelector('#tabla-materiales tbody');
+            tbody.innerHTML = '';
+
+            (resultado.materiales || []).forEach((mat, i) => tbody.appendChild(crearFilaMaterial(mat, i)));
+
+            document.getElementById('observaciones').value = resultado.documento?.[0]?.observaciones || '';
+
+            const seccionImpuestos = document.getElementById('seccion-impuestos');
+            document.getElementById('contenedor-impuestos').innerHTML = '';
+            contextoEdicion.impuestosSeleccionados = [];
+
+            if (nat === 'OCD') {
+                seccionImpuestos.style.display = 'block';
+                (resultado.impuestos || []).forEach(imp => agregarFilaImpuesto(imp.impuesto_id));
+            } else {
+                seccionImpuestos.style.display = 'none';
+            }
+
+            calcularTotales();
+            new bootstrap.Modal(document.getElementById('modalEditarRequisicion')).show();
+        } catch (error) {
+            console.error('Error al cargar solicitud:', error);
+            _Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la solicitud', showCancelButton: false });
+        }
+    }
+
+    function crearFilaMaterial(mat, index) {
+        const fila = document.createElement('tr');
+        const cantidad = parseFloat(mat.cantidad ?? 0) || 0;
+        const costo = parseFloat(mat.costounitario ?? 0) || 0;
+        const dto1 = porcentajeDescuento(mat.descuento);
+
+        fila.innerHTML = `
+            <td class="text-center"><input type="checkbox" class="seleccionar-fila" /></td>
+            <td class="text-center">${index + 1}</td>
+            <td contenteditable="true">${cantidad || ''}</td>
+            <td contenteditable="true">${mat.codigo || ''}</td>
+            <td contenteditable="true">${mat.descripcion || ''}</td>
+            <td contenteditable="true">${mat.unidad || ''}</td>
+            <td contenteditable="true" class="celda-costo">${costo.toFixed(2)}</td>
+            <td contenteditable="true" class="celda-descuento">${dto1.toFixed(2)}</td>
+            <td class="subtotal-fila text-end">${Currency.format(brutoPartida(cantidad, costo))}</td>
+            <td class="total-fila text-end">${Currency.format(netoPartida(cantidad, costo, dto1))}</td>`;
+
+        fila.querySelectorAll("td[contenteditable='true']").forEach(celda => {
+            celda.addEventListener('input', calcularTotales);
+            celda.addEventListener('blur', function () {
+                if (this.classList.contains('celda-costo')) {
+                    this.innerText = limpiarNumero(this.innerText).toFixed(2);
+                } else if (this.classList.contains('celda-descuento')) {
+                    this.innerText = porcentajeDescuento(limpiarNumero(this.innerText)).toFixed(2);
+                }
+                calcularTotales();
+            });
+        });
+
+        fila.querySelector('.seleccionar-fila').addEventListener('change', function () {
+            fila.classList.toggle('table-active', this.checked);
+        });
+
+        return fila;
+    }
+
+    // ========================================================================================
+    // IMPUESTOS
+    // ========================================================================================
+    function agregarFilaImpuesto(impuestoId = null) {
+        if (contextoEdicion.impuestosSeleccionados.length >= MAX_IMPUESTOS) {
+            toastMixin.fire({ icon: 'warning', title: `Solo puedes agregar hasta ${MAX_IMPUESTOS} impuestos` });
+            return;
+        }
+
+        const contenedor = document.getElementById('contenedor-impuestos');
+        const index = contextoEdicion.impuestosSeleccionados.length;
+
+        const impuestoInfo = impuestoId ? impuestosDisponibles.find(i => i.id_impuesto == impuestoId) : null;
+        const porcentajeInicial = impuestoInfo?.tasa_imp || 0;
+        const esRetencion = impuestoInfo?.es_retencion || false;
+
+        const filaImpuesto = document.createElement('div');
+        filaImpuesto.className = 'fila-impuesto mb-3';
+        filaImpuesto.dataset.index = index;
+
+        filaImpuesto.innerHTML = `
+        <div class="card border-start border-${esRetencion ? 'danger' : 'primary'} border-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <select class="form-select select-impuesto" required>
+                                <option value="">Selecciona un impuesto</option>
+                                ${impuestosDisponibles.map(imp => `
+                                    <option value="${imp.id_impuesto}"
+                                            data-porcentaje="${imp.tasa_imp || 0}"
+                                            data-retencion="${imp.es_retencion || false}"
+                                            ${imp.id_impuesto === impuestoId ? 'selected' : ''}>
+                                        ${imp.cve_impuesto} - ${imp.desc} ${imp.es_retencion ? '(Retención)' : ''}
+                                    </option>`).join('')}
+                            </select>
+                            <label><i class="bi bi-receipt me-1"></i>Tipo de Impuesto</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            <input type="text" class="form-control input-porcentaje"
+                                   value="${esRetencion ? '-' : ''}${porcentajeInicial}%" readonly
+                                   style="font-weight:600;color:${esRetencion ? '#dc3545' : '#0d6efd'};" />
+                            <label>
+                                <i class="bi bi-${esRetencion ? 'dash-circle' : 'plus-circle'} me-1"></i>
+                                ${esRetencion ? 'Retención' : 'Porcentaje'}
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-center justify-content-center">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100"
+                                onclick="eliminarImpuesto(${index})" title="Eliminar impuesto">
+                            <i class="bi bi-trash3"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        contenedor.appendChild(filaImpuesto);
+
+        contextoEdicion.impuestosSeleccionados.push({
+            IdImpuesto: impuestoId || null,
+            ImpVariable: porcentajeInicial,
+            EsRetencion: esRetencion
+        });
+
+        const select = filaImpuesto.querySelector('.select-impuesto');
+        const inputPorcentaje = filaImpuesto.querySelector('.input-porcentaje');
+
+        select.addEventListener('change', function () {
+            const opcion = this.options[this.selectedIndex];
+            const porcentaje = parseFloat(opcion.getAttribute('data-porcentaje')) || 0;
+            const retencion = opcion.getAttribute('data-retencion') === 'true';
+
+            inputPorcentaje.value = `${retencion ? '-' : ''}${porcentaje}%`;
+            inputPorcentaje.style.color = retencion ? '#dc3545' : '#0d6efd';
+
+            inputPorcentaje.closest('.form-floating').querySelector('label').innerHTML =
+                `<i class="bi bi-${retencion ? 'dash-circle' : 'plus-circle'} me-1"></i>${retencion ? 'Retención' : 'Porcentaje'}`;
+
+            filaImpuesto.querySelector('.card').className =
+                `card border-start border-${retencion ? 'danger' : 'primary'} border-4`;
+
+            Object.assign(contextoEdicion.impuestosSeleccionados[index], {
+                IdImpuesto: this.value || null,
+                ImpVariable: porcentaje,
+                EsRetencion: retencion
+            });
+
+            calcularTotales();
+        });
+    }
+
+    function eliminarImpuesto(index) {
+        const fila = document.querySelector(`.fila-impuesto[data-index="${index}"]`);
+        if (!fila) return;
+
+        fila.remove();
+        contextoEdicion.impuestosSeleccionados.splice(index, 1);
+
+        document.querySelectorAll('.fila-impuesto').forEach((f, nuevoIndex) => {
+            f.dataset.index = nuevoIndex;
+            f.querySelector('button').onclick = () => eliminarImpuesto(nuevoIndex);
+        });
+
+        calcularTotales();
+        toastMixin.fire({ icon: 'success', title: 'Impuesto eliminado' });
+    }
+
+    // ========================================================================================
+    // FILAS
+    // ========================================================================================
+    function agregarFila(datosProducto = null) {
+        const tbody = document.querySelector('#tabla-materiales tbody');
+
+        const fila = crearFilaMaterial({
+            cantidad: '',
+            codigo: datosProducto?.id || datosProducto?.cve_prod || '',
+            descripcion: datosProducto?.descripcion || datosProducto?.descr_prod || '',
+            unidad: datosProducto?.udm || '',
+            costounitario: 0,
+            descuento: 0
+        }, tbody.children.length);
+
+        tbody.appendChild(fila);
+        calcularTotales();
+        fila.cells[2].focus();
+    }
+
+    function eliminarFilasSeleccionadas() {
+        const checkboxes = document.querySelectorAll('.seleccionar-fila:checked');
+        if (checkboxes.length === 0) {
+            toastMixin.fire({ icon: 'warning', title: 'No has seleccionado ninguna fila.' });
+            return;
+        }
+
+        _Swal.fire({
+            title: '¿Estás seguro?',
+            text: `Se eliminarán ${checkboxes.length} fila(s)`,
+            icon: 'warning',
+            confirmButtonText: 'Sí, eliminar'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            checkboxes.forEach(chk => chk.closest('tr').remove());
+            calcularTotales();
+            toastMixin.fire({ icon: 'success', title: 'Filas eliminadas correctamente' });
+        });
+    }
+
+    // ========================================================================================
+    // CÁLCULOS — el descuento es porcentaje por partida y se descuenta del total
+    // ========================================================================================
+    function leerFilaMaterial(fila) {
+        return {
+            cantidad: limpiarNumero(fila.cells[2].innerText),
+            codigo: fila.cells[3].innerText.trim(),
+            descripcion: fila.cells[4].innerText.trim(),
+            unidad: fila.cells[5].innerText.trim(),
+            precio: limpiarNumero(fila.cells[6].innerText),
+            dto1: porcentajeDescuento(limpiarNumero(fila.cells[7].innerText))
+        };
+    }
+
+    function calcularTotales() {
+        const filas = [...document.querySelectorAll('#tabla-materiales tbody tr')];
+
+        filas.forEach((fila, i) => {
+            fila.cells[1].innerText = i + 1;
+            const { cantidad, precio, dto1 } = leerFilaMaterial(fila);
+            fila.querySelector('.subtotal-fila').innerText = Currency.format(brutoPartida(cantidad, precio));
+            fila.querySelector('.total-fila').innerText = Currency.format(netoPartida(cantidad, precio, dto1));
+        });
+
+        const totales = totalizarPartidas(filas, leerFilaMaterial);
+
+        document.getElementById('subtotal').value = Currency.format(totales.subtotal);
+        document.getElementById('descuento').value = totales.descuento > 0
+            ? `- ${Currency.format(totales.descuento)}`
+            : Currency.format(0);
+
+        const { neto, desglose } = calcularImpuestos(totales.base);
+        document.getElementById('desglose-impuestos').innerHTML = desglose;
+
+        const inputImpuestos = document.getElementById('total-impuestos');
+        inputImpuestos.value = Currency.format(neto);
+        inputImpuestos.style.color = neto < 0 ? '#dc3545' : '#198754';
+
+        document.getElementById('total').value = Currency.format(round(totales.base + neto));
+    }
+
+    function calcularImpuestos(base) {
+        const aplicables = contextoEdicion.nat === 'OCD'
+            ? (contextoEdicion.impuestosSeleccionados || []).filter(i => i.IdImpuesto && i.ImpVariable > 0)
+            : [];
+
+        if (!aplicables.length) return { neto: 0, desglose: '' };
+
+        let neto = 0;
+        let desglose = '<hr class="my-2"><h6 class="text-muted mb-3"><i class="bi bi-calculator"></i> Desglose de Impuestos</h6>';
+
+        aplicables.forEach((imp, idx) => {
+            const monto = round(base * (imp.ImpVariable / 100));
+            neto += imp.EsRetencion ? -monto : monto;
+
+            const info = impuestosDisponibles.find(i => i.id_impuesto == imp.IdImpuesto);
+            const nombre = info ? info.cve_impuesto : `Impuesto ${idx + 1}`;
+
+            desglose += `
+                <div class="alert alert-${imp.EsRetencion ? 'danger' : 'info'} py-2 mb-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-${imp.EsRetencion ? 'dash-circle-fill' : 'plus-circle-fill'} me-2"></i>
+                        <strong>${nombre}</strong>
+                        <span class="badge bg-${imp.EsRetencion ? 'danger' : 'primary'} ms-2">
+                            ${imp.EsRetencion ? '-' : ''}${imp.ImpVariable}%
+                        </span>
+                    </div>
+                    <div class="text-end"><strong>${imp.EsRetencion ? '-' : '+'} ${Currency.format(monto)}</strong></div>
+                </div>`;
+        });
+
+        return { neto: round(neto), desglose };
+    }
+
+    // ========================================================================================
+    // GUARDAR
+    // ========================================================================================
+    async function guardarCambiosDocumento() {
+        const { id_encabezado, nat } = contextoEdicion;
+        const materiales = [];
+        let hayErrores = false;
+
+        document.querySelectorAll('#tabla-materiales tbody tr').forEach(fila => {
+            const datos = leerFilaMaterial(fila);
+
+            const cantidadValida = datos.cantidad > 0;
+            const codigoValido = !!datos.codigo;
+
+            fila.cells[2].classList.toggle('table-danger', !cantidadValida);
+            fila.cells[3].classList.toggle('table-danger', !codigoValido);
+
+            if (!cantidadValida || !codigoValido) {
+                hayErrores = true;
+                return;
+            }
+
+            if (!datos.descripcion || !datos.unidad) {
+                hayErrores = true;
+                return;
+            }
+
+            materiales.push({
+                CantUd: datos.cantidad,
+                CveProd: datos.codigo,
+                DescrProd: datos.descripcion,
+                Ud: datos.unidad,
+                PvProd: datos.precio,
+                Dto1: datos.dto1,
+                ImpPart: brutoPartida(datos.cantidad, datos.precio)
+            });
+        });
+
+        if (nat === 'OCD') {
+            const validos = [];
+
+            contextoEdicion.impuestosSeleccionados.forEach((imp, idx) => {
+                const select = document.querySelector(`.fila-impuesto[data-index="${idx}"] .select-impuesto`);
+                if (!select) return;
+
+                select.classList.toggle('is-invalid', !imp.IdImpuesto);
+                if (!imp.IdImpuesto) {
+                    hayErrores = true;
+                    return;
+                }
+
+                validos.push({
+                    IdImpuesto: imp.IdImpuesto,
+                    ImpVariable: imp.ImpVariable || 0,
+                    EsRetencion: imp.EsRetencion || false
+                });
+            });
+
+            contextoEdicion.impuestosSeleccionados = validos;
+        }
+
+        if (hayErrores) {
+            toastMixin.fire({ icon: 'error', title: 'Faltan campos obligatorios. Revisa las celdas en rojo.' });
+            return;
+        }
+
+        if (!materiales.length) {
+            toastMixin.fire({ icon: 'error', title: 'Necesitas agregar al menos un material.' });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Guardando cambios...',
+            html: 'No cierres esta ventana.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        const datosEnvio = {
+            IdEncabezado: id_encabezado,
+            Observaciones: document.getElementById('observaciones').value,
+            Materiales: JSON.stringify(materiales),
+            Impuestos: JSON.stringify(contextoEdicion.impuestosSeleccionados),
+            ConfirmarCancelacionHijos: false
+        };
+
+        let res = await GetData({ path: '/Requisicion/Edit', data: datosEnvio });
+
+        // El documento ya genero hijos: hay que confirmar que se cancelen
+        if (res.documentosHijos) {
+            const confirmacion = await _Swal.fire(res);
+            if (!confirmacion.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Guardando cambios...',
+                html: 'No cierres esta ventana.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            res = await GetData({
+                path: '/Requisicion/Edit',
+                data: { ...datosEnvio, ConfirmarCancelacionHijos: true }
+            });
+        }
+
+        if (res.icon === 'success') {
+            _SwalReload(res, '/Compras/MisRequisiciones');
+            return;
+        }
+
+        _Swal.fire(res);
+    }
+
+    // ========================================================================================
+    // BÚSQUEDA DE PRODUCTOS (_ModalBuscarProducto)
+    // ========================================================================================
+    function abrirModalBuscarProducto() {
+        new bootstrap.Modal(document.getElementById('modalBuscarProducto')).show();
+    }
+
+    // Callback que invoca la tabla del modal al elegir un producto
+    function agregarProductoDesdeModal(producto) {
+        agregarFila(producto);
+        bootstrap.Modal.getInstance(document.getElementById('modalBuscarProducto'))?.hide();
+        toastMixin.fire({ icon: 'success', title: 'Producto agregado' });
+    }
+</script>

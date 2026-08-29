@@ -1,0 +1,1235 @@
+﻿@using BOS_ERP.Controllers
+
+@{
+    ViewBag.Title = "Reporte por Vendedor";
+    ViewBag.PageTitle = "Reporte por Vendedor";
+}
+
+@section styles {
+    <style>
+        /* ============================================================
+           FILTROS
+        ============================================================ */
+        .rv-filters {
+            padding: 16px 40px;
+            background: var(--very-light-blue);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .rv-filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .rv-filter-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: var(--text-light);
+        }
+
+        .rv-filter-group input[type="date"],
+        .rv-filter-group select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            min-width: 140px;
+        }
+
+        .rv-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .rv-btn-primary {
+            background: #7c3aed;
+            color: #fff;
+        }
+
+            .rv-btn-primary:hover {
+                background: #6d28d9;
+            }
+
+        .rv-btn-success {
+            background: #059669;
+            color: #fff;
+        }
+
+        .rv-btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-dark);
+            border: 1px solid var(--border-light);
+        }
+
+        /* ============================================================
+           KPIs
+        ============================================================ */
+        .rv-kpis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            padding: 16px 40px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .rv-kpi {
+            background: var(--bg-light);
+            padding: 14px 16px;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent-blue);
+            box-shadow: var(--shadow);
+        }
+
+            .rv-kpi.success {
+                border-left-color: #059669;
+            }
+
+            .rv-kpi.warning {
+                border-left-color: #f59e0b;
+            }
+
+            .rv-kpi.purple {
+                border-left-color: #7c3aed;
+            }
+
+        .rv-kpi-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .rv-kpi-value {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--text-dark);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        /* ============================================================
+           GRÁFICAS
+        ============================================================ */
+        .rv-charts {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 16px 40px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        @@media (max-width: 900px) {
+            .rv-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .rv-chart-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .rv-chart-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-light);
+            margin-bottom: 12px;
+        }
+
+        /* ============================================================
+           TABLA RESUMEN
+        ============================================================ */
+        .rv-table-wrap {
+            padding: 16px 40px 24px;
+        }
+
+        .rv-section-title {
+            font-size: .95em;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rv-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+            .rv-table thead th {
+                background: var(--very-light-blue);
+                padding: 10px 12px;
+                text-align: left;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .04em;
+                color: var(--text-light);
+                border-bottom: 2px solid var(--border-light);
+                white-space: nowrap;
+                cursor: pointer;
+                user-select: none;
+            }
+
+                .rv-table thead th:hover {
+                    background: #dce8f8;
+                }
+
+                .rv-table thead th.sort-asc::after {
+                    content: ' ▲';
+                }
+
+                .rv-table thead th.sort-desc::after {
+                    content: ' ▼';
+                }
+
+            .rv-table tbody tr {
+                border-bottom: 1px solid var(--border-light);
+                transition: background .12s;
+            }
+
+                .rv-table tbody tr:hover {
+                    background: #f5f9ff;
+                }
+
+            .rv-table tbody td {
+                padding: 10px 12px;
+                color: var(--text-dark);
+                vertical-align: middle;
+            }
+
+        .rv-money {
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600;
+        }
+
+        .rv-pct-bar {
+            width: 60px;
+            height: 5px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        .rv-pct-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width .3s;
+        }
+
+        .rv-rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 700;
+            margin-right: 5px;
+        }
+
+        .rv-rank-1 {
+            background: #fde68a;
+            color: #78350f;
+        }
+
+        .rv-rank-2 {
+            background: #d1d5db;
+            color: #374151;
+        }
+
+        .rv-rank-3 {
+            background: #fcd9bd;
+            color: #7c2d12;
+        }
+
+        .rv-rank-n {
+            background: var(--very-light-blue);
+            color: var(--text-light);
+        }
+
+        .rv-btn-drill {
+            background: var(--very-light-blue);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 3px 9px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+            .rv-btn-drill:hover {
+                background: #dce8f8;
+            }
+
+        /* Loading / empty */
+        .rv-loading, .rv-empty {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+        }
+
+            .rv-loading i {
+                font-size: 1.8em;
+                color: var(--primary-blue);
+            }
+
+        /* ============================================================
+           MODAL DRILL-DOWN
+        ============================================================ */
+        .rv-drill-modal {
+            display: none;
+            position: fixed;
+            z-index: 1100;
+            inset: 0;
+            background: rgba(15,23,41,.6);
+            overflow: auto;
+        }
+
+            .rv-drill-modal.active {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+        .rv-drill-content {
+            background: var(--bg-light);
+            border-radius: 16px;
+            max-width: 1060px;
+            width: 94%;
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .rv-drill-header {
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            color: #fff;
+            padding: 18px 26px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 16px 16px 0 0;
+        }
+
+            .rv-drill-header h2 {
+                font-size: 1.1em;
+                font-weight: 700;
+            }
+
+        .rv-drill-body {
+            padding: 22px 26px;
+        }
+
+        .close-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+    </style>
+    <link href="/lib/tom-select/css/tom-select.css" rel="stylesheet" />
+}
+
+<form>@Html.AntiForgeryToken()</form>
+
+<div class="rv-filters">
+    <div class="rv-filter-group">
+        <span class="rv-filter-label">Fecha inicio</span>
+        <input type="date" id="rvFechaInicio" />
+    </div>
+    <div class="rv-filter-group">
+        <span class="rv-filter-label">Fecha fin</span>
+        <input type="date" id="rvFechaFin" />
+    </div>
+    <div class="rv-filter-group">
+        <span class="rv-filter-label">Vendedor</span>
+        <select id="rvVendedor">
+            <option value="">Todos los vendedores</option>
+        </select>
+    </div>
+    <div class="rv-filter-group">
+        <span class="rv-filter-label">Estatus</span>
+        <select id="rvStatus">
+            <option value="">Todos</option>
+            <option value="Timbrada">Timbradas</option>
+            <option value="Cancelada">Canceladas</option>
+        </select>
+    </div>
+    <div class="rv-filter-group">
+        <span class="rv-filter-label">Moneda</span>
+        <select id="rvMoneda">
+            <option value="">Todas</option>
+            <option value="MXN">MXN</option>
+            <option value="USD">USD</option>
+        </select>
+    </div>
+    <button class="rv-btn rv-btn-primary" onclick="cargarReporteVendedor()">
+        <i class="fa fa-search"></i> Generar
+    </button>
+    <button class="rv-btn rv-btn-secondary" onclick="rvLimpiarFiltros()">
+        <i class="fa fa-times"></i> Limpiar
+    </button>
+</div>
+
+<div class="rv-kpis" id="rvKpis" style="display:none;">
+    <div class="rv-kpi">
+        <div class="rv-kpi-label">Total facturado</div>
+        <div class="rv-kpi-value" id="rvKpiTotal">—</div>
+    </div>
+    <div class="rv-kpi success">
+        <div class="rv-kpi-label">Facturas emitidas</div>
+        <div class="rv-kpi-value" id="rvKpiCount">—</div>
+    </div>
+    <div class="rv-kpi warning">
+        <div class="rv-kpi-label">Saldo pendiente</div>
+        <div class="rv-kpi-value" id="rvKpiSaldo">—</div>
+    </div>
+    <div class="rv-kpi purple">
+        <div class="rv-kpi-label">Clientes atendidos</div>
+        <div class="rv-kpi-value" id="rvKpiClientes">—</div>
+    </div>
+</div>
+
+<div class="rv-charts" id="rvCharts">
+    <div class="rv-chart-card" style="grid-column: 1 / -1;">
+        <div class="rv-chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <span><i class="fa fa-chart-bar"></i> Carrera de facturación por vendedor</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button id="rvRacePlay" class="rv-btn rv-btn-primary" style="padding:5px 12px;font-size:12px;">&#9654; Reproducir</button>
+                <button id="rvRaceReset" class="rv-btn rv-btn-secondary" style="padding:5px 12px;font-size:12px;">&#8635; Reiniciar</button>
+                <span id="rvRaceLabel" style="font-size:13px;font-weight:700;color:var(--primary-blue);min-width:80px;"></span>
+            </div>
+        </div>
+        <div id="rvChartBar" style="width:100%;height:340px;margin-top:8px;"></div>
+    </div>
+    <div class="rv-chart-card">
+        <div class="rv-chart-title"><i class="fa fa-chart-pie"></i> Participación acumulada</div>
+        <div id="rvChartPie" style="width:100%;height:260px;"></div>
+    </div>
+    <div class="rv-chart-card">
+        <div class="rv-chart-title"><i class="fa fa-chart-line"></i> Evolución mensual por vendedor</div>
+        <div id="rvChartLine" style="width:100%;height:260px;"></div>
+    </div>
+</div>
+
+<div class="rv-table-wrap">
+    <div class="rv-section-title" id="rvTableTitle" style="display:none;">
+        <i class="fa fa-users"></i> Desglose por vendedor
+    </div>
+    <div id="rvTableContainer"></div>
+</div>
+
+<div id="rvDrillModal" class="rv-drill-modal">
+    <div class="rv-drill-content">
+        <div class="rv-drill-header">
+            <h2 id="rvDrillTitle"><i class="fa fa-user"></i> Facturas del vendedor</h2>
+            <button class="close-btn" onclick="rvCloseDrill()">×</button>
+        </div>
+        <div class="rv-drill-body" id="rvDrillBody"></div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script src="~/lib/tom-select/js/tom-select.complete.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+
+        // ============================================================
+        // ESTADO
+        // ============================================================
+        let tomManager;
+        let _rvDatos = [];
+        let _rvTotales = null;
+        let _rvSortCol = null;
+        let _rvSortDir = 'desc';
+        let _rvChartBar = null;
+        let _rvChartPie = null;
+        let _rvChartLine = null;
+        let _rvRaceData = [];
+        let _rvRaceIdx = 0;
+        let _rvRaceTimer = null;
+        let _rvRacePlaying = false;
+        let _rvDetalleFacturas = [];
+
+        const rvFmt = v => '$' + parseFloat(v || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const rvFmtN = v => parseInt(v || 0).toLocaleString('es-MX');
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function () {
+            tomManager = new TomSelectManager();
+
+            // Cargar vendedores/monedas en los selects
+            GetData({ path: '/ReporteVendedor/DatosSelect' }).then((_res) => {
+                tomManager.create('rvVendedor', {
+                    selector: '#rvVendedor',
+                    options: _res.vendedores,
+                    valueField: 'id',
+                    displayField: 'nombre',
+                    searchField: ['id', 'nombre'],
+                    placeholder: 'Seleccione un vendedor...',
+                    maxItems: 1,
+                    create: false,
+                    render: {
+                        option: (data, escape) =>
+                            `<div style="color:var(--text-dark);">${escape(data.nombre)} (ID: ${escape(data.id)})</div>`,
+                        item: (data, escape) =>
+                            `<div style="color:var(--text-dark);">${escape(data.nombre)}</div>`
+                    }
+                });
+            });
+
+            // Fechas por defecto: mes actual
+            rvLimpiarFiltros();
+        });
+
+        // ============================================================
+        // CARGA PRINCIPAL
+        // ============================================================
+        async function cargarReporteVendedor() {
+            const vendedorSeleccionado = document.getElementById('rvVendedor').value;
+
+            const params = new URLSearchParams({
+                fechaInicio: document.getElementById('rvFechaInicio').value,
+                fechaFin: document.getElementById('rvFechaFin').value,
+                vendedorId: vendedorSeleccionado,
+                statusFac: document.getElementById('rvStatus').value,
+                moneda: document.getElementById('rvMoneda').value
+            });
+
+            document.getElementById('rvTableContainer').innerHTML =
+                `<div class="rv-loading"><i class="fa fa-spinner fa-spin"></i><p style="margin-top:10px;">Cargando...</p></div>`;
+            document.getElementById('rvKpis').style.display = 'none';
+            document.getElementById('rvCharts').style.display = 'none';
+            document.getElementById('rvTableTitle').style.display = 'none';
+
+            try {
+                // ── Llamadas al NUEVO controlador ──────────────────────────────
+                const r = await fetch(`/ReporteVendedor/ObtenerReporteVendedor?${params}`);
+                const data = await r.json();
+
+                _rvDatos = data.resumen || [];
+                _rvTotales = data.totales?.[0] || null;
+
+                // Poblar select de vendedores solo la primera vez
+                const sel = document.getElementById('rvVendedor');
+                if (sel.options.length === 1 && data.vendedores?.length) {
+                    data.vendedores.forEach(v => {
+                        const o = document.createElement('option');
+                        o.value = v.clave_vendedor;
+                        o.textContent = `${v.clave_vendedor} – ${v.nombre}`;
+                        sel.appendChild(o);
+                    });
+                }
+
+                rvActualizarKPIs();
+                rvRenderTabla(_rvDatos);
+                rvRenderCharts(_rvDatos, data.resumenMensual || []);
+
+                // Si hay vendedor filtrado, mostrar también el detalle de sus facturas
+                if (vendedorSeleccionado) {
+                    await rvCargarYMostrarDetalle(vendedorSeleccionado);
+                }
+
+            } catch (e) {
+                document.getElementById('rvTableContainer').innerHTML =
+                    `<div class="rv-empty">
+                            <i class="fa fa-exclamation-circle" style="font-size:1.8em;color:#dc2626;"></i>
+                            <p style="margin-top:10px;">Error al cargar los datos.<br><small>${e.message}</small></p>
+                         </div>`;
+            }
+        }
+
+        // ============================================================
+        // DETALLE INLINE (cuando se filtra por un vendedor)
+        // ============================================================
+        async function rvCargarYMostrarDetalle(claveVendedor) {
+            const detalleParams = new URLSearchParams({
+                claveVendedor,
+                fechaInicio: document.getElementById('rvFechaInicio').value,
+                fechaFin: document.getElementById('rvFechaFin').value,
+                pageSize: 9999
+            });
+
+            const contenedor = document.getElementById('rvTableContainer');
+            contenedor.insertAdjacentHTML('beforeend',
+                `<div id="rvDetalleWrap" style="margin-top:24px;">
+                        <div class="rv-loading">
+                            <i class="fa fa-spinner fa-spin"></i>
+                            <p style="margin-top:8px;">Cargando facturas del vendedor...</p>
+                        </div>
+                     </div>`);
+
+            try {
+                const r = await fetch(`/ReporteVendedor/ObtenerDetalleVendedor?${detalleParams}`);
+                const data = await r.json();
+                _rvDetalleFacturas = data.detalle || [];
+                rvRenderDetalleFacturas(_rvDetalleFacturas, claveVendedor);
+            } catch (e) {
+                document.getElementById('rvDetalleWrap').innerHTML =
+                    `<div class="rv-empty" style="color:#dc2626;">Error al cargar el detalle: ${e.message}</div>`;
+            }
+        }
+
+        function rvRenderDetalleFacturas(filas, claveVendedor) {
+            const wrap = document.getElementById('rvDetalleWrap');
+            if (!wrap) return;
+
+            if (!filas.length) {
+                wrap.innerHTML = `<div class="rv-empty" style="margin-top:16px;">Sin facturas para el período seleccionado.</div>`;
+                return;
+            }
+
+            const sumSubtotal = filas.reduce((a, f) => a + parseFloat(f.subtotal || 0), 0);
+            const sumIva = filas.reduce((a, f) => a + parseFloat(f.iva || 0), 0);
+            const sumTotal = filas.reduce((a, f) => a + parseFloat(f.total || 0), 0);
+            const sumSaldo = filas.reduce((a, f) => a + parseFloat(f.saldo || 0), 0);
+
+            const rows = filas.map((f, i) => {
+                const cancelada = (f.statusfactura || '').toLowerCase().includes('cancel');
+                const statusColor = cancelada ? '#dc2626' : '#059669';
+                return `<tr style="${cancelada ? 'opacity:0.7;' : ''}">
+                        <td style="text-align:center;color:var(--text-light);font-size:11px;">${i + 1}</td>
+                        <td style="font-weight:600;font-size:12px;">${f.folio || f.fac_folio || '—'}</td>
+                        <td style="font-size:11px;color:var(--text-light);">${f.serie || '—'}</td>
+                        <td style="font-size:12px;">${f.fecha ? dateFormatter(f.fecha) : '—'}</td>
+                        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;"
+                            title="${f.rsocliente || ''}">${f.rsocliente || '—'}</td>
+                        <td style="font-size:11px;color:var(--text-light);">${f.rfccliente || '—'}</td>
+                        <td class="rv-money" style="text-align:right;">$${parseFloat(f.subtotal || 0).toFixed(2)}</td>
+                        <td class="rv-money" style="text-align:right;">$${parseFloat(f.iva || 0).toFixed(2)}</td>
+                        <td class="rv-money" style="text-align:right;color:var(--primary-blue);font-weight:700;">$${parseFloat(f.total || 0).toFixed(2)}</td>
+                        <td class="rv-money" style="text-align:right;color:${parseFloat(f.saldo) > 0 ? '#b45309' : '#059669'};">$${parseFloat(f.saldo || 0).toFixed(2)}</td>
+                        <td style="font-size:11px;">${f.moneda || 'MXN'}</td>
+                        <td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;
+                            background:${cancelada ? '#fee2e2' : '#d1fae5'};color:${statusColor};">
+                            ${f.statusfactura || '—'}</span></td>
+                        <td style="font-size:10px;color:var(--text-light);">${f.mdpfactura || '—'}</td>
+                        <td style="white-space:nowrap;">
+                            <button onclick="printFactura('${f.uuid}')"    class="btn-icon" title="PDF" style="color:#dc2626;padding:4px 5px;"><i class="fa fa-file-pdf"></i></button>
+                            <button onclick="downloadFactura('${f.uuid}')" class="btn-icon" title="XML" style="color:#059669;padding:4px 5px;"><i class="fa fa-file-code"></i></button>
+                        </td>
+                    </tr>`;
+            }).join('');
+
+            const vendedorInfo = _rvDatos.find(v => v.clave_vendedor === claveVendedor);
+            const nombreVendedor = vendedorInfo ? vendedorInfo.vendedor_nombre : claveVendedor;
+
+            wrap.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                    <div class="rv-section-title" style="margin-bottom:0;">
+                        <i class="fa fa-list-alt"></i>
+                        Facturas de <strong style="color:#7c3aed;margin-left:4px;">${nombreVendedor}</strong>
+                        <span style="font-size:11px;font-weight:400;color:var(--text-light);margin-left:8px;">(${filas.length} facturas)</span>
+                    </div>
+                    <button class="rv-btn rv-btn-success" onclick="rvExportarExcelDetalle()">
+                        <i class="fa fa-file-excel"></i> Exportar Excel
+                    </button>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;">
+                    <div class="rv-kpi" style="padding:10px 14px;">
+                        <div class="rv-kpi-label">Subtotal</div>
+                        <div class="rv-kpi-value" style="font-size:1em;">$${sumSubtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                    <div class="rv-kpi" style="padding:10px 14px;">
+                        <div class="rv-kpi-label">IVA</div>
+                        <div class="rv-kpi-value" style="font-size:1em;">$${sumIva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                    <div class="rv-kpi" style="padding:10px 14px;border-left-color:var(--primary-blue);">
+                        <div class="rv-kpi-label">Total facturado</div>
+                        <div class="rv-kpi-value" style="font-size:1em;color:var(--primary-blue);">$${sumTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                    <div class="rv-kpi warning" style="padding:10px 14px;">
+                        <div class="rv-kpi-label">Saldo pendiente</div>
+                        <div class="rv-kpi-value" style="font-size:1em;">$${sumSaldo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                    <div class="rv-kpi success" style="padding:10px 14px;">
+                        <div class="rv-kpi-label">% Cobrado</div>
+                        <div class="rv-kpi-value" style="font-size:1em;">${sumTotal > 0 ? ((1 - sumSaldo / sumTotal) * 100).toFixed(1) : '0.0'}%</div>
+                    </div>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="rv-table">
+                        <thead><tr>
+                            <th style="width:30px;">#</th>
+                            <th>Folio</th><th>Serie</th><th>Fecha</th><th>Cliente</th><th>RFC</th>
+                            <th style="text-align:right;">Subtotal</th>
+                            <th style="text-align:right;">IVA</th>
+                            <th style="text-align:right;">Total</th>
+                            <th style="text-align:right;">Saldo</th>
+                            <th>Moneda</th><th>Estatus</th><th>MDP</th><th></th>
+                        </tr></thead>
+                        <tbody>${rows}</tbody>
+                        <tfoot>
+                            <tr style="background:var(--very-light-blue);font-weight:700;border-top:2px solid var(--border-light);">
+                                <td colspan="6" style="color:var(--primary-blue);font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;">
+                                    TOTAL (${filas.length} facturas)
+                                </td>
+                                <td class="rv-money" style="text-align:right;padding:10px 12px;">$${sumSubtotal.toFixed(2)}</td>
+                                <td class="rv-money" style="text-align:right;padding:10px 12px;">$${sumIva.toFixed(2)}</td>
+                                <td class="rv-money" style="text-align:right;padding:10px 12px;color:var(--primary-blue);">$${sumTotal.toFixed(2)}</td>
+                                <td class="rv-money" style="text-align:right;padding:10px 12px;color:${sumSaldo > 0 ? '#b45309' : '#059669'};">$${sumSaldo.toFixed(2)}</td>
+                                <td colspan="4"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>`;
+        }
+
+        // ============================================================
+        // KPIs
+        // ============================================================
+        function rvActualizarKPIs() {
+            if (!_rvTotales) return;
+            document.getElementById('rvKpiTotal').textContent = rvFmt(_rvTotales.gran_total);
+            document.getElementById('rvKpiCount').textContent = rvFmtN(_rvTotales.total_facturas);
+            document.getElementById('rvKpiSaldo').textContent = rvFmt(_rvTotales.gran_saldo);
+            document.getElementById('rvKpiClientes').textContent = rvFmtN(_rvTotales.total_clientes);
+            document.getElementById('rvKpis').style.display = 'grid';
+        }
+
+        // ============================================================
+        // TABLA RESUMEN
+        // ============================================================
+        const RV_COLS = [
+            { key: 'rank', label: '#', sortable: false },
+            { key: 'vendedor_nombre', label: 'Vendedor', sortable: true },
+            { key: 'total_facturas', label: 'Facturas', sortable: true },
+            { key: 'facturas_vigentes', label: 'Vigentes', sortable: true },
+            { key: 'suma_total', label: 'Total facturado', sortable: true },
+            { key: 'saldo_total', label: 'Saldo pendiente', sortable: true },
+            { key: 'pct_cobrado', label: '% Cobrado', sortable: true },
+            { key: 'clientes_distintos', label: 'Clientes', sortable: true },
+            { key: 'ticket_promedio', label: 'Ticket promedio', sortable: true },
+            { key: 'ultima_factura', label: 'Última factura', sortable: true },
+            { key: 'acciones', label: '', sortable: false }
+        ];
+
+        function rvRenderTabla(filas) {
+            document.getElementById('rvTableTitle').style.display = filas.length ? 'flex' : 'none';
+
+            if (!filas.length) {
+                document.getElementById('rvTableContainer').innerHTML =
+                    `<div class="rv-empty">
+                            <i class="fa fa-inbox" style="font-size:1.8em;"></i>
+                            <p style="margin-top:10px;">Sin resultados para los filtros seleccionados.</p>
+                         </div>`;
+                return;
+            }
+
+            const maxTotal = Math.max(...filas.map(f => parseFloat(f.suma_total || 0))) || 1;
+
+            let thead = '<thead><tr>';
+            RV_COLS.forEach(c => {
+                const cls = _rvSortCol === c.key ? (_rvSortDir === 'asc' ? 'sort-asc' : 'sort-desc') : '';
+                const click = c.sortable ? `onclick="rvSortTabla('${c.key}')"` : '';
+                thead += `<th class="${cls}" ${click}>${c.label}</th>`;
+            });
+            thead += '</tr></thead>';
+
+            let tbody = '<tbody>';
+            filas.forEach((f, i) => {
+                const rank = i + 1;
+                const rankCls = rank === 1 ? 'rv-rank-1' : rank === 2 ? 'rv-rank-2' : rank === 3 ? 'rv-rank-3' : 'rv-rank-n';
+                const pct = parseFloat(f.pct_cobrado || 0);
+                const pctColor = pct >= 90 ? '#059669' : pct >= 50 ? '#f59e0b' : '#ef4444';
+                const barPct = (parseFloat(f.suma_total || 0) / maxTotal) * 100;
+
+                tbody += `<tr>
+                        <td><span class="rv-rank-badge ${rankCls}">${rank}</span></td>
+                        <td>
+                            <strong>${f.vendedor_nombre}</strong>
+                            <br><small style="color:var(--text-light);font-size:10px;">${f.clave_vendedor}</small>
+                            ${f.correo_vendedor ? `<br><small style="color:var(--text-light);font-size:10px;">${f.correo_vendedor}</small>` : ''}
+                        </td>
+                        <td style="text-align:center;">${rvFmtN(f.total_facturas)}</td>
+                        <td style="text-align:center;">
+                            <span style="background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;">${rvFmtN(f.facturas_vigentes)}</span>
+                            ${parseInt(f.facturas_canceladas) > 0
+                        ? `<span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;margin-left:3px;">${rvFmtN(f.facturas_canceladas)} ✗</span>`
+                        : ''}
+                        </td>
+                        <td>
+                            <span class="rv-money" style="color:var(--primary-blue);">${rvFmt(f.suma_total)}</span>
+                            <div style="background:#e2e8f0;height:3px;border-radius:2px;margin-top:3px;overflow:hidden;">
+                                <div style="height:100%;width:${barPct}%;background:var(--accent-blue);border-radius:2px;"></div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="rv-money" style="color:${parseFloat(f.saldo_total) > 0 ? '#b45309' : '#059669'};">
+                                ${rvFmt(f.saldo_total)}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="font-weight:700;color:${pctColor};">${pct}%</span>
+                            <span class="rv-pct-bar"><span class="rv-pct-fill" style="width:${Math.min(pct, 100)}%;background:${pctColor};"></span></span>
+                        </td>
+                        <td style="text-align:center;">${rvFmtN(f.clientes_distintos)}</td>
+                        <td><span class="rv-money" style="font-size:12px;">${rvFmt(f.ticket_promedio)}</span></td>
+                        <td style="color:var(--text-light);font-size:12px;">
+                            ${f.ultima_factura ? new Date(f.ultima_factura).toLocaleDateString('es-MX') : '—'}
+                        </td>
+                        <td>
+                            <button class="rv-btn-drill" onclick="rvAbrirDrillDown('${f.clave_vendedor}','${rvEsc(f.vendedor_nombre)}')">
+                                <i class="fa fa-list"></i> Ver facturas
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+
+            const sT = filas.reduce((a, f) => a + parseFloat(f.suma_total || 0), 0);
+            const sS = filas.reduce((a, f) => a + parseFloat(f.saldo_total || 0), 0);
+            const cF = filas.reduce((a, f) => a + parseInt(f.total_facturas || 0), 0);
+
+            tbody += `<tr style="background:var(--very-light-blue);font-weight:700;border-top:2px solid var(--border-light);">
+                    <td colspan="2" style="color:var(--primary-blue);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">TOTAL</td>
+                    <td style="text-align:center;">${rvFmtN(cF)}</td>
+                    <td></td>
+                    <td><span class="rv-money" style="color:var(--primary-blue);">${rvFmt(sT)}</span></td>
+                    <td><span class="rv-money">${rvFmt(sS)}</span></td>
+                    <td colspan="5"></td>
+                </tr>`;
+            tbody += '</tbody>';
+
+            document.getElementById('rvTableContainer').innerHTML =
+                `<div style="overflow-x:auto;"><table class="rv-table">${thead}${tbody}</table></div>`;
+        }
+
+        function rvSortTabla(col) {
+            if (_rvSortCol === col) _rvSortDir = _rvSortDir === 'asc' ? 'desc' : 'asc';
+            else { _rvSortCol = col; _rvSortDir = 'desc'; }
+
+            const sorted = [..._rvDatos].sort((a, b) => {
+                let va = a[col], vb = b[col];
+                if (!isNaN(parseFloat(va))) { va = parseFloat(va); vb = parseFloat(vb); }
+                if (va < vb) return _rvSortDir === 'asc' ? -1 : 1;
+                if (va > vb) return _rvSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+            rvRenderTabla(sorted);
+        }
+
+        function rvEsc(s) { return (s || '').replace(/'/g, "\\'"); }
+
+        // ============================================================
+        // GRÁFICAS
+        // ============================================================
+        const RV_COLORS = [
+            '#1e3a5f', '#2563eb', '#059669', '#d97706',
+            '#7c3aed', '#dc2626', '#0891b2', '#65a30d',
+            '#db2777', '#9333ea'
+        ];
+
+        function rvGetChart(id, existing) {
+            const dom = document.getElementById(id);
+            if (!dom) return null;
+            if (existing) { try { existing.dispose(); } catch (e) { } }
+            return echarts.init(dom, null, { renderer: 'canvas' });
+        }
+
+        function rvRenderCharts(filas, resumenMensual) {
+            const wrap = document.getElementById('rvCharts');
+            if (!filas || !filas.length) { wrap.style.display = 'none'; return; }
+            wrap.style.display = 'grid';
+
+            _rvChartBar = rvGetChart('rvChartBar', _rvChartBar);
+            _rvChartPie = rvGetChart('rvChartPie', _rvChartPie);
+            _rvChartLine = rvGetChart('rvChartLine', _rvChartLine);
+
+            if (resumenMensual && resumenMensual.length) {
+                rvPrepararRace(resumenMensual);
+                rvRenderRaceFrame(0, false);
+            } else {
+                rvRenderBarEstatico(filas);
+            }
+
+            rvRenderPie(filas);
+            rvRenderLine(resumenMensual && resumenMensual.length ? resumenMensual : null, filas);
+            rvBindRaceControls();
+
+            window.addEventListener('resize', () => {
+                _rvChartBar && _rvChartBar.resize();
+                _rvChartPie && _rvChartPie.resize();
+                _rvChartLine && _rvChartLine.resize();
+            });
+        }
+
+        function rvPrepararRace(mensual) {
+            const periodoMap = {};
+            mensual.forEach(row => {
+                const key = row.periodo;
+                if (!periodoMap[key])
+                    periodoMap[key] = { periodo: row.periodo, label: row.periodo_label, vendedores: [] };
+                periodoMap[key].vendedores.push({
+                    nombre: row.vendedor_nombre,
+                    clave: row.clave_vendedor,
+                    total: parseFloat(row.suma_total || 0)
+                });
+            });
+            _rvRaceData = Object.values(periodoMap).sort((a, b) => a.periodo.localeCompare(b.periodo));
+            _rvRaceIdx = 0;
+        }
+
+        function rvRenderRaceFrame(idx, animate) {
+            if (!_rvRaceData.length || !_rvChartBar) return;
+            const frame = _rvRaceData[idx];
+            document.getElementById('rvRaceLabel').textContent = frame.label;
+
+            const top = [...frame.vendedores].sort((a, b) => a.total - b.total).slice(-8);
+
+            const colorMap = {};
+            _rvRaceData.forEach(f => f.vendedores.forEach(v => {
+                if (!colorMap[v.clave])
+                    colorMap[v.clave] = RV_COLORS[Object.keys(colorMap).length % RV_COLORS.length];
+            }));
+
+            _rvChartBar.setOption({
+                backgroundColor: 'transparent',
+                animation: animate,
+                animationDuration: 700,
+                animationEasing: 'cubicInOut',
+                grid: { left: 160, right: 90, top: 10, bottom: 30 },
+                xAxis: {
+                    type: 'value',
+                    axisLabel: { formatter: v => '$' + (v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'), fontSize: 11 },
+                    splitLine: { lineStyle: { color: '#e2e8f0' } },
+                    max: v => Math.round(v.max * 1.2)
+                },
+                yAxis: {
+                    type: 'category',
+                    data: top.map(v => v.nombre.split(' ').slice(0, 2).join(' ')),
+                    axisLabel: { fontSize: 12, fontWeight: 'bold' },
+                    axisTick: { show: false }, axisLine: { show: false }
+                },
+                series: [{
+                    type: 'bar',
+                    realtimeSort: true,
+                    data: top.map(v => ({
+                        value: v.total,
+                        itemStyle: { color: colorMap[v.clave] || '#2563eb', borderRadius: [0, 6, 6, 0] }
+                    })),
+                    label: {
+                        show: true, position: 'right',
+                        formatter: p => '$' + (p.value >= 1e6 ? (p.value / 1e6).toFixed(2) + 'M' : (p.value / 1000).toFixed(0) + 'k'),
+                        fontSize: 11, fontWeight: 'bold'
+                    },
+                    barMaxWidth: 32
+                }]
+            }, !animate);
+        }
+
+        function rvRenderBarEstatico(filas) {
+            if (!_rvChartBar) return;
+            document.getElementById('rvRaceLabel').textContent = 'Acumulado';
+            const colorMap = {};
+            filas.forEach((f, i) => { colorMap[f.clave_vendedor] = RV_COLORS[i % RV_COLORS.length]; });
+            const top = [...filas].sort((a, b) => parseFloat(a.suma_total) - parseFloat(b.suma_total)).slice(-8);
+            _rvChartBar.setOption({
+                backgroundColor: 'transparent', animation: true,
+                grid: { left: 160, right: 90, top: 10, bottom: 30 },
+                xAxis: { type: 'value', axisLabel: { formatter: v => '$' + (v / 1000).toFixed(0) + 'k', fontSize: 11 }, splitLine: { lineStyle: { color: '#e2e8f0' } }, max: v => Math.round(v.max * 1.2) },
+                yAxis: { type: 'category', data: top.map(f => f.vendedor_nombre.split(' ').slice(0, 2).join(' ')), axisLabel: { fontSize: 12, fontWeight: 'bold' }, axisTick: { show: false }, axisLine: { show: false } },
+                series: [{ type: 'bar', data: top.map(f => ({ value: parseFloat(f.suma_total || 0), itemStyle: { color: colorMap[f.clave_vendedor], borderRadius: [0, 6, 6, 0] } })), label: { show: true, position: 'right', formatter: p => '$' + (p.value / 1000).toFixed(0) + 'k', fontSize: 11, fontWeight: 'bold' }, barMaxWidth: 32 }]
+            });
+        }
+
+        function rvRenderPie(filas) {
+            if (!_rvChartPie) return;
+            const top = [...filas].sort((a, b) => parseFloat(b.suma_total) - parseFloat(a.suma_total)).slice(0, 10);
+            _rvChartPie.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'item', formatter: p => { const v = parseFloat(p.value); return `<b>${p.name}</b><br/>$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })} (${p.percent}%)`; } },
+                legend: { show: false },
+                series: [{
+                    type: 'pie', radius: ['48%', '75%'], center: ['50%', '50%'],
+                    data: top.map((f, i) => ({ name: f.vendedor_nombre.split(' ').slice(0, 2).join(' '), value: parseFloat(f.suma_total || 0), itemStyle: { color: RV_COLORS[i % RV_COLORS.length] } })),
+                    label: { show: false },
+                    emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,0.2)' }, label: { show: true, fontSize: 13, fontWeight: 'bold', formatter: '{b}\n{d}%' } }
+                }]
+            });
+        }
+
+        function rvRenderLine(mensual, filasTotales) {
+            if (!_rvChartLine) return;
+            if (!mensual || !mensual.length) {
+                const top = [...filasTotales].sort((a, b) => parseFloat(b.suma_total) - parseFloat(a.suma_total)).slice(0, 8);
+                _rvChartLine.setOption({ backgroundColor: 'transparent', tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: top.map(f => f.vendedor_nombre.split(' ')[0]) }, yAxis: { type: 'value', axisLabel: { formatter: v => '$' + (v / 1000).toFixed(0) + 'k' } }, series: [{ type: 'bar', data: top.map((f, i) => ({ value: parseFloat(f.suma_total || 0), itemStyle: { color: RV_COLORS[i % RV_COLORS.length] } })) }] });
+                return;
+            }
+            const periodos = [...new Set(mensual.map(r => r.periodo_label))];
+            const vendMap = {};
+            mensual.forEach(r => {
+                if (!vendMap[r.clave_vendedor])
+                    vendMap[r.clave_vendedor] = { nombre: r.vendedor_nombre, datos: {} };
+                vendMap[r.clave_vendedor].datos[r.periodo_label] = parseFloat(r.suma_total || 0);
+            });
+            const topVend = Object.entries(vendMap)
+                .map(([k, v]) => ({ clave: k, nombre: v.nombre, total: Object.values(v.datos).reduce((s, x) => s + x, 0), datos: v.datos }))
+                .sort((a, b) => b.total - a.total).slice(0, 6);
+            const colorMap = {};
+            topVend.forEach((v, i) => { colorMap[v.clave] = RV_COLORS[i]; });
+            _rvChartLine.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', formatter: params => { let s = `<b>${params[0].axisValue}</b><br/>`; params.forEach(p => { s += `<span style="color:${p.color}">●</span> ${p.seriesName}: $${((p.value || 0) / 1000).toFixed(0)}k<br/>`; }); return s; } },
+                legend: { data: topVend.map(v => v.nombre.split(' ').slice(0, 2).join(' ')), bottom: 0, type: 'scroll', textStyle: { fontSize: 11 } },
+                grid: { left: 55, right: 16, top: 16, bottom: 40 },
+                xAxis: { type: 'category', data: periodos, axisLabel: { fontSize: 10, rotate: periodos.length > 6 ? 30 : 0 } },
+                yAxis: { type: 'value', axisLabel: { formatter: v => '$' + (v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'), fontSize: 10 }, splitLine: { lineStyle: { color: '#e2e8f0' } } },
+                series: topVend.map(v => ({ name: v.nombre.split(' ').slice(0, 2).join(' '), type: 'line', smooth: true, symbol: 'circle', symbolSize: 5, data: periodos.map(p => v.datos[p] || 0), lineStyle: { color: colorMap[v.clave], width: 2 }, itemStyle: { color: colorMap[v.clave] }, areaStyle: { color: colorMap[v.clave], opacity: 0.06 } }))
+            });
+        }
+
+        function rvBindRaceControls() {
+            const btnPlay = document.getElementById('rvRacePlay');
+            const btnReset = document.getElementById('rvRaceReset');
+            if (!btnPlay || !btnReset) return;
+            btnPlay.onclick = () => {
+                if (!_rvRaceData.length) return;
+                if (_rvRacePlaying) { rvRacePausar(); }
+                else {
+                    if (_rvRaceIdx >= _rvRaceData.length - 1) _rvRaceIdx = 0;
+                    rvRaceReproducir();
+                }
+            };
+            btnReset.onclick = () => {
+                rvRacePausar(); _rvRaceIdx = 0;
+                if (_rvRaceData.length) rvRenderRaceFrame(0, false);
+                btnPlay.innerHTML = '&#9654; Reproducir';
+            };
+        }
+
+        function rvRaceReproducir() {
+            _rvRacePlaying = true;
+            document.getElementById('rvRacePlay').innerHTML = '&#9646;&#9646; Pausar';
+            _rvRaceTimer = setInterval(() => {
+                rvRenderRaceFrame(_rvRaceIdx, true);
+                _rvRaceIdx++;
+                if (_rvRaceIdx >= _rvRaceData.length) { rvRacePausar(); _rvRaceIdx = _rvRaceData.length - 1; }
+            }, 1100);
+        }
+
+        function rvRacePausar() {
+            _rvRacePlaying = false;
+            clearInterval(_rvRaceTimer);
+            document.getElementById('rvRacePlay').innerHTML = '&#9654; Reproducir';
+        }
+
+        // ============================================================
+        // DRILL-DOWN (modal)
+        // ============================================================
+        async function rvAbrirDrillDown(clave, nombre) {
+            document.getElementById('rvDrillTitle').innerHTML =
+                `<i class="fa fa-user"></i> ${nombre}`;
+            document.getElementById('rvDrillBody').innerHTML =
+                `<div class="rv-loading"><i class="fa fa-spinner fa-spin"></i><p style="margin-top:10px;">Cargando facturas...</p></div>`;
+            document.getElementById('rvDrillModal').classList.add('active');
+
+            const params = new URLSearchParams({
+                claveVendedor: clave,
+                fechaInicio: document.getElementById('rvFechaInicio').value,
+                fechaFin: document.getElementById('rvFechaFin').value
+            });
+
+            try {
+                const r = await fetch(`/ReporteVendedor/ObtenerDetalleVendedor?${params}`);
+                const data = await r.json();
+                rvRenderDrill(data.detalle || [], nombre);
+            } catch (e) {
+                document.getElementById('rvDrillBody').innerHTML =
+                    `<div class="rv-empty"><i class="fa fa-exclamation-circle" style="color:#dc2626;font-size:1.8em;"></i><p>${e.message}</p></div>`;
+            }
+        }
+
+        function rvRenderDrill(filas, nombre) {
+            if (!filas.length) {
+                document.getElementById('rvDrillBody').innerHTML =
+                    `<div class="rv-empty">Sin facturas en el período seleccionado.</div>`;
+                return;
+            }
+
+            const rows = filas.map(f => {
+                const cancelada = (f.statusfactura || '').toLowerCase().includes('cancel');
+                return `<tr>
+                        <td style="font-size:12px;color:var(--text-light);">${f.folio || f.fac_folio}</td>
+                        <td>${f.serie}</td>
+                        <td style="font-size:12px;">${new Date(f.fecha).toLocaleDateString('es-MX')}</td>
+                        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.rsocliente}</td>
+                        <td style="font-size:11px;color:var(--text-light);">${f.rfccliente}</td>
+                        <td class="rv-money">${rvFmt(f.total)}</td>
+                        <td class="rv-money" style="color:${parseFloat(f.saldo) > 0 ? '#b45309' : '#059669'};">${rvFmt(f.saldo)}</td>
+                        <td>${f.moneda || 'MXN'}</td>
+                        <td><span style="font-size:11px;font-weight:700;color:${cancelada ? '#dc2626' : '#059669'};">${f.statusfactura || '—'}</span></td>
+                        <td>
+                            <button onclick="printFactura('${f.uuid}')"    class="btn-icon" title="PDF" style="color:#dc2626;"><i class="fa fa-file-pdf"></i></button>
+                            <button onclick="downloadFactura('${f.uuid}')" class="btn-icon" title="XML" style="color:#059669;"><i class="fa fa-file-code"></i></button>
+                        </td>
+                    </tr>`;
+            }).join('');
+
+            const sumT = filas.reduce((a, f) => a + parseFloat(f.total || 0), 0);
+            const sumS = filas.reduce((a, f) => a + parseFloat(f.saldo || 0), 0);
+
+            document.getElementById('rvDrillBody').innerHTML = `
+                    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+                        <div class="rv-kpi" style="flex:1;min-width:130px;"><div class="rv-kpi-label">Total facturado</div><div class="rv-kpi-value" style="font-size:1.1em;">${rvFmt(sumT)}</div></div>
+                        <div class="rv-kpi warning" style="flex:1;min-width:130px;"><div class="rv-kpi-label">Saldo pendiente</div><div class="rv-kpi-value" style="font-size:1.1em;">${rvFmt(sumS)}</div></div>
+                        <div class="rv-kpi success" style="flex:1;min-width:130px;"><div class="rv-kpi-label">Facturas</div><div class="rv-kpi-value" style="font-size:1.1em;">${filas.length}</div></div>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="rv-table">
+                            <thead><tr>
+                                <th>Folio</th><th>Serie</th><th>Fecha</th><th>Cliente</th>
+                                <th>RFC</th><th>Total</th><th>Saldo</th><th>Moneda</th><th>Estatus</th><th></th>
+                            </tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:14px;text-align:right;">
+                        <button class="rv-btn rv-btn-success"
+                            onclick="rvExportarExcelDrill(${JSON.stringify(filas).replace(/</g, '\\u003c')}, '${rvEsc(nombre)}')">
+                            <i class="fa fa-file-excel"></i> Exportar Excel
+                        </button>
+                    </div>`;
+        }
+
+        function rvCloseDrill() {
+            document.getElementById('rvDrillModal').classList.remove('active');
+        }
+        window.addEventListener('click', e => {
+            if (e.target === document.getElementById('rvDrillModal')) rvCloseDrill();
+        });
+
+        // ============================================================
+        // EXPORTAR EXCEL — RESUMEN
+        // ============================================================
+        function rvExportarExcel() {
+            if (!_rvDatos.length) { alert('Sin datos para exportar.'); return; }
+            const wb = XLSX.utils.book_new();
+            const hdr = ['#', 'Vendedor', 'Clave', 'Correo', 'Total facturas', 'Vigentes', 'Canceladas', 'Subtotal', 'IVA', 'Total facturado', 'Descuento', 'Saldo pendiente', '% Cobrado', 'Clientes', 'Ticket promedio', 'Última factura'];
+            const rows = _rvDatos.map((f, i) => [
+                i + 1, f.vendedor_nombre, f.clave_vendedor, f.correo_vendedor || '',
+                parseInt(f.total_facturas || 0), parseInt(f.facturas_vigentes || 0), parseInt(f.facturas_canceladas || 0),
+                parseFloat(f.suma_subtotal || 0), parseFloat(f.suma_iva || 0), parseFloat(f.suma_total || 0),
+                parseFloat(f.suma_descuento || 0), parseFloat(f.saldo_total || 0),
+                parseFloat(f.pct_cobrado || 0) / 100,
+                parseInt(f.clientes_distintos || 0), parseFloat(f.ticket_promedio || 0),
+                f.ultima_factura ? new Date(f.ultima_factura).toLocaleDateString('es-MX') : ''
+            ]);
+            const ws = XLSX.utils.aoa_to_sheet([hdr, ...rows]);
+            ws['!cols'] = [{ wch: 4 }, { wch: 30 }, { wch: 10 }, { wch: 28 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 14 }];
+            XLSX.utils.book_append_sheet(wb, ws, 'Resumen por vendedor');
+            const fecha = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            XLSX.writeFile(wb, `Reporte_Vendedores_${fecha}.xlsx`);
+        }
+
+        // ============================================================
+        // EXPORTAR EXCEL — DETALLE INLINE
+        // ============================================================
+        function rvExportarExcelDetalle() {
+            if (!_rvDetalleFacturas.length) { alert('Sin facturas para exportar.'); return; }
+            const vendedorSeleccionado = document.getElementById('rvVendedor').value;
+            const vendedorInfo = _rvDatos.find(v => v.clave_vendedor === vendedorSeleccionado);
+            const nombreVendedor = vendedorInfo ? vendedorInfo.vendedor_nombre : vendedorSeleccionado;
+            const wb = XLSX.utils.book_new();
+            const hdr = ['#', 'Folio', 'Serie', 'Folio Fac.', 'Fecha', 'RFC Cliente', 'Cliente', 'Subtotal', 'IVA', 'Descuento', 'Total', 'Saldo', 'Moneda', 'Estatus', 'Método de Pago', 'UUID'];
+            const rows = _rvDetalleFacturas.map((f, i) => [
+                i + 1, f.folio || f.fac_folio || '', f.serie || '', f.fac_folio || '',
+                f.fecha ? dateFormatter(f.fecha) : '',
+                f.rfccliente || '', f.rsocliente || '',
+                parseFloat(f.subtotal || 0), parseFloat(f.iva || 0), parseFloat(f.descuento || 0),
+                parseFloat(f.total || 0), parseFloat(f.saldo || 0),
+                f.moneda || 'MXN', f.statusfactura || '', f.mdpfactura || '', f.uuid || ''
+            ]);
+            const ws = XLSX.utils.aoa_to_sheet([hdr, ...rows]);
+            XLSX.utils.book_append_sheet(wb, ws, (nombreVendedor || 'Vendedor').substring(0, 28).replace(/[\\\/\?\*\[\]]/g, ''));
+            const fecha = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            XLSX.writeFile(wb, `Facturas_${(nombreVendedor || 'Vendedor').replace(/\s/g, '_').substring(0, 20)}_${fecha}.xlsx`);
+        }
+
+        // ============================================================
+        // EXPORTAR EXCEL — DRILL-DOWN MODAL
+        // ============================================================
+        function rvExportarExcelDrill(filas, nombre) {
+            const wb = XLSX.utils.book_new();
+            const hdr = ['Folio', 'Serie', 'Folio Fac.', 'Fecha', 'RFC Cliente', 'Cliente', 'Subtotal', 'IVA', 'Total', 'Saldo', 'Moneda', 'Estatus', 'MDP', 'UUID'];
+            const rows = filas.map(f => [
+                f.folio || f.fac_folio, f.serie, f.fac_folio,
+                f.fecha ? new Date(f.fecha).toLocaleDateString('es-MX') : '',
+                f.rfccliente, f.rsocliente,
+                parseFloat(f.subtotal || 0), parseFloat(f.iva || 0),
+                parseFloat(f.total || 0), parseFloat(f.saldo || 0),
+                f.moneda || 'MXN', f.statusfactura || '', f.mdpfactura || '', f.uuid || ''
+            ]);
+            const ws = XLSX.utils.aoa_to_sheet([hdr, ...rows]);
+            XLSX.utils.book_append_sheet(wb, ws, nombre.substring(0, 25).replace(/[\\\/\?\*\[\]]/g, '') + ' - Facturas');
+            const fecha = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            XLSX.writeFile(wb, `Facturas_${nombre.replace(/\s/g, '_').substring(0, 20)}_${fecha}.xlsx`);
+        }
+
+        // ============================================================
+        // LIMPIAR FILTROS — pone rango mes actual
+        // ============================================================
+        function rvLimpiarFiltros() {
+            const hoy = new Date();
+            const y = hoy.getFullYear(), m = String(hoy.getMonth() + 1).padStart(2, '0');
+            document.getElementById('rvFechaInicio').value = `${y}-${m}-01`;
+            document.getElementById('rvFechaFin').value = hoy.toISOString().split('T')[0];
+            document.getElementById('rvVendedor').value = '';
+            document.getElementById('rvStatus').value = '';
+            document.getElementById('rvMoneda').value = '';
+        }
+
+        // Helpers globales (deben existir en el layout o reutilizarse aquí)
+        function printFactura(id) { window.open(`../Facturacion/facturas/${id}.pdf`, '_blank'); }
+        function downloadFactura(id) {
+            const url = `../Facturacion/xml_timbrados/${id}.xml`;
+            window.open(url, '_blank');
+            const a = document.createElement('a'); a.href = url; a.download = `${id}.xml`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+        function dateFormatter(v) {
+            if (!v) return '—';
+            const d = new Date(v);
+            return isNaN(d) ? v : d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+    </script>
+}

@@ -1,0 +1,871 @@
+﻿@{
+    ViewBag.Title = "Formulario Ticket";
+    ViewData["PageTitle"] = "Nuevo ticket";
+
+    var prioridades = ViewBag.Prioridades as List<Dictionary<string, object>>
+                      ?? new List<Dictionary<string, object>>();
+
+    int categoriaId = ViewBag.CategoriaSeleccionada ?? 0;
+    string categoriaNombre = ViewBag.CategoriaNombre as string ?? "";
+    string categoriaIcono = ViewBag.CategoriaIcono as string ?? "";
+
+    if (string.IsNullOrWhiteSpace(categoriaIcono))
+    {
+        categoriaIcono = "fa-regular fa-circle-question";
+    }
+
+    // Si el id de categoria no resolvio a nada, el alta va a fallar en el servidor
+    // ("Todos los campos son obligatorios"), asi que se avisa antes de escribir nada.
+    bool categoriaValida = categoriaId > 0 && !string.IsNullOrWhiteSpace(categoriaNombre);
+
+    int maxArchivos = BOS_ERP.Helpers.SoporteAdjuntos.MaximoArchivos;
+    int maxMb = (int)(BOS_ERP.Helpers.SoporteAdjuntos.TamanoMaximoBytes / (1024 * 1024));
+    string accept = BOS_ERP.Helpers.SoporteAdjuntos.AcceptHtml;
+}
+
+@functions {
+    // prio.color viene del catalogo como hex ("#dc3545"). Las pastillas de prioridad
+    // necesitan ademas una version translucida para el fondo del estado activo, y
+    // color-mix() no esta disponible en todos los navegadores del piso.
+    static string Rgba(string hex, string alpha)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return "rgba(148,163,184,.14)";
+
+        var limpio = hex.Trim().TrimStart('#');
+        if (limpio.Length == 3)
+        {
+            limpio = string.Concat(limpio[0], limpio[0], limpio[1], limpio[1], limpio[2], limpio[2]);
+        }
+
+        if (limpio.Length != 6 ||
+            !int.TryParse(limpio.Substring(0, 2), System.Globalization.NumberStyles.HexNumber, null, out int r) ||
+            !int.TryParse(limpio.Substring(2, 2), System.Globalization.NumberStyles.HexNumber, null, out int g) ||
+            !int.TryParse(limpio.Substring(4, 2), System.Globalization.NumberStyles.HexNumber, null, out int b))
+        {
+            // No es un hex reconocible: se deja gris neutro en vez de romper el CSS.
+            return "rgba(148,163,184,.14)";
+        }
+
+        return $"rgba({r},{g},{b},{alpha})";
+    }
+}
+
+@section styles {
+    <style>
+        .tkf-wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 1rem 0 3rem;
+            font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+        }
+
+        /* ── Encabezado ─────────────────────────────────────────────── */
+        .tkf-back {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            margin-bottom: 1rem;
+            font-size: .88rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-decoration: none;
+            transition: color .2s ease, gap .2s ease;
+        }
+
+            .tkf-back:hover {
+                color: #4f6bf6;
+                gap: .75rem;
+            }
+
+        .tkf-title {
+            margin: 0 0 .4rem;
+            font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+            font-weight: 700;
+            letter-spacing: -.02em;
+            color: var(--text-dark);
+        }
+
+        .tkf-sub {
+            margin: 0 0 2rem;
+            color: var(--text-light);
+        }
+
+        /* ── Estructura ─────────────────────────────────────────────── */
+        .tkf-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .tkf-card {
+            padding: 0;
+            overflow: hidden;
+            border-radius: 16px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, .06);
+        }
+
+        .tkf-seccion {
+            padding: 1.75rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+            .tkf-seccion:last-child {
+                border-bottom: none;
+            }
+
+        .tkf-seccion__head {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            margin-bottom: 1.35rem;
+        }
+
+        .tkf-paso {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(79, 107, 246, .12);
+            color: #4f6bf6;
+            font-size: .85rem;
+            font-weight: 700;
+        }
+
+        .tkf-seccion__titulo {
+            margin: 0;
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .tkf-seccion__hint {
+            margin: .1rem 0 0;
+            font-size: .82rem;
+            color: var(--text-light);
+        }
+
+        .tkf-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.1rem;
+        }
+
+        .tkf-campo {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tkf-label {
+            margin-bottom: .4rem;
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .tkf-label span {
+            font-weight: 400;
+            color: var(--text-light);
+        }
+
+        /* Icono dentro del control. */
+        .tkf-input-wrap {
+            position: relative;
+        }
+
+            .tkf-input-wrap > i {
+                position: absolute;
+                top: 0;
+                left: 1rem;
+                height: 48px;
+                display: flex;
+                align-items: center;
+                color: var(--text-light);
+                font-size: .95rem;
+                pointer-events: none;
+            }
+
+        .tkf-wrap .form-control {
+            height: 48px;
+            padding: 0 1rem 0 2.75rem;
+            border-radius: 10px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            color: var(--text-dark);
+            font-size: .95rem;
+            box-shadow: none;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+            .tkf-wrap .form-control:focus {
+                border-color: #4f6bf6;
+                box-shadow: 0 0 0 4px rgba(79, 107, 246, .14);
+            }
+
+            .tkf-wrap .form-control[readonly] {
+                background: var(--bg-gray);
+                color: var(--text-light);
+                cursor: default;
+            }
+
+            .tkf-wrap textarea.form-control {
+                height: auto;
+                min-height: 140px;
+                padding: .85rem 1rem;
+                line-height: 1.55;
+                resize: vertical;
+            }
+
+        .tkf-campo--full {
+            grid-column: 1 / -1;
+        }
+
+        .tkf-contador {
+            margin-top: .4rem;
+            font-size: .78rem;
+            color: var(--text-light);
+            text-align: right;
+        }
+
+        /* Mensajes de validacion propios (los radios no encajan con invalid-feedback). */
+        .tkf-feedback {
+            display: none;
+            margin-top: .45rem;
+            font-size: .82rem;
+            color: #dc3545;
+        }
+
+        .was-validated .tkf-prio-group:has(input:invalid) .tkf-feedback {
+            display: block;
+        }
+
+        /* ── Prioridad como pastillas ───────────────────────────────── */
+        .tkf-prio {
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            gap: .6rem;
+        }
+
+        .tkf-prio__input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .tkf-prio__pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .55rem;
+            padding: .6rem 1.1rem;
+            border-radius: 999px;
+            border: 1.5px solid var(--border-light);
+            background: var(--bg-light);
+            color: var(--text-light);
+            font-size: .9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color .2s ease, background .2s ease, color .2s ease, transform .2s ease;
+        }
+
+            .tkf-prio__pill:hover {
+                transform: translateY(-2px);
+                border-color: var(--p);
+            }
+
+        .tkf-prio__dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--p);
+        }
+
+        .tkf-prio__input:checked + .tkf-prio__pill {
+            border-color: var(--p);
+            background: var(--p-soft);
+            color: var(--p);
+        }
+
+        .tkf-prio__input:focus-visible + .tkf-prio__pill {
+            outline: 2px solid var(--p);
+            outline-offset: 2px;
+        }
+
+        /* ── Adjuntos ───────────────────────────────────────────────── */
+        .tkf-drop {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .35rem;
+            padding: 2rem 1.25rem;
+            border: 2px dashed var(--border-light);
+            border-radius: 14px;
+            background: var(--bg-gray);
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .2s ease, background .2s ease;
+        }
+
+            .tkf-drop:hover,
+            .tkf-drop.is-drag {
+                border-color: #4f6bf6;
+                background: rgba(79, 107, 246, .07);
+            }
+
+            .tkf-drop > i {
+                font-size: 1.8rem;
+                color: #4f6bf6;
+                margin-bottom: .35rem;
+            }
+
+        .tkf-drop__texto {
+            margin: 0;
+            font-size: .95rem;
+            color: var(--text-dark);
+        }
+
+        .tkf-drop__hint {
+            font-size: .8rem;
+            color: var(--text-light);
+        }
+
+        .tkf-files {
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+            margin-top: .9rem;
+        }
+
+            .tkf-files:empty {
+                margin-top: 0;
+            }
+
+        .tkf-file {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            padding: .6rem .8rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-gray);
+            font-size: .88rem;
+            color: var(--text-dark);
+        }
+
+            .tkf-file > i {
+                color: #4f6bf6;
+            }
+
+        .tkf-file__name {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tkf-file__size {
+            flex: 0 0 auto;
+            font-size: .78rem;
+            color: var(--text-light);
+        }
+
+        .tkf-file__x {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--text-light);
+            transition: background .2s ease, color .2s ease;
+        }
+
+            .tkf-file__x:hover {
+                background: rgba(220, 53, 69, .12);
+                color: #dc3545;
+            }
+
+        /* ── Captcha (se estiliza el partial compartido desde aqui) ─── */
+        .tkf-captcha .col-md-6 {
+            width: 100%;
+            max-width: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tkf-captcha .form-outline {
+            margin: 0;
+        }
+
+        .tkf-captcha .form-label {
+            margin-bottom: .4rem;
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .tkf-captcha #captchaImg {
+            height: 52px !important;
+            border-radius: 10px !important;
+            border-color: var(--border-light) !important;
+        }
+
+        .tkf-captcha .btn-outline-secondary {
+            border-radius: 10px;
+            border-color: var(--border-light);
+            color: var(--text-light);
+        }
+
+            .tkf-captcha .btn-outline-secondary:hover {
+                border-color: #4f6bf6;
+                background: rgba(79, 107, 246, .08);
+                color: #4f6bf6;
+            }
+
+        .tkf-captcha .form-control {
+            padding-left: 1rem;
+        }
+
+        /* ── Pie con acciones ───────────────────────────────────────── */
+        .tkf-acciones {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: .75rem;
+            padding: 1.25rem 1.75rem;
+            background: var(--bg-gray);
+        }
+
+        .tkf-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            height: 46px;
+            padding: 0 1.6rem;
+            border: none;
+            border-radius: 10px;
+            font-size: .95rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+
+        .tkf-btn--primario {
+            background: linear-gradient(135deg, #4f6bf6, #7c5cfc);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(79, 107, 246, .28);
+        }
+
+            .tkf-btn--primario:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 24px rgba(79, 107, 246, .35);
+                color: #fff;
+            }
+
+            .tkf-btn--primario:disabled {
+                opacity: .65;
+                box-shadow: none;
+            }
+
+        .tkf-btn--ghost {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-light);
+        }
+
+            .tkf-btn--ghost:hover {
+                border-color: var(--text-light);
+                color: var(--text-dark);
+            }
+
+        /* ── Panel lateral ──────────────────────────────────────────── */
+        .tkf-aside {
+            position: sticky;
+            top: 84px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .tkf-panel {
+            padding: 1.25rem;
+            border-radius: 16px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, .06);
+        }
+
+        .tkf-panel__titulo {
+            margin: 0 0 .9rem;
+            font-size: .74rem;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--text-light);
+        }
+
+        .tkf-cat {
+            display: flex;
+            align-items: center;
+            gap: .9rem;
+        }
+
+        .tkf-cat__icono {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(79, 107, 246, .12);
+            color: #4f6bf6;
+            font-size: 1.3rem;
+        }
+
+        .tkf-cat__nombre {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--text-dark);
+        }
+
+        .tkf-cat__cambiar {
+            font-size: .82rem;
+            font-weight: 600;
+            color: #4f6bf6;
+            text-decoration: none;
+        }
+
+            .tkf-cat__cambiar:hover {
+                text-decoration: underline;
+            }
+
+        .tkf-tips {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: .7rem;
+        }
+
+            .tkf-tips li {
+                display: flex;
+                gap: .6rem;
+                font-size: .87rem;
+                line-height: 1.45;
+                color: var(--text-light);
+            }
+
+            .tkf-tips i {
+                margin-top: .2rem;
+                color: #22c55e;
+            }
+
+        .tkf-limites {
+            margin: 0;
+            font-size: .84rem;
+            line-height: 1.5;
+            color: var(--text-light);
+        }
+
+            .tkf-limites code {
+                font-size: .78rem;
+                color: var(--text-light);
+                word-break: break-word;
+            }
+
+        /* ── Aviso de categoria faltante ────────────────────────────── */
+        .tkf-aviso {
+            display: flex;
+            align-items: flex-start;
+            gap: .75rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem 1.15rem;
+            border-radius: 12px;
+            border: 1px solid rgba(245, 158, 11, .35);
+            background: rgba(245, 158, 11, .1);
+            color: var(--text-dark);
+            font-size: .9rem;
+        }
+
+            .tkf-aviso i {
+                color: #f59e0b;
+                margin-top: .15rem;
+            }
+
+            .tkf-aviso a {
+                font-weight: 600;
+                color: #4f6bf6;
+            }
+
+        /* ── Tema oscuro ────────────────────────────────────────────── */
+        [data-theme="dark"] .tkf-card,
+        [data-theme="dark"] .tkf-panel {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+        }
+
+        [data-theme="dark"] .tkf-wrap .form-control::placeholder {
+            color: var(--text-light);
+            opacity: .7;
+        }
+
+        [data-theme="dark"] .tkf-captcha #captchaImg {
+            background: #fff;
+        }
+
+        /* ── Responsivo ─────────────────────────────────────────────── */
+        @@media (max-width: 992px) {
+            .tkf-layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .tkf-aside {
+                position: static;
+                order: -1;
+            }
+        }
+
+        @@media (max-width: 640px) {
+            .tkf-row {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .tkf-seccion,
+            .tkf-acciones {
+                padding: 1.25rem;
+            }
+
+            .tkf-acciones {
+                flex-direction: column-reverse;
+            }
+
+            .tkf-btn {
+                width: 100%;
+            }
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .tkf-btn,
+            .tkf-prio__pill,
+            .tkf-back {
+                transition: none;
+            }
+
+                .tkf-btn--primario:hover:not(:disabled),
+                .tkf-prio__pill:hover {
+                    transform: none;
+                }
+        }
+    </style>
+}
+
+<div class="tkf-wrap">
+    <a class="tkf-back" href="@Url.Action("EnviarTicket", "Soporte")">
+        <i class="fa-solid fa-chevron-left"></i> Centro de soporte
+    </a>
+
+    <h2 class="tkf-title">Cuéntanos qué está pasando</h2>
+    <p class="tkf-sub">Entre más detalle des, más rápido podemos resolverlo.</p>
+
+    @if (!categoriaValida)
+    {
+        <div class="tkf-aviso">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+                No hay una categoría seleccionada, así que el ticket no se podrá enviar.
+                <a href="@Url.Action("EnviarTicket", "Soporte")">Elige un área de soporte</a> para continuar.
+            </div>
+        </div>
+    }
+
+    <div class="tkf-layout">
+        <form id="formTicket" method="post" enctype="multipart/form-data" class="tkf-card" novalidate>
+            @Html.AntiForgeryToken()
+            @* La categoria viaja en el propio formulario. Antes el JS la leia del query
+               string y la anadia al FormData; si la vista se abria sin ?categoria=, el
+               binding recibia 0 y el alta respondia "Todos los campos son obligatorios". *@
+            <input type="hidden" name="categoria" value="@categoriaId" />
+
+            <div class="tkf-seccion">
+                <div class="tkf-seccion__head">
+                    <span class="tkf-paso">1</span>
+                    <div>
+                        <h3 class="tkf-seccion__titulo">Quién reporta</h3>
+                        <p class="tkf-seccion__hint">Se toman de tu sesión y no se pueden editar.</p>
+                    </div>
+                </div>
+
+                <div class="tkf-row">
+                    <div class="tkf-campo">
+                        <label class="tkf-label" for="nombre">Nombre</label>
+                        @* El ticket se crea siempre a nombre del usuario de la sesion:
+                           el servidor ignora lo que venga en estos dos campos. *@
+                        <div class="tkf-input-wrap">
+                            <i class="fa-regular fa-user"></i>
+                            <input type="text" id="nombre" name="nombre" class="form-control"
+                                   value="@ViewBag.NombreUsuario" readonly />
+                        </div>
+                    </div>
+
+                    <div class="tkf-campo">
+                        <label class="tkf-label" for="email">Correo</label>
+                        <div class="tkf-input-wrap">
+                            <i class="fa-regular fa-envelope"></i>
+                            <input type="email" id="email" name="email" class="form-control"
+                                   value="@ViewBag.EmailUsuario" readonly />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tkf-seccion">
+                <div class="tkf-seccion__head">
+                    <span class="tkf-paso">2</span>
+                    <div>
+                        <h3 class="tkf-seccion__titulo">El problema</h3>
+                        <p class="tkf-seccion__hint">Un asunto corto y luego el detalle completo.</p>
+                    </div>
+                </div>
+
+                <div class="tkf-row">
+                    <div class="tkf-campo tkf-campo--full">
+                        <label class="tkf-label" for="asunto">Asunto</label>
+                        <div class="tkf-input-wrap">
+                            <i class="fa-regular fa-tag"></i>
+                            <input type="text" id="asunto" name="asunto" class="form-control"
+                                   placeholder="Ej. La impresora de facturación no responde" required />
+                            <div class="invalid-feedback">Ingresa un asunto</div>
+                        </div>
+                    </div>
+
+                    <div class="tkf-campo tkf-campo--full tkf-prio-group">
+                        <label class="tkf-label">Prioridad</label>
+                        @* Las opciones salen del catalogo prio. Escritas a mano decian
+                           1=Bajo, 2=Medio, 3=Alto, pero la tabla es 1=Alta, 2=Media,
+                           3=Baja: todo ticket se guardaba con la prioridad invertida. *@
+                        <div class="tkf-prio" role="radiogroup" aria-label="Prioridad">
+                            @foreach (var pr in prioridades)
+                            {
+                                var color = pr["color"]?.ToString();
+                                var idPrio = pr["id_prio"]?.ToString();
+                                var estilo = $"--p:{color};--p-soft:{Rgba(color, ".14")}";
+
+                                <input type="radio" class="tkf-prio__input" name="prioridad"
+                                       id="prio-@idPrio" value="@idPrio" required />
+                                <label class="tkf-prio__pill" for="prio-@idPrio" style="@estilo">
+                                    <span class="tkf-prio__dot"></span>@pr["n"]
+                                </label>
+                            }
+                        </div>
+                        <div class="tkf-feedback">Selecciona una prioridad</div>
+                    </div>
+
+                    <div class="tkf-campo tkf-campo--full">
+                        <label class="tkf-label" for="mensaje">
+                            Descripción <span>· qué pasó, desde cuándo y en qué equipo</span>
+                        </label>
+                        <textarea class="form-control" id="mensaje" name="mensaje" rows="5"
+                                  placeholder="Describe el problema paso a paso: qué estabas haciendo, qué esperabas que pasara y qué pasó en su lugar."
+                                  required></textarea>
+                        <div class="invalid-feedback">Ingresa un mensaje</div>
+                        <div class="tkf-contador"><span id="mensajeCount">0</span> caracteres</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tkf-seccion">
+                <div class="tkf-seccion__head">
+                    <span class="tkf-paso">3</span>
+                    <div>
+                        <h3 class="tkf-seccion__titulo">Evidencia <span class="tkf-seccion__hint">(opcional)</span></h3>
+                        <p class="tkf-seccion__hint">Una captura de pantalla suele ahorrar varias idas y vueltas.</p>
+                    </div>
+                </div>
+
+                @* El name DEBE ser archivosAdjuntos: es como se llama el parámetro de
+                   EnviarTicketsController.EnviarTicket. Cuando se llamaba "adjuntos" el
+                   binding no casaba y la lista de archivos llegaba siempre vacía.
+                   El accept refleja SoporteAdjuntos.ExtensionesPermitidas: antes ofrecía
+                   .doc y .xls, que el servidor rechazaba. *@
+                <div id="zona-drop" class="tkf-drop">
+                    <i class="fa-duotone fa-solid fa-cloud-arrow-up"></i>
+                    <p class="tkf-drop__texto"><strong>Arrastra tus archivos</strong> o haz clic para elegirlos</p>
+                    <span class="tkf-drop__hint">Máx. @maxArchivos archivos de @maxMb MB cada uno</span>
+                    <input type="file" id="adjuntos" name="archivosAdjuntos" multiple hidden accept="@accept" />
+                </div>
+                <div id="lista-archivos" class="tkf-files"></div>
+            </div>
+
+            <div class="tkf-seccion tkf-captcha">
+                <div class="tkf-seccion__head">
+                    <span class="tkf-paso">4</span>
+                    <div>
+                        <h3 class="tkf-seccion__titulo">Verificación</h3>
+                        <p class="tkf-seccion__hint">Escribe el texto de la imagen para confirmar el envío.</p>
+                    </div>
+                </div>
+
+                @Html.Partial("_CaptchaPartial")
+            </div>
+
+            <div class="tkf-acciones">
+                <a class="tkf-btn tkf-btn--ghost" href="@Url.Action("EnviarTicket", "Soporte")">Cancelar</a>
+                <button type="submit" id="btnEnviarTicket" class="tkf-btn tkf-btn--primario">
+                    <i class="fa-duotone fa-solid fa-paper-plane"></i> Enviar ticket
+                </button>
+            </div>
+        </form>
+
+        <aside class="tkf-aside">
+            <div class="tkf-panel">
+                <p class="tkf-panel__titulo">Área de soporte</p>
+                <div class="tkf-cat">
+                    <span class="tkf-cat__icono"><i class="@categoriaIcono"></i></span>
+                    <div>
+                        <p class="tkf-cat__nombre">@(categoriaValida ? categoriaNombre : "Sin categoría")</p>
+                        <a class="tkf-cat__cambiar" href="@Url.Action("EnviarTicket", "Soporte")">Cambiar</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tkf-panel">
+                <p class="tkf-panel__titulo">Para una atención más rápida</p>
+                <ul class="tkf-tips">
+                    <li><i class="fa-solid fa-check"></i> Escribe un asunto concreto, no "no funciona".</li>
+                    <li><i class="fa-solid fa-check"></i> Indica el equipo o la sucursal donde ocurre.</li>
+                    <li><i class="fa-solid fa-check"></i> Copia el mensaje de error tal cual aparece.</li>
+                    <li><i class="fa-solid fa-check"></i> Adjunta una captura si el error es visual.</li>
+                </ul>
+            </div>
+
+            <div class="tkf-panel">
+                <p class="tkf-panel__titulo">Adjuntos permitidos</p>
+                <p class="tkf-limites">
+                    Hasta @maxArchivos archivos de @maxMb MB cada uno.<br />
+                    <code>@accept</code>
+                </p>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@section Scripts {
+    @* Aquí vivía un lector de códigos QR que llamaba a /Ticket/ProcesarQR. El bloque
+       llevaba comentado desde antes de esta revisión y la acción del servidor era
+       código de inventario dentro del módulo de tickets, con SQL concatenado; se
+       retiró en la fase 1. Se quita también la librería html5-qrcode, que se
+       descargaba de unpkg en cada carga del formulario sin que nada la usara. *@
+    <script src="~/Scripts/Soporte/ticket-formulario.js"></script>
+}
