@@ -10,15 +10,17 @@ namespace BOS_ERP.controllers
         private readonly BOS_ERP.Services.EmailSender _emailSender;
         private readonly BOS_ERP.Helpers.CorreoHelper _correoHelper;
         private readonly BOS_ERP.Services.SalasEstadoService _estadoSalas;
+        private readonly IWebHostEnvironment _env;
 
         private const string AreaSalas = "Recursos Humanos";
 
         public RecursosHumanosController(BOS_ERP.Services.EmailSender emailSender, BOS_ERP.Helpers.CorreoHelper correoHelper,
-            BOS_ERP.Services.SalasEstadoService estadoSalas)
+            BOS_ERP.Services.SalasEstadoService estadoSalas, IWebHostEnvironment env)
         {
             _emailSender = emailSender;
             _correoHelper = correoHelper;
             _estadoSalas = estadoSalas;
+            _env = env;
         }
 
         #region Helpers
@@ -91,6 +93,36 @@ namespace BOS_ERP.controllers
             return RunQuery(query, parameters).FirstOrDefault();
         }
 
+        private List<Dictionary<string, object>> MinutasDe(int id)
+        {
+            var parameters = new Dictionary<string, object> { { "id", id } };
+
+            string query = "SELECT ra.archivo_id, ra.nombre_original, ra.fecha, " +
+                "   us.nombre || ' ' || COALESCE(us.apellido, '') AS subio " +
+                "FROM reservaciones_archivos ra " +
+                "INNER JOIN usuarios us ON us.usuarioid = ra.subido_por " +
+                "WHERE ra.sala_reservada_id = @id " +
+                "ORDER BY ra.fecha";
+
+            return RunQuery(query, parameters);
+        }
+
+        /// <summary>
+        /// La minuta es el cierre de la junta: sólo se sube cuando la reservación ya
+        /// terminó y nunca sobre una cancelada. El estado lo mueve SalasEstadoService en
+        /// segundo plano, así que se acepta también la reservación cuya hora de fin ya
+        /// pasó aunque el job todavía no la haya marcado como finalizada.
+        /// </summary>
+        private bool AdmiteMinuta(Dictionary<string, object> cabecera)
+        {
+            string estado = GetString(cabecera["estado"], "reservada");
+
+            if (estado == "cancelada")
+                return false;
+
+            return estado == "finalizada" || Convert.ToDateTime(cabecera["fin_apartado"]) < DateTime.Now;
+        }
+
         private List<Dictionary<string, object>> ParticipantesDe(int id)
         {
             var parameters = new Dictionary<string, object> { { "id", id } };
@@ -125,6 +157,17 @@ namespace BOS_ERP.controllers
                 .GroupBy(p => Convert.ToInt32(p["sala_reservada_id"]))
                 .ToDictionary(g => g.Key, g => g.ToList());
 
+            query = "SELECT ra.archivo_id, ra.sala_reservada_id, ra.nombre_original, ra.fecha, " +
+                "   us.nombre || ' ' || COALESCE(us.apellido, '') AS subio " +
+                "FROM reservaciones_archivos ra " +
+                "INNER JOIN usuarios us ON us.usuarioid = ra.subido_por " +
+                "WHERE ra.sala_reservada_id = ANY(@ids) " +
+                "ORDER BY ra.fecha";
+
+            var minutas = RunQuery(query, parameters)
+                .GroupBy(a => Convert.ToInt32(a["sala_reservada_id"]))
+                .ToDictionary(g => g.Key, g => g.ToList());
+
             return reservaciones.Select(r =>
             {
                 int id = Convert.ToInt32(r["id_sala_reservada"]);
@@ -138,6 +181,13 @@ namespace BOS_ERP.controllers
                 bool verDetalle = esParticipante || esAdmin;
                 bool termino = Convert.ToDateTime(r["fin_apartado"]) < DateTime.Now;
                 bool cerrada = estado == "cancelada" || estado == "finalizada" || termino;
+
+                var actas = minutas.TryGetValue(id, out var archivos) ? archivos : new List<Dictionary<string, object>>();
+
+                // La minuta cierra la junta: se sube cuando ya terminó y nunca sobre una
+                // cancelada. La administra quien organizó, o Recursos Humanos.
+                bool admiteMinuta = estado != "cancelada" && (estado == "finalizada" || termino);
+                bool administraMinutas = esOrganizador || esAdmin;
 
                 return (object)new
                 {
@@ -171,7 +221,21 @@ namespace BOS_ERP.controllers
                     verDetalle,
                     puedeConfirmar = esParticipante && !esOrganizador && !cerrada,
                     puedeEditar = esOrganizador && !cerrada,
-                    puedeCancelar = (esOrganizador || esAdmin) && !cerrada
+                    puedeCancelar = (esOrganizador || esAdmin) && !cerrada,
+                    minutas = verDetalle
+                        ? actas.Select(a => new
+                        {
+                            id = Convert.ToInt32(a["archivo_id"]),
+                            nombre = GetString(a["nombre_original"], ""),
+                            fecha = Convert.ToDateTime(a["fecha"]).ToString("s"),
+                            subio = GetString(a["subio"], "")
+                        }).ToList()
+                        : null,
+                    totalMinutas = actas.Count,
+                    maxMinutas = BOS_ERP.Helpers.MinutasSalas.MaximoArchivos,
+                    admiteMinuta,
+                    puedeSubirMinuta = administraMinutas && admiteMinuta && actas.Count < BOS_ERP.Helpers.MinutasSalas.MaximoArchivos,
+                    puedeBorrarMinuta = administraMinutas && admiteMinuta
                 };
             }).ToList();
         }
@@ -777,6 +841,184 @@ namespace BOS_ERP.controllers
             {
                 return Json(new { icon = "error", title = "Error", html = ex.Message, showCancelButton = false });
             }
+        }
+
+        #endregion
+
+        #region Minutas
+
+        /// <summary>
+        /// Sube la minuta de una reservación ya terminada: el acta o el plan que salió
+        /// de la junta, en PDF y hasta tres por reservación.
+        ///
+        /// El límite se cuenta contra lo que la reservación ya tiene, no contra el lote,
+        /// para que no se pueda llegar a nueve subiendo de tres en tres.
+        /// </summary>
+        [HttpPost, ValidateAntiForgeryToken]
+        [RequestSizeLimit(BOS_ERP.Helpers.MinutasSalas.TamanoMaximoPeticionBytes)]
+        public async Task<JsonResult> SubirMinuta(int sala_reservada_id, List<IFormFile> archivos)
+        {
+            try
+            {
+                var cabecera = Reservacion(sala_reservada_id);
+
+                if (cabecera == null)
+                    return Json(new { icon = "error", title = "Error", html = "La reservación no existe", showCancelButton = false });
+
+                bool esOrganizador = Convert.ToInt32(cabecera["apartado_por"]) == UsuarioActual();
+
+                if (!esOrganizador && !EsAdministradorSalas())
+                    return Json(new { icon = "error", title = "Sin permisos", html = "Solo el organizador o Recursos Humanos pueden subir la minuta", showCancelButton = false });
+
+                if (GetString(cabecera["estado"]) == "cancelada")
+                    return Json(new { icon = "error", title = "Error", html = "Una reservación cancelada no lleva minuta", showCancelButton = false });
+
+                if (!AdmiteMinuta(cabecera))
+                    return Json(new { icon = "error", title = "La reunión no ha terminado", html = "La minuta se sube una vez que la reservación finaliza", showCancelButton = false });
+
+                int yaGuardadas = MinutasDe(sala_reservada_id).Count;
+
+                string invalido = BOS_ERP.Helpers.MinutasSalas.Validar(archivos, yaGuardadas);
+                if (invalido != null)
+                    return Json(new { icon = "error", title = "Archivo no válido", html = invalido, showCancelButton = false });
+
+                int guardadas = await BOS_ERP.Helpers.MinutasSalas.GuardarAsync(
+                    this, _env.ContentRootPath, archivos, sala_reservada_id, UsuarioActual());
+
+                return Json(new
+                {
+                    icon = "success",
+                    title = guardadas == 1 ? "Minuta subida" : "Minutas subidas",
+                    html = $"Se adjuntaron {guardadas} {(guardadas == 1 ? "archivo" : "archivos")} a {Folio(sala_reservada_id)}",
+                    showCancelButton = false
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { icon = "error", title = "Error", html = ex.Message, showCancelButton = false });
+            }
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public JsonResult EliminarMinuta(int archivo_id)
+        {
+            try
+            {
+                var parameters = new Dictionary<string, object>
+                {
+                    { "id", archivo_id },
+                    { "empresa_id", EmpresaActual() }
+                };
+
+                string query = "SELECT ra.sala_reservada_id, ra.uuid, ra.extension, ra.nombre_original, " +
+                    "   sr.apartado_por " +
+                    "FROM reservaciones_archivos ra " +
+                    "INNER JOIN salas_reservadas sr ON sr.id_sala_reservada = ra.sala_reservada_id " +
+                    "INNER JOIN catsalas cs ON cs.id_sala = sr.sala_id " +
+                    "WHERE ra.archivo_id = @id AND cs.empresa_id = @empresa_id";
+
+                var minuta = RunQuery(query, parameters).FirstOrDefault();
+
+                if (minuta == null)
+                    return Json(new { icon = "error", title = "Error", html = "La minuta no existe", showCancelButton = false });
+
+                bool esOrganizador = Convert.ToInt32(minuta["apartado_por"]) == UsuarioActual();
+
+                if (!esOrganizador && !EsAdministradorSalas())
+                    return Json(new { icon = "error", title = "Sin permisos", html = "Solo el organizador o Recursos Humanos pueden borrar la minuta", showCancelButton = false });
+
+                RunUpdate("DELETE FROM reservaciones_archivos WHERE archivo_id = @id", parameters);
+
+                // El archivo se borra después del registro: si el borrado en disco falla
+                // queda un huérfano inerte, mientras que al revés quedaría una fila
+                // apuntando a un archivo que ya no está y la descarga daría 404.
+                try
+                {
+                    string rutaFisica = RutaFisicaMinuta(minuta["uuid"]?.ToString() + minuta["extension"]);
+
+                    if (rutaFisica != null && System.IO.File.Exists(rutaFisica))
+                        System.IO.File.Delete(rutaFisica);
+                }
+                catch (Exception ex)
+                {
+                    LogErrorHelper.RegistrarLog("Salas", Folio(Convert.ToInt32(minuta["sala_reservada_id"])),
+                        $"No se pudo borrar del disco la minuta {archivo_id}: {ex.Message}", nivel: "DEBUG");
+                }
+
+                return Json(new { icon = "success", title = "Minuta eliminada", html = $"Se quitó {GetString(minuta["nombre_original"], "el archivo")}", showCancelButton = false });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { icon = "error", title = "Error", html = ex.Message, showCancelButton = false });
+            }
+        }
+
+        /// <summary>
+        /// Entrega el PDF. Como los adjuntos de soporte, la minuta no se sirve como
+        /// estático: se exige que quien pide participe en la reunión -o sea Recursos
+        /// Humanos-, y el nombre en disco se reconstruye desde el uuid guardado, así que
+        /// la petición nunca aporta una ruta.
+        /// </summary>
+        public IActionResult DescargarMinuta(int id)
+        {
+            if (id <= 0)
+                return NotFound();
+
+            int usuarioId = UsuarioActual();
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "id", id },
+                { "empresa_id", EmpresaActual() },
+                { "usuario", usuarioId }
+            };
+
+            string query = "SELECT ra.uuid, ra.extension, ra.nombre_original, sr.apartado_por, " +
+                "   EXISTS (SELECT 1 FROM participantes_sala ps " +
+                "           WHERE ps.sala_reservada_id = sr.id_sala_reservada " +
+                "             AND ps.participante_id = @usuario) AS invitado " +
+                "FROM reservaciones_archivos ra " +
+                "INNER JOIN salas_reservadas sr ON sr.id_sala_reservada = ra.sala_reservada_id " +
+                "INNER JOIN catsalas cs ON cs.id_sala = sr.sala_id " +
+                "WHERE ra.archivo_id = @id AND cs.empresa_id = @empresa_id";
+
+            var minuta = RunQuery(query, parameters).FirstOrDefault();
+
+            if (minuta == null)
+                return NotFound();
+
+            bool participa = Convert.ToInt32(minuta["apartado_por"]) == usuarioId || Convert.ToBoolean(minuta["invitado"]);
+
+            if (!participa && !EsAdministradorSalas())
+                return StatusCode(403);
+
+            string nombreArchivo = minuta["uuid"]?.ToString() + minuta["extension"];
+            string rutaFisica = RutaFisicaMinuta(nombreArchivo);
+
+            if (rutaFisica == null || !System.IO.File.Exists(rutaFisica))
+                return NotFound();
+
+            // Sólo el nombre, sin componentes de ruta que pudieran venir de un registro viejo.
+            string nombreDescarga = Path.GetFileName(GetString(minuta["nombre_original"], ""));
+            if (string.IsNullOrWhiteSpace(nombreDescarga))
+                nombreDescarga = nombreArchivo;
+
+            return PhysicalFile(rutaFisica, "application/pdf", nombreDescarga);
+        }
+
+        /// <summary>
+        /// Resuelve el archivo dentro de la carpeta de minutas. Devuelve null si la ruta
+        /// se sale de ella: cinturón y tirantes, porque aunque el uuid salga de la base,
+        /// nada debe poder apuntar fuera.
+        /// </summary>
+        private string RutaFisicaMinuta(string nombreArchivo)
+        {
+            var carpeta = Path.GetFullPath(Path.Combine(_env.ContentRootPath, BOS_ERP.Helpers.MinutasSalas.Carpeta));
+            var ruta = Path.GetFullPath(Path.Combine(carpeta, nombreArchivo));
+
+            return ruta.StartsWith(carpeta + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                ? ruta
+                : null;
         }
 
         #endregion

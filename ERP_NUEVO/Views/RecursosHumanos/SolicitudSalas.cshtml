@@ -467,12 +467,19 @@
 
         #calendarioSalas .fc-event {
             border: none;
-            border-left: 3px solid rgba(0,0,0,.22);
             border-radius: 7px;
             padding: 0;
             overflow: hidden;
             cursor: pointer;
         }
+
+            /* El bloque de color es .sal-ev, no este contenedor: en la vista de mes
+               FullCalendar monta el evento sin la clase que lleva el fondo y el color
+               se perdía contra el blanco del tema claro. */
+            #calendarioSalas .fc-event .fc-event-main {
+                height: 100%;
+                padding: 0;
+            }
 
         #calendarioSalas .fc-event.is-cancelada {
             opacity: .55;
@@ -490,7 +497,9 @@
                 text-decoration: line-through;
             }
 
-        #calendarioSalas .fc-event.is-mia {
+        /* El anillo va sobre .sal-ev: un inset en el contenedor queda debajo del
+           bloque de color y no se vería. */
+        #calendarioSalas .fc-event.is-mia .sal-ev {
             box-shadow: inset 0 0 0 2px rgba(255,255,255,.55);
         }
 
@@ -498,9 +507,14 @@
         display: flex;
         flex-direction: column;
         gap: 1px;
+        height: 100%;
         padding: 3px 6px;
         line-height: 1.25;
         color: #fff;
+        /* eventContent inyecta --sal-ev-color con el color de la sala o del estado. */
+        background: var(--sal-ev-color, var(--accent-blue));
+        border-left: 3px solid rgba(0,0,0,.22);
+        border-radius: 7px;
         overflow: hidden;
     }
 
@@ -538,7 +552,7 @@
         }
 
     #calendarioSalas .fc-daygrid-event {
-        border-radius: 6px;
+        border-radius: 7px;
         margin-top: 2px;
     }
 
@@ -857,6 +871,130 @@
         color: var(--text-light);
     }
 
+    /* ─── Minutas ────────────────────────────────────────────────────── */
+    .sal-files {
+        display: grid;
+        gap: .45rem;
+        margin-top: .2rem;
+    }
+
+    .sal-file {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        padding: .5rem .65rem;
+        border: var(--sal-border);
+        border-radius: var(--sal-radius-sm);
+        background: var(--bg-gray);
+        font-size: .8rem;
+    }
+
+        .sal-file > i {
+            flex: 0 0 auto;
+            font-size: 1.05rem;
+            color: var(--danger-color);
+        }
+
+    .sal-file-name {
+        min-width: 0;
+        flex: 1;
+        font-weight: 600;
+        color: var(--text-dark);
+        word-break: break-word;
+    }
+
+    .sal-file-meta {
+        display: block;
+        margin-top: .1rem;
+        font-size: .7rem;
+        font-weight: 400;
+        color: var(--text-light);
+    }
+
+    .sal-file-actions {
+        flex: 0 0 auto;
+        display: flex;
+        gap: .3rem;
+    }
+
+    .sal-mini-btn {
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: var(--sal-border);
+        background: var(--bg-light);
+        color: var(--text-light);
+        font-size: .76rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+    }
+
+        .sal-mini-btn:hover {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+        }
+
+        .sal-mini-btn.is-danger:hover {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+            background: color-mix(in srgb, var(--danger-color) 8%, transparent);
+        }
+
+    .sal-file-input {
+        width: 100%;
+        padding: .55rem .7rem;
+        border: 1px dashed var(--border-light);
+        border-radius: var(--sal-radius-sm);
+        background: var(--bg-gray);
+        color: var(--text-dark);
+        font-size: .82rem;
+        cursor: pointer;
+    }
+
+        .sal-file-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 14%, transparent);
+        }
+
+    /* ─── Catálogo de salas ──────────────────────────────────────────── */
+    .sal-rooms {
+        display: grid;
+        gap: .5rem;
+    }
+
+    .sal-room {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .65rem .75rem;
+        border: var(--sal-border);
+        border-radius: var(--sal-radius-sm);
+        background: var(--bg-gray);
+    }
+
+    .sal-room-name {
+        min-width: 0;
+        flex: 1;
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        word-break: break-word;
+    }
+
+    .sal-room-desc {
+        display: block;
+        margin-top: .12rem;
+        font-size: .74rem;
+        font-weight: 400;
+        color: var(--text-light);
+    }
+
     .sal-ts-wrap .ts-control {
         min-height: 38px;
         border-radius: var(--sal-radius-sm);
@@ -941,8 +1079,8 @@
 
         <div class="sal-filters-actions">
             <div class="sal-legend" id="sal-leyenda"></div>
-            <button type="button" class="btn-sal btn-sal-ghost" id="btn-nueva-sala" style="display:none" onclick="abrirModalSala()">
-                <i class="fa-solid fa-door-open"></i> Nueva sala
+            <button type="button" class="btn-sal btn-sal-ghost" id="btn-admin-salas" style="display:none" onclick="abrirModalSalas()">
+                <i class="fa-solid fa-door-open"></i> Administrar salas
             </button>
             <button type="button" class="btn-sal btn-sal-primary" onclick="abrirModalReservacion()">
                 <i class="fa-solid fa-calendar-plus"></i> Nueva reservación
@@ -1036,17 +1174,48 @@
     </div>
 </div>
 
-<!-- Sala -->
-<div class="modal fade sal-modal" id="modalSala" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<!-- Catálogo de salas -->
+<div class="modal fade sal-modal" id="modalSalas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <div class="sal-hero-icon" style="width:38px;height:38px;border-radius:11px">
                     <i class="fa-solid fa-door-open"></i>
                 </div>
                 <div>
-                    <h5 class="modal-title">Nueva sala</h5>
-                    <span class="sal-modal-sub">Queda disponible de inmediato para reservarse.</span>
+                    <h5 class="modal-title">Administrar salas</h5>
+                    <span class="sal-modal-sub">Alta y edición del catálogo, reservado a Recursos Humanos.</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="sal-rooms" id="salas-lista"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-sal btn-sal-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark"></i> Cerrar
+                </button>
+                <button type="button" class="btn-sal btn-sal-primary" onclick="nuevaSala()">
+                    <i class="fa-solid fa-plus"></i> Nueva sala
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sala -->
+<div class="modal fade sal-modal" id="modalSala" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="sal-hero-icon" style="width:38px;height:38px;border-radius:11px">
+                    <i class="fa-solid fa-door-open" id="icono-sala"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title" id="titulo-sala">Nueva sala</h5>
+                    <span class="sal-modal-sub" id="subtitulo-sala">Queda disponible de inmediato para reservarse.</span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
@@ -1069,7 +1238,7 @@
                 <button type="button" class="btn-sal btn-sal-ghost" data-bs-dismiss="modal">
                     <i class="fa-solid fa-xmark"></i> Cancelar
                 </button>
-                <button type="button" class="btn-sal btn-sal-primary" onclick="guardarSala()">
+                <button type="button" class="btn-sal btn-sal-primary" id="btn-guardar-sala" onclick="guardarSala()">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar sala
                 </button>
             </div>
@@ -1103,6 +1272,9 @@
                 </button>
                 <button type="button" class="btn-sal btn-sal-success" id="btn-asistire" style="display:none" onclick="responderInvitacion('asistira')">
                     <i class="fa-solid fa-user-check"></i> Asistiré
+                </button>
+                <button type="button" class="btn-sal btn-sal-ghost" id="btn-subir-minuta" style="display:none" onclick="abrirModalMinuta()">
+                    <i class="fa-solid fa-file-arrow-up"></i> Subir minuta
                 </button>
                 <button type="button" class="btn-sal btn-sal-danger" id="btn-cancelar-reservacion" style="display:none" onclick="cancelarReservacion()">
                     <i class="fa-solid fa-ban"></i> Cancelar reservación
@@ -1153,6 +1325,50 @@
     </div>
 </div>
 
+<!-- Minuta -->
+<div class="modal fade sal-modal" id="modalMinuta" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="sal-hero-icon" style="width:38px;height:38px;border-radius:11px">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                </div>
+                <div>
+                    <h5 class="modal-title">Subir minuta</h5>
+                    <span class="sal-modal-sub" id="m-folio"></span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="sal-private" style="margin-top:0" id="m-resumen"></div>
+
+                <div class="sal-field" style="margin-top:1rem">
+                    <label class="sal-label" for="m-archivos">Archivos <span>*</span></label>
+                    <input type="file" class="sal-file-input" id="m-archivos"
+                           accept="@BOS_ERP.Helpers.MinutasSalas.AcceptHtml" multiple onchange="avisarMinutas()" />
+                    <span class="sal-hint" id="m-hint"></span>
+                    <span class="sal-hint">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        Solo PDF, hasta @(BOS_ERP.Helpers.MinutasSalas.TamanoMaximoBytes / (1024 * 1024)) MB por archivo.
+                    </span>
+                </div>
+
+                <div id="m-actuales"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-sal btn-sal-ghost" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-arrow-left"></i> Volver
+                </button>
+                <button type="button" class="btn-sal btn-sal-primary" id="btn-guardar-minuta" onclick="guardarMinuta()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir minuta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section scripts {
     <script src="~/lib/fullcalendar/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/locales-all.global.min.js"></script>
@@ -1166,7 +1382,10 @@
             cancelar: '@Url.Action("CancelarReservacion", "RecursosHumanos")',
             guardarSala: '@Url.Action("GuardarSala", "RecursosHumanos")',
             agenda: '@Url.Action("GetAgendaDia", "RecursosHumanos")',
-            confirmar: '@Url.Action("ConfirmarAsistencia", "RecursosHumanos")'
+            confirmar: '@Url.Action("ConfirmarAsistencia", "RecursosHumanos")',
+            subirMinuta: '@Url.Action("SubirMinuta", "RecursosHumanos")',
+            eliminarMinuta: '@Url.Action("EliminarMinuta", "RecursosHumanos")',
+            descargarMinuta: '@Url.Action("DescargarMinuta", "RecursosHumanos")'
         };
 
         const ESTADO_RESERVA = {
@@ -1209,8 +1428,8 @@
         </svg>`;
 
         const PALETA = [
-            '#3266ad', '#2a9d7a', '#c96a1a', '#9b59b6', '#e24b4a',
-            '#1d9e75', '#0891b2', '#7c3aed', '#d97706', '#0f766e'
+            '#3266ad', '#b45309', '#c026d3', '#1d4ed8', '#701a75',
+            '#155e75', '#6d28d9', '#312e81', '#6b21a8', '#854d0e'
         ];
 
         const HORARIO = { 1: [9, 18], 2: [9, 18], 3: [9, 18], 4: [9, 18], 5: [9, 18], 6: [9, 14], 0: null };
@@ -1378,7 +1597,7 @@
             Estado.usuarioId = Number(res.usuarioId ?? 0);
             Estado.esAdmin = !!res.esAdmin;
 
-            document.getElementById('btn-nueva-sala').style.display = Estado.esAdmin ? '' : 'none';
+            document.getElementById('btn-admin-salas').style.display = Estado.esAdmin ? '' : 'none';
 
             const filtro = document.getElementById('f-sala');
             const form = document.getElementById('r-sala');
@@ -1529,10 +1748,11 @@
                 eventContent: arg => {
                     const p = arg.event.extendedProps;
                     const titulo = p.verDetalle ? p.asunto : 'Reservado';
+                    const tono = colorEvento(p);
 
                     if (arg.view.type === 'dayGridMonth') {
                         return {
-                            html: `<div class="sal-ev is-compact">
+                            html: `<div class="sal-ev is-compact" style="--sal-ev-color:${tono}">
                                      <span class="sal-ev-time">${arg.timeText}</span>
                                      <span class="sal-ev-title">${escapeHtml(titulo)}</span>
                                    </div>`
@@ -1540,7 +1760,7 @@
                     }
 
                     return {
-                        html: `<div class="sal-ev">
+                        html: `<div class="sal-ev" style="--sal-ev-color:${tono}">
                                  <span class="sal-ev-time">${arg.timeText}</span>
                                  <span class="sal-ev-title">${escapeHtml(titulo)}</span>
                                  <span class="sal-ev-meta">${escapeHtml(nombreSala(p.salaId))} · ${escapeHtml(p.anfitrion)}</span>
@@ -1662,6 +1882,23 @@
                             <div style="min-width:0"><span class="sal-detail-label">Descripción</span>${escapeHtml(r.comentarios)}</div>
                         </div>`;
                 }
+
+                // La minuta sólo aparece cuando ya puede existir: antes de que la junta
+                // termine, un apartado vacío sería ruido en cada reservación futura.
+                if (r.admiteMinuta || r.totalMinutas) {
+                    html += `
+                        <div class="sal-detail-row">
+                            <i class="fa-solid fa-file-pdf"></i>
+                            <div style="min-width:0;flex:1">
+                                <span class="sal-detail-label">Minuta (${r.totalMinutas} de ${r.maxMinutas})</span>
+                                ${r.totalMinutas
+                                    ? `<div class="sal-files">${(r.minutas ?? []).map(m => filaMinuta(m, r.puedeBorrarMinuta)).join('')}</div>`
+                                    : `<span style="color:var(--text-light)">${r.puedeSubirMinuta
+                                            ? 'Todavía no se sube la minuta de esta reunión'
+                                            : 'Sin minuta'}</span>`}
+                            </div>
+                        </div>`;
+                }
             }
 
             html += '</div>';
@@ -1693,11 +1930,38 @@
 
             document.getElementById('detalle-body').innerHTML = html;
             document.getElementById('btn-editar-reservacion').style.display = r.puedeEditar ? '' : 'none';
+            document.getElementById('btn-subir-minuta').style.display = r.puedeSubirMinuta ? '' : 'none';
             document.getElementById('btn-cancelar-reservacion').style.display = r.puedeCancelar ? '' : 'none';
             document.getElementById('btn-asistire').style.display = r.puedeConfirmar && r.miEstado !== 'asistira' ? '' : 'none';
             document.getElementById('btn-no-asistire').style.display = r.puedeConfirmar && r.miEstado !== 'no_asistira' ? '' : 'none';
 
             modal('modalDetalle').show();
+        }
+
+        function filaMinuta(m, puedeBorrar) {
+            const subida = new Date(m.fecha);
+
+            return `<div class="sal-file">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span class="sal-file-name">
+                            ${escapeHtml(m.nombre)}
+                            <span class="sal-file-meta">
+                                ${escapeHtml(m.subio)} ·
+                                ${escapeHtml(subida.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }))}
+                                ${isoHora(subida)}
+                            </span>
+                        </span>
+                        <span class="sal-file-actions">
+                            <a class="sal-mini-btn" title="Descargar" target="_blank" rel="noopener"
+                               href="${URLS.descargarMinuta}?id=${m.id}">
+                                <i class="fa-solid fa-download"></i>
+                            </a>
+                            ${puedeBorrar
+                                ? `<button type="button" class="sal-mini-btn is-danger" title="Eliminar"
+                                           onclick="eliminarMinuta(${m.id})"><i class="fa-solid fa-trash"></i></button>`
+                                : ''}
+                        </span>
+                    </div>`;
         }
 
         function chipParticipante(p, r) {
@@ -1710,6 +1974,18 @@
             return `<span class="sal-person ${clase}" title="${titulo}">
                         <i class="fa-solid ${icono}"></i>${escapeHtml(p.nombre)}
                     </span>`;
+        }
+
+        // Trae una reservación por id sin depender de lo que el calendario tenga
+        // cargado: después de tocar sus minutas hay que repintar el detalle con los
+        // datos frescos, y la reservación puede caer fuera del rango visible.
+        async function buscarReservacion(id) {
+            const data = await GetData({
+                path: URLS.reservaciones,
+                data: { desde: '2000-01-01T00:00:00', hasta: '2100-01-01T00:00:00', sala_id: 0 }
+            });
+
+            return (Array.isArray(data) ? data : []).find(x => Number(x.id) === Number(id)) ?? null;
         }
 
         // ── Alta y edición ─────────────────────────────────────────────────
@@ -1921,28 +2197,231 @@
         }
 
         // ── Salas ──────────────────────────────────────────────────────────
-        function abrirModalSala() {
-            document.getElementById('s-id').value = 0;
-            document.getElementById('s-nombre').value = '';
-            document.getElementById('s-descripcion').value = '';
+        // Editar una sala es tan sensible como crearla -el nombre viaja en el correo de
+        // cada invitación-, así que las dos acciones viven detrás del mismo permiso: el
+        // servidor las valida con EsAdministradorSalas y aquí sólo se muestran a quien
+        // el catálogo marcó como administrador.
+        function abrirModalSalas() {
+            if (!Estado.esAdmin) return;
+
+            document.getElementById('salas-lista').innerHTML = Estado.salas.length
+                ? Estado.salas.map(s => `
+                    <div class="sal-room">
+                        <span class="sal-dot" style="background:${colorSala(s.id_sala)}"></span>
+                        <span class="sal-room-name">
+                            ${escapeHtml(s.nombre)}
+                            <span class="sal-room-desc">${escapeHtml(s.descripcion || 'Sin descripción')}</span>
+                        </span>
+                        <span class="sal-file-actions">
+                            <button type="button" class="sal-mini-btn" title="Editar sala" onclick="editarSala(${s.id_sala})">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </span>
+                    </div>`).join('')
+                : '<div class="sal-empty">Aún no hay salas registradas</div>';
+
+            modal('modalSalas').show();
+        }
+
+        function nuevaSala() {
+            document.getElementById('modalSalas').addEventListener('hidden.bs.modal', () => abrirModalSala(), { once: true });
+            modal('modalSalas').hide();
+        }
+
+        function editarSala(idSala) {
+            const sala = Estado.salas.find(s => Number(s.id_sala) === Number(idSala));
+            if (!sala) return;
+
+            document.getElementById('modalSalas').addEventListener('hidden.bs.modal', () => abrirModalSala(sala), { once: true });
+            modal('modalSalas').hide();
+        }
+
+        function abrirModalSala(sala) {
+            const esEdicion = !!sala;
+
+            document.getElementById('titulo-sala').textContent = esEdicion ? 'Editar sala' : 'Nueva sala';
+            document.getElementById('subtitulo-sala').textContent = esEdicion
+                ? 'El cambio se refleja en el calendario y en las reservaciones que ya la usan.'
+                : 'Queda disponible de inmediato para reservarse.';
+            document.getElementById('icono-sala').className = esEdicion ? 'fa-solid fa-pen' : 'fa-solid fa-door-open';
+
+            document.getElementById('s-id').value = esEdicion ? sala.id_sala : 0;
+            document.getElementById('s-nombre').value = esEdicion ? (sala.nombre ?? '') : '';
+            document.getElementById('s-descripcion').value = esEdicion ? (sala.descripcion ?? '') : '';
+
             modal('modalSala').show();
         }
 
         async function guardarSala() {
+            const id = Number(document.getElementById('s-id').value);
             const nombre = document.getElementById('s-nombre').value.trim();
+
             if (!nombre) return toastMixin.fire({ icon: 'warning', title: 'Escribe el nombre de la sala' });
 
+            const btn = document.getElementById('btn-guardar-sala');
+            btn.disabled = true;
+
             const res = await enviar(URLS.guardarSala, {
-                id_sala: document.getElementById('s-id').value,
+                id_sala: id,
                 nombre,
                 descripcion: document.getElementById('s-descripcion').value.trim()
+            }, id > 0 ? 'Guardando los cambios de la sala...' : 'Registrando la sala...');
+
+            btn.disabled = false;
+
+            if (res?.icon !== 'success') return;
+
+            modal('modalSala').hide();
+            await cargarCatalogos();
+            calendario.refetchEvents();
+        }
+
+        // ── Minutas ────────────────────────────────────────────────────────
+        function abrirModalMinuta() {
+            const r = Estado.detalle;
+            if (!r) return;
+
+            const restantes = r.maxMinutas - r.totalMinutas;
+            const inicio = new Date(r.inicio);
+
+            document.getElementById('m-folio').textContent = folio(r.id);
+            document.getElementById('m-archivos').value = '';
+            document.getElementById('m-hint').innerHTML =
+                `<i class="fa-solid fa-circle-info"></i> Puedes subir ${restantes} ${restantes === 1 ? 'archivo más' : 'archivos más'}.`;
+
+            document.getElementById('m-resumen').innerHTML = `
+                <strong>${escapeHtml(r.asunto ?? 'Reservación')}</strong><br>
+                ${escapeHtml(nombreSala(r.salaId))} ·
+                ${escapeHtml(inicio.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }))} ·
+                ${isoHora(inicio)} a ${isoHora(new Date(r.fin))} hrs.
+                Adjunta el acta o el plan que salió de la reunión.`;
+
+            document.getElementById('m-actuales').innerHTML = r.totalMinutas
+                ? `<span class="sal-detail-label" style="margin-top:1rem">Ya adjuntadas</span>
+                   <div class="sal-files">${(r.minutas ?? []).map(m => filaMinuta(m, false)).join('')}</div>`
+                : '';
+
+            Estado.volverAlDetalle = true;
+
+            document.getElementById('modalMinuta').addEventListener('hidden.bs.modal', () => {
+                if (Estado.volverAlDetalle) abrirDetalle(r);
+            }, { once: true });
+
+            document.getElementById('modalDetalle').addEventListener('hidden.bs.modal', () => {
+                modal('modalMinuta').show();
+            }, { once: true });
+
+            modal('modalDetalle').hide();
+        }
+
+        // Las mismas reglas que aplica MinutasSalas.Validar en el servidor, para avisar
+        // antes de subir 30 MB y que los rechacen.
+        function revisarMinutas() {
+            const r = Estado.detalle;
+            const archivos = [...document.getElementById('m-archivos').files];
+
+            if (!r || !archivos.length) return null;
+
+            const restantes = r.maxMinutas - r.totalMinutas;
+
+            if (archivos.length > restantes)
+                return `Esta reservación admite ${restantes} ${restantes === 1 ? 'archivo más' : 'archivos más'} y seleccionaste ${archivos.length}.`;
+
+            const noPdf = archivos.find(f => !/\.pdf$/i.test(f.name));
+            if (noPdf) return `'${noPdf.name}' no es un PDF. La minuta debe subirse en PDF.`;
+
+            const pesado = archivos.find(f => f.size > @BOS_ERP.Helpers.MinutasSalas.TamanoMaximoBytes);
+            if (pesado) return `'${pesado.name}' supera el límite de @(BOS_ERP.Helpers.MinutasSalas.TamanoMaximoBytes / (1024 * 1024)) MB.`;
+
+            return null;
+        }
+
+        // Avisar al elegir los archivos: enterarse de que sobra uno hasta después de
+        // confirmar el diálogo llega tarde.
+        function avisarMinutas() {
+            const problema = revisarMinutas();
+            if (problema) toastMixin.fire({ icon: 'warning', title: problema });
+        }
+
+        async function guardarMinuta() {
+            const r = Estado.detalle;
+            if (!r) return;
+
+            const input = document.getElementById('m-archivos');
+            const archivos = [...input.files];
+
+            if (!archivos.length) return toastMixin.fire({ icon: 'warning', title: 'Selecciona al menos un PDF' });
+
+            const problema = revisarMinutas();
+            if (problema) return toastMixin.fire({ icon: 'warning', title: problema });
+
+            const ok = await confirmar({
+                titulo: 'Confirmar minuta',
+                html: '<p style="margin-bottom:.2rem">¿Adjuntar estos archivos a la reservación?</p>'
+                      + tablaResumen([
+                          filaResumen('Folio', folio(r.id)),
+                          filaResumen('Asunto', escapeHtml(r.asunto ?? '')),
+                          filaResumen('Archivos', archivos.map(f => escapeHtml(f.name)).join('<br>'))
+                      ]),
+                footer: '<b style="color:#d97706">Los participantes de la reunión podrán descargarlos</b>',
+                confirmar: 'Sí, subir'
             });
 
-            if (res?.icon === 'success') {
-                modal('modalSala').hide();
-                await cargarCatalogos();
-                calendario.refetchEvents();
-            }
+            if (!ok) return;
+
+            const btn = document.getElementById('btn-guardar-minuta');
+            btn.disabled = true;
+
+            const res = await enviar(URLS.subirMinuta,
+                { sala_reservada_id: r.id, archivos: input.files },
+                'Subiendo la minuta...');
+
+            btn.disabled = false;
+
+            if (res?.icon !== 'success') return;
+
+            // El detalle se repinta con lo que devuelve el servidor: es la única forma de
+            // que el contador y el botón reflejen lo que de verdad quedó guardado.
+            Estado.volverAlDetalle = false;
+            const actualizada = await buscarReservacion(r.id);
+
+            document.getElementById('modalMinuta').addEventListener('hidden.bs.modal', () => {
+                if (actualizada) abrirDetalle(actualizada);
+            }, { once: true });
+
+            modal('modalMinuta').hide();
+            refrescarTodo();
+        }
+
+        async function eliminarMinuta(archivoId) {
+            const r = Estado.detalle;
+            if (!r) return;
+
+            const minuta = (r.minutas ?? []).find(m => Number(m.id) === Number(archivoId));
+
+            const ok = await confirmar({
+                titulo: 'Eliminar minuta',
+                html: '<p style="margin-bottom:.2rem">¿Quitar este archivo de la reservación?</p>'
+                      + tablaResumen([
+                          filaResumen('Folio', folio(r.id)),
+                          filaResumen('Archivo', escapeHtml(minuta?.nombre ?? '')),
+                          filaResumen('Subió', escapeHtml(minuta?.subio ?? ''))
+                      ]),
+                footer: "<b style='color: red;'>ADVERTENCIA - El archivo se borra y no se puede recuperar</b>",
+                confirmar: 'Sí, eliminar',
+                color: '#dc2626'
+            });
+
+            if (!ok) return;
+
+            const res = await enviar(URLS.eliminarMinuta, { archivo_id: archivoId }, 'Eliminando la minuta...');
+
+            if (res?.icon !== 'success') return;
+
+            const actualizada = await buscarReservacion(r.id);
+            if (actualizada) abrirDetalle(actualizada);
+
+            refrescarTodo();
         }
 
         // ── Arranque ───────────────────────────────────────────────────────
@@ -1953,12 +2432,7 @@
             const solicitada = Number(new URLSearchParams(location.search).get('reservacion') ?? 0);
             if (!solicitada) return;
 
-            const data = await GetData({
-                path: URLS.reservaciones,
-                data: { desde: '2000-01-01T00:00:00', hasta: '2100-01-01T00:00:00', sala_id: 0 }
-            });
-
-            const r = (Array.isArray(data) ? data : []).find(x => Number(x.id) === solicitada);
+            const r = await buscarReservacion(solicitada);
             if (!r) return;
 
             calendario.gotoDate(r.inicio);
